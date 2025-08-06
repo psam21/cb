@@ -361,9 +361,9 @@ export default function ExplorePage() {
                       
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-500">Updated {culture.lastUpdated}</span>
-                        <button className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center">
+                        <button className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
                           Explore Culture
-                          <ArrowRight className="w-4 h-4 ml-1" />
+                          <ArrowRight className="w-4 h-4 ml-2" />
                         </button>
                       </div>
                     </div>
@@ -434,9 +434,9 @@ export default function ExplorePage() {
                       )}
                     </div>
                     
-                    <button className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center">
+                    <button className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
                       Explore Culture
-                      <ArrowRight className="w-4 h-4 ml-1" />
+                      <ArrowRight className="w-4 h-4 ml-2" />
                     </button>
                   </div>
                 </motion.div>
@@ -448,6 +448,7 @@ export default function ExplorePage() {
           <div className="text-center">
             <button className="btn-outline">
               Load More Cultures
+              <ArrowRight className="w-5 h-5 ml-2" />
             </button>
           </div>
         </div>

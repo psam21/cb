@@ -307,9 +307,9 @@ export default function CommunityPage() {
                   </div>
                   
                   <div className="flex justify-center">
-                    <button className="btn-primary px-4 py-2 text-sm">
+                    <button className="btn-primary">
                       Connect
-                      <ArrowRight className="w-3 h-3 ml-1" />
+                      <ArrowRight className="w-5 h-5 ml-2" />
                     </button>
                   </div>
                 </motion.div>
@@ -374,9 +374,9 @@ export default function CommunityPage() {
                 </p>
                 
                 <div className="flex justify-center">
-                  <button className="btn-outline px-4 py-2 text-sm">
+                  <button className="btn-outline">
                     Join Event
-                    <ArrowRight className="w-3 h-3 ml-1" />
+                    <ArrowRight className="w-5 h-5 ml-2" />
                   </button>
                 </div>
               </motion.div>
@@ -404,9 +404,11 @@ export default function CommunityPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="btn-white">
                 Join the Community
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               <button className="btn-outline-white">
                 Learn More
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>
           </motion.div>

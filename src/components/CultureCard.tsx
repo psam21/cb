@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
 
 interface CultureCardProps {
   culture: {
@@ -63,11 +64,9 @@ export default function CultureCard({ culture, featured = false }: CultureCardPr
           )}
         </div>
         
-        <button className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center">
+        <button className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
           Explore Culture
-          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ArrowRight className="w-4 h-4 ml-2" />
         </button>
       </div>
     </div>

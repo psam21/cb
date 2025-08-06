@@ -424,9 +424,9 @@ export default function MuseumPage() {
               Combine photos, audio, video, and text to create an immersive experience.
             </p>
             <div className="flex justify-center">
-              <button className="btn-primary px-6 py-3 text-base">
+              <button className="btn-primary">
                 Start Creating
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>
           </motion.div>

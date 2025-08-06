@@ -239,9 +239,10 @@ export default function ContributePage() {
                     </p>
                     <button 
                       type="button"
-                      className="mt-4 btn-primary"
+                      className="btn-primary"
                     >
                       Choose Files
+                      <Upload className="w-5 h-5 ml-2" />
                     </button>
                   </div>
 
@@ -406,7 +407,7 @@ export default function ContributePage() {
                     <button
                       type="submit"
                       disabled={isUploading}
-                      className="btn-primary flex items-center"
+                      className="btn-primary"
                     >
                       {isUploading ? (
                         <>
@@ -416,7 +417,7 @@ export default function ContributePage() {
                       ) : (
                         <>
                           Publish to Nostr
-                          <ArrowRight className="w-4 h-4 ml-2" />
+                          <ArrowRight className="w-5 h-5 ml-2" />
                         </>
                       )}
                     </button>
@@ -485,9 +486,10 @@ export default function ContributePage() {
             </p>
             <button
               onClick={() => !selectedType && setSelectedType(0)}
-              className="bg-accent-600 text-white px-8 py-4 rounded-default font-medium hover:bg-accent-700 transition-colors duration-300 text-lg"
+              className="btn-accent"
             >
               Start Contributing Now
+              <ArrowRight className="w-5 h-5 ml-2" />
             </button>
           </motion.div>
         </div>

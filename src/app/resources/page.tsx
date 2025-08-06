@@ -324,7 +324,7 @@ export default function ResourcesPage() {
                             {resource.rating} ({resource.downloads} downloads)
                           </span>
                         </div>
-                        <button className="btn-primary text-sm">
+                        <button className="btn-primary-sm">
                           Download
                           <Download className="w-4 h-4 ml-2" />
                         </button>
@@ -414,9 +414,9 @@ export default function ResourcesPage() {
                         </div>
                       )}
                     </div>
-                    <button className="w-full btn-primary">
+                    <button className="btn-primary">
                       Download Resource
-                      <Download className="w-4 h-4 ml-2" />
+                      <Download className="w-5 h-5 ml-2" />
                     </button>
                   </div>
                 </motion.div>
@@ -445,9 +445,11 @@ export default function ResourcesPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="btn-accent">
                 Contribute Resources
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               <button className="btn-outline-white">
                 Learn More
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>
           </motion.div>

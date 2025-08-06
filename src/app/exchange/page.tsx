@@ -374,9 +374,11 @@ export default function ExchangePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="btn-primary">
                 Browse All Programs
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               <button className="btn-outline">
                 Host an Exchange
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>
           </motion.div>

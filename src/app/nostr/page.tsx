@@ -451,9 +451,11 @@ export default function NostrPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="btn-accent">
                 Start Sharing Stories
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               <button className="btn-outline-white">
                 Learn About Nostr
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>
           </motion.div>

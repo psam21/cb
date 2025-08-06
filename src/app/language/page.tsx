@@ -311,9 +311,11 @@ export default function LanguagePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="btn-accent">
                 Browse All Languages
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               <button className="btn-outline-white">
                 Learn More
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>
           </motion.div>

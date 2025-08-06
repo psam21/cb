@@ -339,10 +339,10 @@ export default function HomePage() {
                   
                   <Link 
                     href={`/explore/${culture.id}`}
-                    className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center"
+                    className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2"
                   >
                     Explore Culture
-                    <ArrowRight className="w-4 h-4 ml-1" />
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </div>
               </motion.div>
@@ -352,6 +352,7 @@ export default function HomePage() {
           <div className="text-center mt-12">
             <Link href="/explore" className="btn-secondary">
               View All Cultures
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
           </div>
         </div>
@@ -374,11 +375,13 @@ export default function HomePage() {
               for future generations through our decentralized platform.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-              <Link href="/contribute" className="bg-accent-600 text-white px-8 py-4 rounded-default font-medium hover:bg-accent-700 transition-colors duration-300 text-lg">
+              <Link href="/contribute" className="btn-accent">
                 Start Contributing
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
-              <Link href="/about" className="border-2 border-white text-white px-8 py-4 rounded-default font-medium hover:bg-white hover:text-primary-800 transition-all duration-300 text-lg">
+              <Link href="/about" className="btn-outline-white">
                 Learn More
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </div>
           </motion.div>

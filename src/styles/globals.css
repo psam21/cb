@@ -23,15 +23,36 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-800 text-white px-6 py-3 rounded-default font-medium hover:bg-primary-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply bg-primary-800 text-white px-8 py-4 rounded-default font-medium hover:bg-primary-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 text-lg flex items-center justify-center;
   }
   
   .btn-secondary {
-    @apply bg-accent-400 text-white px-6 py-3 rounded-default font-medium hover:bg-accent-500 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-300 focus:ring-offset-2;
+    @apply bg-accent-400 text-white px-8 py-4 rounded-default font-medium hover:bg-accent-500 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-300 focus:ring-offset-2 text-lg flex items-center justify-center;
   }
   
   .btn-outline {
-    @apply border-2 border-primary-800 text-primary-800 px-6 py-3 rounded-default font-medium hover:bg-primary-800 hover:text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply border-2 border-primary-800 text-primary-800 px-8 py-4 rounded-default font-medium hover:bg-primary-800 hover:text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 text-lg flex items-center justify-center;
+  }
+  
+  .btn-accent {
+    @apply bg-accent-600 text-white px-8 py-4 rounded-default font-medium hover:bg-accent-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 text-lg flex items-center justify-center;
+  }
+  
+  .btn-outline-white {
+    @apply border-2 border-white text-white px-8 py-4 rounded-default font-medium hover:bg-white hover:text-primary-800 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 text-lg flex items-center justify-center;
+  }
+  
+  /* Small button variants for cards */
+  .btn-primary-sm {
+    @apply bg-primary-800 text-white px-4 py-2 rounded-default font-medium hover:bg-primary-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 text-sm flex items-center justify-center;
+  }
+  
+  .btn-outline-sm {
+    @apply border-2 border-primary-800 text-primary-800 px-4 py-2 rounded-default font-medium hover:bg-primary-800 hover:text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 text-sm flex items-center justify-center;
+  }
+  
+  .btn-white {
+    @apply bg-white text-primary-800 px-8 py-4 rounded-default font-medium hover:bg-gray-50 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 text-lg flex items-center justify-center;
   }
   
   .card {
