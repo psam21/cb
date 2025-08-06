@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CulturalBridge - Heritage Preservation Network</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+      :root {
+        --primary-color: #e87d35;
+        --secondary-color: #f3ece7;
+        --text-dark: #1b130e;
+        --text-light: #976b4e;
+        --background-color: #fcfaf8;
+      }
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+      }
+    </style>
+</head>
+<body class="bg-[var(--background-color)] text-[var(--text-dark)]">
+<div class="relative flex size-full min-h-screen flex-col overflow-x-hidden">
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--secondary-color)] bg-[var(--background-color)]/80 px-4 py-3 backdrop-blur-sm sm:px-10">
+<a class="flex items-center gap-3" href="#">
+<svg class="h-8 w-8 text-[var(--primary-color)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+<h2 class="text-xl font-bold tracking-tighter">CulturalBridge</h2>
+</a>
+<nav class="hidden items-center gap-6 md:flex">
+<a class="text-sm font-medium hover:text-[var(--primary-color)]" href="#">Explore</a>
+<a class="text-sm font-medium hover:text-[var(--primary-color)]" href="#">Contribute</a>
+<a class="text-sm font-medium hover:text-[var(--primary-color)]" href="#">About</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[var(--primary-color)] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-orange-600">
+<span class="truncate">Sign in</span>
+</button>
+<button class="p-2 md:hidden">
+<svg class="h-6 w-6" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+<line x1="4" x2="20" y1="12" y2="12"></line>
+<line x1="4" x2="20" y1="6" y2="6"></line>
+<line x1="4" x2="20" y1="18" y2="18"></line>
+</svg>
+</button>
+</div>
+</header>
+<main class="flex-1">
+<section class="relative flex min-h-[60vh] items-center justify-center bg-cover bg-center py-20 text-white md:min-h-[80vh]" style='background-image: linear-gradient(rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.7) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuDx4z2gdePLI6MfjDtsrGnr2-riEBOVP2nuJgT7qNcvL6L-mRp0pXdh93dvB8G26AHchBueR4E2qd6W-XvBnqdZ1uNQHqOAd-NPBH3jfcPRBr89WuM6CR9iNs5hTqFvYZQhoHsID8hZxDeVPGXk44tRjnwPhgyuRm-tt_Ap3KbxCcRE_qmniR_sZqAKITSPj2gtewMDaBull6vEv2Q1iiMGqRntiSAzDJYzVh0sOq0UNkLobOhyfwZr2FSlPsjeJqRcf2t2Tx3cxBMi");'>
+<div class="container mx-auto px-4 text-center">
+<h1 class="text-4xl font-extrabold leading-tight tracking-tighter md:text-6xl">
+              Preserving Cultural Heritage for Future Generations
+            </h1>
+<p class="mx-auto mt-4 max-w-2xl text-base font-light md:text-lg">
+              CulturalBridge is a decentralized platform that empowers communities to document and share their cultural
+              practices, languages, and traditions using Nostr.
+            </p>
+<div class="mt-8 flex flex-wrap justify-center gap-4">
+<button class="flex min-w-[140px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[var(--primary-color)] px-6 py-3 text-base font-bold text-white shadow-lg transition-transform hover:scale-105">
+<span class="truncate">Explore Cultures</span>
+</button>
+<button class="flex min-w-[140px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[var(--secondary-color)] px-6 py-3 text-base font-bold text-[var(--text-dark)] shadow-lg transition-transform hover:scale-105">
+<span class="truncate">Contribute</span>
+</button>
+</div>
+</div>
+</section>
+<section class="py-16 sm:py-24">
+<div class="container mx-auto px-4">
+<h2 class="mb-12 text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              Discover Cultural Treasures
+            </h2>
+<div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+<div class="group flex flex-col gap-4 overflow-hidden rounded-lg">
+<div class="aspect-square w-full transform rounded-lg bg-cover bg-center transition-transform duration-300 group-hover:scale-105" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDgWvrCWwOYH9nNMNT_-Ep3TsdHACR7x4ktDaVsDPFQrNjWJKwrt5c4YXnRa9fql7M0hhVmSXFRTj3G_lXtep4QfHuHVVF9eaCzBziacTuyWufAFyAVLXpKwuHV3HtqB0lq699CK-wDpZlrEduYMRsmkCXU8QE7ktzoJXkBL6DZmY7i2Vc5DdJpgSkB3NrIClo1UWKhzCug2Ff8wKbO82gvCp4UnPbs4q6RyecOaJqMUVFTsHg1OV_7urhQD47aTUF_lcZxWwHjpHsq");'></div>
+<div>
+<h3 class="text-lg font-bold">Vibrant Dance Traditions</h3>
+<p class="text-sm text-[var(--text-light)]">
+                    Experience the rich tapestry of dance from around the world.
+                  </p>
+</div>
+</div>
+<div class="group flex flex-col gap-4 overflow-hidden rounded-lg">
+<div class="aspect-square w-full transform rounded-lg bg-cover bg-center transition-transform duration-300 group-hover:scale-105" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDdkmbfJ-abtKOaBp7EalZNAvO_Lq0VAXVrNGwok9ZbSBOU4yhjOU7XFqVx7NqibeKqiRX2Ki-fMVBT5kJYA9w1r9-UHKJVgGxHMtSyM72XKJpZgHpGolSw9tE2srW2WcsBI-c_1HmaEbiVX78iDDFok66iwNUzoKIkl8wLWOWahtHLF5LFEw3dJjfYffo4wEytpqfLxS58Yn6rirHYVLTff2LEvwpr-b5jU2kxa3F9aS4kiHxN7kTCSuT-rNLI9l-BR0l6-IuUjRlW");'></div>
+<div>
+<h3 class="text-lg font-bold">Historical Artifacts</h3>
+<p class="text-sm text-[var(--text-light)]">Explore ancient artifacts and their stories.</p>
+</div>
+</div>
+<div class="group flex flex-col gap-4 overflow-hidden rounded-lg">
+<div class="aspect-square w-full transform rounded-lg bg-cover bg-center transition-transform duration-300 group-hover:scale-105" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDD93QAVEUVFcmyocUPmDruzvhhj2kwHiAnXCnmc0de7tS7iLLktTG8XLWkDy6-aJhoRf8KPTUG3E72T_zr2YV9frVcv90_S4HEkb2AkeZr8UeFMRSLb3upZoc-1LMeNvo-qFbqL8nn5e9ZnRE0cJcj0fnvhg3KQ-D2RuSdjZhbtvJIErDv28WtAFWFE2iQxvkVETbLetEIKH3arIqO1jOioKsDaHJl8KUI5B5H-G_C90ciD6xDqK7q8DUN-elwFTISawwJOvH3Cnj1");'></div>
+<div>
+<h3 class="text-lg font-bold">Language Preservation</h3>
+<p class="text-sm text-[var(--text-light)]">
+                    Support language revitalization efforts in local communities.
+                  </p>
+</div>
+</div>
+<div class="group flex flex-col gap-4 overflow-hidden rounded-lg">
+<div class="aspect-square w-full transform rounded-lg bg-cover bg-center transition-transform duration-300 group-hover:scale-105" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD9miN30o4isWHgNL8XmmnOi2FqauFf05Uy6wrX3BaPO8rSgPLAZ7redx4w4bqbn-qRDOe6ArOyad8hpPvRm4GFxXiJVrkkf0duRDGiMvm73fiz5biAJX6zfXhQsk61clAubycgD1uRFDRnFYsvDYZ3lzpob8Z9WzrHHJ43Ve_Z6DRH43_L-KB0QfvD-Yj7zSn8hQ8zl1UDFHvf0XlhhVG-wBW6bgATHZbPfvIo0EmYQDhSkQiUp-QV2N1WqFL4Tr-tl5h6J--t0keF");'></div>
+<div>
+<h3 class="text-lg font-bold">Community Festivals</h3>
+<p class="text-sm text-[var(--text-light)]">Celebrate cultural diversity at festivals worldwide.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-[var(--secondary-color)] py-16 sm:py-24">
+<div class="container mx-auto px-4">
+<div class="mx-auto max-w-3xl text-center">
+<h2 class="text-3xl font-bold tracking-tight sm:text-4xl">How CulturalBridge Works</h2>
+<p class="mt-4 text-lg text-[var(--text-light)]">
+                CulturalBridge provides the tools for communities to document, preserve, and share their unique
+                cultural heritage with the world.
+              </p>
+</div>
+<div class="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
+<div class="flex flex-col items-center gap-4 rounded-lg bg-white p-8 text-center shadow-lg">
+<div class="rounded-full bg-[var(--primary-color)]/20 p-4">
+<svg fill="var(--primary-color)" height="32" viewBox="0 0 256 256" width="32" xmlns="http://www.w3.org/2000/svg">
+<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm88,104a87.62,87.62,0,0,1-6.4,32.94l-44.7-27.49a15.92,15.92,0,0,0-6.24-2.23l-22.82-3.08a16.11,16.11,0,0,0-16,7.86h-8.72l-3.8-7.86a15.91,15.91,0,0,0-11-8.67l-8-1.73L96.14,104h16.71a16.06,16.06,0,0,0,7.73-2l12.25-6.76a16.62,16.62,0,0,0,3-2.14l26.91-24.34A15.93,15.93,0,0,0,166,49.1l-.36-.65A88.11,88.11,0,0,1,216,128ZM143.31,41.34,152,56.9,125.09,81.24,112.85,88H96.14a16,16,0,0,0-13.88,8l-8.73,15.23L63.38,84.19,74.32,58.32a87.87,87.87,0,0,1,69-17ZM40,128a87.53,87.53,0,0,1,8.54-37.8l11.34,30.27a16,16,0,0,0,11.62,10l21.43,4.61L96.74,143a16.09,16.09,0,0,0,14.4,9h1.48l-7.23,16.23a16,16,0,0,0,2.86,17.37l.14.14L128,205.94l-1.94,10A88.11,88.11,0,0,1,40,128Zm102.58,86.78,1.13-5.81a16.09,16.09,0,0,0-4-13.9,1.85,1.85,0,0,1-.14-.14L120,174.74,133.7,144l22.82,3.08,45.72,28.12A88.18,88.18,0,0,1,142.58,214.78Z"></path>
+</svg>
+</div>
+<h3 class="text-xl font-bold">Decentralized Network</h3>
+<p class="text-sm text-[var(--text-light)]">
+                  Built on Nostr, ensuring content is censorship-resistant and globally accessible.
+                </p>
+</div>
+<div class="flex flex-col items-center gap-4 rounded-lg bg-white p-8 text-center shadow-lg">
+<div class="rounded-full bg-[var(--primary-color)]/20 p-4">
+<svg fill="var(--primary-color)" height="32" viewBox="0 0 256 256" width="32" xmlns="http://www.w3.org/2000/svg">
+<path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z"></path>
+</svg>
+</div>
+<h3 class="text-xl font-bold">Community-Driven</h3>
+<p class="text-sm text-[var(--text-light)]">
+                  Communities manage and curate their own cultural heritage content.
+                </p>
+</div>
+<div class="flex flex-col items-center gap-4 rounded-lg bg-white p-8 text-center shadow-lg">
+<div class="rounded-full bg-[var(--primary-color)]/20 p-4">
+<svg fill="var(--primary-color)" height="32" viewBox="0 0 256 256" width="32" xmlns="http://www.w3.org/2000/svg">
+<path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"></path>
+</svg>
+</div>
+<h3 class="text-xl font-bold">Secure Documentation</h3>
+<p class="text-sm text-[var(--text-light)]">
+                  Utilizes secure, decentralized storage to protect cultural information.
+                </p>
+</div>
+</div>
+</div>
+</section>
+<section class="py-16 sm:py-24">
+<div class="container mx-auto px-4">
+<div class="mx-auto max-w-3xl text-center">
+<h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Join the CulturalBridge Community</h2>
+<p class="mt-4 text-lg text-[var(--text-light)]">
+                Start exploring, contributing, and preserving cultural heritage today.
+              </p>
+<div class="mt-8 flex justify-center">
+<button class="flex min-w-[160px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[var(--primary-color)] px-8 py-4 text-lg font-bold text-white shadow-lg transition-transform hover:scale-105">
+<span class="truncate">Get Started</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="border-t border-[var(--secondary-color)] bg-[var(--background-color)]">
+<div class="container mx-auto px-4 py-8">
+<div class="flex flex-col items-center justify-between gap-6 sm:flex-row">
+<div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-center">
+<a class="text-sm text-[var(--text-light)] hover:text-[var(--primary-color)]" href="#">About</a>
+<a class="text-sm text-[var(--text-light)] hover:text-[var(--primary-color)]" href="#">Contact</a>
+<a class="text-sm text-[var(--text-light)] hover:text-[var(--primary-color)]" href="#">Terms of Service</a>
+<a class="text-sm text-[var(--text-light)] hover:text-[var(--primary-color)]" href="#">Privacy Policy</a>
+</div>
+<p class="text-sm text-[var(--text-light)]">© 2024 CulturalBridge. All rights reserved.</p>
+</div>
+</div>
+</footer>
+</div>
+
+</body></html>
