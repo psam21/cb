@@ -181,20 +181,36 @@ Development:
 - User-owned identity and data
 - Relay-based message distribution
 - Cryptographic signatures for content authenticity
+- **Large file storage through NIP-94/NIP-96** (File metadata and HTTP storage integration)
+- **Media handling** for images, video, audio, and documents
 
-**IPFS (InterPlanetary File System)**: Distributed file storage system:
-- Content-addressed storage (files identified by hash)
-- Peer-to-peer file sharing and distribution
-- Permanent web links that don't break
-- Decentralized alternative to traditional cloud storage
+**Simplified Storage Architecture**: Instead of using IPFS, Nostr can handle all storage needs:
+- **Small data**: Directly in Nostr events (text, metadata, small images)
+- **Large files**: Using NIP-96 HTTP File Storage Integration with NIP-94 metadata
+- **Media files**: Images, videos, audio through Nostr file storage servers
+- **Content addressing**: SHA-256 hashes for file identification and integrity
 
 ### Why These Technologies Were Chosen
 
 1. **Next.js**: Provides full-stack capabilities while maintaining excellent developer experience and performance
 2. **TypeScript**: Ensures code quality and maintainability as the project scales
 3. **Tailwind CSS**: Enables rapid UI development while maintaining design consistency
-4. **Nostr**: Aligns with cultural sovereignty goals by avoiding centralized control
-5. **IPFS**: Ensures cultural content remains permanently accessible without dependency on single organizations
+4. **Nostr**: Perfect alignment with cultural sovereignty goals - handles both social networking AND file storage
+5. **NIP-96 File Storage**: Eliminates IPFS complexity while maintaining decentralized file storage with content addressing
+
+### Architectural Benefits of Nostr-First Approach
+
+**Simplified Tech Stack**: Instead of managing both Nostr + IPFS, we use Nostr for everything:
+- **Event data**: Social features, metadata, small content
+- **File storage**: Images, videos, documents via NIP-96 servers  
+- **Content addressing**: SHA-256 hashes for all content integrity
+- **Unified identity**: Single key pair for all platform interactions
+
+**Better Cultural Fit**: 
+- **Community Control**: Communities can run their own Nostr relays and file servers
+- **Data Sovereignty**: No external dependencies on IPFS network or third-party providers
+- **Simpler Migration**: Moving between Nostr relays is easier than IPFS migrations
+- **Cost Effective**: Communities can choose storage providers or run their own
 
 ### Technical Dependencies Chain
 
@@ -238,10 +254,11 @@ Phase Dependencies:
 - Encryption and access controls must be established before storing real data
 
 **Decentralization Strategy:**
-- Hybrid approach: critical metadata on traditional databases for performance
-- Cultural content on IPFS for permanent accessibility
-- Community governance data on Nostr for transparency
-- Allows gradual migration to full decentralization
+- **Pure Nostr approach**: All decentralized features through Nostr ecosystem
+- **Community empowerment**: Communities can run their own relays and file servers
+- **Unified storage**: NIP-96 file storage integrates seamlessly with Nostr events  
+- **Simplified architecture**: No complex IPFS/Nostr hybrid - just Nostr everywhere
+- **Gradual adoption**: Communities can start with hosted solutions, then self-host when ready
 
 ---
 
@@ -428,51 +445,63 @@ Phase Dependencies:
 
 ---
 
-## 🌐 **Phase 5: Decentralized Infrastructure (Nostr/IPFS)**
+## 🌐 **Phase 5: Decentralized Infrastructure (Nostr-First Architecture)**
 
 **Timeline**: April - June 2026  
-**Focus**: Decentralized storage, Nostr protocol integration, and blockchain foundations
+**Focus**: Full Nostr protocol integration with unified storage strategy
 
 ### 5.1 Nostr Protocol Integration
-- [ ] **Nostr Client Infrastructure**
-  - [ ] Nostr client library integration
-  - [ ] Relay connection management
-  - [ ] Event publishing/subscribing
+- [ ] **Core Nostr Client Infrastructure**
+  - [ ] Nostr client library integration (nostr-tools or similar)
+  - [ ] Relay connection management with failover
+  - [ ] Event publishing and subscribing
   - [ ] Key pair generation and management
-- [ ] **Custom Event Types**
-  - [ ] Cultural content event schemas
-  - [ ] Metadata standardization
-  - [ ] Content verification events
-  - [ ] Community governance events
-- [ ] **Nostr Utilities**
+- [ ] **Cultural Content Events (NIP-94 Implementation)**
+  - [ ] Custom event types for cultural data
+  - [ ] File metadata schemas (NIP-94 compliance)
+  - [ ] Content verification mechanisms
+  - [ ] Rights and permissions framework
+- [ ] **Nostr Utilities & Performance**
   - [ ] Event validation utilities
   - [ ] Relay health monitoring
   - [ ] Event caching system
   - [ ] Offline event queuing
 
-### 5.2 IPFS Integration
-- [ ] **IPFS Node Setup**
-  - [ ] IPFS node configuration
-  - [ ] Content addressing system
-  - [ ] Pinning service integration
-  - [ ] Gateway optimization
-- [ ] **Content Distribution**
-  - [ ] File upload to IPFS
-  - [ ] Content replication strategies
-  - [ ] Bandwidth optimization
-  - [ ] Content availability monitoring
+### 5.2 Nostr File Storage Integration (NIP-96)
+- [ ] **HTTP File Storage Server Setup**
+  - [ ] NIP-96 compliant file server implementation
+  - [ ] File upload/download API endpoints
+  - [ ] SHA-256 content addressing
+  - [ ] Authentication integration with Nostr keys
+- [ ] **Large File Management**
+  - [ ] Multi-part file upload handling
+  - [ ] File compression and optimization
+  - [ ] Thumbnail generation for media
+  - [ ] File expiration and cleanup policies
+- [ ] **Media Processing Pipeline**
+  - [ ] Image processing (resize, format conversion)
+  - [ ] Video processing (compression, thumbnail extraction)
+  - [ ] Audio processing (format conversion, metadata extraction)
+  - [ ] Document processing (PDF, text extraction)
 
-### 5.3 Hybrid Storage Architecture
+### 5.3 Unified Storage Architecture
 - [ ] **Storage Strategy Implementation**
-  - [ ] Critical data on Nostr/blockchain
-  - [ ] Media files on IPFS
-  - [ ] Metadata on traditional database
-  - [ ] Backup and redundancy systems
-- [ ] **Synchronization Services**
-  - [ ] Cross-platform data sync
-  - [ ] Conflict resolution
-  - [ ] Version control for content
-  - [ ] Migration tools
+  - [ ] Small data directly in Nostr events (text, metadata)
+  - [ ] Large files via NIP-96 file storage with NIP-94 metadata
+  - [ ] All storage using SHA-256 content addressing
+  - [ ] No IPFS dependency - pure Nostr ecosystem
+- [ ] **Data Synchronization Services**
+  - [ ] Cross-relay data synchronization
+  - [ ] Conflict resolution for concurrent updates
+  - [ ] Version control for cultural content
+  - [ ] Backup strategies across multiple relays
+
+### 5.4 Cultural Data Sovereignty on Nostr
+- [ ] **Community Relay Management**
+  - [ ] Community-controlled relay setup guidance
+  - [ ] Relay selection strategies
+  - [ ] Data export/import tools for relay migration
+  - [ ] Community governance through Nostr events
 
 ---
 
