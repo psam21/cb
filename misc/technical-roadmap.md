@@ -15,8 +15,8 @@ Culture Bridge is a decentralized heritage preservation platform built on Nostr 
 ### Technical Architecture Overview
 
 - **Frontend**: Next.js 14 with TypeScript, Tailwind CSS, React components
-- **Backend**: Next.js API routes, PostgreSQL database, cloud storage
-- **Decentralization**: Nostr protocol integration, IPFS for media storage
+- **Backend**: Next.js API routes, minimal database layer, Nostr-first storage
+- **Decentralization**: Pure Nostr protocol integration with NIP-96 file storage
 - **Deployment**: Vercel/similar platform with CDN, multi-region support
 
 ### Current Implementation Status
@@ -190,6 +190,121 @@ Development:
 - **Media files**: Images, videos, audio through Nostr file storage servers
 - **Content addressing**: SHA-256 hashes for file identification and integrity
 
+### Key Nostr Implementation Possibilities (NIPs) for Culture Bridge
+
+**NIP-01 - Basic Protocol Flow**: Foundation protocol defining how Nostr works
+- Event structure (id, pubkey, created_at, kind, tags, content, sig)
+- Client-to-relay communication (EVENT, REQ, CLOSE)
+- Relay-to-client responses (EVENT, OK, EOSE, NOTICE)
+- **Culture Bridge Use**: Core infrastructure for all platform communication
+
+**NIP-94 - File Metadata**: Standardizes file information sharing (Kind 1063 events)
+- File URL, MIME type, SHA-256 hash, file size, dimensions
+- Optional: thumbnails, previews, blurhash, alt text, magnet links
+- **Culture Bridge Use**: Metadata for cultural artifacts, documents, images, audio, video
+
+**NIP-96 - HTTP File Storage Integration**: Bridges HTTP file servers with Nostr
+- Upload/download API endpoints with Nostr key authentication
+- File server discovery through `.well-known/nostr/nip96.json`
+- Features: file transformations, thumbnails, expiration, access control
+- **Culture Bridge Use**: Large file storage for cultural content while maintaining Nostr integration
+
+**NIP-42 - Authentication**: Secure client authentication to relays
+- Challenge-response authentication using Nostr keys
+- Prevents spam and enables access control
+- **Culture Bridge Use**: Protecting sensitive cultural content, community-only access
+
+**NIP-65 - Relay List Metadata**: Users can specify preferred relays
+- Kind 10002 events listing read/write relay preferences
+- Enables relay discovery and load distribution
+- **Culture Bridge Use**: Communities can specify their preferred cultural content relays
+
+**NIP-50 - Search Capability**: Standardizes search across Nostr relays
+- Full-text search with query parameters
+- Enables content discovery across the network
+- **Culture Bridge Use**: Searching cultural content across decentralized relays
+
+**NIP-25 - Reactions**: Like/dislike and emoji reactions to content
+- Kind 7 events for reactions to other events
+- Supports custom emoji and reaction types
+- **Culture Bridge Use**: Community engagement with cultural content
+
+**NIP-18 - Reposts**: Sharing/amplifying existing content
+- Kind 6 events for sharing other events
+- Preserves original author attribution
+- **Culture Bridge Use**: Sharing cultural content across communities
+
+### Advanced NIPs for Future Implementation
+
+**NIP-29 - Relay-Based Groups**: Community management on Nostr
+- Private groups with membership control
+- Moderation and administrative functions
+- **Culture Bridge Use**: Private cultural community spaces, elder councils
+
+**NIP-57 - Lightning Zaps**: Micropayments for content creators
+- Bitcoin Lightning integration for content monetization
+- Supports cultural creators and knowledge holders
+- **Culture Bridge Use**: Supporting indigenous content creators and elders
+
+**NIP-51 - Lists**: Curated collections of content
+- Follow lists, bookmark lists, curation sets
+- Community-driven content organization
+- **Culture Bridge Use**: Cultural practice categories, recommended resources
+
+**NIP-23 - Long-form Content**: Articles and detailed content
+- Kind 30023 events for blog-style content
+- Markdown support with rich formatting
+- **Culture Bridge Use**: Detailed cultural documentation, historical accounts
+
+### How NIPs Work Together for Cultural Preservation
+
+**Content Creation Workflow:**
+1. **User uploads cultural artifact** → NIP-96 file server stores media
+2. **System creates NIP-94 metadata event** → File hash, description, cultural tags
+3. **Community discusses content** → NIP-25 reactions, NIP-18 reposts
+4. **Elders approve/moderate** → NIP-42 authentication, NIP-29 group management
+5. **Content gets discovered** → NIP-50 search, NIP-51 curated lists
+
+**Cultural Data Sovereignty Implementation:**
+- **Community Control**: NIP-29 groups for tribal/cultural community management
+- **Access Control**: NIP-42 authentication ensures only authorized community members access sensitive content
+- **Content Attribution**: NIP-94 metadata preserves original creator and cultural context
+- **Decentralized Storage**: NIP-96 allows communities to choose their own file storage providers
+
+**Practical Example - Uploading a Traditional Song:**
+```
+1. Audio File Storage (NIP-96):
+   - Upload .mp3 file to community-controlled file server
+   - Server returns SHA-256 hash: "a1b2c3d4..."
+   - Authentication via Nostr keys (NIP-42)
+
+2. Metadata Event (NIP-94):
+   {
+     "kind": 1063,
+     "tags": [
+       ["url", "https://tribal-server.com/files/a1b2c3d4.mp3"],
+       ["m", "audio/mpeg"],
+       ["x", "a1b2c3d4e5f6..."], // file hash
+       ["alt", "Traditional harvest song in Quechua"],
+       ["t", "quechua"], ["t", "harvest"], ["t", "traditional-music"]
+     ],
+     "content": "Ancient harvest song passed down through generations...",
+     "pubkey": "elder_public_key..."
+   }
+
+3. Community Interaction:
+   - Reactions (NIP-25): Community members can respectfully acknowledge
+   - Search (NIP-50): Song discoverable by language, ceremony, region
+   - Lists (NIP-51): Added to "Sacred Songs" community curation
+```
+
+**Technical Integration Benefits:**
+- **Single Identity**: One Nostr key pair works across all features
+- **Censorship Resistance**: Content exists across multiple relays
+- **Community Ownership**: Tribes control their relays and file servers
+- **Interoperability**: Any Nostr client can access the cultural content
+- **Permanence**: Content remains accessible even if original relay goes down
+
 ### Why These Technologies Were Chosen
 
 1. **Next.js**: Provides full-stack capabilities while maintaining excellent developer experience and performance
@@ -225,13 +340,33 @@ Phase Dependencies:
 └── Phases 7+ → Sequential building on previous foundations
 ```
 
-**Critical Path Dependencies:**
-- Database setup must complete before user authentication
-- Authentication required before user-generated content
-- File storage needed before media upload features
-- Security framework required before handling sensitive cultural data
-- Nostr integration depends on stable API layer
-- All backend services must exist before mobile app development
+### Critical Path Dependencies:
+
+- **Minimal database setup** must complete before complex relational queries (language families, geographic data)
+- **Redis setup** required before session management and caching
+- **Nostr integration (NIP-01)** must be implemented before cultural content storage
+- **Authentication (both traditional and NIP-42)** required before user-generated content
+- **File storage (NIP-96)** needed before media upload features
+- **Security framework** required before handling sensitive cultural data
+- **NIP-94 (File Metadata)** and **NIP-96 (File Storage)** are co-dependencies for media handling
+- **Search indexing** can be built from Nostr events after Phase 5 completion
+- All core services must exist before mobile app development
+
+### NIP Implementation Priority Order:
+
+**Phase 5 (Core Nostr):**
+1. **NIP-01**: Basic protocol (events, relays, keys) - Foundation for everything
+2. **NIP-94**: File metadata - Required for cultural artifact management
+3. **NIP-96**: File storage integration - Required for large media files
+4. **NIP-42**: Authentication - Required for community access control
+
+**Phase 6+ (Advanced Features):**
+5. **NIP-50**: Search capability - Cultural content discovery
+6. **NIP-25**: Reactions - Community engagement with content
+7. **NIP-18**: Reposts - Sharing cultural content across communities
+8. **NIP-51**: Lists - Cultural practice categories and curation
+9. **NIP-29**: Groups - Community management and governance
+10. **NIP-23**: Long-form content - Detailed cultural documentation
 
 ### Architecture Decisions & Reasoning
 
@@ -241,11 +376,12 @@ Phase Dependencies:
 - Reduces technical debt by building proper foundations first
 - Enables team members to specialize in different layers
 
-**Database-First Backend Approach:**
-- Cultural data has complex relationships (languages, regions, practices, communities)
-- Proper schema design prevents data inconsistencies later
-- Migration system allows evolution without data loss
-- Multiple storage types (SQL for metadata, IPFS for media, Nostr for decentralized data)
+**Minimal Database Backend Approach:**
+
+- Most cultural data stored in Nostr events (decentralized, community-controlled)
+- Minimal PostgreSQL only for complex relational queries that don't fit Nostr's event model
+- Redis for caching, session management, and performance optimization
+- Elasticsearch/Algolia for full-text search indexing (rebuilt from Nostr events)
 
 **Security and Privacy by Design:**
 - Cultural data is sensitive and requires special protection
@@ -332,22 +468,39 @@ Phase Dependencies:
 **Timeline**: February - April 2026  
 **Focus**: Database design, API architecture, and core backend services
 
-### 3.1 Database Architecture
-- [ ] **Database Design & Setup**
-  - [ ] PostgreSQL database setup
-  - [ ] Database schema design for cultural data
-  - [ ] Migration system setup
-  - [ ] Database connection pooling
-- [ ] **Data Models & Schemas**
-  - [ ] User and authentication models
-  - [ ] Cultural content models
-  - [ ] Language and localization models
-  - [ ] Geographic and mapping models
-- [ ] **Database Utilities**
-  - [ ] ORM setup (Prisma/Drizzle)
-  - [ ] Query optimization tools
-  - [ ] Database seeding scripts
-  - [ ] Backup and recovery procedures
+## 🗄️ **Phase 3: Minimal Data Layer & Backend Services**
+
+**Timeline**: February - April 2026  
+**Focus**: Minimal database design, API architecture, and core backend services with Nostr-first approach
+
+### 3.1 Minimal Database Architecture
+
+- [ ] **Reduced PostgreSQL Setup**
+  - [ ] Lightweight PostgreSQL setup for specific use cases only
+  - [ ] Schema design for data that doesn't fit Nostr event model
+  - [ ] Migration system for relational data evolution
+  - [ ] Connection pooling for minimal database usage
+
+- [ ] **What Goes in PostgreSQL (Minimal Set)**
+  - [ ] Complex language family relationships and linguistic mappings
+  - [ ] Geographic boundary definitions and territorial relationships  
+  - [ ] API rate limiting and usage tracking data
+  - [ ] System analytics and operational metrics
+  - [ ] Search indexing metadata (not the content itself)
+
+- [ ] **What Goes in Nostr Events (Primary Storage)**
+  - [ ] User profiles and cultural community memberships (NIP-01 profiles)
+  - [ ] Cultural content metadata and descriptions (NIP-94 file metadata)
+  - [ ] Community discussions and social interactions (NIP-01 text events)
+  - [ ] Cultural categorizations and tags (NIP-51 lists)
+  - [ ] Content reactions and engagement data (NIP-25)
+  - [ ] Elder wisdom and traditional knowledge (NIP-23 long-form content)
+
+- [ ] **Redis Setup for Performance**
+  - [ ] Session management and JWT token caching
+  - [ ] API rate limiting data (temporary storage)
+  - [ ] Search result caching and query optimization
+  - [ ] File upload progress tracking and temporary metadata
 
 ### 3.2 API Architecture
 - [ ] **RESTful API Foundation**
@@ -366,39 +519,45 @@ Phase Dependencies:
   - [ ] Request sanitization
   - [ ] API security headers
 
-### 3.3 Authentication & Authorization Service
-- [ ] **User Authentication System**
-  - [ ] JWT token management
-  - [ ] Session handling
-  - [ ] Password hashing and security
-  - [ ] Account verification system
-- [ ] **Authorization Framework**
-  - [ ] Role-based access control (RBAC)
-  - [ ] Permission system design
-  - [ ] Resource ownership validation
-  - [ ] API endpoint protection
-- [ ] **Third-party Authentication**
-  - [ ] OAuth provider integration
-  - [ ] Social login options
-  - [ ] Identity provider abstraction
-  - [ ] Account linking mechanisms
+### 3.3 Hybrid Authentication & Authorization Service
 
-### 3.4 File Storage & Media Management
-- [ ] **File Upload System**
-  - [ ] Multipart file upload handling
-  - [ ] File type validation
-  - [ ] File size limits and compression
-  - [ ] Upload progress tracking
-- [ ] **Storage Backend**
-  - [ ] Cloud storage integration (AWS S3/Cloudflare R2)
-  - [ ] CDN setup for media delivery
-  - [ ] Image processing pipeline
-  - [ ] Video processing capabilities
-- [ ] **Media Management APIs**
-  - [ ] File metadata extraction
-  - [ ] Thumbnail generation
-  - [ ] Media format conversion
-  - [ ] Storage quota management
+- [ ] **Dual Authentication System**
+  - [ ] Nostr key-based authentication (primary for cultural contributors)
+  - [ ] Traditional email/password auth (for non-technical users)
+  - [ ] Account linking between Nostr keys and traditional accounts
+  - [ ] Progressive migration path from traditional to Nostr auth
+
+- [ ] **Authorization Framework**
+  - [ ] Community-based access control using Nostr group membership
+  - [ ] Traditional role-based access control (RBAC) for admin functions
+  - [ ] Cultural sensitivity permissions (community, family, individual levels)
+  - [ ] API endpoint protection with both auth methods
+
+- [ ] **Session Management**
+  - [ ] Redis-based session storage for traditional auth
+  - [ ] Nostr event-based authentication for decentralized features
+  - [ ] JWT tokens for API access with minimal database lookups
+  - [ ] Secure token refresh mechanisms
+
+### 3.4 Nostr-First File Storage & Media Management
+
+- [ ] **NIP-96 File Storage Bridge**
+  - [ ] Integration layer between web interface and NIP-96 file servers
+  - [ ] Community-controlled file server discovery and selection
+  - [ ] Multipart upload handling with progress tracking for large cultural media
+  - [ ] File type validation respecting cultural content requirements
+
+- [ ] **Transitional Cloud Storage**
+  - [ ] Temporary cloud storage (AWS S3/Cloudflare R2) during Nostr migration
+  - [ ] CDN setup for media delivery while communities establish file servers
+  - [ ] Backup storage for critical cultural content during transition
+  - [ ] Cost optimization for communities setting up their own infrastructure
+
+- [ ] **Media Processing Pipeline**
+  - [ ] Image processing with cultural metadata preservation (EXIF, cultural tags)
+  - [ ] Video processing optimized for ceremonies and traditional practices
+  - [ ] Audio processing for language preservation and traditional music
+  - [ ] Document processing (PDFs, historical texts) with OCR capabilities
 
 ---
 
@@ -451,57 +610,62 @@ Phase Dependencies:
 **Focus**: Full Nostr protocol integration with unified storage strategy
 
 ### 5.1 Nostr Protocol Integration
-- [ ] **Core Nostr Client Infrastructure**
+- [ ] **Core Nostr Client Infrastructure (NIP-01)**
   - [ ] Nostr client library integration (nostr-tools or similar)
   - [ ] Relay connection management with failover
-  - [ ] Event publishing and subscribing
-  - [ ] Key pair generation and management
+  - [ ] Event publishing and subscribing (EVENT, REQ, CLOSE messages)
+  - [ ] Key pair generation and management (secp256k1)
 - [ ] **Cultural Content Events (NIP-94 Implementation)**
-  - [ ] Custom event types for cultural data
-  - [ ] File metadata schemas (NIP-94 compliance)
-  - [ ] Content verification mechanisms
-  - [ ] Rights and permissions framework
-- [ ] **Nostr Utilities & Performance**
-  - [ ] Event validation utilities
-  - [ ] Relay health monitoring
-  - [ ] Event caching system
-  - [ ] Offline event queuing
+  - [ ] File metadata event types (kind 1063)
+  - [ ] Cultural tagging system (language, ceremony, region, etc.)
+  - [ ] Content verification and authenticity mechanisms
+  - [ ] Rights and permissions framework for sensitive content
+- [ ] **Authentication & Access Control (NIP-42)**
+  - [ ] Challenge-response authentication implementation
+  - [ ] Community-based access control
+  - [ ] Elder/moderator privilege systems
+  - [ ] Sensitive content protection
 
 ### 5.2 Nostr File Storage Integration (NIP-96)
 - [ ] **HTTP File Storage Server Setup**
-  - [ ] NIP-96 compliant file server implementation
-  - [ ] File upload/download API endpoints
-  - [ ] SHA-256 content addressing
-  - [ ] Authentication integration with Nostr keys
+  - [ ] NIP-96 compliant `.well-known/nostr/nip96.json` configuration
+  - [ ] File upload/download API endpoints with cultural metadata support
+  - [ ] SHA-256 content addressing for integrity verification
+  - [ ] Nostr key-based authentication integration
 - [ ] **Large File Management**
-  - [ ] Multi-part file upload handling
-  - [ ] File compression and optimization
-  - [ ] Thumbnail generation for media
-  - [ ] File expiration and cleanup policies
+  - [ ] Multi-part file upload handling for large cultural media
+  - [ ] File compression and optimization (respecting cultural requirements)
+  - [ ] Thumbnail generation for images and videos
+  - [ ] File expiration and cleanup policies (with cultural considerations)
 - [ ] **Media Processing Pipeline**
-  - [ ] Image processing (resize, format conversion)
-  - [ ] Video processing (compression, thumbnail extraction)
-  - [ ] Audio processing (format conversion, metadata extraction)
-  - [ ] Document processing (PDF, text extraction)
+  - [ ] Image processing (resize, format conversion) with metadata preservation
+  - [ ] Video processing (compression, thumbnail extraction) for ceremonies
+  - [ ] Audio processing (format conversion, metadata extraction) for languages
+  - [ ] Document processing (PDF, text extraction) for historical records
 
 ### 5.3 Unified Storage Architecture
 - [ ] **Storage Strategy Implementation**
-  - [ ] Small data directly in Nostr events (text, metadata)
-  - [ ] Large files via NIP-96 file storage with NIP-94 metadata
-  - [ ] All storage using SHA-256 content addressing
-  - [ ] No IPFS dependency - pure Nostr ecosystem
+  - [ ] Small data directly in Nostr events (NIP-01: text, metadata, small images)
+  - [ ] Large files via NIP-96 file storage with NIP-94 metadata linkage
+  - [ ] All storage using SHA-256 content addressing for integrity
+  - [ ] No IPFS dependency - pure Nostr ecosystem approach
 - [ ] **Data Synchronization Services**
-  - [ ] Cross-relay data synchronization
-  - [ ] Conflict resolution for concurrent updates
-  - [ ] Version control for cultural content
-  - [ ] Backup strategies across multiple relays
+  - [ ] Cross-relay data synchronization using Nostr event propagation
+  - [ ] Conflict resolution for concurrent cultural content updates
+  - [ ] Version control for cultural content using event chains
+  - [ ] Backup strategies across multiple community-controlled relays
 
 ### 5.4 Cultural Data Sovereignty on Nostr
 - [ ] **Community Relay Management**
-  - [ ] Community-controlled relay setup guidance
-  - [ ] Relay selection strategies
-  - [ ] Data export/import tools for relay migration
-  - [ ] Community governance through Nostr events
+  - [ ] Community-controlled relay setup guidance and documentation
+  - [ ] Relay selection strategies based on cultural governance
+  - [ ] Data export/import tools for relay migration (preserving cultural context)
+  - [ ] Community governance through Nostr events and voting mechanisms
+- [ ] **Advanced Cultural Features (Future NIPs)**
+  - [ ] Community curation lists (NIP-51) for cultural categories
+  - [ ] Long-form cultural documentation (NIP-23) for detailed histories
+  - [ ] Community groups and moderation (NIP-29) for tribal governance
+  - [ ] Cultural content reactions and engagement (NIP-25)
 
 ---
 
@@ -510,22 +674,25 @@ Phase Dependencies:
 **Timeline**: May - July 2026  
 **Focus**: Search capabilities, analytics foundation, and AI/ML infrastructure
 
-### 6.1 Search Infrastructure
-- [ ] **Full-Text Search**
-  - [ ] Elasticsearch/Algolia integration
-  - [ ] Multi-language search indexing
-  - [ ] Fuzzy search capabilities
-  - [ ] Search result ranking algorithms
-- [ ] **Cultural Search Features**
-  - [ ] Geographic-based search
-  - [ ] Cultural practice categorization
-  - [ ] Language family search
-  - [ ] Historical period filtering
-- [ ] **Search Optimization**
-  - [ ] Search analytics
-  - [ ] Query optimization
-  - [ ] Search suggestion system
-  - [ ] Performance monitoring
+### 6.1 Nostr-Integrated Search Infrastructure
+
+- [ ] **Nostr Native Search (NIP-50)**
+  - [ ] Direct search capabilities across Nostr relays
+  - [ ] Cultural content discovery through relay networks
+  - [ ] Community-controlled search indexing and relevance
+  - [ ] Cross-relay search aggregation and result merging
+
+- [ ] **Hybrid Search Enhancement**
+  - [ ] Elasticsearch/Algolia indexing rebuilt from Nostr events
+  - [ ] Multi-language search with cultural language support
+  - [ ] Fuzzy search capabilities for indigenous language variations
+  - [ ] Geographic and cultural practice filtering integrated with Nostr tags
+
+- [ ] **Search Optimization & Analytics**
+  - [ ] Search performance monitoring across Nostr relays and traditional indices
+  - [ ] Query optimization for both Nostr relay queries and traditional search
+  - [ ] Cultural search suggestion system based on community curation
+  - [ ] Privacy-respecting search analytics that respect community preferences
 
 ### 6.2 Analytics Foundation
 - [ ] **Data Analytics Infrastructure**
@@ -885,6 +1052,65 @@ Phase Dependencies:
   - [ ] API documentation
   - [ ] Development guides
   - [ ] Deployment guides
+
+---
+
+## 📊 **Minimal Database Architecture Summary**
+
+### Storage Strategy Overview
+
+**Nostr Events (80%+ of data):**
+- ✅ User profiles, cultural identities, community memberships
+- ✅ Cultural content metadata, descriptions, and categorizations
+- ✅ Social interactions, discussions, reactions, sharing
+- ✅ Elder wisdom, traditional knowledge, stories
+- ✅ File metadata (NIP-94) linking to NIP-96 storage servers
+- ✅ Community curation lists, recommendations, collections
+
+**PostgreSQL (Minimal set for complex queries):**
+- 🗄️ Language family trees and linguistic relationship mappings
+- 🗄️ Geographic boundaries and territorial relationship data
+- 🗄️ Complex search indexing metadata (not content itself)
+- 🗄️ System analytics and operational performance metrics
+
+**Redis (Performance & Temporary Data):**
+- ⚡ Session management and authentication tokens
+- ⚡ API rate limiting and usage tracking
+- ⚡ Search result caching and query optimization
+- ⚡ File upload progress and temporary processing data
+
+**External Services:**
+- 🔍 **Elasticsearch/Algolia**: Full-text search indices (rebuilt from Nostr events)
+- 📁 **NIP-96 File Servers**: Community-controlled media storage
+- 📊 **Analytics Services**: Privacy-respecting user behavior tracking
+
+### Benefits of This Architecture
+
+**Simplified Infrastructure:**
+- Eliminates complex database schema for cultural content
+- Reduces database migration complexity for cultural data
+- Enables communities to control their data through Nostr relays
+- Reduces vendor lock-in and increases data portability
+
+**Enhanced Cultural Sovereignty:**
+- Communities can run their own Nostr relays and file servers
+- Cultural data remains with communities, not in central database
+- Easier migration between service providers
+- Content remains accessible even if central platform goes down
+
+**Technical Advantages:**
+- Faster development with fewer database dependencies
+- Better caching strategies using event-based data
+- Simpler backup and recovery (Nostr events are self-contained)
+- Natural content versioning through event chains
+
+### Implementation Priority
+
+1. **Phase 3**: Set up minimal PostgreSQL for essential relational data only
+2. **Phase 5**: Implement Nostr integration for cultural content storage
+3. **Phase 6**: Add search indexing that rebuilds from Nostr events
+4. **Phase 9**: Optimize caching with Redis for performance
+5. **Later Phases**: Gradually migrate remaining database dependencies to Nostr where possible
 
 ---
 
