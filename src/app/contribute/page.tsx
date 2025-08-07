@@ -467,33 +467,6 @@ export default function ContributePage() {
           </div>
         </div>
       </section>
-
-      {/* Call to Action */}
-      <section className="section-padding bg-primary-800 text-white">
-        <div className="container-width text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-3xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
-              Ready to Share Your Heritage?
-            </h2>
-            <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-              Join thousands of community members who are actively preserving their cultural 
-              heritage for future generations. Your story matters.
-            </p>
-            <button
-              onClick={() => !selectedType && setSelectedType(0)}
-              className="btn-accent"
-            >
-              Start Contributing Now
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </button>
-          </motion.div>
-        </div>
-      </section>
     </div>
   );
 }

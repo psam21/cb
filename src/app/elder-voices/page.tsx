@@ -410,13 +410,9 @@ export default function ElderVoicesPage() {
               Do you know an elder with stories to share? Help us preserve their wisdom 
               for future generations through the Elder Voices program.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <button className="btn-accent">
                 Record an Elder Story
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
-              <button className="btn-outline-white">
-                Learn More
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>

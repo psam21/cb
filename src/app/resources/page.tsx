@@ -72,7 +72,7 @@ const resources = [
     images: 124,
     size: '45 MB',
     date: '2024-12-05',
-    featured: false,
+    featured: true,
     icon: Image
   },
   {
@@ -442,13 +442,9 @@ export default function ResourcesPage() {
               Have cultural knowledge, guides, or materials to share? 
               Help expand our global library of cultural learning resources.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <button className="btn-accent">
                 Contribute Resources
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
-              <button className="btn-outline-white">
-                Learn More
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>

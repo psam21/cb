@@ -115,7 +115,7 @@ const exhibits = [
 
 const categories = ['All Categories', 'Textiles & Crafts', 'Oral Traditions', 'Ceremonies & Rituals', 'Music & Dance', 'Ceramics & Pottery'];
 
-export default function MuseumPage() {
+export default function ExhibitionsPage() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('recent');
@@ -151,7 +151,7 @@ export default function MuseumPage() {
             className="max-w-4xl mx-auto text-center"
           >
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
-              Cultural <span className="text-accent-400">Stories Museum</span>
+              Cultural <span className="text-accent-400">Stories Exhibitions</span>
             </h1>
             <p className="text-xl md:text-2xl text-primary-100 leading-relaxed mb-8">
               Step into living exhibitions where authentic cultural stories come alive. 
@@ -179,7 +179,7 @@ export default function MuseumPage() {
         </div>
       </section>
 
-      {/* Featured Exhibits */}
+      {/* Featured Exhibitions */}
       <section className="section-padding bg-white">
         <div className="container-width">
           <motion.div
@@ -189,10 +189,10 @@ export default function MuseumPage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">
-              Featured Cultural Stories
+              Featured Cultural Exhibitions
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Immerse yourself in these exceptional cultural stories, thoughtfully shared by communities around the world.
+              Immerse yourself in these exceptional cultural exhibitions, thoughtfully curated by communities around the world.
             </p>
           </motion.div>
 
@@ -251,7 +251,7 @@ export default function MuseumPage() {
         </div>
       </section>
 
-      {/* All Exhibits */}
+      {/* All Exhibitions */}
       <section className="section-padding bg-primary-50">
         <div className="container-width">
           {/* Filters and Controls */}

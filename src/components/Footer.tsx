@@ -6,19 +6,17 @@ const footerLinks = {
   platform: [
     { name: 'Explore Cultures', href: '/explore' },
     { name: 'Contribute', href: '/contribute' },
-    { name: 'Digital Museum', href: '/museum' },
+    { name: 'Elder Voices', href: '/elder-voices' },
     { name: 'Language Learning', href: '/language' },
   ],
   community: [
+    { name: 'Join the Community', href: '/community' },
     { name: 'Cultural Exchange', href: '/exchange' },
-    { name: 'Elder Voices', href: '/elder-voices' },
-    { name: 'Events', href: '/community' },
     { name: 'Get Involved', href: '/get-involved' },
   ],
   resources: [
-    { name: 'Nostr & Decentralization', href: '/nostr' },
-    { name: 'Toolkits', href: '/resources' },
-    { name: 'API Documentation', href: '/resources#api' },
+    { name: 'About Us', href: '/about' },
+    { name: 'Nostr', href: '/nostr' },
     { name: 'Support', href: '/resources#support' },
   ],
   about: [

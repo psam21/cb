@@ -303,18 +303,14 @@ export default function LanguagePage() {
             className="max-w-3xl mx-auto text-center"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
-              Ready to Start Your Cultural Language Journey?
+              Share Your Language Heritage
             </h2>
             <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-              Join thousands of learners who are discovering languages through the beauty of authentic cultural experiences.
+              Do you speak a cultural language that deserves to be preserved? Help us create authentic learning experiences by contributing your native language knowledge and cultural insights.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <button className="btn-accent">
-                Browse All Languages
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
-              <button className="btn-outline-white">
-                Learn More
+                Contribute Your Language
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </div>

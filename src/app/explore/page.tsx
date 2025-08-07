@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { 
   Search, 
@@ -22,7 +23,7 @@ const cultures = [
     name: 'The Art of Storytelling in the Andes',
     location: 'Andean Communities',
     region: 'South America',
-    image: 'https://images.unsplash.com/photo-1606114701010-e2b90b5ab7d8?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1531065208531-4036c0dba3ca?w=400&h=300&fit=crop',
     contributors: 23,
     languages: 2,
     stories: 45,
@@ -86,7 +87,7 @@ const cultures = [
     name: 'The Music of the Irish Pubs',
     location: 'Irish Culture',
     region: 'Europe',
-    image: 'https://images.unsplash.com/photo-1570021979725-7a83c41ec1d0?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop',
     contributors: 22,
     languages: 1,
     stories: 41,
@@ -451,6 +452,32 @@ export default function ExplorePage() {
               <ArrowRight className="w-5 h-5 ml-2" />
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* Call to Action */}
+      <section className="section-padding bg-primary-800 text-white">
+        <div className="container-width text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-3xl mx-auto"
+          >
+            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
+              Ready to Share Your Heritage?
+            </h2>
+            <p className="text-xl text-primary-100 mb-8 leading-relaxed">
+              Join thousands of community members who are actively preserving their cultural 
+              heritage for future generations. Your story matters.
+            </p>
+            <div className="flex justify-center">
+              <Link href="/contribute" className="btn-accent flex items-center">
+                Start Contributing Now
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </div>
+          </motion.div>
         </div>
       </section>
     </div>

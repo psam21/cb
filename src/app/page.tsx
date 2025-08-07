@@ -22,7 +22,7 @@ const featuredCultures = [
     id: 1,
     name: 'Quechua Traditions',
     location: 'Peru',
-    image: 'https://images.unsplash.com/photo-1539650116574-75c0c6d73ad2?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1531065208531-4036c0dba3ca?w=400&h=300&fit=crop',
     contributors: 23,
     languages: 2,
     stories: 45,
@@ -136,6 +136,73 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
+      {/* Stats Section */}
+      <section className="section-padding bg-white pt-20">
+        <div className="container-width">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-800 to-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-3xl font-serif font-bold text-primary-800 mb-2">
+                127
+              </div>
+              <div className="text-gray-600">Cultural Communities</div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-800 to-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Globe className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-3xl font-serif font-bold text-primary-800 mb-2">
+                89
+              </div>
+              <div className="text-gray-600">Languages Preserved</div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-800 to-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-3xl font-serif font-bold text-primary-800 mb-2">
+                2,340
+              </div>
+              <div className="text-gray-600">Stories Collected</div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-800 to-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Heart className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-3xl font-serif font-bold text-primary-800 mb-2">
+                456
+              </div>
+              <div className="text-gray-600">Elder Contributors</div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="hero-section bg-pattern">
         <div className="container-width text-center">
@@ -150,8 +217,7 @@ export default function HomePage() {
               <span className="text-gradient">Empower Communities</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
-              A decentralized platform built on Nostr that empowers indigenous and minority 
-              communities to permanently preserve their cultural practices, languages, and traditions.
+              A platform that empowers indigenous and minority communities to permanently preserve their cultural practices, languages, and traditions — built on Nostr.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
               <Link href="/explore" className="btn-primary text-lg px-8 py-4 flex items-center justify-center">
@@ -175,104 +241,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="section-padding bg-white">
-        <div className="container-width">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-800 to-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Icon className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="text-3xl font-serif font-bold text-primary-800 mb-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-gray-600">{stat.label}</div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* Mission Section */}
       <section className="section-padding bg-gray-50">
         <div className="container-width">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-4xl mx-auto text-center">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-6">
                 Breaking Down Barriers to Cultural Preservation
               </h2>
-              <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              <p className="text-lg text-gray-700 mb-8 leading-relaxed">
                 For too long, cultural preservation has been controlled by institutions and corporations. 
                 Culture Bridge returns this power to communities themselves, using decentralized technology 
                 to ensure traditions survive and thrive.
               </p>
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-8 mt-8 max-w-4xl mx-auto">
                 {features.map((feature, index) => {
                   const Icon = feature.icon;
                   return (
-                    <div key={feature.title} className="flex items-start space-x-4">
-                      <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                        <Icon className="w-5 h-5 text-primary-800" />
+                    <div key={feature.title} className="flex flex-col items-center text-center space-y-4 p-6">
+                      <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center">
+                        <Icon className="w-8 h-8 text-primary-800" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-primary-800 mb-1">{feature.title}</h3>
-                        <p className="text-gray-600">{feature.description}</p>
+                        <h3 className="font-bold text-primary-800 mb-3 text-lg">{feature.title}</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="relative"
-            >
-              <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
-                <div className="relative w-full h-full">
-                  {/* Image Carousel */}
-                  <div className="carousel-container w-full h-full">
-                    {carouselImages.map((image, index) => (
-                      <div
-                        key={index}
-                        className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
-                      >
-                        <img
-                          src={image.src}
-                          alt={image.alt}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  {/* Carousel Dots */}
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                    {carouselImages.map((_, index) => (
-                      <div
-                        key={index}
-                        className={`carousel-dot ${index === currentSlide ? 'active bg-white' : 'bg-white/50'}`}
-                        onClick={() => setCurrentSlide(index)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-accent-400 rounded-full opacity-80"></div>
             </motion.div>
           </div>
         </div>
@@ -372,7 +373,7 @@ export default function HomePage() {
             </h2>
             <p className="text-xl text-primary-100 mb-8 leading-relaxed">
               Join thousands of community members who are actively preserving their heritage 
-              for future generations through our decentralized platform.
+              for future generations through our platform.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
               <Link href="/contribute" className="btn-accent">
