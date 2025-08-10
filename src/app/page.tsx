@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { 
   Heart, 
@@ -89,8 +90,31 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+function Loading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-primary-50">
+      <div className="animate-pulse space-y-4">
+        <div className="flex items-center justify-center space-x-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="w-16 h-16 bg-primary-200 rounded-lg"></div>
+          ))}
+        </div>
+        <div className="h-4 w-48 mx-auto bg-primary-100 rounded"></div>
+      </div>
+    </div>
+  );
+}
+
+function HomeContent() {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const carouselImages = [
     {
       src: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=600&h=600&fit=crop",
@@ -419,5 +443,13 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <HomeContent />
+    </Suspense>
   );
 }

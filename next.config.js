@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  // experimental options removed to fix Next.js config warning
   images: {
     domains: ['images.unsplash.com', 'via.placeholder.com'],
   },
