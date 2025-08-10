@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, Globe, Heart } from 'lucide-react';
 
 const navigationLine1 = [
-  { name: 'Home', href: '/' },
+  // Home link removed; users access home via the top-left icon
   { name: 'Explore Cultures', href: '/explore' },
   { name: 'Contribute', href: '/contribute' },
   { name: 'Elder Voices', href: '/elder-voices' },
@@ -46,97 +46,46 @@ export default function Header() {
 
   return (
     <header 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'backdrop-blur-glass shadow-lg' 
-          : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-primary-800 shadow-lg`}
     >
       <nav className="container-width">
         <div className="flex items-center justify-between h-20 lg:h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-800 to-accent-600 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-              <Heart className="w-5 h-5 text-white" />
-            </div>
+            {/* Logo icon removed, only text remains */}
             <div className="hidden sm:block">
-              <h1 className="text-xl font-serif font-bold text-primary-800">
+              <h1 className="text-xl font-serif font-bold text-white">
                 Culture Bridge
               </h1>
-              <p className="text-xs text-gray-600 -mt-1">
+              <p className="text-xs text-white -mt-1 opacity-80">
                 Heritage Preservation Network
               </p>
             </div>
           </Link>
 
-          {/* Desktop Navigation - 2 Lines */}
-          <div className="hidden lg:flex flex-col items-center space-y-1">
-            {/* First Line */}
-            <div className="flex items-center space-x-1">
-              {navigationLine1.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-2 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    pathname === item.href
-                      ? 'text-primary-800 bg-primary-50'
-                      : 'text-gray-700 hover:text-primary-800 hover:bg-primary-50'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-            
-            {/* Second Line */}
-            <div className="flex items-center space-x-1">
-              {navigationLine2.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-2 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    pathname === item.href
-                      ? 'text-primary-800 bg-primary-50'
-                      : 'text-gray-700 hover:text-primary-800 hover:bg-primary-50'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
+          {/* Desktop Navigation - Single Row */}
+          <div className="hidden lg:flex items-center space-x-1">
+            {[...navigationLine1, ...navigationLine2].map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`px-3 py-2 rounded-md text-base font-semibold transition-colors duration-200 ${
+                  pathname === item.href
+                    ? 'text-white bg-primary-600'
+                    : 'text-white hover:text-accent-200 hover:bg-primary-700'
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
           </div>
 
           {/* Language Selector & Mobile Menu */}
-          <div className="flex items-center space-x-4">
-            {/* Language Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-                className="flex items-center space-x-1 px-2 py-1 rounded-md text-sm text-gray-700 hover:text-primary-800 hover:bg-primary-50 transition-colors duration-200"
-              >
-                <Globe className="w-4 h-4" />
-                <span className="hidden sm:inline">EN</span>
-              </button>
-              
-              {languageMenuOpen && (
-                <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-100">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:text-primary-800 hover:bg-primary-50 first:rounded-t-lg last:rounded-b-lg transition-colors duration-200"
-                      onClick={() => setLanguageMenuOpen(false)}
-                    >
-                      {lang.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
+          <div className="flex items-center">
+            {/* Mobile menu button only */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="lg:hidden p-2 rounded-md text-gray-700 hover:text-primary-800 hover:bg-primary-50 transition-colors duration-200"
+              className="lg:hidden p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>

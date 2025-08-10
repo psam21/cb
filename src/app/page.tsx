@@ -1,5 +1,5 @@
-'use client';
-
+"use client";
+import '../styles/cultural-patterns.css';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -203,8 +203,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Hero Section */}
-      <section className="hero-section bg-pattern">
+
+      {/* Hero Section - Centered and Moved Up */}
+  <section className="hero-section bg-pattern flex items-center justify-center min-h-[70vh] pt-8 relative">
         <div className="container-width text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
