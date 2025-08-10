@@ -8,7 +8,9 @@
   background-image:
     repeating-linear-gradient(135deg, #e2c290 0px, #e2c290 20px, #fff 20px, #fff 40px),
     repeating-linear-gradient(45deg, #b7d7b7 0px, #b7d7b7 15px, transparent 15px, transparent 30px);
-  background-size: 80px 80px, 120px 120px;
+  background-size:
+    80px 80px,
+    120px 120px;
   background-repeat: repeat;
 }
 .pattern-asian {

@@ -43,25 +43,25 @@ module.exports = {
           700: '#856858',
           800: '#6e564a',
           900: '#5b473f',
-        }
+        },
       },
       fontFamily: {
-        'serif': ['Plus Jakarta Sans', 'sans-serif'],
-        'sans': ['Noto Sans', 'sans-serif'],
+        serif: ['Plus Jakarta Sans', 'sans-serif'],
+        sans: ['Noto Sans', 'sans-serif'],
       },
       fontSize: {
-        'base': '16px', // Base font size from design tokens
+        base: '16px', // Base font size from design tokens
       },
       spacing: {
-        'base': '16px', // Medium spacing from design tokens
+        base: '16px', // Medium spacing from design tokens
       },
       borderRadius: {
-        'default': '12px', // Default border radius from design tokens
+        default: '12px', // Default border radius from design tokens
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.6s ease-out',
-        'float': 'float 6s ease-in-out infinite',
+        float: 'float 6s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -79,7 +79,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
-}
+  plugins: [require('@tailwindcss/typography')],
+};

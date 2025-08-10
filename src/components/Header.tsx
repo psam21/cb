@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Globe, Heart } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const navigationLine1 = [
   // Home link removed; users access home via the top-left icon
@@ -22,30 +22,16 @@ const navigationLine2 = [
 // Combined navigation for mobile
 const allNavigation = [...navigationLine1, ...navigationLine2];
 
-const languages = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'zh', name: '中文' },
-  { code: 'ar', name: 'العربية' },
-];
+// Removed unused languages array (was producing an unused variable lint warning)
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // removed scroll listener (unused state)
 
   return (
-    <header 
+    <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-primary-800 shadow-lg`}
     >
       <nav className="container-width">
@@ -54,12 +40,8 @@ export default function Header() {
           <Link href="/" className="flex items-center space-x-3 group">
             {/* Logo icon removed, only text remains */}
             <div className="hidden sm:block">
-              <h1 className="text-xl font-serif font-bold text-white">
-                Culture Bridge
-              </h1>
-              <p className="text-xs text-white -mt-1 opacity-80">
-                Heritage Preservation Network
-              </p>
+              <h1 className="text-xl font-serif font-bold text-white">Culture Bridge</h1>
+              <p className="text-xs text-white -mt-1 opacity-80">Heritage Preservation Network</p>
             </div>
           </Link>
 

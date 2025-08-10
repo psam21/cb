@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Heart, Globe, Github, Twitter, Mail, MapPin } from 'lucide-react';
+import { Heart, Globe, Github, Twitter, Mail } from 'lucide-react';
 
 const footerLinks = {
   platform: [
@@ -52,7 +52,10 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-primary-200 mb-6 max-w-md">
-              Empowering communities to preserve and share their cultural heritage through decentralized technology, ensuring traditions endure across generations. From ancient customs to local practices, our platform supports all cultures in telling their own stories—authentically, securely, and without gatekeepers.
+              Empowering communities to preserve and share their cultural heritage through
+              decentralized technology, ensuring traditions endure across generations. From ancient
+              customs to local practices, our platform supports all cultures in telling their own
+              stories—authentically, securely, and without gatekeepers.
             </p>
             <div className="flex items-center space-x-4">
               {socialLinks.map((social) => {
@@ -77,7 +80,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {footerLinks.platform.map((link) => (
                 <li key={link.name}>
-                  <Link 
+                  <Link
                     href={link.href}
                     className="text-primary-200 hover:text-white transition-colors duration-200"
                   >
@@ -94,7 +97,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {footerLinks.community.map((link) => (
                 <li key={link.name}>
-                  <Link 
+                  <Link
                     href={link.href}
                     className="text-primary-200 hover:text-white transition-colors duration-200"
                   >
@@ -111,7 +114,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
-                  <Link 
+                  <Link
                     href={link.href}
                     className="text-primary-200 hover:text-white transition-colors duration-200"
                   >
@@ -154,19 +157,19 @@ export default function Footer() {
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4 text-sm">
-                  <Link 
+                  <Link
                     href="/privacy"
                     className="text-primary-300 hover:text-white transition-colors duration-200"
                   >
                     Privacy Policy
                   </Link>
-                  <Link 
+                  <Link
                     href="/terms"
                     className="text-primary-300 hover:text-white transition-colors duration-200"
                   >
                     Terms of Service
                   </Link>
-                  <Link 
+                  <Link
                     href="/contact"
                     className="text-primary-300 hover:text-white transition-colors duration-200"
                   >

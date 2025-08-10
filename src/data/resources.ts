@@ -1,0 +1,126 @@
+import { FileText, Video, Image, Headphones } from 'lucide-react';
+import { ResourceItem } from '../types/content';
+
+// Exported resource dataset (migrated from DownloadsContent). Consider replacing with real fetch later.
+export const resources: ResourceItem[] = [
+  {
+    id: 1,
+    title: 'Quechua Language Learning Guide',
+    type: 'PDF Guide',
+    category: 'Language',
+    culture: 'Quechua',
+    description:
+      "Complete beginner's guide to learning Quechua, the language of the Andes, with cultural context and pronunciation guides.",
+    image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop',
+    fallback:
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMTUwIiB5PSIxNDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0Ij5RdWVjaHVhPC90ZXh0Pjwvc3ZnPg==',
+    author: 'Carlos Mamani',
+    downloads: 1580,
+    rating: 4.8,
+    size: '2.4 MB',
+    pages: 48,
+    date: '2024-12-10',
+    featured: true,
+    icon: FileText,
+  },
+  {
+    id: 2,
+    title: 'Japanese Tea Ceremony Video Series',
+    type: 'Video Course',
+    category: 'Ceremony',
+    culture: 'Japanese',
+    description:
+      '6-part video series covering the complete Japanese tea ceremony, from preparation to mindful practice.',
+    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop',
+    fallback:
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMTUwIiB5PSIxNDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0Ij5UZWEgQ2VyZW1vbnk8L3RleHQ+PC9zdmc+',
+    author: 'Kenji Nakamura',
+    downloads: 2340,
+    rating: 4.9,
+    duration: '3.5 hours',
+    episodes: 6,
+    date: '2024-12-08',
+    featured: true,
+    icon: Video,
+  },
+  {
+    id: 3,
+    title: 'Navajo Weaving Pattern Library',
+    type: 'Image Collection',
+    category: 'Traditional Arts',
+    culture: 'Navajo',
+    description:
+      'Comprehensive collection of traditional Navajo weaving patterns with meanings and cultural significance.',
+    image: 'https://images.unsplash.com/photo-1551582045-6ec9c11d8697?w=300&h=200&fit=crop',
+    fallback:
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSIjOGZiYzk0Ci8+PHRleHQgeD0iMTUwIiB5PSIxNDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0Ij5XZWF2aW5nPC90ZXh0Pjwvc3ZnPg==',
+    author: 'Maria Begay',
+    downloads: 890,
+    rating: 4.7,
+    images: 124,
+    size: '45 MB',
+    date: '2024-12-05',
+    featured: true,
+    icon: Image,
+  },
+  {
+    id: 4,
+    title: 'Tango Music & Movement Audio Guide',
+    type: 'Audio Course',
+    category: 'Music & Dance',
+    culture: 'Argentine',
+    description:
+      'Audio guide to understanding tango rhythms, movements, and the cultural context of Buenos Aires dance.',
+    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop',
+    fallback:
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSIjOGZiYzk0Ci8+PHRleHQgeD0iMTUwIiB5PSIxNDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0Ij5UYW5nbzwvdGV4dD48L3N2Zz4=',
+    author: 'Sofia Rodriguez',
+    downloads: 1240,
+    rating: 4.6,
+    duration: '2.1 hours',
+    tracks: 12,
+    date: '2024-12-02',
+    featured: false,
+    icon: Headphones,
+  },
+  {
+    id: 5,
+    title: 'Irish Folk Song Collection',
+    type: 'Music Archive',
+    category: 'Folk Traditions',
+    culture: 'Irish',
+    description:
+      'Traditional Irish folk songs with lyrics, meanings, and historical context from pub sessions across Ireland.',
+    image: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=300&h=200&fit=crop',
+    fallback:
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSIjOGZiYzk0Ci8+PHRleHQgeD0iMTUwIiB5PSIxNDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0Ij5JcmlzaCBNdXNpYzwvdGV4dD48L3N2Zz4=',
+    author: "Aoife O'Connor",
+    downloads: 1820,
+    rating: 4.8,
+    songs: 87,
+    size: '156 MB',
+    date: '2024-11-28',
+    featured: true,
+    icon: Headphones,
+  },
+  {
+    id: 6,
+    title: 'Oaxacan Pottery Techniques Manual',
+    type: 'Craft Guide',
+    category: 'Traditional Arts',
+    culture: 'Zapotec',
+    description:
+      'Step-by-step guide to traditional Oaxacan pottery techniques, clay preparation, and indigenous firing methods.',
+    image: 'https://images.unsplash.com/photo-1578932750355-5eb30ece487a?w=300&h=200&fit=crop',
+    fallback:
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSIjOGZiYzk0Ci8+PHRleHQgeD0iMTUwIiB5PSIxNDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0Ij5Qb3R0ZXJ5PC90ZXh0Pjwvc3ZnPg==',
+    author: 'Maria Santos',
+    downloads: 650,
+    rating: 4.9,
+    pages: 72,
+    size: '8.2 MB',
+    date: '2024-11-25',
+    featured: false,
+    icon: FileText,
+  },
+];
