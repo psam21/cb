@@ -137,7 +137,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Stats Section */}
-      <section className="section-padding bg-white pt-20">
+      <section className="section-padding bg-primary-50 pt-20">
         <div className="container-width">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <motion.div

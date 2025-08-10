@@ -18,6 +18,7 @@ const footerLinks = {
     { name: 'About Us', href: '/about' },
     { name: 'Nostr', href: '/nostr' },
     { name: 'Support', href: '/resources#support' },
+    { name: 'Downloads', href: '/downloads' },
   ],
   about: [
     { name: 'Our Mission', href: '/about' },

@@ -11,13 +11,12 @@ const navigationLine1 = [
   { name: 'Contribute', href: '/contribute' },
   { name: 'Elder Voices', href: '/elder-voices' },
   { name: 'Community', href: '/community' },
-  { name: 'Cultural Exchange', href: '/exchange' },
 ];
 
 const navigationLine2 = [
+  { name: 'Cultural Exchange', href: '/exchange' },
   { name: 'Exhibitions', href: '/exhibitions' },
   { name: 'Language Learning', href: '/language' },
-  { name: 'Resources', href: '/resources' },
 ];
 
 // Combined navigation for mobile
