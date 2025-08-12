@@ -457,27 +457,41 @@ Phase 1 (Data backbone)
 
 Phase 2 (Pages)
 
-4. Exhibitions list/detail (E):
+1. Exhibitions list/detail (E):
    - Implement 30002 canonical records + NIP-23 descriptions + NIP-94 artifacts. Keep UI intact. Dependencies: 01, 12, 19, 23, 33, 68, 94.
-5. Explore (R):
-   - Implement 30001 culture summaries + counts aggregation. Dependencies: 01, 12, 33, 68, 94.
-6. Resources (R):
-   - Implement 30003 resource records + NIP-94 media. Dependencies: 01, 12, 33, 68, 94.
-7. Elder Voices (R):
+1. Explore list/detail (R):
+   - Implement 30001 culture summaries + counts aggregation for list; add `[id]` detail page that aggregates exhibitions, resources, and stories by culture label. Dependencies: 01, 12, 19, 33, 68, 94.
+1. Resources / Downloads list + detail (R):
+   - Implement 30003 resource records + NIP-94 media; hydrate `downloads/[id]` detail page. Dependencies: 01, 12, 33, 68, 94.
+1. Elder Voices list + detail (R):
    - Implement NIP-23 narratives + NIP-94 audio + NIP-25 ratings. Dependencies: 01, 12, 23, 68, 94, 25.
+1. Home (metrics & featured) (R):
+   - Populate metrics from counts and featured blocks from NIP-51 lists (featured-cultures/exhibitions/resources). Dependencies: 01, 12, 51, 68, 94 (reads only).
+1. Language learning (optional) (R/F):
+   - Populate with curated lists (NIP-51) and/or long-form guides (NIP-23) filtered by `#l:language:*`. Dependencies: 01, 12, 23, 51, 68.
 
 Phase 3 (Trust, safety, curation)
 
-8. Identity & delegation (R):
+1. Identity & delegation (R):
    - NIP-05 display, NIP-26 delegation for institution accounts, optional NIP-46 signing. Dependencies: 01, 05, 26, 46.
-9. Sensitive content (E/R):
+1. Sensitive content (E/R):
    - NIP-36 labels + UI gating; later NIP-70 protected payloads for specific stories. Dependencies: 01, 36 → 70.
-10. Curation lists (R):
+1. Curation lists (R):
    - NIP-51 for featured sets powering home, explore, exhibitions. Dependencies: 01, 51.
-11. Reactions & highlights (R):
+1. Community – Member profiles (R):
+   - Member pages aggregate authored events by pubkey, show NIP-05, recent contributions (exhibitions/resources/stories). Dependencies: 01, 05, 12, 19.
+1. Community – Events (R):
+   - NIP-52 calendar events for community listings and `[id]` details; optional NIP-40 expiration. Dependencies: 01, 12, 23 (descriptions), 52, 40.
+1. Exchange (R):
+   - Public channels via NIP-28 (and/or groups via NIP-29) for cultural exchange spaces. Dependencies: 01, 28 (optional 29, 42).
+1. Contribute flows (R):
+   - Submission UI for new resources/exhibitions using NIP-98 HTTP auth and optional NIP-46 remote signing; downloads/contribute integrated here. Dependencies: 01, 94, 98, 46 (and 33/68 for canonical records).
+1. Reactions & highlights (R):
    - NIP-25 reactions mapped to StarRating; optional NIP-84 highlights in detail pages. Dependencies: 01, 25, 84.
-12. Payments (R):
+1. Payments (R):
    - NIP-57 zaps (display only initially), gate placement via sensitivity policy. Dependencies: 01, 57.
+1. Static pages (About, Get Involved, Nostr) (optional):
+   - Remain static or publish mirrored NIP-23 docs for transparency; no UI changes required. Dependencies: 23 (optional).
 
 Acceptance criteria
 - All pages render with live data when feature flag is on, with no visual regressions compared to mocks.
