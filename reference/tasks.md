@@ -53,7 +53,7 @@ Legend: Status ∈ {Not Started, In Progress, Blocked, Done}. % is per-task comp
 |------|--------|---|:-----:|-------|
 | Add CI (GitHub Actions) for typecheck/lint/build | Done | 100% |  | .github/workflows/ci.yml added |
 | Add `blurDataURL` placeholders to common hero/cover images | Done | 100% |  | Applied across key pages/components |
-| Tighten next/image config with `remotePatterns` if adding new hosts | Not Started | 0% |  | Future-proof |
+| Tighten next/image config with `remotePatterns` if adding new hosts | Done | 100% |  | Configured patterns for Unsplash and placeholder |
 
 ---
 

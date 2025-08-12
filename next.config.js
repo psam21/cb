@@ -6,7 +6,18 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const baseConfig = {
   // experimental options removed to fix Next.js config warning
   images: {
-    domains: ['images.unsplash.com', 'via.placeholder.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+        pathname: '**',
+      },
+    ],
   },
   // Re-enable ESLint during builds now that cleanup is in progress.
   eslint: {
