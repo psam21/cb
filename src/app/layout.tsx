@@ -3,6 +3,21 @@ import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { Plus_Jakarta_Sans, Noto_Sans } from 'next/font/google';
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700', '800'],
+  display: 'swap',
+  variable: '--font-jakarta',
+});
+
+const noto = Noto_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700', '900'],
+  display: 'swap',
+  variable: '--font-noto',
+});
 
 export const metadata: Metadata = {
   title: 'Culture Bridge - Heritage Preservation Network',
@@ -34,7 +49,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className={`${jakarta.variable} ${noto.variable} scroll-smooth`}>
       <body className="font-sans antialiased">
         {/* QW8: Skip to content link for keyboard users */}
         <a

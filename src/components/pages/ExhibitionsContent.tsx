@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import { motion } from 'framer-motion';
 import { ArrowRight, Filter, Layers, MapPin, Search, Tag } from 'lucide-react';
 import Link from 'next/link';
@@ -222,6 +223,8 @@ export default function ExhibitionsContent() {
                       fill
                       sizes="(max-width: 1024px) 100vw, 50vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      placeholder="blur"
+                      blurDataURL={DEFAULT_BLUR}
                     />
                     <div className="absolute top-4 left-4 bg-accent-600 text-white px-3 py-1 rounded-full text-sm font-medium">
                       Featured
@@ -318,6 +321,8 @@ export default function ExhibitionsContent() {
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width:1200px) 50vw, 33vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          placeholder="blur"
+                          blurDataURL={DEFAULT_BLUR}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-500 text-sm">

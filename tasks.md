@@ -9,9 +9,9 @@ This document tracks actionable items with statuses and percent complete, plus a
 | Scope           | Total | Done | In Progress | Blocked | Not Started | % Complete |
 |-----------------|:-----:|:----:|:-----------:|:-------:|:-----------:|:----------:|
 | High priority   |  12   |  12  |      0      |    0    |      0      |   100%     |
-| Medium priority |   3   |   1  |      1      |    0    |      1      |   33.3%    |
-| Nice-to-haves   |   3   |   0  |      0      |    0    |      3      |    0%      |
-| Overall         |  18   |  13  |      1      |    0    |      4      |   77.8%    |
+| Medium priority |   3   |   3  |      0      |    0    |      0      |   100%     |
+| Nice-to-haves   |   3   |   2  |      0      |    0    |      1      |   66.7%    |
+| Overall         |  18   |  17  |      0      |    0    |      1      |   94.4%    |
 
 Legend: Status ∈ {Not Started, In Progress, Blocked, Done}. % is per-task completion (0/25/50/75/100 typically), and the summary % Complete is (Done/Total).
 
@@ -42,8 +42,8 @@ Legend: Status ∈ {Not Started, In Progress, Blocked, Done}. % is per-task comp
 |------|--------|---|:-----:|-------|
 | Move Explore inline data to `src/data/explore.ts` with matching types | Done | 100% |  | Standardize data source |
 | Add per-page metadata for Home (server wrapper with client content) | Done | 100% |  | Implemented in `app/page.tsx` + `app/home-content.tsx` |
-| Add per-page metadata for About, Explore, Downloads, Community, etc. | In Progress | 25% |  | Home completed; others pending |
-| Self-host fonts via `next/font` (replace `@import`) | Not Started | 0% |  | Performance/privacy |
+| Add per-page metadata for About, Explore, Downloads, Community, etc. | Done | 100% |  | Verified all pages export metadata/generateMetadata |
+| Self-host fonts via `next/font` (replace `@import`) | Done | 100% |  | next/font wired; Tailwind uses CSS vars |
 
 ---
 
@@ -51,8 +51,8 @@ Legend: Status ∈ {Not Started, In Progress, Blocked, Done}. % is per-task comp
 
 | Task | Status | % | Owner | Notes |
 |------|--------|---|:-----:|-------|
-| Add CI (GitHub Actions) for typecheck/lint/build | Not Started | 0% |  | On PR and main |
-| Add `blurDataURL` placeholders to common hero/cover images | Not Started | 0% |  | Improves LCP |
+| Add CI (GitHub Actions) for typecheck/lint/build | Done | 100% |  | .github/workflows/ci.yml added |
+| Add `blurDataURL` placeholders to common hero/cover images | Done | 100% |  | Applied across key pages/components |
 | Tighten next/image config with `remotePatterns` if adding new hosts | Not Started | 0% |  | Future-proof |
 
 ---

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -262,6 +263,8 @@ export default function CommunityContent() {
                       width={80}
                       height={80}
                       className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
+                      placeholder="blur"
+                      blurDataURL={DEFAULT_BLUR}
                       data-member-id={member.id}
                       onError={handleImageError}
                     />

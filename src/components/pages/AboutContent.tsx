@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import { motion } from 'framer-motion';
 import { Target, Eye, Award } from 'lucide-react';
 import { timeline, team, values } from '../../data/about';
@@ -219,6 +220,8 @@ export default function AboutContent() {
                     width={150}
                     height={150}
                     className="w-full h-full object-cover"
+                    placeholder="blur"
+                    blurDataURL={DEFAULT_BLUR}
                   />
                 </div>
                 <h3 className="text-lg font-serif font-bold text-primary-800 mb-1">

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -252,6 +253,8 @@ export default function ExchangeContent() {
                     className="object-cover"
                     data-program-id={program.id}
                     onError={handleImageError}
+                      placeholder="blur"
+                      blurDataURL={DEFAULT_BLUR}
                   />
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-medium text-primary-800">
                     {program.type}

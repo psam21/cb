@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -124,6 +125,8 @@ export default function ElderVoicesContent() {
                         className="object-cover"
                         data-story-id={story.id}
                         onError={handleImageError}
+                        placeholder="blur"
+                        blurDataURL={DEFAULT_BLUR}
                         priority={index < 2}
                       />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
@@ -239,6 +242,8 @@ export default function ElderVoicesContent() {
                     className="object-cover"
                     data-story-id={story.id}
                     onError={handleImageError}
+                    placeholder="blur"
+                    blurDataURL={DEFAULT_BLUR}
                   />
                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                     <button

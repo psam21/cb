@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BookOpen, Download, Search, User, ArrowRight, Globe, Calendar } from 'lucide-react';
@@ -184,6 +185,8 @@ export default function DownloadsContent() {
                           className="object-cover"
                           data-resource-id={resource.id}
                           onError={handleImageError}
+                          placeholder="blur"
+                          blurDataURL={DEFAULT_BLUR}
                         />
                         <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm rounded-full p-2">
                           <Icon className="w-4 h-4 text-accent-600" />
@@ -271,6 +274,8 @@ export default function DownloadsContent() {
                       className="object-cover"
                       data-resource-id={resource.id}
                       onError={handleImageError}
+                      placeholder="blur"
+                      blurDataURL={DEFAULT_BLUR}
                     />
                     <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full p-2">
                       <Icon className="w-5 h-5 text-accent-600" />

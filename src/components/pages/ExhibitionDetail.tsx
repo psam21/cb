@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Tag } from 'lucide-react';
 import Link from 'next/link';
@@ -28,6 +29,8 @@ export default function ExhibitionDetail({ exhibition }: Props) {
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover"
+                placeholder="blur"
+                blurDataURL={DEFAULT_BLUR}
               />
             </div>
             <div>

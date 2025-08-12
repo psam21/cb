@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -410,6 +411,8 @@ export default function GetInvolvedContent() {
                   className="w-20 h-20 rounded-full mx-auto mb-4 object-cover"
                   data-story-index={index}
                   onError={handleImageError}
+                  placeholder="blur"
+                  blurDataURL={DEFAULT_BLUR}
                 />
                 <h3 className="text-xl font-serif font-bold text-primary-800 mb-1">{story.name}</h3>
                 <p className="text-accent-600 font-medium mb-2">{story.role}</p>

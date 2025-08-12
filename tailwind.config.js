@@ -46,8 +46,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        serif: ['Plus Jakarta Sans', 'sans-serif'],
-        sans: ['Noto Sans', 'sans-serif'],
+        serif: ['var(--font-jakarta)', 'ui-serif', 'serif'],
+        sans: ['var(--font-noto)', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         base: '16px', // Base font size from design tokens

@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
+import { DEFAULT_BLUR } from '@/lib/blur';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
@@ -151,6 +152,8 @@ export default function HomeContent() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                     priority={index < 2}
+                    placeholder="blur"
+                    blurDataURL={DEFAULT_BLUR}
                   />
                   <div className="absolute top-3 right-3 bg-accent-600 text-white px-2 py-1 rounded-md text-xs font-medium">
                     Nostr Verified
@@ -251,6 +254,8 @@ export default function HomeContent() {
                   width={200}
                   height={200}
                   className="w-full h-full object-cover"
+                  placeholder="blur"
+                  blurDataURL={DEFAULT_BLUR}
                 />
               </div>
               <blockquote className="text-2xl md:text-3xl font-serif text-primary-800 italic leading-relaxed">
