@@ -1,0 +1,60 @@
+{
+  "name": "culture-bridge-website",
+  "version": "1.0.0",
+  "description": "Culture Bridge - Heritage Preservation Network Website",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+  "lint:prod": "APP_ENV=production next lint",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+  "metrics:export": "APP_ENV=production ts-node scripts/export-metrics.ts",
+    "bench:signing": "node scripts/signing-benchmark.ts"
+  },
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.10",
+    "@vercel/analytics": "^1.5.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^10.0.0",
+    "lucide-react": "^0.294.0",
+  "next": "^15.4.6",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-intersection-observer": "^9.5.3"
+  },
+  "devDependencies": {
+    "@next/bundle-analyzer": "^15.4.6",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "autoprefixer": "^10.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^15.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "postcss": "^8.0.0",
+    "prettier": "^3.3.0",
+    "tailwindcss": "^3.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "culture",
+    "heritage",
+    "preservation",
+    "nostr",
+    "decentralized",
+    "indigenous",
+    "traditions"
+  ],
+  "author": "Culture Bridge Team",
+  "license": "MIT"
+}

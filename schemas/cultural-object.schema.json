@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://culturebridge.example/schemas/cultural-object.schema.json",
+  "title": "Cultural Object",
+  "description": "Schema v1.0.0 for cultural object drafts published via the platform and mapped to Nostr events.",
+  "type": "object",
+  "required": ["id", "schemaVersion", "title", "culturalContexts", "media", "provenance", "rights"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "description": "Stable internal UUID" },
+    "schemaVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "culturalContexts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Array of taxonomy codes (must exist in taxonomy file)."
+    },
+    "media": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type", "uri"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "type": "string" },
+          "uri": { "type": "string", "minLength": 4 },
+          "mime": { "type": "string" },
+          "hash": { "type": "string" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["stepType", "actor"],
+        "additionalProperties": false,
+        "properties": {
+          "stepType": { "type": "string" },
+          "actor": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "rights": {
+      "type": "object",
+      "required": ["usage", "attributionRequired"],
+      "additionalProperties": false,
+      "properties": {
+        "usage": { "type": "string" },
+        "attributionRequired": { "type": "boolean" },
+        "jurisdiction": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "sensitivity": {
+      "type": "object",
+      "required": ["level"],
+      "additionalProperties": false,
+      "properties": {
+        "level": { "type": "string", "enum": ["none", "contextual", "restricted"] },
+        "rationale": { "type": "string" },
+        "handlingGuidelines": { "type": "string" }
+      }
+    },
+    "proposedTaxonomyVersion": { "type": "string" },
+    "languages": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["relationType", "targetId"],
+        "additionalProperties": false,
+        "properties": {
+          "relationType": { "type": "string" },
+          "targetId": { "type": "string" }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "checksum": { "type": "string" },
+    "verification": { "type": "object" },
+    "nostr": {
+      "type": "object",
+      "properties": {
+        "eventKind": { "type": "number" },
+        "eventId": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

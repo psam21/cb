@@ -1,0 +1,40 @@
+{
+  "$id": "https://culturebridge.example/schemas/taxonomy.v1.json",
+  "version": "1.0.0",
+  "governance": {
+    "proposalWindowDays": 14,
+    "deprecationPolicy": "Codes deprecated remain valid for 12 months with mapping provided."
+  },
+  "categories": [
+    {
+      "id": "LANG",
+      "label": "Language / Dialect",
+      "terms": [
+        { "code": "LANG:yo", "label": "Yoruba", "description": "Yoruba language" },
+        { "code": "LANG:kr", "label": "Krio", "description": "Krio language" }
+      ]
+    },
+    {
+      "id": "THEME",
+      "label": "Thematic Domain",
+      "terms": [
+        { "code": "THEME:weaving", "label": "Weaving", "description": "Textile weaving practices" },
+        {
+          "code": "THEME:ceremony",
+          "label": "Ceremony",
+          "description": "Ritual or ceremonial practice"
+        }
+      ]
+    },
+    {
+      "id": "MEDIA",
+      "label": "Media Type",
+      "terms": [
+        { "code": "MEDIA:image", "label": "Image" },
+        { "code": "MEDIA:audio", "label": "Audio" },
+        { "code": "MEDIA:video", "label": "Video" }
+      ]
+    }
+  ],
+  "mappings": []
+}
