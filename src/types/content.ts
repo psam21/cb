@@ -150,3 +150,21 @@ export interface ExhibitionsDataBundle {
   categories: string[]; // includes 'All'
   regions: string[]; // derived or explicit list
 }
+
+// Explore page types
+export interface ExploreCulture {
+  id: number;
+  name: string;
+  location: string;
+  region: string;
+  image: string;
+  contributors: number;
+  languages: number;
+  stories: number;
+  audioRecordings: number;
+  videos: number;
+  tags: string[];
+  description: string;
+  featured: boolean;
+  lastUpdated: string;
+}

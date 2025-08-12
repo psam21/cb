@@ -388,19 +388,19 @@ export default function CommunityContent() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/community/join"
+                href="/community"
                 className="btn-white"
-                aria-label="Join the community platform"
+                aria-label="View the community overview"
               >
-                Join the Community
+                Community Overview
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link
-                href="/community/about"
+                href="/exchange"
                 className="btn-outline-white"
-                aria-label="Learn more about the community"
+                aria-label="Explore cultural exchange programs"
               >
-                Learn More
+                Explore Exchange
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </div>

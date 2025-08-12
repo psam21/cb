@@ -1,0 +1,125 @@
+import type { ExploreCulture } from '@/types/content';
+
+export const exploreCultures: ExploreCulture[] = [
+  {
+    id: 1,
+    name: 'The Art of Storytelling in the Andes',
+    location: 'Andean Communities',
+    region: 'South America',
+    image: 'https://images.unsplash.com/photo-1606114701010-e2b90b5ab7d8?w=400&h=300&fit=crop',
+    contributors: 23,
+    languages: 2,
+    stories: 45,
+    audioRecordings: 12,
+    videos: 8,
+    tags: ['Oral Tradition', 'Storytelling', 'Andean Culture', 'Community'],
+    description:
+      'Ancient Andean storytelling traditions that preserve history, wisdom, and cultural values through generations of oral narrative.',
+    featured: true,
+    lastUpdated: '2 days ago',
+  },
+  {
+    id: 2,
+    name: 'Weaving Traditions of the Navajo Nation',
+    location: 'Navajo Nation',
+    region: 'North America',
+    image: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=400&h=300&fit=crop',
+    contributors: 18,
+    languages: 1,
+    stories: 32,
+    audioRecordings: 15,
+    videos: 6,
+    tags: ['Weaving', 'Textiles', 'Traditional Crafts', 'Indigenous Art'],
+    description:
+      'Traditional Navajo weaving techniques passed down through generations, creating beautiful rugs and textiles with cultural significance.',
+    featured: true,
+    lastUpdated: '1 week ago',
+  },
+  {
+    id: 3,
+    name: 'Balinese Gamelan Orchestra',
+    location: 'Indonesian Culture',
+    region: 'Asia',
+    image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
+    contributors: 12,
+    languages: 1,
+    stories: 28,
+    audioRecordings: 20,
+    videos: 4,
+    tags: ['Gamelan', 'Orchestra', 'Ritual', 'Indonesian Culture'],
+    description:
+      'The traditional Balinese gamelan orchestra, where bronze instruments create hypnotic rhythms that accompany ceremonies and tell ancient stories.',
+    featured: false,
+    lastUpdated: '3 days ago',
+  },
+  {
+    id: 4,
+    name: 'The Tango of Buenos Aires',
+    location: 'Argentinian Culture',
+    region: 'South America',
+    image: 'https://images.unsplash.com/photo-1551582045-6ec9c11d8697?w=400&h=300&fit=crop',
+    contributors: 14,
+    languages: 1,
+    stories: 35,
+    audioRecordings: 18,
+    videos: 12,
+    tags: ['Dance', 'Music', 'Tango', 'Urban Culture'],
+    description:
+      'The passionate dance and music of Buenos Aires, expressing the soul of Argentine culture through movement and melody.',
+    featured: false,
+    lastUpdated: '2 days ago',
+  },
+  {
+    id: 5,
+    name: 'The Music of the Irish Pubs',
+    location: 'Irish Culture',
+    region: 'Europe',
+    image: 'https://images.unsplash.com/photo-1570021979725-7a83c41ec1d0?w=400&h=300&fit=crop',
+    contributors: 22,
+    languages: 1,
+    stories: 41,
+    audioRecordings: 25,
+    videos: 9,
+    tags: ['Traditional Music', 'Folk Songs', 'Community', 'Irish Culture'],
+    description:
+      'Traditional Irish music that brings communities together in pubs and gatherings, preserving centuries of musical heritage.',
+    featured: false,
+    lastUpdated: '1 day ago',
+  },
+  {
+    id: 6,
+    name: 'The Pottery of Oaxaca',
+    location: 'Oaxacan Communities',
+    region: 'North America',
+    image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
+    contributors: 16,
+    languages: 2,
+    stories: 29,
+    audioRecordings: 8,
+    videos: 11,
+    tags: ['Pottery', 'Traditional Crafts', 'Indigenous Art', 'Ceramics'],
+    description:
+      'Traditional pottery techniques from Oaxaca, Mexico, creating beautiful ceramics using ancestral methods and local clay.',
+    featured: false,
+    lastUpdated: '4 days ago',
+  },
+];
+
+export const exploreRegions = [
+  'All Regions',
+  'Africa',
+  'Asia',
+  'Europe',
+  'North America',
+  'South America',
+  'Oceania',
+];
+
+export const exploreContentTypes = ['All Content', 'Stories', 'Audio', 'Video', 'Images'];
+
+export const exploreSortOptions = [
+  'Recently Updated',
+  'Most Contributors',
+  'Most Stories',
+  'Alphabetical',
+];

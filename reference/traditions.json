@@ -1,0 +1,45 @@
+{
+  "traditions": [
+    {
+      "category": "Artistic & Craft Heritage",
+      "description": "Expressive arts, performance, and artisanal skills",
+      "examples": ["Folk dances", "Storytelling", "Weaving", "Pottery"]
+    },
+    {
+      "category": "Culinary & Hospitality",
+      "description": "Food traditions, communal feasts, food-related rituals",
+      "examples": ["Festival cuisine", "Preservation methods", "Tea ceremonies"]
+    },
+    {
+      "category": "Life-cycle & Social Customs",
+      "description": "Traditions marking life milestones and social bonds",
+      "examples": ["Birth rituals", "Weddings", "Funerals", "Coming-of-age"]
+    },
+    {
+      "category": "Martial & Occupational",
+      "description": "Combat-related customs and work-related heritage",
+      "examples": ["Sword schools", "Fishing rituals", "Blacksmithing"]
+    },
+    {
+      "category": "Oral & Knowledge Transmission",
+      "description": "Passing wisdom, history, and identity",
+      "examples": ["Proverbs", "Epic recitations", "Teaching customs"]
+    },
+    {
+      "category": "Seasonal, Agricultural & Festive",
+      "description": "Nature-linked cycles, harvests, and large communal celebrations",
+      "examples": ["Planting rituals", "Harvest festivals", "New Year"]
+    },
+    {
+      "category": "Spiritual & Religious",
+      "description": "Faith-based rituals, sacred observances, pilgrimages, prayer customs",
+      "examples": ["Fasting rites", "Temple ceremonies", "Seasonal holy days"]
+    },
+    {
+      "category": "Symbolic & Customary Practices",
+      "description": "Symbols, gestures, clothing, and cultural etiquette",
+      "examples": ["Gift exchange", "Traditional attire", "Greeting customs"]
+    }
+  ]
+}
+

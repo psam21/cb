@@ -22,9 +22,6 @@ const footerLinks = {
   ],
   about: [
     { name: 'Our Mission', href: '/about' },
-    { name: 'Privacy Policy', href: '/privacy' },
-    { name: 'Terms of Service', href: '/terms' },
-    { name: 'Contact Us', href: '/contact' },
   ],
 };
 
@@ -156,26 +153,7 @@ export default function Footer() {
                 © 2025 Culture Bridge. Built with ❤️ for cultural preservation.
               </p>
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm">
-                  <Link
-                    href="/privacy"
-                    className="text-primary-300 hover:text-white transition-colors duration-200"
-                  >
-                    Privacy Policy
-                  </Link>
-                  <Link
-                    href="/terms"
-                    className="text-primary-300 hover:text-white transition-colors duration-200"
-                  >
-                    Terms of Service
-                  </Link>
-                  <Link
-                    href="/contact"
-                    className="text-primary-300 hover:text-white transition-colors duration-200"
-                  >
-                    Contact Us
-                  </Link>
-                </div>
+                <div className="flex items-center space-x-4 text-sm" />
               </div>
             </div>
             <div className="flex items-center space-x-2 text-primary-200 text-sm">
