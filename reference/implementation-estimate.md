@@ -2,7 +2,7 @@
 
 **Project:** Complete Nostr-based Cultural Heritage Platform  
 **Date:** August 13, 2025  
-**Team Size:** 5.0 FTE  
+**Team Size:** 4.0 FTE  
 **Duration:** 18 months  
 **Total Budget:** $1,065,000 USD
 
@@ -26,7 +26,7 @@ Culture Bridge represents a comprehensive cultural preservation platform built o
 | **Scrum Master/PM** | 0.25 | $110,000 | $41,250 | Agile process, part-time |
 | **Infrastructure/DevOps** | - | - | $30,000 | Cloud services, tools |
 | **Contingency (15%)** | - | - | $81,338 | Risk mitigation |
-| | **5.0 FTE** | | **$625,088** | **Base team cost** |
+| | **4.0 FTE** | | **$625,088** | **Base team cost** |
 | | | | **$1,065,000** | **Total project cost** |
 
 ---
