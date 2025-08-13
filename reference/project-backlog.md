@@ -2,19 +2,20 @@
 
 Purpose: A structured backlog derived from reference/NIP-list.md to plan and track the migration from mocks to Nostr and to productionize UI flows. Organized as iterations (timeboxes), epics, user stories, and implementation tasks. Includes an import-ready CSV for GitHub Projects (v2).
 
-Notes
+## Notes
 
 - Preserve visual design; implement missing user flows as first-class work. Current pages are demo-only and many flows are non-functional.
 - Keep UI consistent; flip data via a feature flag. Fallback to existing mocks when disabled.
 - Map all work to referenced NIPs to preserve protocol rationale.
 - Use suggested labels: area/*, type/*, page/*, nip/*, phase/*, priority/*.
+- Align with `reference/user-flows.md`: each page has explicit search, filter, load-more, and CTA navigation flows.
 
 ## Labels (suggested)
 
 - area/adapter, area/flows, area/media, area/labels, area/exhibitions, area/explore, area/resources, area/elder-voices, area/home, area/language, area/identity, area/safety, area/curation, area/community, area/exchange, area/contribute, area/reactions, area/payments, area/ops
 - type/epic, type/story, type/task, type/chore, type/docs
 - page/exhibitions, page/explore, page/resources, page/elder-voices, page/home, page/language, page/community, page/exchange, page/downloads
-- nip/01, nip/05, nip/11, nip/12, nip/19, nip/23, nip/25, nip/26, nip/33, nip/36, nip/42, nip/46, nip/51, nip/52, nip/57, nip/65, nip/68, nip/70, nip/71, nip/84, nip/89, nip/94, nip/96
+- nip/01, nip/05, nip/11, nip/12, nip/19, nip/23, nip/25, nip/26, nip/28, nip/29, nip/33, nip/36, nip/42, nip/46, nip/51, nip/52, nip/57, nip/65, nip/68, nip/70, nip/71, nip/84, nip/89, nip/94, nip/96
 - phase/1, phase/2, phase/3
 - priority/P0, priority/P1, priority/P2
 
@@ -133,6 +134,7 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
     - Tasks
       - T0: Encode category/region/search/sort in URL and restore on back
       - T0b: Add pagination or infinite scroll with stable loading
+      - T0c: Debounced search input; clear/restore via URL
   - S1: List view from kind 30002 with filters
     - Tasks
       - T1: Query 30002; map tags to fields; hero image via NIP-94
@@ -153,6 +155,8 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
     - Tasks
       - T0: Region/language facets stored in URL; deep-link to selections
       - T0b: Clicking counts navigates to destination pages with filters applied
+      - T0c: Debounced search by culture/community name
+      - T0d: "Load More Cultures" pagination/infinite scroll
   - S1: Culture summaries list
     - Tasks
       - T1: Query 30001; hydrate image; show basic counts (lazy)
@@ -174,6 +178,7 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
   - S1: Resources list
     - Tasks
       - T1: Query 30003; filter by category/type
+      - T1b: Add sort (newest/popular) via query params
   - S2: Resource detail
     - Tasks
       - T2: Resolve primary asset and preview image via NIP-94
@@ -189,6 +194,7 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
     - Tasks
       - T0: Audio play/pause/progress with duration; transcript toggle if available
       - T0b: Star rating interactions (NIP-25) with optimistic update/rollback
+  - T0c: "All Stories" navigation preserves category filter
   - S1: Narrative + media
     - Tasks
       - T1: Query NIP-23 with category label; join NIP-94 audio/image
@@ -203,6 +209,11 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Affected files: `src/app/page.tsx`; `src/data/home.ts`
 - Acceptance criteria: Metrics computed from recent queries; featured grids from NIP-51 lists.
 - Stories
+  - S0: Flow wiring (CTAs + featured culture links)
+    - Tasks
+      - T0: Header nav routes to pages; back preserves state on return
+      - T0b: "Explore Cultures" and "Share Your Heritage" CTAs navigate correctly
+      - T0c: Featured culture cards deep-link to culture detail and back restores explore filters
   - S1: Featured via lists
     - Tasks
       - T1: Load featured-cultures/exhibitions/resources lists; intersect
@@ -267,6 +278,10 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E4–E7, E10
 - Acceptance criteria: Member pages aggregate authored events by pubkey; show NIP-05 and recent contributions.
 - Stories
+  - S0: Community directory (list → profile)
+    - Tasks
+      - T0: Community directory list on `/community` with search by name/expertise
+      - T0b: Practitioner cards link to `/community/members/[id]`; back restores search
   - S1: Profile aggregation
     - Tasks
       - T1: Query by author pubkey; group by content types
@@ -286,6 +301,11 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - NIPs: 28 (29 optional), 42, 01
 - Dependencies: E10
 - Acceptance criteria: Public channels or groups for exchange spaces with basic gating if needed.
+- Stories
+  - S0: Exchange directory flow
+    - Tasks
+      - T0: Filter programs by type (Storytelling, Ceremony, Craft, Dance, Music)
+      - T0b: Program cards link to detail or external registration; deep-linkable
 
 ### Epic E16: Contribute Flows (Publishing)
 
@@ -350,6 +370,7 @@ Task,T2: Build NIP-12 filter helpers,Iteration 1,E3,"type/task area/labels phase
 
 Epic,E4: Exhibitions Integration,Iteration 2,E4,"type/epic area/exhibitions phase/2 priority/P0 page/exhibitions","33|23|68|94|12|01|19",E1|E2|E3,src/components/pages/ExhibitionsContent.tsx|src/app/exhibitions/*,List/detail from relays; filters OK; artifacts hydrate,8
 Story,S0: Flow wiring (filters/sort/pagination + deep links),Iteration 2,E4,"type/story area/flows page/exhibitions","",E0,src/app/exhibitions/page.tsx,"URL-encoded filters/sort; pagination or infinite scroll",2
+Task,T0c: Debounced search input,Iteration 2,E4,"type/task area/flows page/exhibitions","",E0,src/app/exhibitions/page.tsx,Search added and URL-synced,1
 Story,S1: List view from 30002 with filters,Iteration 2,E4,"type/story area/exhibitions page/exhibitions","33|68|12",E1|E3,src/components/pages/ExhibitionsContent.tsx,List renders from kinds[30002] with filters,3
 Task,T1: Query 30002 + map fields,Iteration 2,E4,"type/task area/exhibitions","33|68|12",,src/lib/nostr/adapters.ts,Fields mapped (title, region, image, tags),1
 Task,T2: Wire filter UI to label helpers,Iteration 2,E4,"type/task area/exhibitions","68|12",,src/components/pages/ExhibitionsContent.tsx,Filters reflect label selections,1
@@ -359,6 +380,8 @@ Task,T4: Fetch 1063 artifact media,Iteration 2,E4,"type/task area/exhibitions","
 
 Epic,E5: Explore Integration,Iteration 3,E5,"type/epic area/explore phase/2 priority/P1 page/explore","33|68|94|12|01|19",E1|E2|E3,src/components/pages/ExploreContent.tsx|src/app/explore/*,Culture list/detail via 30001 with counts,5
 Story,S0: Flow wiring (facets + deep links),Iteration 3,E5,"type/story area/flows page/explore","",E0,src/app/explore/page.tsx,"Region/language facets in URL; deep-linkable",2
+Task,T0c: Search cultures by name,Iteration 3,E5,"type/task area/flows page/explore","",E0,src/app/explore/page.tsx,Debounced search input present,1
+Task,T0d: Load more cultures,Iteration 3,E5,"type/task area/flows page/explore","",E0,src/app/explore/page.tsx,Pagination or infinite scroll,1
 Story,S1: Culture summaries list,Iteration 3,E5,"type/story area/explore page/explore","33|68|12",E3,src/components/pages/ExploreContent.tsx,List shows culture name, region, hero image,2
 Task,T1: Query 30001; hydrate image,Iteration 3,E5,"type/task area/explore","33|94",,src/lib/nostr/adapters.ts,Image and summary present,1
 Story,S2: Culture detail aggregation,Iteration 3,E5,"type/story area/explore page/explore","68|12",E4,src/app/explore/[id]/page.tsx,Detail aggregates related content by label,3
@@ -366,14 +389,20 @@ Story,S2: Culture detail aggregation,Iteration 3,E5,"type/story area/explore pag
 Epic,E6: Resources/Downloads Integration,Iteration 3,E6,"type/epic area/resources phase/2 priority/P1 page/downloads","33|68|94|12|01",E1|E2|E3,src/components/pages/DownloadsContent.tsx|src/app/downloads/*,Resources list/detail from 30003; media resolved,5
 Story,S0: Flow wiring (filters/sort + downloads),Iteration 3,E6,"type/story area/flows page/downloads","",E0,src/app/downloads/page.tsx,"URL state for category/type/sort; graceful downloads",2
 Story,S1: Resources list,Iteration 3,E6,"type/story area/resources page/downloads","33|68|12",E3,src/components/pages/DownloadsContent.tsx,List filters by category/type,2
+Task,T1b: Sort resources,Iteration 3,E6,"type/task area/resources page/downloads","",E0,src/app/downloads/page.tsx,Sort newest/popular works,1
 Story,S2: Resource detail,Iteration 3,E6,"type/story area/resources page/downloads","94|33",E2,src/app/downloads/[id]/page.tsx,Primary asset and preview resolved,3
 
 Epic,E7: Elder Voices + Reactions,Iteration 4,E7,"type/epic area/elder-voices phase/2 priority/P1 page/elder-voices","23|94|68|25|12|01",E1|E2|E3,src/components/pages/ElderVoicesContent.tsx,Stories render with media; ratings mapped,5
 Story,S0: Flow wiring (audio playback + ratings),Iteration 4,E7,"type/story area/flows page/elder-voices","",E0,src/app/elder-voices/page.tsx,"Audio controls and ratings interaction present",2
+Task,T0c: All stories preserves filter,Iteration 4,E7,"type/task area/elder-voices page/elder-voices","",E0,src/app/elder-voices/page.tsx,Back restores category,1
 Story,S1: Narrative + media,Iteration 4,E7,"type/story area/elder-voices page/elder-voices","23|94|68",E2,src/components/pages/ElderVoicesContent.tsx,Card shows title, elder, image/audio,2
 Story,S2: Ratings aggregation,Iteration 4,E7,"type/story area/elder-voices page/elder-voices","25",E7,src/components/pages/ElderVoicesContent.tsx,Stars computed from reactions,3
 
 Epic,E8: Home Metrics & Featured,Iteration 4,E8,"type/epic area/home phase/2 priority/P1 page/home","51|68|12|01",E4|E5|E6|E7,src/app/page.tsx,Featured from lists; metrics computed,3
+Story,S0: Flow wiring (CTAs + featured culture links),Iteration 4,E8,"type/story area/home page/home","",E0,src/app/page.tsx,"Header nav + CTAs route correctly; featured links deep-link",2
+Task,T0: Header nav routes to pages,Iteration 4,E8,"type/task area/home page/home","",E0,src/components/Header.tsx,Nav items route and preserve state on return,1
+Task,T0b: CTA buttons route to pages,Iteration 4,E8,"type/task area/home page/home","",E0,src/app/page.tsx,CTAs navigate correctly,1
+Task,T0c: Featured cards deep-link,Iteration 4,E8,"type/task area/home page/home","",E0,src/app/page.tsx,Back restores explore filters,1
 Story,S1: Featured via lists,Iteration 4,E8,"type/story area/home page/home","51",E4|E5|E6,src/app/page.tsx,Featured cards source from NIP-51,1
 Story,S2: Metrics counters,Iteration 4,E8,"type/story area/home page/home","12|68",E5,src/app/page.tsx,Counters compute within latency budget,2
 
@@ -412,8 +441,6 @@ Epic,E18: Payments (Display),Iteration 7,E18,"type/epic area/payments phase/3 pr
 Epic,E19: Observability & Ops,Iteration 7,E19,"type/epic area/ops phase/3 priority/P2","89|01",E1,ops docs and toggles,Minimal telemetry and runbooks present,2
 Story,S1: Perf logging (flagged),Iteration 7,E19,"type/story area/ops","01",,logging,Query/hydration timings logged when enabled,1
 ```
-
----
 
 ## How to use this file
 
