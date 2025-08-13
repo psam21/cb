@@ -1,6 +1,43 @@
 # Culture Bridge Backlog: Nostr Integration Roadmap
 
-Purpose: A structured backlog derived from reference/NIP-list.md to plan and track the migration from mocks to Nostr and to productionize UI flows. Organized as iterations (timeboxes), epics, user stories, and implementation tasks. Includes an import-ready CSV for GitHub Projects (v2).
+Purpose: A structured backlog- End-to-end user flows implemented per page: list → filter/sort/search → detail → back preserves list state; media playback and downloads work; loading/empty/error states present.
+
+## Gap Analysis & Recommendations
+
+### ✅ Addressed Gaps
+
+1. **Content Sensitivity (E11)** - Moved to Iteration 1 since it affects all content display from discovery onwards
+2. **Home Page Dependencies** - Updated E8 to depend on curation lists (E12) for meaningful featured content
+3. **Contribute Flow Context** - Updated E16 to depend on discovery epics (E5, E6, E7) so users understand what to contribute
+4. **Community Event References** - Updated E14 to depend on cultural content (E5) since events often reference cultures
+5. **Profile Content Aggregation** - Updated E13 to depend on content epics for meaningful profile displays
+6. **Iteration-Phase Alignment** - Cleaned up phase assignments to follow logical progression
+7. **Footer Pages & Features** - Added E27 (Static Pages), E28 (Support System), E29 (Newsletter & Social Integration) to cover all footer links and functionality
+8. **Missing Page Coverage** - About Us, Get Involved, Support section, Newsletter, Social media, Contact system now properly mapped
+
+### 🔍 Remaining Considerations
+
+1. **User Onboarding Flow** - Consider explicit onboarding guidance in E8 (Home) to help users navigate from landing to discovery
+2. **Empty State Handling** - Ensure graceful degradation when featured content or metrics are unavailable in early iterations
+3. **Content Bootstrapping** - May need seed content strategy for meaningful home page display before user-generated content exists
+4. **Cross-Epic Dependencies** - Monitor circular dependencies as epics evolve (E8→E12→E1, E5 content for home features)
+5. **Progressive Enhancement** - Consider how features degrade gracefully when advanced epics aren't yet implemented
+
+### 📋 Implementation Recommendations
+
+1. **Iteration 2 (Home)** - Implement fallback content and empty states for when discovery content isn't yet robust
+2. **Iteration 3 (Discovery)** - Prioritize content seeding strategy alongside E5 implementation  
+3. **Iteration 6 (Contribute)** - Include user guidance about contribution types learned from exploration
+4. **Cross-Iteration** - Maintain feature flags to gracefully handle incomplete dependency chains
+
+---
+
+## Epics, Stories, and Tasksved from reference/NIP-list.md to plan and track the migration from mocks to Nostr and to productionize UI flows. Organized as iterations (timeboxes), epics, user stories, and implementation tasks. I### Epic E12: Curation Lists
+
+- NIPs: 51, 01
+- Dependencies: E1 (data infrastructure)
+- Affected files: Lists integration across home/exhibitions/explore
+- Acceptance criteria: Featured sets powered by NIP-51 lists.es an import-ready CSV for GitHub Projects (v2).
 
 ## Notes
 
@@ -22,15 +59,147 @@ Purpose: A structured backlog derived from reference/NIP-list.md to plan and tra
 
 ## Iterations (timeboxes)
 
-- Iteration 1 (Phase 1): Flow foundation + Data backbone – Adapter, Media, Labels
-- Iteration 2 (Phase 2): Exhibitions end-to-end
-- Iteration 3 (Phase 2): Explore + Resources
-- Iteration 4 (Phase 2): Elder Voices + Reactions + Home metrics
-- Iteration 5 (Phase 3): Identity/Delegation + Sensitivity + Curation lists
-- Iteration 6 (Phase 3): Community (Profiles + Events) + User Management
-- Iteration 7 (Phase 3): Contribute flows + Payments + Ops + Analytics  
-- Iteration 8 (Optional): Language learning + Exchange + Advanced Features
-- Iteration 9 (Future): Content Management + API + Offline Access
+- Iteration 1 (Phase 1): Foundation infrastructure – Flow foundation + Data backbone + Media + Labels + Content sensitivity (E0, E1, E2, E3, E11)
+- Iteration 2 (Phase 1): Home + Navigation – Landing page metrics, featured content, curation lists, and navigation flows (E8, E12)
+- Iteration 3 (Phase 2): Core discovery – Explore cultures (primary user journey from home) (E5)
+- Iteration 4 (Phase 2): Supporting content – Resources/Downloads + Elder Voices + Reactions (E6, E7, E17)
+- Iteration 5 (Phase 2): User system – Identity/Authentication for contribution flows (E10)
+- Iteration 6 (Phase 3): Content creation – Contribute flows (users understand what to contribute after exploring) (E16)
+- Iteration 7 (Phase 3): Community foundations – User profiles, messaging, moderation, events (E13, E20, E26, E14)
+- Iteration 8 (Phase 3): Advanced features – Exhibitions + Language learning + Educational tools (E4, E9, E23)
+- Iteration 9 (Phase 3): Specialized features – Exchange + Payments + Analytics + Infrastructure (E15, E18, E19, E22, E21, E24, E25)
+- Iteration 10 (Phase 3): Platform completion – Static pages, Support system, Newsletter, Social integration (E27, E28, E29)
+
+## User Journey Rationale
+
+The iteration structure follows the natural user journey and website navigation:
+
+1. **Foundation (Iteration 1)** - Essential infrastructure including content sensitivity handling
+   - Users need functional data layers, media resolution, and content safety from the start
+
+2. **Home Landing (Iteration 2)** - Entry point with clear navigation paths  
+   - Users land on home → see stats, mission, featured content → get oriented to the platform
+   - Curation lists enable meaningful featured content display
+
+3. **Core Discovery (Iteration 3)** - Primary user journey from home
+   - Users click "Explore Cultures" → primary discovery experience
+   - This is the main value proposition and should work end-to-end early
+
+4. **Supporting Content (Iteration 4)** - Content that enriches discovery
+   - Users discover Resources and Elder Voices → supporting content types
+   - Reactions system enables engagement with elder stories
+
+5. **User System (Iteration 5)** - Authentication preparation
+   - Users want to Contribute → needs identity/auth system first
+   - Clean separation between anonymous discovery and authenticated actions
+
+6. **Content Creation (Iteration 6)** - Users become contributors
+   - Users understand platform value and content types from exploration (E5, E6, E7)
+   - Can contribute meaningfully with context of what exists
+
+7. **Community Features (Iteration 7)** - Social engagement
+   - Users engage with Community → profiles, messaging, events, moderation
+   - Community events can reference cultural content discovered earlier
+
+8. **Advanced Features (Iteration 8)** - Secondary navigation items
+   - Users explore advanced features → exhibitions, language learning
+   - Exhibitions are curatorial (more complex than basic discovery)
+
+9. **Specialized Features (Iteration 9)** - Optional/advanced capabilities
+   - Exchange, payments, analytics, infrastructure scaling
+
+10. **Platform Completion (Iteration 10)** - Supporting pages and community features
+    - About/static pages, support system, newsletter, social media integration
+
+## Page → Iteration → Epic → Story → NIP Mapping
+
+This table provides a complete mapping of how website pages relate to development iterations, epics, user stories, and Nostr NIPs.
+
+| Page/Route | Iteration | Epic | Story | NIPs | Description |
+|------------|-----------|------|-------|------|-------------|
+| **Foundation (All Pages)** | 1 | E0 | S1-S4 | - | URL state, loading patterns, pagination, search |
+| **Foundation (Data Layer)** | 1 | E1 | S1-S2 | 01,11,12,19 | Nostr client, adapters, error handling |
+| **Foundation (Media)** | 1 | E2 | S1 | 94,01 | NIP-94 media resolution and caching |
+| **Foundation (Labels)** | 1 | E3 | S1 | 68,12,01 | Label taxonomy and filter helpers |
+| **Foundation (Safety)** | 1 | E11 | S1-S2 | 36,70,65,01 | Content sensitivity and protection |
+| | | | | | |
+| **Home** (`/`) | 2 | E8 | S0-S2 | 51,68,12,01 | Landing page, metrics, featured content, CTAs |
+| **Home** (`/`) | 2 | E12 | S1 | 51,01 | Featured curation lists integration |
+| | | | | | |
+| **Explore** (`/explore`) | 3 | E5 | S0-S2 | 33,68,94,12,01,19 | Culture discovery, facets, aggregation |
+| **Explore Detail** (`/explore/[id]`) | 3 | E5 | S2 | 33,68,94,12,01,19 | Culture detail with related content |
+| | | | | | |
+| **Resources** (`/downloads`) | 4 | E6 | S0-S2 | 33,68,94,12,01 | Resources list, filters, downloads |
+| **Resource Detail** (`/downloads/[id]`) | 4 | E6 | S2 | 33,68,94,12,01 | Resource detail and media preview |
+| **Elder Voices** (`/elder-voices`) | 4 | E7 | S0-S2 | 23,94,68,25,12,01 | Stories, audio playback, ratings |
+| **Elder Voices** (`/elder-voices`) | 4 | E17 | S1 | 25,84,01 | Reactions and star ratings system |
+| | | | | | |
+| **Auth/Identity** (Cross-cutting) | 5 | E10 | S1-S4 | 05,26,46,98,01,19 | Authentication, profiles, delegation |
+| | | | | | |
+| **Contribute** (`/contribute`) | 6 | E16 | S1-S2 | 98,46,94,33,68,01 | Content submission and publishing |
+| **Resource Contribute** (`/downloads/contribute`) | 6 | E16 | S1-S2 | 98,46,94,33,68,01 | Resource upload and metadata |
+| | | | | | |
+| **Community** (`/community`) | 7 | E13 | S0-S1 | 05,12,19,01 | Member directory and profiles |
+| **Member Profile** (`/community/members/[id]`) | 7 | E13 | S1 | 05,12,19,01 | Individual member contributions |
+| **Community Events** (`/community/events`) | 7 | E14 | S1 | 52,40,23,01 | Event listings and calendar |
+| **Event Detail** (`/community/events/[id]`) | 7 | E14 | S1 | 52,40,23,01 | Event details with descriptions |
+| **Community Messaging** (Cross-cutting) | 7 | E20 | S1-S3 | 10,04,01,42 | Comments, DMs, notifications |
+| **Community Moderation** (Cross-cutting) | 7 | E26 | S1-S2 | 56,36,68 | Content reporting and governance |
+| | | | | | |
+| **Exhibitions** (`/exhibitions`) | 8 | E4 | S0-S2 | 33,23,68,94,12,01,19 | Curated exhibitions list/detail |
+| **Exhibition Detail** (`/exhibitions/[slug]`) | 8 | E4 | S2 | 33,23,68,94,12,01,19 | Exhibition artifacts and descriptions |
+| **Language Learning** (`/language`) | 8 | E9 | S1-S3 | 23,51,68,12,01,30023 | Language content and progress |
+| **Enhanced Learning** (Cross-cutting) | 8 | E23 | S1-S3 | 23,51,30023 | Structured modules and assessments |
+| **Exhibition Curation** (Tools) | 8 | E24 | S1-S3 | 33,23,94 | Virtual tours and curation tools |
+| | | | | | |
+| **Exchange** (`/exchange`) | 9 | E15 | S0 | 28,29,42,01 | Cultural exchange programs |
+| **About** (`/about`) | 9 | E18 | S1 | 57,05,01 | Payment displays and zaps |
+| **Get Involved** (`/get-involved`) | 9 | E19 | S1 | 89,01 | Observability and performance |
+| **Nostr** (`/nostr`) | 9 | E22 | S1-S3 | 01,89 | Analytics and reporting |
+| **API** (Cross-cutting) | 9 | E25 | S1-S3 | 01,11 | Public API and offline access |
+| **Content Management** (Cross-cutting) | 9 | E21 | S1-S3 | 01,33,68,16 | Versioning and rights management |
+| | | | | | |
+| **About Us** (`/about`) | 10 | E27 | S1-S3 | 01,23 | Mission, team, static content pages |
+| **Support** (`/resources#support`) | 10 | E28 | S1-S2 | 01,23 | Help documentation and support tickets |
+| **Newsletter** (Footer) | 10 | E29 | S1 | 01 | Email subscription and management |
+| **Social Media** (Footer) | 10 | E29 | S2 | 01 | Social links and content sharing |
+| **Contact** (`mailto:hello@culturebridge.org`) | 10 | E29 | S3 | 01 | Contact forms and email handling |
+
+### NIP Reference Summary
+
+| NIP | Purpose | Primary Epics | Pages Affected |
+|-----|---------|---------------|----------------|
+| 01 | Basic protocol | E1,E3,E7,E8,E10,E11,E13,E14,E15,E16,E17,E18,E19,E20,E21,E22,E25,E26,E27,E28,E29 | All |
+| 04 | Encrypted DMs | E20 | Community messaging |
+| 05 | DNS identity | E10,E13,E18 | Profiles, auth |
+| 10 | Comments | E20 | Community discussions |
+| 11 | Relay metadata | E1,E25 | Infrastructure |
+| 12 | Generic filters | E1,E3,E5,E6,E7,E8,E9,E13 | Content queries |
+| 16 | Replaceable events | E21 | Content versioning |
+| 19 | bech32 entities | E1,E5,E10,E13 | Content references |
+| 23 | Long-form content | E4,E7,E9,E14,E23,E24,E27,E28 | Articles, stories, static pages |
+| 25 | Reactions | E7,E17 | Elder voices ratings |
+| 26 | Delegation | E10 | Identity management |
+| 28 | Public chat | E15 | Exchange channels |
+| 29 | Private groups | E15 | Private exchanges |
+| 30023 | Categorized lists | E9,E23 | Learning content |
+| 33 | Parameterized events | E4,E5,E6,E16,E21,E24,E27 | Cultures, exhibitions, resources, static content |
+| 36 | Content sensitivity | E11,E26 | Content moderation |
+| 40 | Event expiration | E14 | Community events |
+| 42 | Authentication | E15,E20 | Exchange, messaging |
+| 46 | Nostr Connect | E10,E16 | Remote signing |
+| 51 | Lists | E8,E9,E12,E23 | Featured content, curation |
+| 52 | Calendar events | E14 | Community calendar |
+| 56 | Reporting | E26 | Content moderation |
+| 57 | Lightning zaps | E18 | Payments display |
+| 65 | Relay sets | E11 | Protected content |
+| 68 | Labels | E3,E4,E5,E6,E7,E9,E11,E16,E21,E26 | Content taxonomy |
+| 70 | Protected events | E11 | Sensitive content |
+| 84 | Highlights | E17 | Content highlights |
+| 89 | Recommended relays | E19,E22 | Performance, analytics |
+| 94 | File metadata | E2,E4,E6,E7,E16,E24 | Media resolution |
+| 96 | HTTP file storage | E16 | File uploads |
+| 98 | HTTP auth | E10,E16 | Publishing auth |
 
 ## Definition of Done (global)
 
@@ -128,7 +297,7 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 - Motivation: Replace mocks with NIP-33 canonical records + NIP-23 descriptions + NIP-94 artifacts.
 - NIPs: 33, 23, 68, 94, 12, 01, 19
-- Dependencies: E0–E3
+- Dependencies: E0–E3, E5 (core discovery patterns established)
 - Affected files: `src/components/pages/ExhibitionsContent.tsx`; `src/components/pages/ExhibitionDetail*.tsx`; `src/app/exhibitions/*`; `src/data/exhibitions.ts`
 - Acceptance criteria: Exhibitions list/detail render from relays; filters work; artifacts hydrate lazily.
 - Stories
@@ -148,10 +317,11 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 ### Epic E5: Explore Integration (Cultures)
 
+- Motivation: Implement the primary user discovery journey from home page - the core value proposition where users explore and learn about different cultures.
 - NIPs: 33 (30001), 68, 94, 12, 01, 19
 - Dependencies: E0–E3
 - Affected files: `src/components/pages/ExploreContent.tsx`; `src/app/explore/*`; `src/app/explore/[id]/page.tsx`; `src/data/explore.ts`
-- Acceptance criteria: Cultures list uses 30001; detail aggregates counts; featured via NIP-51 when available.
+- Acceptance criteria: Cultures list uses 30001; detail aggregates counts; featured via NIP-51 when available; serves as foundation for user understanding of platform content.
 - Stories
   - S0: Flow wiring (facets + deep links)
     - Tasks
@@ -206,10 +376,11 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 ### Epic E8: Home Metrics & Featured Blocks
 
+- Motivation: Create compelling landing page that orients users and guides them to primary discovery (Explore Cultures) and contribution flows.
 - NIPs: 51, 68, 12, 01
-- Dependencies: E4–E7
+- Dependencies: E1, E3, E12 (infrastructure, labels, and curation lists for featured content)
 - Affected files: `src/app/page.tsx`; `src/data/home.ts`
-- Acceptance criteria: Metrics computed from recent queries; featured grids from NIP-51 lists.
+- Acceptance criteria: Metrics computed from recent queries; featured grids from NIP-51 lists; navigation flows to core discovery pages; graceful fallbacks when content is limited.
 - Stories
   - S0: Flow wiring (CTAs + featured culture links)
     - Tasks
@@ -274,7 +445,7 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 ### Epic E11: Sensitivity & Protected Content
 
 - NIPs: 36, 70, 65, 01
-- Dependencies: E4–E7
+- Dependencies: E1 (data infrastructure for content parsing)
 - Acceptance criteria: Sensitive content labeled and gated; optional protected payloads later.
 - Stories
   - S1: Sensitive labeling & warnings
@@ -287,8 +458,9 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 ### Epic E12: Curation Lists
 
 - NIPs: 51, 01
-- Dependencies: E4–E8
-- Acceptance criteria: Featured sets powered by lists; editors can update without redeploy.
+- Dependencies: E1 (data infrastructure)
+- Affected files: Lists integration across home/exhibitions/explore
+- Acceptance criteria: Featured sets powered by NIP-51 lists.
 - Stories
   - S1: Featured lists integration
     - Tasks
@@ -297,8 +469,8 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 ### Epic E13: Community – Member Profiles
 
 - NIPs: 05, 12, 19, 01
-- Dependencies: E4–E7, E10
-- Acceptance criteria: Member pages aggregate authored events by pubkey; show NIP-05 and recent contributions.
+- Dependencies: E5, E6, E7, E10 (profiles show content contributions; requires user system and content to aggregate)
+- Acceptance criteria: Member pages aggregate authored events by pubkey; show NIP-05 and recent contributions across cultures, resources, and stories.
 - Stories
   - S0: Community directory (list → profile)
     - Tasks
@@ -311,8 +483,8 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 ### Epic E14: Community – Events
 
 - NIPs: 52, 40, 23, 01
-- Dependencies: E4–E7
-- Acceptance criteria: Events list/detail render from NIP-52; optional expiration via NIP-40.
+- Dependencies: E5, E10 (events often reference cultural content; requires user system)
+- Acceptance criteria: Events list/detail render from NIP-52; optional expiration via NIP-40; events can reference cultural content.
 - Stories
   - S1: Calendar events
     - Tasks
@@ -331,14 +503,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 ### Epic E16: Contribute Flows (Publishing)
 
+- Motivation: Enable users to become content contributors after they understand the platform through exploration (cultures, resources, elder voices). Users can contribute meaningfully with context of existing content types and community needs.
 - NIPs: 98, 46, 94, 33, 68, 01
-- Dependencies: E4–E7, E10
-- Acceptance criteria: Submission UI for resources/exhibitions using HTTP auth; remote signing optional; media upload path mapped to NIP-94.
+- Dependencies: E5, E6, E7, E10 (users must understand content types from discovery before contributing; requires auth)
+- Acceptance criteria: Submission UI for resources/exhibitions using HTTP auth; remote signing optional; media upload path mapped to NIP-94; users understand contribution context from prior exploration; clear guidance on content types and community guidelines.
 
 ### Epic E17: Reactions & Highlights
 
 - NIPs: 25, 84, 01
-- Dependencies: E4–E7
+- Dependencies: E7 (Elder Voices integration where reactions are primarily used)
 - Acceptance criteria: Map star ratings to NIP-25; optional highlights in detail pages.
 
 ### Epic E18: Payments (Display)
@@ -503,159 +676,78 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
       - T5: Build community leader and elder verification system
       - T6: Implement escalation procedures for sensitive cultural content
 
+### Epic E27: Static Pages & Content Management
+
+- Motivation: Complete the platform with essential static pages including About Us, Mission, Team, and other informational content that users expect to find.
+- NIPs: 01, 23 (long-form content), 33 (structured content)
+- Dependencies: E1 (data infrastructure), E21 (content management system)
+- Affected files: `src/app/about/*`, `src/components/pages/AboutContent.tsx`, `src/data/about.ts`, static content management system
+- Acceptance criteria: About Us page with mission, team, and story; content is manageable without code deployments; consistent branding and messaging across all static pages.
+- Stories
+  - S1: About Us and Mission pages
+    - Tasks
+      - T1: Build comprehensive About Us page with mission statement
+      - T2: Create team/contributor profiles and bios
+      - T3: Add platform story and cultural preservation philosophy
+  - S2: Static content management
+    - Tasks
+      - T4: Implement CMS for static page content updates
+      - T5: Create content versioning for static pages
+  - S3: Legal and policy pages
+    - Tasks
+      - T6: Add privacy policy, terms of service, and cultural sensitivity guidelines
+      - T7: Create content licensing and attribution policies
+
+### Epic E28: Support System & Documentation
+
+- Motivation: Provide comprehensive support for users navigating cultural preservation, troubleshooting platform issues, and understanding Nostr integration.
+- NIPs: 01, 23 (documentation content)
+- Dependencies: E5 (user understanding of core features), E16 (contributor support needs)
+- Affected files: `src/app/support/*`, `src/components/support/*`, help documentation system
+- Acceptance criteria: Comprehensive help documentation; support ticket system; FAQ covering cultural sensitivity and Nostr concepts; user guidance for contribution workflows.
+- Stories
+  - S1: Help documentation and FAQ
+    - Tasks
+      - T1: Create comprehensive FAQ covering cultural preservation workflows
+      - T2: Build step-by-step guides for exploration, contribution, and community participation
+      - T3: Document Nostr concepts and decentralized features for non-technical users
+  - S2: Support ticket system
+    - Tasks
+      - T4: Implement support ticket creation and management system
+      - T5: Build admin dashboard for support team to manage inquiries
+      - T6: Create automated responses for common issues
+
+### Epic E29: Newsletter & Social Integration
+
+- Motivation: Build community engagement through newsletter subscriptions, social media integration, and external communication channels that extend platform reach.
+- NIPs: 01 (basic protocol for integration)
+- Dependencies: E8 (home page integration), E20 (community features)
+- Affected files: `src/components/Footer.tsx`, newsletter system, social media integration
+- Acceptance criteria: Email newsletter signup functional; social media links active; potential content sharing capabilities; contact system operational.
+- Stories
+  - S1: Newsletter subscription system
+    - Tasks
+      - T1: Implement email subscription form in footer
+      - T2: Build newsletter template and sending system
+      - T3: Create subscription management and unsubscribe workflows
+  - S2: Social media integration
+    - Tasks
+      - T4: Implement active social media links (Twitter, GitHub)
+      - T5: Add social sharing capabilities for cultural content
+      - T6: Create social media content syndication (optional)
+  - S3: Contact and communication
+    - Tasks
+      - T7: Build contact form system with email handling
+      - T8: Implement contact email routing and management
+      - T9: Create automated acknowledgment and follow-up system
+
 ---
-
-## Import-ready CSV for GitHub Projects (paste into the table)
-
-The table columns map to Project custom fields. You can paste this block into a Project (Table view) and map columns as needed.
-
-Columns: Type, Title, Iteration, Epic, Labels, NIPs, Depends On, Files, Acceptance Criteria, Estimate
-
-```csv
-Type,Title,Iteration,Epic,Labels,NIPs,Depends On,Files,Acceptance Criteria,Estimate
-Epic,E0: Global UI Flow Foundation,Iteration 1,E0,"type/epic area/flows phase/1 priority/P0","",,src/app/*|src/components/pages/*,"URL state, loading/error/empty patterns, pagination/search hooks",8
-Story,S1: URL state and deep-linking,Iteration 1,E0,"type/story area/flows phase/1","",,shared hooks,"Query params reflect filters/sort/search; back restores state",3
-Task,T1: useQueryParamState hook,Iteration 1,E0,"type/task area/flows phase/1","",,shared hooks,Hook implemented and unit-tested,1
-Story,S2: Loading/empty/error patterns,Iteration 1,E0,"type/story area/flows phase/1","",,routes,"All routes have loading.tsx/error.tsx and empty states",2
-Story,S3: Pagination / infinite scroll,Iteration 1,E0,"type/story area/flows phase/1","",,shared hooks,"Pagination or virtual list present for long lists",2
-Story,S4: Search wiring,Iteration 1,E0,"type/story area/flows phase/1","",,components,"Debounced search input with cancelable queries",2
-
-Epic,E1: Data Backbone – Adapter & Relay Bootstrap,Iteration 1,E1,"type/epic area/adapter phase/1 priority/P0","01|11|12|19",E0,src/lib/nostr/*|src/types/content.ts|src/app/*,Flag-based provider serving typed data; adapter hooks available,8
-Story,S1: Feature flag and provider bootstrap,Iteration 1,E1,"type/story area/adapter phase/1 priority/P0","01|11|12|19",E0,src/lib/nostr/*|src/app/*,Flag toggles Nostr vs mocks per page,3
-Task,T1: Add env flag and config loader,Iteration 1,E1,"type/task area/adapter phase/1","01",,src/lib/nostr/config.ts|.env.local,Env flag present and read at runtime,1
-Task,T2: Create Nostr client and relay pool,Iteration 1,E1,"type/task area/adapter phase/1","01|11",,src/lib/nostr/client.ts,Nostr client connects to configured relays,2
-Task,T3: Query wrapper for NIP-12 filters,Iteration 1,E1,"type/task area/adapter phase/1","12",,src/lib/nostr/query.ts,Can request with kinds/tags/limit/since,2
-Task,T4: Define adapters (events -> UI types),Iteration 1,E1,"type/task area/adapter phase/1","01|19",,src/lib/nostr/adapters.ts,Adapters return shapes in src/types/content.ts,2
-Task,T5: Unit tests for adapters,Iteration 1,E1,"type/task area/adapter phase/1 type/testing","01",T4,tests/nostr/adapters.test.ts,Tests cover happy/missing tags,1
-Story,S2: Error handling and fallback,Iteration 1,E1,"type/story area/adapter phase/1","01",,src/lib/nostr/*,Skeletons/placeholders on error; retries,2
-Task,T6: Implement retries/timeouts/logging,Iteration 1,E1,"type/task area/adapter phase/1 type/chore","01",,src/lib/nostr/query.ts,Backoff and timeout applied; logs minimal,1
-
-Epic,E2: Media Resolution (NIP-94),Iteration 1,E2,"type/epic area/media phase/1 priority/P0","94|01",E1,src/lib/nostr/media.ts|image consumers,Media resolved via NIP-94 with fallback,5
-Story,S1: NIP-94 fetch and cache,Iteration 1,E2,"type/story area/media phase/1","94",E1,src/lib/nostr/media.ts,Resolver returns checksum/dimensions/url,2
-Task,T1: Implement 1063 resolver + cache,Iteration 1,E2,"type/task area/media phase/1","94",,src/lib/nostr/media.ts,Cache hit reduces duplicate fetch,1
-Task,T2: Map resolver to UI image fields,Iteration 1,E2,"type/task area/media phase/1","94",,src/components/pages/*,Hero images resolved; fallback on miss,1
-
-Epic,E3: Label Taxonomy & Filters (NIP-68),Iteration 1,E3,"type/epic area/labels phase/1 priority/P0","68|12|01",E1,src/lib/nostr/labels.ts|filters,Labels parsed and used in queries and UI,5
-Story,S1: Parse and normalize label tags,Iteration 1,E3,"type/story area/labels phase/1","68",E1,src/lib/nostr/labels.ts,Parser handles region/culture/category/language,2
-Task,T1: Canonical enums/mappings,Iteration 1,E3,"type/task area/labels phase/1","68",,src/lib/nostr/labels.ts,Known namespaces mapped to enums,1
-Task,T2: Build NIP-12 filter helpers,Iteration 1,E3,"type/task area/labels phase/1","12",,src/lib/nostr/query.ts,Helpers compose label filters efficiently,1
-
-Epic,E4: Exhibitions Integration,Iteration 2,E4,"type/epic area/exhibitions phase/2 priority/P0 page/exhibitions","33|23|68|94|12|01|19",E1|E2|E3,src/components/pages/ExhibitionsContent.tsx|src/app/exhibitions/*,List/detail from relays; filters OK; artifacts hydrate,8
-Story,S0: Flow wiring (filters/sort/pagination + deep links),Iteration 2,E4,"type/story area/flows page/exhibitions","",E0,src/app/exhibitions/page.tsx,"URL-encoded filters/sort; pagination or infinite scroll",2
-Task,T0c: Debounced search input,Iteration 2,E4,"type/task area/flows page/exhibitions","",E0,src/app/exhibitions/page.tsx,Search added and URL-synced,1
-Story,S1: List view from 30002 with filters,Iteration 2,E4,"type/story area/exhibitions page/exhibitions","33|68|12",E1|E3,src/components/pages/ExhibitionsContent.tsx,List renders from kinds[30002] with filters,3
-Task,T1: Query 30002 + map fields,Iteration 2,E4,"type/task area/exhibitions","33|68|12",,src/lib/nostr/adapters.ts,Fields mapped (title, region, image, tags),1
-Task,T2: Wire filter UI to label helpers,Iteration 2,E4,"type/task area/exhibitions","68|12",,src/components/pages/ExhibitionsContent.tsx,Filters reflect label selections,1
-Story,S2: Detail hydration (desc + artifacts),Iteration 2,E4,"type/story area/exhibitions page/exhibitions","23|94|33",E2,src/components/pages/ExhibitionDetail*.tsx,Detail loads long-form and media gallery,3
-Task,T3: Resolve NIP-23 description,Iteration 2,E4,"type/task area/exhibitions","23",,src/lib/nostr/adapters.ts,Description appears when referenced,1
-Task,T4: Fetch 1063 artifact media,Iteration 2,E4,"type/task area/exhibitions","94",,src/lib/nostr/media.ts,Artifacts render with checksummed URLs,1
-
-Epic,E5: Explore Integration,Iteration 3,E5,"type/epic area/explore phase/2 priority/P1 page/explore","33|68|94|12|01|19",E1|E2|E3,src/components/pages/ExploreContent.tsx|src/app/explore/*,Culture list/detail via 30001 with counts,5
-Story,S0: Flow wiring (facets + deep links),Iteration 3,E5,"type/story area/flows page/explore","",E0,src/app/explore/page.tsx,"Region/language facets in URL; deep-linkable",2
-Task,T0c: Search cultures by name,Iteration 3,E5,"type/task area/flows page/explore","",E0,src/app/explore/page.tsx,Debounced search input present,1
-Task,T0d: Load more cultures,Iteration 3,E5,"type/task area/flows page/explore","",E0,src/app/explore/page.tsx,Pagination or infinite scroll,1
-Story,S1: Culture summaries list,Iteration 3,E5,"type/story area/explore page/explore","33|68|12",E3,src/components/pages/ExploreContent.tsx,List shows culture name, region, hero image,2
-Task,T1: Query 30001; hydrate image,Iteration 3,E5,"type/task area/explore","33|94",,src/lib/nostr/adapters.ts,Image and summary present,1
-Story,S2: Culture detail aggregation,Iteration 3,E5,"type/story area/explore page/explore","68|12",E4,src/app/explore/[id]/page.tsx,Detail aggregates related content by label,3
-
-Epic,E6: Resources/Downloads Integration,Iteration 3,E6,"type/epic area/resources phase/2 priority/P1 page/downloads","33|68|94|12|01",E1|E2|E3,src/components/pages/DownloadsContent.tsx|src/app/downloads/*,Resources list/detail from 30003; media resolved,5
-Story,S0: Flow wiring (filters/sort + downloads),Iteration 3,E6,"type/story area/flows page/downloads","",E0,src/app/downloads/page.tsx,"URL state for category/type/sort; graceful downloads",2
-Story,S1: Resources list,Iteration 3,E6,"type/story area/resources page/downloads","33|68|12",E3,src/components/pages/DownloadsContent.tsx,List filters by category/type,2
-Task,T1b: Sort resources,Iteration 3,E6,"type/task area/resources page/downloads","",E0,src/app/downloads/page.tsx,Sort newest/popular works,1
-Story,S2: Resource detail,Iteration 3,E6,"type/story area/resources page/downloads","94|33",E2,src/app/downloads/[id]/page.tsx,Primary asset and preview resolved,3
-
-Epic,E7: Elder Voices + Reactions,Iteration 4,E7,"type/epic area/elder-voices phase/2 priority/P1 page/elder-voices","23|94|68|25|12|01",E1|E2|E3,src/components/pages/ElderVoicesContent.tsx,Stories render with media; ratings mapped,5
-Story,S0: Flow wiring (audio playback + ratings),Iteration 4,E7,"type/story area/flows page/elder-voices","",E0,src/app/elder-voices/page.tsx,"Audio controls and ratings interaction present",2
-Task,T0c: All stories preserves filter,Iteration 4,E7,"type/task area/elder-voices page/elder-voices","",E0,src/app/elder-voices/page.tsx,Back restores category,1
-Story,S1: Narrative + media,Iteration 4,E7,"type/story area/elder-voices page/elder-voices","23|94|68",E2,src/components/pages/ElderVoicesContent.tsx,Card shows title, elder, image/audio,2
-Story,S2: Ratings aggregation,Iteration 4,E7,"type/story area/elder-voices page/elder-voices","25",E7,src/components/pages/ElderVoicesContent.tsx,Stars computed from reactions,3
-
-Epic,E8: Home Metrics & Featured,Iteration 4,E8,"type/epic area/home phase/2 priority/P1 page/home","51|68|12|01",E4|E5|E6|E7,src/app/page.tsx,Featured from lists; metrics computed,3
-Story,S0: Flow wiring (CTAs + featured culture links),Iteration 4,E8,"type/story area/home page/home","",E0,src/app/page.tsx,"Header nav + CTAs route correctly; featured links deep-link",2
-Task,T0: Header nav routes to pages,Iteration 4,E8,"type/task area/home page/home","",E0,src/components/Header.tsx,Nav items route and preserve state on return,1
-Task,T0b: CTA buttons route to pages,Iteration 4,E8,"type/task area/home page/home","",E0,src/app/page.tsx,CTAs navigate correctly,1
-Task,T0c: Featured cards deep-link,Iteration 4,E8,"type/task area/home page/home","",E0,src/app/page.tsx,Back restores explore filters,1
-Story,S1: Featured via lists,Iteration 4,E8,"type/story area/home page/home","51",E4|E5|E6,src/app/page.tsx,Featured cards source from NIP-51,1
-Story,S2: Metrics counters,Iteration 4,E8,"type/story area/home page/home","12|68",E5,src/app/page.tsx,Counters compute within latency budget,2
-
-Epic,E9: Language Learning & Cultural Education,Iteration 8,E9,"type/epic area/language phase/3 priority/P2 page/language","23|51|68|12|01|30023",E3|E5,src/components/pages/LanguageContent.tsx|learning modules,Language learning with cultural immersion and basic progress tracking,5
-Story,S1: Language-curated content and immersion,Iteration 8,E9,"type/story area/language page/language","51|68",E3|E5,src/components/pages/LanguageContent.tsx,Cultural immersion learning experiences,2
-Story,S2: Structured learning and guides,Iteration 8,E9,"type/story area/language page/language","23|51",E5,learning modules,Listen & learn modules and community practice,2
-Story,S3: Basic progress and engagement,Iteration 8,E9,"type/story area/language page/language","01",E9,progress tracking,Basic learner progress tracking,1
-
-Epic,E10: Identity & User Management,Iteration 5,E10,"type/epic area/identity area/auth phase/3 priority/P1","05|26|46|98|01|19",E4|E5|E6|E7,identity components|user management system|profile pages,Comprehensive user management with profiles and social features,8
-Story,S1: Identity display and authentication,Iteration 5,E10,"type/story area/identity area/auth","05|01",E4,identity display components,Nostr-based auth and NIP-05 resolution,3
-Story,S2: Delegation capability,Iteration 5,E10,"type/story area/identity","26",E4,identity components,Display delegation info for institutional accounts,2
-Story,S3: User profiles and connections,Iteration 5,E10,"type/story area/identity","01|19",E4|E5|E6|E7,profile pages,Comprehensive profiles and follow/connect functionality,2
-Story,S4: Content contribution management,Iteration 5,E10,"type/story area/auth","98|46",E4|E6,user management system,Content ownership and permission controls,1
-
-Epic,E11: Sensitivity & Protected Content,Iteration 5,E11,"type/epic area/safety phase/3 priority/P0","36|70|65|01",E4|E7,safety badges and gating,Label and gate sensitive content; optional protected payloads,5
-Story,S1: Sensitive labeling & warnings,Iteration 5,E11,"type/story area/safety","36",,Badge and warning UI,Warnings render when labels present,2
-Story,S2: Protected narratives (later),Iteration 5,E11,"type/story area/safety","70|65",,Publishing path,Encrypted body stored and readable by audience,3
-
-Epic,E12: Curation Lists,Iteration 5,E12,"type/epic area/curation phase/3 priority/P1","51|01",E4|E8,lists integration,Featured sets powered by lists,3
-Story,S1: Featured lists integration,Iteration 5,E12,"type/story area/curation","51",,Lists hydrate home/exhibitions/explore,3
-
-Epic,E13: Community – Member Profiles,Iteration 6,E13,"type/epic area/community phase/3 priority/P2 page/community","05|12|19|01",E10,src/app/community/members/[id]/page.tsx,Aggregate authored events by pubkey,3
-Story,S1: Profile aggregation,Iteration 6,E13,"type/story area/community page/community","12|19",E10,src/app/community/members/[id]/page.tsx,Recent contributions visible,3
-
-Epic,E14: Community – Events,Iteration 6,E14,"type/epic area/community phase/3 priority/P2 page/community","52|40|23|01",E4,src/app/community/events/[id]/page.tsx,Events list/detail from NIP-52; optional expiration,3
-Story,S1: Calendar events,Iteration 6,E14,"type/story area/community page/community","52|40",,src/app/community/events/[id]/page.tsx,Event details render with times/links,3
-
-Epic,E15: Exchange (Optional),Iteration 8,E15,"type/epic area/exchange phase/3 priority/P2 page/exchange","28|29|42|01",E10,src/app/exchange/page.tsx,Public channels/groups wired,3
-
-Epic,E16: Contribute Flows (Publishing),Iteration 7,E16,"type/epic area/contribute phase/3 priority/P1 page/downloads","98|46|94|33|68|01",E4|E6|E10,src/app/downloads/contribute/page.tsx,Submission UI with HTTP auth and signing,5
-Story,S1: Upload + NIP-94 metadata,Iteration 7,E16,"type/story area/contribute page/downloads","94|96",,upload handlers,Uploads produce NIP-94 events and links,3
-Story,S2: Publish canonical records,Iteration 7,E16,"type/story area/contribute page/downloads","33|68|98|46",,server + client,Publish 3000x with labels via signed flow,3
-
-Epic,E17: Reactions & Highlights,Iteration 4,E17,"type/epic area/reactions phase/2 priority/P2","25|84|01",E7,detail pages,Stars via reactions; optional highlights,3
-Story,S1: Map star ratings to reactions,Iteration 4,E17,"type/story area/reactions","25",E7,detail pages,0–5 stars computed deterministically,2
-
-Epic,E18: Payments (Display),Iteration 7,E18,"type/epic area/payments phase/3 priority/P2","57|05|01",E10,detail pages,Show zaps where appropriate with context,2
-
-Epic,E19: Observability & Ops,Iteration 7,E19,"type/epic area/ops phase/3 priority/P2","89|01",E1,ops docs and toggles,Minimal telemetry and runbooks present,2
-Story,S1: Perf logging (flagged),Iteration 7,E19,"type/story area/ops","01",,logging,Query/hydration timings logged when enabled,1
-
-Epic,E20: Community Interaction & Messaging,Iteration 6,E20,"type/epic area/messaging area/community phase/3 priority/P1","10|04|01|42",E10|E4|E5|E6|E7,src/components/comments/*|src/components/messaging/*|detail pages,Comments/discussions and DM system functional,8
-Story,S1: Comments and discussion forums,Iteration 6,E20,"type/story area/messaging","10",E10,src/components/comments/*,Threaded comments on content; moderation tools,3
-Story,S2: Direct messaging,Iteration 6,E20,"type/story area/messaging","04",E10,src/components/messaging/*,Encrypted DMs between users,3
-Story,S3: Notification system,Iteration 6,E20,"type/story area/notifications","01",E10,src/components/notifications/*,Notifications for interactions and events,2
-
-Epic,E21: Content Management & Version Control,Iteration 9,E21,"type/epic area/versioning phase/3 priority/P1","01|33|68|16",E3|E10,src/lib/versioning/*,Version control and rights management implemented,8
-Story,S1: Version control for cultural data,Iteration 9,E21,"type/story area/versioning","16|33",E3,src/lib/versioning/*,Content versioning and history tracking,3
-Story,S2: Rights management and IP protection,Iteration 9,E21,"type/story area/versioning","33|68",E10,content licensing system,Licensing and attribution system,3
-Story,S3: Authenticity verification,Iteration 9,E21,"type/story area/versioning","01",E10,verification workflows,Content authenticity mechanisms,2
-
-Epic,E22: Advanced Analytics & Reporting,Iteration 7,E22,"type/epic area/analytics phase/3 priority/P2","01|89",E8|E19,src/lib/analytics/*,Comprehensive analytics and impact reporting,5
-Story,S1: Usage statistics and insights,Iteration 7,E22,"type/story area/analytics","89",E19,analytics dashboard,Content popularity and engagement analytics,2
-Story,S2: Contributor and community reports,Iteration 7,E22,"type/story area/analytics","01",E19,contributor dashboards,Activity dashboards and community metrics,2
-Story,S3: Cultural impact measurement,Iteration 7,E22,"type/story area/analytics","89",E22,reporting tools,Preservation effectiveness metrics,1
-
-Epic,E23: Enhanced Educational Tools,Iteration 8,E23,"type/epic area/language phase/3 priority/P2","23|51|30023",E9|E5,src/components/education/*|src/app/learn/*,Structured learning modules and assessments,8
-Story,S1: Structured learning modules,Iteration 8,E23,"type/story area/language","51|30023",E9,learning modules,Modular lesson framework,3
-Story,S2: Assessments and quizzes,Iteration 8,E23,"type/story area/language","23",E9,assessment system,Quiz and assessment system,3
-Story,S3: Progress tracking and certification,Iteration 8,E23,"type/story area/language","01",E23,progress tracking,Learner progress and achievements,2
-
-Epic,E24: Exhibition Curation Tools,Iteration 8,E24,"type/epic area/exhibitions phase/3 priority/P2","33|23|94",E4|E2,src/components/exhibitions/curation/*,Advanced curation and virtual tours,5
-Story,S1: Virtual tours and immersive experiences,Iteration 8,E24,"type/story area/exhibitions","94",E4,virtual tour interface,360° tours and immersive experiences,2
-Story,S2: External integrations,Iteration 8,E24,"type/story area/exhibitions","33",E4,external APIs,Museum and institution integrations,2
-Story,S3: Advanced curation tools,Iteration 8,E24,"type/story area/exhibitions","33|23",E4,curation interface,Visual exhibition builder,1
-
-Epic,E25: Technical Infrastructure & API,Iteration 9,E25,"type/epic area/api area/offline phase/3 priority/P1","01|11",E1|E19,src/api/*|src/lib/offline/*,API and offline access implemented,13
-Story,S1: Public API for external integrations,Iteration 9,E25,"type/story area/api","01",E1,API implementation,REST/GraphQL API with docs,5
-Story,S2: Offline access and sync,Iteration 9,E25,"type/story area/offline","01",E1,offline architecture,Offline-first for remote communities,5
-Story,S3: Security and scalability,Iteration 9,E25,"type/story area/api","01|11",E19,security measures,Security audit and scaling architecture,3
-
-Epic,E26: Moderation & Community Management,Iteration 6,E26,"type/epic area/moderation phase/3 priority/P0","56|36|68",E10|E20,src/components/moderation/*,Moderation tools and community governance,5
-Story,S1: Content moderation tools,Iteration 6,E26,"type/story area/moderation","56",E20,moderation dashboard,Reporting and review system,3
-Story,S2: Community governance,Iteration 6,E26,"type/story area/moderation","36|68",E10,governance policies,Guidelines and verification system,2
-```
 
 ## How to use this file
 
 - Review and tweak iterations/estimates/labels.
-- Copy the CSV block into your GitHub Project (Table view) to create items quickly. Map columns to fields. Create custom fields for Iteration, Epic, NIPs if desired.
-- When approved, we can script issue creation and link them to the Project.
+- Once the epic definitions above are finalized, a comprehensive CSV can be generated for GitHub Project import.
+- Custom fields needed: Iteration, Epic, NIPs for proper project management integration.
 
 ---
 
