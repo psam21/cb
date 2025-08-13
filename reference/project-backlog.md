@@ -32,12 +32,35 @@ Purpose: A structured backlog- End-to-end user flows implemented per page: list 
 
 ---
 
-## Epics, Stories, and Tasksved from reference/NIP-list.md to plan and track the migration from mocks to Nostr and to productionize UI flows. Organized as iterations (timeboxes), epics, user stories, and implementation tasks. I### Epic E12: Curation Lists
+## Epics, Stories, and Tasks
 
-- NIPs: 51, 01
-- Dependencies: E1 (data infrastructure)
-- Affected files: Lists integration across home/exhibitions/explore
-- Acceptance criteria: Featured sets powered by NIP-51 lists.es an import-ready CSV for GitHub Projects (v2).
+Each epic lists: motivation, NIPs, dependencies, affected files, acceptance criteria, and stories with concrete tasks.
+
+### Epic E0: Global UI Flow Foundation
+
+- Motivation: Turn demo pages into production-grade flows with URL-driven state and consistent UX patterns.
+- NIPs: n/a (UX foundation)
+- Dependencies: None
+- Affected files: `src/app/*`, `src/components/pages/*`, shared UI hooks/utilities.
+- Acceptance criteria:
+  - Filters, search, and sort are encoded in URL query params; back/forward restores state and scroll position.
+  - List pages implement pagination or infinite scroll with stable loading placeholders.
+  - Each route has `loading.tsx` and `error.tsx` with consistent skeletons and empty states.
+  - Debounced search input and cancelable requests for lists with search.
+- Stories
+  - S1: URL state and deep-linking
+    - Tasks
+      - T1: Build `useQueryParamState` hook for filter/sort/search
+      - T2: Preserve list scroll position across navigation
+  - S2: Loading, empty, and error patterns
+    - Tasks
+      - T3: Add `loading.tsx` and `error.tsx` to routes missing them; unify Skeletons/Empty components
+  - S3: Pagination / infinite scroll
+    - Tasks
+      - T4: Create base pagination/virtual list hook; wire to Exhibitions and Resources
+  - S4: Search wiring
+    - Tasks
+      - T5: Debounced search input component; integrate with list queries
 
 ## Notes
 
