@@ -16,7 +16,7 @@ Purpose: A structured backlog derived from reference/NIP-list.md to plan and tra
 - area/adapter, area/flows, area/media, area/labels, area/exhibitions, area/explore, area/resources, area/elder-voices, area/home, area/language, area/identity, area/safety, area/curation, area/community, area/exchange, area/contribute, area/reactions, area/payments, area/ops, area/auth, area/moderation, area/messaging, area/notifications, area/versioning, area/analytics, area/api, area/offline
 - type/epic, type/story, type/task, type/chore, type/docs
 - page/exhibitions, page/explore, page/resources, page/elder-voices, page/home, page/language, page/community, page/exchange, page/downloads
-- nip/01, nip/05, nip/10, nip/11, nip/12, nip/19, nip/23, nip/25, nip/26, nip/28, nip/29, nip/33, nip/36, nip/42, nip/46, nip/51, nip/52, nip/57, nip/65, nip/68, nip/70, nip/71, nip/84, nip/89, nip/94, nip/96
+- nip/01, nip/04, nip/05, nip/10, nip/11, nip/12, nip/16, nip/19, nip/23, nip/25, nip/26, nip/28, nip/29, nip/33, nip/36, nip/40, nip/42, nip/46, nip/51, nip/52, nip/56, nip/57, nip/65, nip/68, nip/70, nip/71, nip/84, nip/89, nip/94, nip/96
 - phase/1, phase/2, phase/3
 - priority/P0, priority/P1, priority/P2
 
@@ -227,7 +227,7 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 - Motivation: Comprehensive language learning platform with cultural immersion, structured modules, and progress tracking.
 - NIPs: 23, 51, 68, 12, 01, 30023 (categorized lists)
-- Dependencies: E3, E5, E23 (enhanced educational tools)
+- Dependencies: E3, E5 (E23 provides enhanced tools in parallel)
 - Affected files: `src/components/pages/LanguageContent.tsx`; `src/app/language/page.tsx`; learning modules
 - Acceptance criteria: Language page populated from curated lists and long-form guides; structured learning modules available; cultural immersion features work; basic progress tracking implemented.
 - Stories
@@ -578,13 +578,16 @@ Task,T0c: Featured cards deep-link,Iteration 4,E8,"type/task area/home page/home
 Story,S1: Featured via lists,Iteration 4,E8,"type/story area/home page/home","51",E4|E5|E6,src/app/page.tsx,Featured cards source from NIP-51,1
 Story,S2: Metrics counters,Iteration 4,E8,"type/story area/home page/home","12|68",E5,src/app/page.tsx,Counters compute within latency budget,2
 
-Epic,E9: Language Learning (Optional),Iteration 8,E9,"type/epic area/language phase/2 priority/P2 page/language","23|51|68|12|01",E5,src/components/pages/LanguageContent.tsx,Curated lists and guides filtered by language,3
-Story,S1: Language-curated lists,Iteration 8,E9,"type/story area/language page/language","51|68",E5,src/components/pages/LanguageContent.tsx,Lists load for selected language,1
-Story,S2: Guides via NIP-23,Iteration 8,E9,"type/story area/language page/language","23|68",E5,src/components/pages/LanguageContent.tsx,Guides appear for language filters,2
+Epic,E9: Language Learning & Cultural Education,Iteration 8,E9,"type/epic area/language phase/3 priority/P2 page/language","23|51|68|12|01|30023",E3|E5,src/components/pages/LanguageContent.tsx|learning modules,Language learning with cultural immersion and basic progress tracking,5
+Story,S1: Language-curated content and immersion,Iteration 8,E9,"type/story area/language page/language","51|68",E3|E5,src/components/pages/LanguageContent.tsx,Cultural immersion learning experiences,2
+Story,S2: Structured learning and guides,Iteration 8,E9,"type/story area/language page/language","23|51",E5,learning modules,Listen & learn modules and community practice,2
+Story,S3: Basic progress and engagement,Iteration 8,E9,"type/story area/language page/language","01",E9,progress tracking,Basic learner progress tracking,1
 
-Epic,E10: Identity & Delegation,Iteration 5,E10,"type/epic area/identity phase/3 priority/P1","05|26|46|98|01|19",E4|E7,identity components,Show NIP-05; support delegation display,5
-Story,S1: Identity display,Iteration 5,E10,"type/story area/identity","05",,UI components,Show NIP-05 next to authors where available,2
-Story,S2: Delegation capability,Iteration 5,E10,"type/story area/identity","26",,UI components,Display delegation info for institutional accounts,3
+Epic,E10: Identity & User Management,Iteration 5,E10,"type/epic area/identity area/auth phase/3 priority/P1","05|26|46|98|01|19",E4|E5|E6|E7,identity components|user management system|profile pages,Comprehensive user management with profiles and social features,8
+Story,S1: Identity display and authentication,Iteration 5,E10,"type/story area/identity area/auth","05|01",E4,identity display components,Nostr-based auth and NIP-05 resolution,3
+Story,S2: Delegation capability,Iteration 5,E10,"type/story area/identity","26",E4,identity components,Display delegation info for institutional accounts,2
+Story,S3: User profiles and connections,Iteration 5,E10,"type/story area/identity","01|19",E4|E5|E6|E7,profile pages,Comprehensive profiles and follow/connect functionality,2
+Story,S4: Content contribution management,Iteration 5,E10,"type/story area/auth","98|46",E4|E6,user management system,Content ownership and permission controls,1
 
 Epic,E11: Sensitivity & Protected Content,Iteration 5,E11,"type/epic area/safety phase/3 priority/P0","36|70|65|01",E4|E7,safety badges and gating,Label and gate sensitive content; optional protected payloads,5
 Story,S1: Sensitive labeling & warnings,Iteration 5,E11,"type/story area/safety","36",,Badge and warning UI,Warnings render when labels present,2
@@ -613,7 +616,7 @@ Epic,E18: Payments (Display),Iteration 7,E18,"type/epic area/payments phase/3 pr
 Epic,E19: Observability & Ops,Iteration 7,E19,"type/epic area/ops phase/3 priority/P2","89|01",E1,ops docs and toggles,Minimal telemetry and runbooks present,2
 Story,S1: Perf logging (flagged),Iteration 7,E19,"type/story area/ops","01",,logging,Query/hydration timings logged when enabled,1
 
-Epic,E20: Community Interaction & Messaging,Iteration 6,E20,"type/epic area/messaging area/community phase/3 priority/P1","10|04|01|42",E10,src/components/comments/*|src/components/messaging/*,Comments/discussions and DM system functional,8
+Epic,E20: Community Interaction & Messaging,Iteration 6,E20,"type/epic area/messaging area/community phase/3 priority/P1","10|04|01|42",E10|E4|E5|E6|E7,src/components/comments/*|src/components/messaging/*|detail pages,Comments/discussions and DM system functional,8
 Story,S1: Comments and discussion forums,Iteration 6,E20,"type/story area/messaging","10",E10,src/components/comments/*,Threaded comments on content; moderation tools,3
 Story,S2: Direct messaging,Iteration 6,E20,"type/story area/messaging","04",E10,src/components/messaging/*,Encrypted DMs between users,3
 Story,S3: Notification system,Iteration 6,E20,"type/story area/notifications","01",E10,src/components/notifications/*,Notifications for interactions and events,2
@@ -628,7 +631,7 @@ Story,S1: Usage statistics and insights,Iteration 7,E22,"type/story area/analyti
 Story,S2: Contributor and community reports,Iteration 7,E22,"type/story area/analytics","01",E19,contributor dashboards,Activity dashboards and community metrics,2
 Story,S3: Cultural impact measurement,Iteration 7,E22,"type/story area/analytics","89",E22,reporting tools,Preservation effectiveness metrics,1
 
-Epic,E23: Enhanced Educational Tools,Iteration 8,E23,"type/epic area/language phase/3 priority/P2","23|51|30023",E9|E5,src/components/education/*,Structured learning modules and assessments,8
+Epic,E23: Enhanced Educational Tools,Iteration 8,E23,"type/epic area/language phase/3 priority/P2","23|51|30023",E9|E5,src/components/education/*|src/app/learn/*,Structured learning modules and assessments,8
 Story,S1: Structured learning modules,Iteration 8,E23,"type/story area/language","51|30023",E9,learning modules,Modular lesson framework,3
 Story,S2: Assessments and quizzes,Iteration 8,E23,"type/story area/language","23",E9,assessment system,Quiz and assessment system,3
 Story,S3: Progress tracking and certification,Iteration 8,E23,"type/story area/language","01",E23,progress tracking,Learner progress and achievements,2
