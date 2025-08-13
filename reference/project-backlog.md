@@ -2,74 +2,12 @@
 
 Purpose: A structured backlog- End-to-end user flows implemented per page: list → filter/sort/search → detail → back preserves list state; media playback and downloads work; loading/empty/error states present.
 
-## Gap Analysis & Recommendations
-
-### ✅ Addressed Gaps
-
-1. **Content Sensitivity (E11)** - Moved to Iteration 1 since it affects all content display from discovery onwards
-2. **Home Page Dependencies** - Updated E8 to depend on curation lists (E12) for meaningful featured content
-3. **Contribute Flow Context** - Updated E16 to depend on discovery epics (E5, E6, E7) so users understand what to contribute
-4. **Community Event References** - Updated E14 to depend on cultural content (E5) since events often reference cultures
-5. **Profile Content Aggregation** - Updated E13 to depend on content epics for meaningful profile displays
-6. **Iteration-Phase Alignment** - Cleaned up phase assignments to follow logical progression
-7. **Footer Pages & Features** - Added E27 (Static Pages), E28 (Support System), E29 (Newsletter & Social Integration) to cover all footer links and functionality
-8. **Missing Page Coverage** - About Us, Get Involved, Support section, Newsletter, Social media, Contact system now properly mapped
-
-### 🔍 Remaining Considerations
-
-1. **User Onboarding Flow** - Consider explicit onboarding guidance in E8 (Home) to help users navigate from landing to discovery
-2. **Empty State Handling** - Ensure graceful degradation when featured content or metrics are unavailable in early iterations
-3. **Content Bootstrapping** - May need seed content strategy for meaningful home page display before user-generated content exists
-4. **Cross-Epic Dependencies** - Monitor circular dependencies as epics evolve (E8→E12→E1, E5 content for home features)
-5. **Progressive Enhancement** - Consider how features degrade gracefully when advanced epics aren't yet implemented
-
-### 📋 Implementation Recommendations
-
-1. **Iteration 2 (Home)** - Implement fallback content and empty states for when discovery content isn't yet robust
-2. **Iteration 3 (Discovery)** - Prioritize content seeding strategy alongside E5 implementation  
-3. **Iteration 6 (Contribute)** - Include user guidance about contribution types learned from exploration
-4. **Cross-Iteration** - Maintain feature flags to gracefully handle incomplete dependency chains
-
----
-
-## Epics, Stories, and Tasks
-
-Each epic lists: motivation, NIPs, dependencies, affected files, acceptance criteria, and stories with concrete tasks.
-
-### Epic E0: Global UI Flow Foundation
-
-- Motivation: Turn demo pages into production-grade flows with URL-driven state and consistent UX patterns.
-- NIPs: n/a (UX foundation)
-- Dependencies: None
-- Affected files: `src/app/*`, `src/components/pages/*`, shared UI hooks/utilities.
-- Acceptance criteria:
-  - Filters, search, and sort are encoded in URL query params; back/forward restores state and scroll position.
-  - List pages implement pagination or infinite scroll with stable loading placeholders.
-  - Each route has `loading.tsx` and `error.tsx` with consistent skeletons and empty states.
-  - Debounced search input and cancelable requests for lists with search.
-- Stories
-  - S1: URL state and deep-linking
-    - Tasks
-      - T1: Build `useQueryParamState` hook for filter/sort/search
-      - T2: Preserve list scroll position across navigation
-  - S2: Loading, empty, and error patterns
-    - Tasks
-      - T3: Add `loading.tsx` and `error.tsx` to routes missing them; unify Skeletons/Empty components
-  - S3: Pagination / infinite scroll
-    - Tasks
-      - T4: Create base pagination/virtual list hook; wire to Exhibitions and Resources
-  - S4: Search wiring
-    - Tasks
-      - T5: Debounced search input component; integrate with list queries
-
 ## Notes
 
 - Preserve visual design; implement missing user flows as first-class work. Current pages are demo-only and many flows are non-functional.
 - Keep UI consistent; flip data via a feature flag. Fallback to existing mocks when disabled.
 - Map all work to referenced NIPs to preserve protocol rationale.
-- Use suggested labels: area/*, type/*, page/*, nip/*, phase/*, priority/*.
-- Align with `reference/user-flows.md`: each page has explicit search, filter, load-more, and CTA navigation flows.
-- **Top-down integration**: Requirements from `reference/user-flows.md` "Typical Requirements for a Cultural Bridge Platform" are systematically integrated into epics, ensuring comprehensive feature coverage across all 8 requirement categories.
+- Use suggested labels: area/*, type/*, page/*, nip/*, phase/*, priority/
 
 ## Labels (suggested)
 
@@ -248,6 +186,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
   - List pages implement pagination or infinite scroll with stable loading placeholders.
   - Each route has `loading.tsx` and `error.tsx` with consistent skeletons and empty states.
   - Debounced search input and cancelable requests for lists with search.
+- **Definition of Done:**
+  - ✅ All major list pages (explore, exhibitions, resources, elder-voices) have working URL state management
+  - ✅ Browser back/forward button preserves filters, search terms, and scroll position
+  - ✅ Loading states show skeleton components, not blank pages
+  - ✅ Error states show user-friendly messages with retry options
+  - ✅ Search input has 300ms debounce and shows loading indicator
+  - ✅ Pagination/infinite scroll works without UI glitches
+  - ✅ Manual testing: navigate between pages, refresh, use back button - state preserved
 - Stories
   - S1: URL state and deep-linking
     - Tasks
@@ -276,6 +222,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
   - Feature flag `NEXT_PUBLIC_NOSTR_ENABLE` selects Nostr vs. mocks per page.
   - Shared provider caches queries and exposes typed mappers.
   - Adapter exposes hooks/services to be consumed by page-level epics.
+- **Definition of Done:**
+  - ✅ Environment variable `NEXT_PUBLIC_NOSTR_ENABLE` controls data source (Nostr vs mocks)
+  - ✅ Nostr client connects to at least 3 reliable relays with automatic failover
+  - ✅ Query caching prevents duplicate network requests within 5-minute window
+  - ✅ All UI types in `src/types/content.ts` are populated by adapters
+  - ✅ Error handling: network failures gracefully fall back to cached/mock data
+  - ✅ Unit tests: adapter functions handle malformed Nostr events without crashing
+  - ✅ Integration test: toggle feature flag and verify UI shows real vs mock data
 - Stories
   - S1: Feature flag and provider bootstrap
     - Tasks
@@ -296,6 +250,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E1
 - Affected files: `src/lib/nostr/media.ts`; image/audio consumers in pages
 - Acceptance criteria: Given a referenced media id/URL, resolve metadata, checksum, dimensions; return stable URL.
+- **Definition of Done:**
+  - ✅ NIP-94 metadata resolution works for images, audio, and video files
+  - ✅ Media cache reduces duplicate network requests (5-minute TTL minimum)
+  - ✅ Fallback blur placeholders display when media fails to load
+  - ✅ File integrity: checksums validate to prevent corrupted/tampered media
+  - ✅ Performance: media resolution doesn't block page render (async loading)
+  - ✅ Test coverage: unit tests for resolver with various NIP-94 event formats
+  - ✅ Manual test: verify images load correctly across all pages
 - Stories
   - S1: NIP-94 fetch and cache
     - Tasks
@@ -310,6 +272,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E1
 - Affected files: `src/lib/nostr/labels.ts`; filters in Exhibitions/Explore/Resources
 - Acceptance criteria: Namespaced labels (`#l:region`, `#l:culture`, `#l:category`, `#l:language:*`) parsed consistently; UI filters read from adapter.
+- **Definition of Done:**
+  - ✅ Label parser handles all supported namespaces: region, culture, category, language
+  - ✅ Filter dropdowns populate with actual label values from Nostr data
+  - ✅ NIP-12 query builders construct correct filters from UI selections
+  - ✅ Invalid/malformed labels are gracefully ignored without breaking queries
+  - ✅ Performance: label parsing doesn't impact initial page load time
+  - ✅ Test coverage: parser handles edge cases (empty labels, special characters)
+  - ✅ Manual test: filters on explore/exhibitions pages return expected results
 - Stories
   - S1: Parse and normalize label tags
     - Tasks
@@ -323,6 +293,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E0–E3, E5 (core discovery patterns established)
 - Affected files: `src/components/pages/ExhibitionsContent.tsx`; `src/components/pages/ExhibitionDetail*.tsx`; `src/app/exhibitions/*`; `src/data/exhibitions.ts`
 - Acceptance criteria: Exhibitions list/detail render from relays; filters work; artifacts hydrate lazily.
+- **Definition of Done:**
+  - ✅ Exhibitions list loads from NIP-33 kind 30002 events with proper pagination
+  - ✅ Category/region filters work correctly and update URL state
+  - ✅ Search functionality finds exhibitions by title/description (debounced)
+  - ✅ Exhibition detail page resolves NIP-23 descriptions and displays artifacts
+  - ✅ Artifact gallery lazy-loads media using NIP-94 resolution
+  - ✅ Performance: initial page load under 3 seconds on slow connection
+  - ✅ Accessibility: images have alt text, keyboard navigation works
+  - ✅ Manual test: create/find exhibition, verify all filters and detail views work
 - Stories
   - S0: Flow wiring (filters/sort/pagination + deep links)
     - Tasks
@@ -345,6 +324,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E0–E3
 - Affected files: `src/components/pages/ExploreContent.tsx`; `src/app/explore/*`; `src/app/explore/[id]/page.tsx`; `src/data/explore.ts`
 - Acceptance criteria: Cultures list uses 30001; detail aggregates counts; featured via NIP-51 when available; serves as foundation for user understanding of platform content.
+- **Definition of Done:**
+  - ✅ Cultures list loads from NIP-33 kind 30001 events with region/language facets
+  - ✅ Culture detail pages show related exhibitions, resources, and stories counts
+  - ✅ "Featured" cultures use NIP-51 curation lists when available
+  - ✅ Search works for culture and community names with instant feedback
+  - ✅ Clicking content counts navigates to filtered views (e.g., exhibitions for this culture)
+  - ✅ Mobile responsive: culture cards display properly on all screen sizes
+  - ✅ Performance: culture images load progressively with blur-to-sharp transition
+  - ✅ User test: new user can discover and understand cultures within 2 minutes
 - Stories
   - S0: Flow wiring (facets + deep links)
     - Tasks
@@ -365,6 +353,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E0–E3
 - Affected files: `src/components/pages/DownloadsContent.tsx`; `src/app/downloads/*`; `src/app/downloads/[id]/page.tsx`; `src/data/resources.ts`
 - Acceptance criteria: Resources list/detail render from 30003; media resolved; types preserved.
+- **Definition of Done:**
+  - ✅ Resources list loads from NIP-33 kind 30003 with category/type filtering
+  - ✅ Sort functionality works (newest, popular, name) with URL persistence
+  - ✅ Download buttons trigger actual file downloads with progress indication
+  - ✅ File size and type information displays accurately before download
+  - ✅ 404 handling: missing files show helpful error with alternative suggestions
+  - ✅ Preview functionality works for PDFs, images, and audio files
+  - ✅ Mobile UX: downloads work on mobile devices with proper handling
+  - ✅ Analytics: track download counts for popular resource identification
 - Stories
   - S0: Flow wiring (filters/sort + downloads)
     - Tasks
@@ -384,6 +381,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E0–E3
 - Affected files: `src/components/pages/ElderVoicesContent.tsx`; `src/data/elderStories.ts`; `src/app/elder-voices/*`
 - Acceptance criteria: Stories render from NIP-23 with media; ratings mapped from NIP-25 reactions to 0–5 stars.
+- **Definition of Done:**
+  - ✅ Elder stories load from NIP-23 events with proper text formatting
+  - ✅ Audio playback controls work (play/pause/scrub) with duration display
+  - ✅ Star ratings computed from NIP-25 reactions display accurately
+  - ✅ Rating submission sends NIP-25 events with optimistic UI updates
+  - ✅ Category filtering preserves state when navigating between stories
+  - ✅ Transcript toggle works when available (accessibility requirement)
+  - ✅ Mobile audio: playback controls work on iOS and Android devices
+  - ✅ Emotional impact: users report feeling connected to elder stories
 - Stories
   - S0: Flow wiring (audio playback + ratings)
     - Tasks
@@ -404,6 +410,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E1, E3, E12 (infrastructure, labels, and curation lists for featured content)
 - Affected files: `src/app/page.tsx`; `src/data/home.ts`
 - Acceptance criteria: Metrics computed from recent queries; featured grids from NIP-51 lists; navigation flows to core discovery pages; graceful fallbacks when content is limited.
+- **Definition of Done:**
+  - ✅ Platform metrics (cultures, languages, stories) update dynamically from real data
+  - ✅ Featured content grids load from NIP-51 curation lists
+  - ✅ CTAs ("Explore Cultures", "Share Your Heritage") navigate correctly
+  - ✅ Featured culture cards link to detailed pages with proper state management
+  - ✅ Graceful degradation: fallback content when featured lists are empty
+  - ✅ Performance: home page loads under 2 seconds on average connection
+  - ✅ Analytics: track CTA click-through rates to understand user journey
+  - ✅ User test: first-time visitors understand platform purpose within 30 seconds
 - Stories
   - S0: Flow wiring (CTAs + featured culture links)
     - Tasks
@@ -424,6 +439,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E3, E5 (E23 provides enhanced tools in parallel)
 - Affected files: `src/components/pages/LanguageContent.tsx`; `src/app/language/page.tsx`; learning modules
 - Acceptance criteria: Language page populated from curated lists and long-form guides; structured learning modules available; cultural immersion features work; basic progress tracking implemented.
+- **Definition of Done:**
+  - ✅ Language learning page loads content from NIP-51 curation lists
+  - ✅ Cultural immersion modules connect language learning to cultural context
+  - ✅ Audio modules work with proper pronunciation and cultural examples
+  - ✅ Progress tracking saves learner advancement locally and optionally to Nostr
+  - ✅ Community practice features enable peer learning connections
+  - ✅ Mobile learning: modules work effectively on mobile devices
+  - ✅ Accessibility: audio transcripts available, visual learning supports
+  - ✅ User feedback: learners report improved cultural understanding alongside language
 - Stories
   - S1: Language-curated content and immersion
     - Tasks
@@ -446,6 +470,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E4–E7
 - Affected files: identity display components; publishing utilities; user management system; profile pages
 - Acceptance criteria: Show NIP-05 where available; support delegated signing; user profiles display contributions and connections; follow/connect functionality works; content contribution management implemented.
+- **Definition of Done:**
+  - ✅ NIP-05 identity resolution works with graceful fallback to npub
+  - ✅ User registration/login flow using Nostr keys (NIP-07 extensions supported)
+  - ✅ Profile pages show user contributions across cultures, resources, stories
+  - ✅ NIP-26 delegation information displays correctly for institutional accounts
+  - ✅ Follow/connect functionality creates NIP-03 contact lists
+  - ✅ Content ownership: users can edit/delete their own contributions
+  - ✅ Privacy: users control visibility of their contributions and connections
+  - ✅ Security test: cannot modify other users' content or profiles
 - Stories
   - S1: Identity display and authentication
     - Tasks
@@ -470,6 +503,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - NIPs: 36, 70, 65, 01
 - Dependencies: E1 (data infrastructure for content parsing)
 - Acceptance criteria: Sensitive content labeled and gated; optional protected payloads later.
+- **Definition of Done:**
+  - ✅ NIP-36 content warnings parse correctly and display appropriate badges
+  - ✅ Age-restricted content requires user confirmation before viewing
+  - ✅ Cultural sensitivity warnings respect community protocols
+  - ✅ Protected content (NIP-70) encrypts properly for authorized audiences
+  - ✅ Relay set policies (NIP-65) control access to sensitive materials
+  - ✅ Override controls: users can disable warnings after initial consent
+  - ✅ Community feedback: cultural communities validate sensitivity handling
+  - ✅ Legal compliance: content policies meet platform requirements
 - Stories
   - S1: Sensitive labeling & warnings
     - Tasks
@@ -484,6 +526,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E1 (data infrastructure)
 - Affected files: Lists integration across home/exhibitions/explore
 - Acceptance criteria: Featured sets powered by NIP-51 lists.
+- **Definition of Done:**
+  - ✅ NIP-51 lists load correctly and populate featured sections
+  - ✅ Curation lists can be updated without code deployment
+  - ✅ Featured content rotates based on list priorities or timestamps
+  - ✅ Multiple curators can manage different themed lists
+  - ✅ Empty lists gracefully display fallback content
+  - ✅ Performance: list loading doesn't delay page rendering
+  - ✅ Cache strategy: lists update within 5 minutes of publication
+  - ✅ Editorial test: curators can successfully feature new content
 - Stories
   - S1: Featured lists integration
     - Tasks
@@ -494,6 +545,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - NIPs: 05, 12, 19, 01
 - Dependencies: E5, E6, E7, E10 (profiles show content contributions; requires user system and content to aggregate)
 - Acceptance criteria: Member pages aggregate authored events by pubkey; show NIP-05 and recent contributions across cultures, resources, and stories.
+- **Definition of Done:**
+  - ✅ Community directory displays all active contributors with search functionality
+  - ✅ Individual member profiles aggregate all contributions (cultures, resources, stories)
+  - ✅ NIP-05 identities display with fallback to readable npub format
+  - ✅ Contribution timeline shows recent activity with timestamps
+  - ✅ Expertise tags help users find specialists in specific cultural areas
+  - ✅ Navigation: profile links work from all content pages
+  - ✅ Privacy: users control what appears on their public profiles
+  - ✅ Performance: profile aggregation completes within 3 seconds
 - Stories
   - S0: Community directory (list → profile)
     - Tasks
@@ -508,6 +568,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - NIPs: 52, 40, 23, 01
 - Dependencies: E5, E10 (events often reference cultural content; requires user system)
 - Acceptance criteria: Events list/detail render from NIP-52; optional expiration via NIP-40; events can reference cultural content.
+- **Definition of Done:**
+  - ✅ Community events load from NIP-52 calendar events with proper date/time display
+  - ✅ Event details resolve NIP-23 descriptions and show location/registration info
+  - ✅ Events can link to specific cultures, making cultural context clear
+  - ✅ Calendar view displays events chronologically with filtering options
+  - ✅ Expired events (NIP-40) are handled gracefully with archive access
+  - ✅ Time zones: events display correctly for user's local timezone
+  - ✅ Integration: events link to related cultural content and profiles
+  - ✅ Community test: event organizers can successfully promote cultural events
 - Stories
   - S1: Calendar events
     - Tasks
@@ -518,6 +587,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - NIPs: 28 (29 optional), 42, 01
 - Dependencies: E10
 - Acceptance criteria: Public channels or groups for exchange spaces with basic gating if needed.
+- **Definition of Done:**
+  - ✅ Exchange directory loads programs from NIP-28 public channels
+  - ✅ Program filtering works by type (storytelling, ceremony, craft, dance, music)
+  - ✅ Program details link to external registration or internal detail pages
+  - ✅ Optional NIP-29 private groups for exclusive exchange programs
+  - ✅ Basic gating: some exchanges may require authentication or invitation
+  - ✅ Cultural protocols: exchanges respect cultural sharing guidelines
+  - ✅ Integration: programs can reference specific cultures or practitioners
+  - ✅ Community feedback: cultural exchange facilitates meaningful connections
 - Stories
   - S0: Exchange directory flow
     - Tasks
@@ -530,24 +608,60 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - NIPs: 98, 46, 94, 33, 68, 01
 - Dependencies: E5, E6, E7, E10 (users must understand content types from discovery before contributing; requires auth)
 - Acceptance criteria: Submission UI for resources/exhibitions using HTTP auth; remote signing optional; media upload path mapped to NIP-94; users understand contribution context from prior exploration; clear guidance on content types and community guidelines.
+- **Definition of Done:**
+  - ✅ Contribution forms work for resources, exhibitions, and cultural content
+  - ✅ HTTP auth (NIP-98) enables secure content submission
+  - ✅ Media upload creates proper NIP-94 file metadata events
+  - ✅ Remote signing (NIP-46) works for users with external key management
+  - ✅ Content guidelines clearly explain cultural sensitivity and attribution requirements
+  - ✅ Preview functionality shows how content will appear before publishing
+  - ✅ Content validation prevents incomplete or improperly formatted submissions
+  - ✅ User test: contributors successfully publish content within 10 minutes
 
 ### Epic E17: Reactions & Highlights
 
 - NIPs: 25, 84, 01
 - Dependencies: E7 (Elder Voices integration where reactions are primarily used)
 - Acceptance criteria: Map star ratings to NIP-25; optional highlights in detail pages.
+- **Definition of Done:**
+  - ✅ Star rating system (0-5 stars) converts to/from NIP-25 reactions correctly
+  - ✅ Rating submission works with optimistic UI updates and error rollback
+  - ✅ Average ratings calculate accurately from multiple NIP-25 events
+  - ✅ Optional highlights (NIP-84) work for text selection in elder stories
+  - ✅ Rating display updates in real-time when new reactions arrive
+  - ✅ Anti-spam: prevent multiple ratings from same user/key
+  - ✅ Privacy: users can rate anonymously or publicly
+  - ✅ Community trust: ratings reflect genuine community engagement
 
 ### Epic E18: Payments (Display)
 
 - NIPs: 57, 05, 01
 - Dependencies: E10
 - Acceptance criteria: Show zap buttons/summary where appropriate; respect sensitivity policy.
+- **Definition of Done:**
+  - ✅ Lightning zap buttons (NIP-57) display on appropriate content types
+  - ✅ Zap amount selection and confirmation flow works correctly
+  - ✅ Zap summaries show appreciation without compromising privacy
+  - ✅ Cultural sensitivity: zaps respect community protocols (not all cultures use money)
+  - ✅ NIP-05 identity integration for payment recipient verification
+  - ✅ Graceful fallback when Lightning infrastructure unavailable
+  - ✅ Documentation: clear explanation of appreciation vs commercial transaction
+  - ✅ Community acceptance: cultural practitioners comfortable with appreciation mechanism
 
 ### Epic E19: Observability & Ops
 
 - NIPs: 89 (optional), 01
 - Dependencies: E1–E8
 - Acceptance criteria: Minimal logging for query time/hydration; flag-controlled; docs for relay selection and auth.
+- **Definition of Done:**
+  - ✅ Query performance logging tracks page load times and slow queries
+  - ✅ Feature flag controls telemetry collection with privacy protection
+  - ✅ Relay health monitoring identifies connection issues and failovers
+  - ✅ Documentation covers relay selection criteria and backup strategies
+  - ✅ Error logging captures issues without exposing sensitive user data
+  - ✅ Performance budgets: alerts when page loads exceed acceptable thresholds
+  - ✅ Operational runbooks guide incident response and troubleshooting
+  - ✅ Privacy compliance: all logging respects user privacy expectations
 
 ### Epic E20: Community Interaction & Messaging
 
@@ -556,6 +670,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E10 (user management), E4–E7 (content)
 - Affected files: `src/components/comments/*`, `src/components/messaging/*`, detail pages
 - Acceptance criteria: Comments and discussions work on all content types; direct messaging between users; notification system for interactions.
+- **Definition of Done:**
+  - ✅ NIP-10 threaded comments work on cultures, exhibitions, resources, elder stories
+  - ✅ NIP-04 encrypted direct messaging between registered users
+  - ✅ Notification system alerts users to replies, mentions, and messages
+  - ✅ Moderation tools allow content authors to manage discussions
+  - ✅ Comment threading displays clearly with proper indentation
+  - ✅ Real-time updates: new comments appear without page refresh
+  - ✅ Cultural protocols: discussions respect community guidelines
+  - ✅ Performance: comment loading doesn't slow page rendering
 - Stories
   - S1: Comments and discussion forums
     - Tasks
@@ -578,6 +701,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E3 (labels), E10 (user management)
 - Affected files: `src/lib/versioning/*`, `src/components/content/*`, admin interfaces
 - Acceptance criteria: Version control tracks changes to cultural data; rights management protects IP; content authenticity verification works.
+- **Definition of Done:**
+  - ✅ NIP-16 replaceable events enable content versioning with full history
+  - ✅ Content diff viewer shows changes between versions clearly
+  - ✅ Rights management system protects cultural intellectual property
+  - ✅ Attribution tracking ensures proper credit to cultural contributors
+  - ✅ Rollback functionality allows restoration of previous content versions
+  - ✅ Authenticity verification prevents unauthorized modifications
+  - ✅ Cultural protocols: version control respects community ownership practices
+  - ✅ Legal compliance: rights management meets international IP standards
 - Stories
   - S1: Version control for cultural data
     - Tasks
@@ -600,6 +732,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E8 (basic metrics), E19 (ops)
 - Affected files: `src/lib/analytics/*`, `src/components/dashboards/*`, admin interfaces
 - Acceptance criteria: Usage statistics track most viewed cultures and content; contributor activity reports available; impact measurement of preservation efforts implemented.
+- **Definition of Done:**
+  - ✅ Analytics dashboard shows content popularity, views, and engagement metrics
+  - ✅ Cultural impact metrics measure preservation effectiveness and reach
+  - ✅ Contributor activity reports track participation and content creation
+  - ✅ Privacy compliance: analytics respect user privacy and GDPR requirements
+  - ✅ Real-time reporting: key metrics update within 1 hour of activity
+  - ✅ Export functionality: stakeholders can download reports for grants/funding
+  - ✅ Cultural insights: analytics help identify endangered cultures needing support
+  - ✅ Performance metrics: platform efficiency and user satisfaction tracking
 - Stories
   - S1: Usage statistics and insights
     - Tasks
@@ -622,6 +763,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E9 (basic language learning), E5 (cultures)
 - Affected files: `src/components/education/*`, `src/app/learn/*`, learning modules
 - Acceptance criteria: Structured learning modules available; quizzes and assessments work; progress tracking for learners implemented; interactive cultural lessons functional.
+- **Definition of Done:**
+  - ✅ Interactive learning modules provide structured cultural and language education
+  - ✅ Assessment system accurately evaluates cultural knowledge and progress
+  - ✅ Progress tracking shows learner achievements and completion rates
+  - ✅ Adaptive learning adjusts difficulty based on individual performance
+  - ✅ Cultural competency certificates provide recognized achievement validation
+  - ✅ Lesson progression follows pedagogically sound educational principles
+  - ✅ Accessibility: learning tools work for diverse learning styles and abilities
+  - ✅ Cultural authenticity: educational content validated by cultural experts
 - Stories
   - S1: Structured learning modules
     - Tasks
@@ -643,6 +793,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E4 (exhibitions), E2 (media)
 - Affected files: `src/components/exhibitions/curation/*`, `src/components/virtual-tours/*`
 - Acceptance criteria: Virtual tours and immersive experiences available; integration with external cultural institutions; advanced curation tools for exhibitions.
+- **Definition of Done:**
+  - ✅ 360° virtual tours provide immersive cultural site exploration
+  - ✅ Integration with museum APIs enables content sharing and collaboration
+  - ✅ Drag-and-drop exhibition builder allows intuitive curation workflows
+  - ✅ Multimedia experiences support VR/AR for enhanced cultural immersion
+  - ✅ Import/export tools work with standard museum and cultural institution formats
+  - ✅ Collaborative curation enables multiple curators to work on exhibitions
+  - ✅ Performance optimization: virtual tours load efficiently on various devices
+  - ✅ Cultural sensitivity: exhibition tools respect sacred and sensitive content protocols
 - Stories
   - S1: Virtual tours and immersive experiences
     - Tasks
@@ -664,6 +823,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E1 (data backbone), E19 (ops)
 - Affected files: `src/api/*`, `src/lib/offline/*`, infrastructure components
 - Acceptance criteria: API available for external integrations; offline access works for remote communities; security measures protect data and user privacy; scalable architecture supports growth.
+- **Definition of Done:**
+  - ✅ Comprehensive API documentation with SDKs for major programming languages
+  - ✅ Offline-first architecture allows content access without internet connectivity
+  - ✅ Security audit completed with penetration testing and vulnerability assessment
+  - ✅ API rate limiting protects against abuse while supporting legitimate usage
+  - ✅ Horizontal scaling supports 10x growth in users and content volume
+  - ✅ Automated backup system ensures data recovery within 4 hours
+  - ✅ Authentication system integrates with Nostr keys and traditional auth methods
+  - ✅ Performance monitoring: API responses under 200ms for 95th percentile requests
 - Stories
   - S1: Public API for external integrations
     - Tasks
@@ -687,6 +855,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E10 (user management), E20 (community interactions)
 - Affected files: `src/components/moderation/*`, `src/admin/*`, moderation interfaces
 - Acceptance criteria: Content moderation tools available; reporting system works; community guidelines enforced; cultural sensitivity maintained.
+- **Definition of Done:**
+  - ✅ NIP-56 reporting system enables community-driven content moderation
+  - ✅ Cultural sensitivity review process involves community elders and leaders
+  - ✅ Moderation dashboard provides efficient workflow for reviewing reported content
+  - ✅ Automated screening flags potentially problematic content for human review
+  - ✅ Community guidelines clearly articulate cultural respect and inclusion policies
+  - ✅ Escalation procedures ensure sensitive cultural matters receive appropriate attention
+  - ✅ Elder/leader verification system validates cultural authority and expertise
+  - ✅ Appeal process allows fair resolution of moderation disputes
 - Stories
   - S1: Content moderation tools
     - Tasks
@@ -706,6 +883,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E1 (data infrastructure), E21 (content management system)
 - Affected files: `src/app/about/*`, `src/components/pages/AboutContent.tsx`, `src/data/about.ts`, static content management system
 - Acceptance criteria: About Us page with mission, team, and story; content is manageable without code deployments; consistent branding and messaging across all static pages.
+- **Definition of Done:**
+  - ✅ About Us page clearly communicates cultural preservation mission and values
+  - ✅ Team profiles showcase diverse cultural backgrounds and expertise
+  - ✅ Content management system allows non-technical updates to static pages
+  - ✅ Privacy policy and terms of service address cultural sensitivity and Nostr decentralization
+  - ✅ Cultural guidelines explain respectful engagement with indigenous and traditional knowledge
+  - ✅ Content licensing policies protect traditional knowledge while enabling sharing
+  - ✅ Consistent branding and messaging reinforce cultural preservation goals
+  - ✅ Version control for static content enables easy rollback of inappropriate changes
 - Stories
   - S1: About Us and Mission pages
     - Tasks
@@ -728,6 +914,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E5 (user understanding of core features), E16 (contributor support needs)
 - Affected files: `src/app/support/*`, `src/components/support/*`, help documentation system
 - Acceptance criteria: Comprehensive help documentation; support ticket system; FAQ covering cultural sensitivity and Nostr concepts; user guidance for contribution workflows.
+- **Definition of Done:**
+  - ✅ FAQ addresses common questions about cultural preservation and Nostr technology
+  - ✅ Step-by-step guides help users navigate exploration, contribution, and community features
+  - ✅ Support ticket system routes inquiries to appropriate team members
+  - ✅ Documentation explains complex Nostr concepts in accessible, non-technical language
+  - ✅ Cultural sensitivity guide helps users understand appropriate engagement protocols
+  - ✅ Admin dashboard enables efficient support team workflow and response tracking
+  - ✅ Automated responses provide immediate help for common issues
+  - ✅ Multi-language support for documentation serves diverse global communities
 - Stories
   - S1: Help documentation and FAQ
     - Tasks
@@ -747,6 +942,15 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E8 (home page integration), E20 (community features)
 - Affected files: `src/components/Footer.tsx`, newsletter system, social media integration
 - Acceptance criteria: Email newsletter signup functional; social media links active; potential content sharing capabilities; contact system operational.
+- **Definition of Done:**
+  - ✅ Newsletter signup form collects emails with proper validation and confirmation
+  - ✅ Email newsletter template showcases cultural content and platform updates
+  - ✅ Social media links connect to active, maintained accounts promoting cultural preservation
+  - ✅ Content sharing buttons enable users to share cultural items across social platforms
+  - ✅ Contact form routes inquiries to appropriate team members with automatic acknowledgment
+  - ✅ Unsubscribe system complies with email marketing regulations (CAN-SPAM, GDPR)
+  - ✅ Social media content syndication promotes platform visibility and cultural awareness
+  - ✅ Newsletter analytics track engagement and cultural content effectiveness
 - Stories
   - S1: Newsletter subscription system
     - Tasks
@@ -776,7 +980,5 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 ## References
 
-- Source plan: reference/NIP-list.md (implementation order and NIP mappings)
-- Requirements integration: reference/user-flows.md "Typical Requirements for a Cultural Bridge Platform" (comprehensive feature coverage across 8 requirement categories systematically integrated into epics E20-E26)
 - UI types: src/types/content.ts
 - Pages: `src/app/*` and `src/components/pages/*`
