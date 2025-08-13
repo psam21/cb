@@ -9,13 +9,14 @@ Purpose: A structured backlog derived from reference/NIP-list.md to plan and tra
 - Map all work to referenced NIPs to preserve protocol rationale.
 - Use suggested labels: area/*, type/*, page/*, nip/*, phase/*, priority/*.
 - Align with `reference/user-flows.md`: each page has explicit search, filter, load-more, and CTA navigation flows.
+- **Top-down integration**: Requirements from `reference/user-flows.md` "Typical Requirements for a Cultural Bridge Platform" are systematically integrated into epics, ensuring comprehensive feature coverage across all 8 requirement categories.
 
 ## Labels (suggested)
 
-- area/adapter, area/flows, area/media, area/labels, area/exhibitions, area/explore, area/resources, area/elder-voices, area/home, area/language, area/identity, area/safety, area/curation, area/community, area/exchange, area/contribute, area/reactions, area/payments, area/ops
+- area/adapter, area/flows, area/media, area/labels, area/exhibitions, area/explore, area/resources, area/elder-voices, area/home, area/language, area/identity, area/safety, area/curation, area/community, area/exchange, area/contribute, area/reactions, area/payments, area/ops, area/auth, area/moderation, area/messaging, area/notifications, area/versioning, area/analytics, area/api, area/offline
 - type/epic, type/story, type/task, type/chore, type/docs
 - page/exhibitions, page/explore, page/resources, page/elder-voices, page/home, page/language, page/community, page/exchange, page/downloads
-- nip/01, nip/05, nip/11, nip/12, nip/19, nip/23, nip/25, nip/26, nip/28, nip/29, nip/33, nip/36, nip/42, nip/46, nip/51, nip/52, nip/57, nip/65, nip/68, nip/70, nip/71, nip/84, nip/89, nip/94, nip/96
+- nip/01, nip/05, nip/10, nip/11, nip/12, nip/19, nip/23, nip/25, nip/26, nip/28, nip/29, nip/33, nip/36, nip/42, nip/46, nip/51, nip/52, nip/57, nip/65, nip/68, nip/70, nip/71, nip/84, nip/89, nip/94, nip/96
 - phase/1, phase/2, phase/3
 - priority/P0, priority/P1, priority/P2
 
@@ -26,9 +27,10 @@ Purpose: A structured backlog derived from reference/NIP-list.md to plan and tra
 - Iteration 3 (Phase 2): Explore + Resources
 - Iteration 4 (Phase 2): Elder Voices + Reactions + Home metrics
 - Iteration 5 (Phase 3): Identity/Delegation + Sensitivity + Curation lists
-- Iteration 6 (Phase 3): Community (Profiles + Events)
-- Iteration 7 (Phase 3): Contribute flows + Payments + Ops
-- Iteration 8 (Optional): Language learning and Exchange
+- Iteration 6 (Phase 3): Community (Profiles + Events) + User Management
+- Iteration 7 (Phase 3): Contribute flows + Payments + Ops + Analytics  
+- Iteration 8 (Optional): Language learning + Exchange + Advanced Features
+- Iteration 9 (Future): Content Management + API + Offline Access
 
 ## Definition of Done (global)
 
@@ -194,7 +196,7 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
     - Tasks
       - T0: Audio play/pause/progress with duration; transcript toggle if available
       - T0b: Star rating interactions (NIP-25) with optimistic update/rollback
-  - T0c: "All Stories" navigation preserves category filter
+      - T0c: "All Stories" navigation preserves category filter
   - S1: Narrative + media
     - Tasks
       - T1: Query NIP-23 with category label; join NIP-94 audio/image
@@ -221,33 +223,53 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
     - Tasks
       - T2: Count distinct cultures/languages/stories in bounded window
 
-### Epic E9: Language Learning (Optional)
+### Epic E9: Language Learning & Cultural Education
 
-- NIPs: 23, 51, 68, 12, 01
-- Dependencies: E3, E5
-- Affected files: `src/components/pages/LanguageContent.tsx`; `src/app/language/page.tsx`
-- Acceptance criteria: Language page populated from curated lists and/or long-form guides filtered by `#l:language:*`; no UI change.
+- Motivation: Comprehensive language learning platform with cultural immersion, structured modules, and progress tracking.
+- NIPs: 23, 51, 68, 12, 01, 30023 (categorized lists)
+- Dependencies: E3, E5, E23 (enhanced educational tools)
+- Affected files: `src/components/pages/LanguageContent.tsx`; `src/app/language/page.tsx`; learning modules
+- Acceptance criteria: Language page populated from curated lists and long-form guides; structured learning modules available; cultural immersion features work; basic progress tracking implemented.
 - Stories
-  - S1: Language-curated lists
+  - S1: Language-curated content and immersion
     - Tasks
       - T1: Load NIP-51 lists scoped to language labels
-  - S2: Guides via NIP-23
+      - T2: Create cultural immersion learning experiences
+  - S2: Structured learning and guides
     - Tasks
-      - T2: Fetch long-form guides with language labels
+      - T3: Fetch long-form guides with language labels
+      - T4: Build listen & learn audio modules
+      - T5: Create community practice features
+  - S3: Basic progress and engagement
+    - Tasks
+      - T6: Implement basic progress tracking for language learners
+      - T7: Create language practice communities and peer connections
 
-### Epic E10: Identity & Delegation
+### Epic E10: Identity & User Management
 
+- Motivation: Comprehensive user registration, authentication, profiles, and social features for cultural practitioners and learners.
 - NIPs: 05, 26, 46, 98, 01, 19
 - Dependencies: E4–E7
-- Affected files: identity display components; publishing utilities (later)
-- Acceptance criteria: Show NIP-05 where available; support delegated signing; remote signing optional.
+- Affected files: identity display components; publishing utilities; user management system; profile pages
+- Acceptance criteria: Show NIP-05 where available; support delegated signing; user profiles display contributions and connections; follow/connect functionality works; content contribution management implemented.
 - Stories
-  - S1: Identity display
+  - S1: Identity display and authentication
     - Tasks
       - T1: Resolve and cache NIP-05; fallback to shortened npub
+      - T2: Implement Nostr-based user registration and login flow
+      - T3: Create user profile creation and editing interface
   - S2: Delegation capability (internal tools first)
     - Tasks
-      - T2: Verify and display NIP-26 delegation info in author UI
+      - T4: Verify and display NIP-26 delegation info in author UI
+  - S3: User profiles and connections
+    - Tasks
+      - T5: Build comprehensive user profile pages (contributions, languages, communities)
+      - T6: Implement follow/connect functionality between users
+      - T7: Create user dashboard for managing contributions
+  - S4: Content contribution management
+    - Tasks
+      - T8: Build upload, edit, delete interfaces for user content
+      - T9: Implement content ownership and permission controls
 
 ### Epic E11: Sensitivity & Protected Content
 
@@ -330,6 +352,156 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - NIPs: 89 (optional), 01
 - Dependencies: E1–E8
 - Acceptance criteria: Minimal logging for query time/hydration; flag-controlled; docs for relay selection and auth.
+
+### Epic E20: Community Interaction & Messaging
+
+- Motivation: Enable rich community interactions through comments, discussions, and direct messaging between cultural practitioners and learners.
+- NIPs: 10 (comments), 04 (encrypted DMs), 01, 42
+- Dependencies: E10 (user management), E4–E7 (content)
+- Affected files: `src/components/comments/*`, `src/components/messaging/*`, detail pages
+- Acceptance criteria: Comments and discussions work on all content types; direct messaging between users; notification system for interactions.
+- Stories
+  - S1: Comments and discussion forums
+    - Tasks
+      - T1: Implement NIP-10 threaded comments on cultural content
+      - T2: Build discussion forum interface for community topics
+      - T3: Add comment moderation tools and reporting
+  - S2: Direct messaging
+    - Tasks
+      - T4: Implement NIP-04 encrypted direct messaging between users
+      - T5: Create message interface and conversation history
+  - S3: Notification system
+    - Tasks
+      - T6: Build notification system for new content, interactions, events
+      - T7: Add user notification preferences and management
+
+### Epic E21: Content Management & Version Control
+
+- Motivation: Advanced content organization, version history, and intellectual property protection for cultural heritage materials.
+- NIPs: 01, 33, 68, 16 (replaceable events)
+- Dependencies: E3 (labels), E10 (user management)
+- Affected files: `src/lib/versioning/*`, `src/components/content/*`, admin interfaces
+- Acceptance criteria: Version control tracks changes to cultural data; rights management protects IP; content authenticity verification works.
+- Stories
+  - S1: Version control for cultural data
+    - Tasks
+      - T1: Implement event replacement chains for content versioning
+      - T2: Build diff and history viewer for content changes
+      - T3: Add rollback capabilities for content editors
+  - S2: Rights management and IP protection
+    - Tasks
+      - T4: Create licensing and attribution system for cultural content
+      - T5: Implement usage permissions and access controls
+  - S3: Authenticity verification
+    - Tasks
+      - T6: Build verification mechanisms for cultural content sources
+      - T7: Create authenticity badges and verification workflows
+
+### Epic E22: Advanced Analytics & Reporting
+
+- Motivation: Comprehensive insights into platform usage, cultural impact, and preservation metrics.
+- NIPs: 01, 89 (app-specific data)
+- Dependencies: E8 (basic metrics), E19 (ops)
+- Affected files: `src/lib/analytics/*`, `src/components/dashboards/*`, admin interfaces
+- Acceptance criteria: Usage statistics track most viewed cultures and content; contributor activity reports available; impact measurement of preservation efforts implemented.
+- Stories
+  - S1: Usage statistics and insights
+    - Tasks
+      - T1: Build analytics dashboard for content popularity and engagement
+      - T2: Create culture and language preservation impact metrics
+      - T3: Implement user engagement and retention analytics
+  - S2: Contributor and community reports
+    - Tasks
+      - T4: Build contributor activity dashboards and reports
+      - T5: Create community health and growth metrics
+  - S3: Cultural impact measurement
+    - Tasks
+      - T6: Design metrics for measuring preservation effectiveness
+      - T7: Build reporting tools for cultural institutions and stakeholders
+
+### Epic E23: Enhanced Educational Tools
+
+- Motivation: Structured learning modules, assessments, and progress tracking for cultural and language education.
+- NIPs: 23 (long-form), 51 (lists), 30023 (categorized lists)
+- Dependencies: E9 (basic language learning), E5 (cultures)
+- Affected files: `src/components/education/*`, `src/app/learn/*`, learning modules
+- Acceptance criteria: Structured learning modules available; quizzes and assessments work; progress tracking for learners implemented; interactive cultural lessons functional.
+- Stories
+  - S1: Structured learning modules
+    - Tasks
+      - T1: Create modular lesson framework for cultural and language learning
+      - T2: Build lesson progression and curriculum management
+  - S2: Assessments and quizzes
+    - Tasks
+      - T3: Implement quiz and assessment system for cultural knowledge
+      - T4: Create adaptive learning based on assessment results
+  - S3: Progress tracking and certification
+    - Tasks
+      - T5: Build learner progress tracking and achievement system
+      - T6: Create cultural competency certificates and badges
+
+### Epic E24: Exhibition Curation Tools
+
+- Motivation: Advanced tools for creating immersive cultural exhibitions and virtual experiences.
+- NIPs: 33 (parameterized replaceable events), 23 (long-form), 94 (file metadata)
+- Dependencies: E4 (exhibitions), E2 (media)
+- Affected files: `src/components/exhibitions/curation/*`, `src/components/virtual-tours/*`
+- Acceptance criteria: Virtual tours and immersive experiences available; integration with external cultural institutions; advanced curation tools for exhibitions.
+- Stories
+  - S1: Virtual tours and immersive experiences
+    - Tasks
+      - T1: Build 360° virtual tour interface for cultural sites
+      - T2: Create immersive multimedia exhibition experiences
+  - S2: External integrations
+    - Tasks
+      - T3: Integrate with museums and cultural institution APIs
+      - T4: Build import/export tools for external exhibition content
+  - S3: Advanced curation tools
+    - Tasks
+      - T5: Create visual exhibition builder with drag-and-drop interface
+      - T6: Implement collaborative curation workflows
+
+### Epic E25: Technical Infrastructure & API
+
+- Motivation: Scalable architecture, comprehensive API, security measures, and offline capabilities for remote communities.
+- NIPs: 01, 11 (relay info), various for API coverage
+- Dependencies: E1 (data backbone), E19 (ops)
+- Affected files: `src/api/*`, `src/lib/offline/*`, infrastructure components
+- Acceptance criteria: API available for external integrations; offline access works for remote communities; security measures protect data and user privacy; scalable architecture supports growth.
+- Stories
+  - S1: Public API for external integrations
+    - Tasks
+      - T1: Design and implement comprehensive REST/GraphQL API
+      - T2: Create API documentation and developer resources
+      - T3: Build API authentication and rate limiting
+  - S2: Offline access and sync
+    - Tasks
+      - T4: Implement offline-first architecture for remote communities
+      - T5: Build content synchronization for offline/online transitions
+  - S3: Security and scalability
+    - Tasks
+      - T6: Implement comprehensive security measures and audit logging
+      - T7: Design and implement horizontal scaling architecture
+      - T8: Create automated backup and disaster recovery systems
+
+### Epic E26: Moderation & Community Management
+
+- Motivation: Tools for community moderation, content governance, and maintaining cultural sensitivity in platform interactions.
+- NIPs: 56 (reporting), 36 (content warnings), 68 (labels)
+- Dependencies: E10 (user management), E20 (community interactions)
+- Affected files: `src/components/moderation/*`, `src/admin/*`, moderation interfaces
+- Acceptance criteria: Content moderation tools available; reporting system works; community guidelines enforced; cultural sensitivity maintained.
+- Stories
+  - S1: Content moderation tools
+    - Tasks
+      - T1: Build content reporting and review system using NIP-56
+      - T2: Create moderation dashboard and workflow tools
+      - T3: Implement automated content screening for inappropriate material
+  - S2: Community governance
+    - Tasks
+      - T4: Create community guidelines and cultural sensitivity policies
+      - T5: Build community leader and elder verification system
+      - T6: Implement escalation procedures for sensitive cultural content
 
 ---
 
@@ -440,6 +612,40 @@ Epic,E18: Payments (Display),Iteration 7,E18,"type/epic area/payments phase/3 pr
 
 Epic,E19: Observability & Ops,Iteration 7,E19,"type/epic area/ops phase/3 priority/P2","89|01",E1,ops docs and toggles,Minimal telemetry and runbooks present,2
 Story,S1: Perf logging (flagged),Iteration 7,E19,"type/story area/ops","01",,logging,Query/hydration timings logged when enabled,1
+
+Epic,E20: Community Interaction & Messaging,Iteration 6,E20,"type/epic area/messaging area/community phase/3 priority/P1","10|04|01|42",E10,src/components/comments/*|src/components/messaging/*,Comments/discussions and DM system functional,8
+Story,S1: Comments and discussion forums,Iteration 6,E20,"type/story area/messaging","10",E10,src/components/comments/*,Threaded comments on content; moderation tools,3
+Story,S2: Direct messaging,Iteration 6,E20,"type/story area/messaging","04",E10,src/components/messaging/*,Encrypted DMs between users,3
+Story,S3: Notification system,Iteration 6,E20,"type/story area/notifications","01",E10,src/components/notifications/*,Notifications for interactions and events,2
+
+Epic,E21: Content Management & Version Control,Iteration 9,E21,"type/epic area/versioning phase/3 priority/P1","01|33|68|16",E3|E10,src/lib/versioning/*,Version control and rights management implemented,8
+Story,S1: Version control for cultural data,Iteration 9,E21,"type/story area/versioning","16|33",E3,src/lib/versioning/*,Content versioning and history tracking,3
+Story,S2: Rights management and IP protection,Iteration 9,E21,"type/story area/versioning","33|68",E10,content licensing system,Licensing and attribution system,3
+Story,S3: Authenticity verification,Iteration 9,E21,"type/story area/versioning","01",E10,verification workflows,Content authenticity mechanisms,2
+
+Epic,E22: Advanced Analytics & Reporting,Iteration 7,E22,"type/epic area/analytics phase/3 priority/P2","01|89",E8|E19,src/lib/analytics/*,Comprehensive analytics and impact reporting,5
+Story,S1: Usage statistics and insights,Iteration 7,E22,"type/story area/analytics","89",E19,analytics dashboard,Content popularity and engagement analytics,2
+Story,S2: Contributor and community reports,Iteration 7,E22,"type/story area/analytics","01",E19,contributor dashboards,Activity dashboards and community metrics,2
+Story,S3: Cultural impact measurement,Iteration 7,E22,"type/story area/analytics","89",E22,reporting tools,Preservation effectiveness metrics,1
+
+Epic,E23: Enhanced Educational Tools,Iteration 8,E23,"type/epic area/language phase/3 priority/P2","23|51|30023",E9|E5,src/components/education/*,Structured learning modules and assessments,8
+Story,S1: Structured learning modules,Iteration 8,E23,"type/story area/language","51|30023",E9,learning modules,Modular lesson framework,3
+Story,S2: Assessments and quizzes,Iteration 8,E23,"type/story area/language","23",E9,assessment system,Quiz and assessment system,3
+Story,S3: Progress tracking and certification,Iteration 8,E23,"type/story area/language","01",E23,progress tracking,Learner progress and achievements,2
+
+Epic,E24: Exhibition Curation Tools,Iteration 8,E24,"type/epic area/exhibitions phase/3 priority/P2","33|23|94",E4|E2,src/components/exhibitions/curation/*,Advanced curation and virtual tours,5
+Story,S1: Virtual tours and immersive experiences,Iteration 8,E24,"type/story area/exhibitions","94",E4,virtual tour interface,360° tours and immersive experiences,2
+Story,S2: External integrations,Iteration 8,E24,"type/story area/exhibitions","33",E4,external APIs,Museum and institution integrations,2
+Story,S3: Advanced curation tools,Iteration 8,E24,"type/story area/exhibitions","33|23",E4,curation interface,Visual exhibition builder,1
+
+Epic,E25: Technical Infrastructure & API,Iteration 9,E25,"type/epic area/api area/offline phase/3 priority/P1","01|11",E1|E19,src/api/*|src/lib/offline/*,API and offline access implemented,13
+Story,S1: Public API for external integrations,Iteration 9,E25,"type/story area/api","01",E1,API implementation,REST/GraphQL API with docs,5
+Story,S2: Offline access and sync,Iteration 9,E25,"type/story area/offline","01",E1,offline architecture,Offline-first for remote communities,5
+Story,S3: Security and scalability,Iteration 9,E25,"type/story area/api","01|11",E19,security measures,Security audit and scaling architecture,3
+
+Epic,E26: Moderation & Community Management,Iteration 6,E26,"type/epic area/moderation phase/3 priority/P0","56|36|68",E10|E20,src/components/moderation/*,Moderation tools and community governance,5
+Story,S1: Content moderation tools,Iteration 6,E26,"type/story area/moderation","56",E20,moderation dashboard,Reporting and review system,3
+Story,S2: Community governance,Iteration 6,E26,"type/story area/moderation","36|68",E10,governance policies,Guidelines and verification system,2
 ```
 
 ## How to use this file
@@ -453,5 +659,6 @@ Story,S1: Perf logging (flagged),Iteration 7,E19,"type/story area/ops","01",,log
 ## References
 
 - Source plan: reference/NIP-list.md (implementation order and NIP mappings)
+- Requirements integration: reference/user-flows.md "Typical Requirements for a Cultural Bridge Platform" (comprehensive feature coverage across 8 requirement categories systematically integrated into epics E20-E26)
 - UI types: src/types/content.ts
 - Pages: `src/app/*` and `src/components/pages/*`
