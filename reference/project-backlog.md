@@ -1,16 +1,17 @@
 # Culture Bridge Backlog: Nostr Integration Roadmap
 
-Purpose: A structured backlog derived from reference/NIP-list.md to plan and track the migration from mocks to Nostr. Organized as iterations (timeboxes), epics, user stories, and implementation tasks. Includes an import-ready CSV for GitHub Projects (v2) so you can paste rows into the project table.
+Purpose: A structured backlog derived from reference/NIP-list.md to plan and track the migration from mocks to Nostr and to productionize UI flows. Organized as iterations (timeboxes), epics, user stories, and implementation tasks. Includes an import-ready CSV for GitHub Projects (v2).
 
 Notes
 
-- Keep UI unchanged; flip data via a feature flag. Fallback to existing mocks when disabled.
+- Preserve visual design; implement missing user flows as first-class work. Current pages are demo-only and many flows are non-functional.
+- Keep UI consistent; flip data via a feature flag. Fallback to existing mocks when disabled.
 - Map all work to referenced NIPs to preserve protocol rationale.
 - Use suggested labels: area/*, type/*, page/*, nip/*, phase/*, priority/*.
 
 ## Labels (suggested)
 
-- area/adapter, area/media, area/labels, area/exhibitions, area/explore, area/resources, area/elder-voices, area/home, area/language, area/identity, area/safety, area/curation, area/community, area/exchange, area/contribute, area/reactions, area/payments, area/ops
+- area/adapter, area/flows, area/media, area/labels, area/exhibitions, area/explore, area/resources, area/elder-voices, area/home, area/language, area/identity, area/safety, area/curation, area/community, area/exchange, area/contribute, area/reactions, area/payments, area/ops
 - type/epic, type/story, type/task, type/chore, type/docs
 - page/exhibitions, page/explore, page/resources, page/elder-voices, page/home, page/language, page/community, page/exchange, page/downloads
 - nip/01, nip/05, nip/11, nip/12, nip/19, nip/23, nip/25, nip/26, nip/33, nip/36, nip/42, nip/46, nip/51, nip/52, nip/57, nip/65, nip/68, nip/70, nip/71, nip/84, nip/89, nip/94, nip/96
@@ -19,7 +20,7 @@ Notes
 
 ## Iterations (timeboxes)
 
-- Iteration 1 (Phase 1): Data backbone – Adapter, Media, Labels
+- Iteration 1 (Phase 1): Flow foundation + Data backbone – Adapter, Media, Labels
 - Iteration 2 (Phase 2): Exhibitions end-to-end
 - Iteration 3 (Phase 2): Explore + Resources
 - Iteration 4 (Phase 2): Elder Voices + Reactions + Home metrics
@@ -30,9 +31,10 @@ Notes
 
 ## Definition of Done (global)
 
-- Meets acceptance criteria; no UI regressions versus mocks.
+- Meets acceptance criteria; no visual regressions versus mocks.
 - Typecheck, lint pass; error paths have placeholders/skeletons.
 - Feature flag off-by-default in production; telemetry guarded.
+- End-to-end user flows implemented per page: list → filter/sort/search → detail → back preserves list state; media playback and downloads work; loading/empty/error states present.
 
 ---
 
@@ -40,26 +42,52 @@ Notes
 
 Each epic lists: motivation, NIPs, dependencies, affected files, acceptance criteria, and stories with concrete tasks.
 
+### Epic E0: Global UI Flow Foundation
+
+- Motivation: Turn demo pages into production-grade flows with URL-driven state and consistent UX patterns.
+- NIPs: n/a (UX foundation)
+- Dependencies: None
+- Affected files: `src/app/*`, `src/components/pages/*`, shared UI hooks/utilities.
+- Acceptance criteria:
+  - Filters, search, and sort are encoded in URL query params; back/forward restores state and scroll position.
+  - List pages implement pagination or infinite scroll with stable loading placeholders.
+  - Each route has `loading.tsx` and `error.tsx` with consistent skeletons and empty states.
+  - Debounced search input and cancelable requests for lists with search.
+- Stories
+  - S1: URL state and deep-linking
+    - Tasks
+      - T1: Build `useQueryParamState` hook for filter/sort/search
+      - T2: Preserve list scroll position across navigation
+  - S2: Loading, empty, and error patterns
+    - Tasks
+      - T3: Add `loading.tsx` and `error.tsx` to routes missing them; unify Skeletons/Empty components
+  - S3: Pagination / infinite scroll
+    - Tasks
+      - T4: Create base pagination/virtual list hook; wire to Exhibitions and Resources
+  - S4: Search wiring
+    - Tasks
+      - T5: Debounced search input component; integrate with list queries
+
 ### Epic E1: Data Backbone – Adapter & Relay Bootstrap
 
-- Motivation: Serve live data with no UI changes by projecting Nostr events into existing TS types.
+- Motivation: Serve live data by projecting Nostr events into existing TS types.
 - NIPs: 01, 11, 12, 19
-- Dependencies: None
+- Dependencies: E0 (consumes flow hooks)
 - Affected files (initial):
-  - src/lib/nostr/ (new): client, queries, types, adapters
-  - src/types/content.ts (read-only shapes)
+  - `src/lib/nostr/` (new): client, queries, types, adapters
+  - `src/types/content.ts` (read-only shapes)
   - `src/app/*` and `src/components/pages/*` (wiring only)
 - Acceptance criteria:
   - Feature flag `NEXT_PUBLIC_NOSTR_ENABLE` selects Nostr vs. mocks per page.
   - Shared provider caches queries and exposes typed mappers.
+  - Adapter exposes hooks/services to be consumed by page-level epics.
 - Stories
-
   - S1: Feature flag and provider bootstrap
     - Tasks
       - T1: Add env flag and config loader
       - T2: Create Nostr client and relay pool with basic NIP-11 discovery
       - T3: Implement query wrapper for NIP-12 filters + pagination
-      - T4: Define adapter interfaces mapping Nostr events -> UI types
+      - T4: Define adapter interfaces mapping Nostr events → UI types
       - T5: Add unit tests for adapters (happy path + missing tags)
   - S2: Error handling and graceful fallback
     - Tasks
@@ -71,10 +99,9 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Motivation: Resolve hero images, audio, video via canonical file metadata.
 - NIPs: 94 (71 optional), 01
 - Dependencies: E1
-- Affected files: src/lib/nostr/media.ts; image/audio consumers in pages
+- Affected files: `src/lib/nostr/media.ts`; image/audio consumers in pages
 - Acceptance criteria: Given a referenced media id/URL, resolve metadata, checksum, dimensions; return stable URL.
 - Stories
-
   - S1: NIP-94 fetch and cache
     - Tasks
       - T1: Implement resolver for kind 1063 with simple in-memory cache
@@ -86,10 +113,9 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Motivation: Power filters/search with structured labels.
 - NIPs: 68, 12, 01
 - Dependencies: E1
-- Affected files: src/lib/nostr/labels.ts; filters in Exhibitions/Explore/Resources
-- Acceptance criteria: Namespaced labels (#l:region, #l:culture, #l:category, #l:language:*) parsed consistently; UI filters read from adapter.
+- Affected files: `src/lib/nostr/labels.ts`; filters in Exhibitions/Explore/Resources
+- Acceptance criteria: Namespaced labels (`#l:region`, `#l:culture`, `#l:category`, `#l:language:*`) parsed consistently; UI filters read from adapter.
 - Stories
-
   - S1: Parse and normalize label tags
     - Tasks
       - T1: Implement parser and canonical enums/mappings
@@ -99,11 +125,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 - Motivation: Replace mocks with NIP-33 canonical records + NIP-23 descriptions + NIP-94 artifacts.
 - NIPs: 33, 23, 68, 94, 12, 01, 19
-- Dependencies: E1–E3
-- Affected files: src/components/pages/ExhibitionsContent.tsx; src/components/pages/ExhibitionDetail*.tsx; src/app/exhibitions/*; src/data/exhibitions.ts
+- Dependencies: E0–E3
+- Affected files: `src/components/pages/ExhibitionsContent.tsx`; `src/components/pages/ExhibitionDetail*.tsx`; `src/app/exhibitions/*`; `src/data/exhibitions.ts`
 - Acceptance criteria: Exhibitions list/detail render from relays; filters work; artifacts hydrate lazily.
 - Stories
-
+  - S0: Flow wiring (filters/sort/pagination + deep links)
+    - Tasks
+      - T0: Encode category/region/search/sort in URL and restore on back
+      - T0b: Add pagination or infinite scroll with stable loading
   - S1: List view from kind 30002 with filters
     - Tasks
       - T1: Query 30002; map tags to fields; hero image via NIP-94
@@ -116,11 +145,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 ### Epic E5: Explore Integration (Cultures)
 
 - NIPs: 33 (30001), 68, 94, 12, 01, 19
-- Dependencies: E1–E3
-- Affected files: src/components/pages/ExploreContent.tsx; src/app/explore/*; src/app/explore/[id]/page.tsx; src/data/explore.ts
+- Dependencies: E0–E3
+- Affected files: `src/components/pages/ExploreContent.tsx`; `src/app/explore/*`; `src/app/explore/[id]/page.tsx`; `src/data/explore.ts`
 - Acceptance criteria: Cultures list uses 30001; detail aggregates counts; featured via NIP-51 when available.
 - Stories
-
+  - S0: Flow wiring (facets + deep links)
+    - Tasks
+      - T0: Region/language facets stored in URL; deep-link to selections
+      - T0b: Clicking counts navigates to destination pages with filters applied
   - S1: Culture summaries list
     - Tasks
       - T1: Query 30001; hydrate image; show basic counts (lazy)
@@ -131,11 +163,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 ### Epic E6: Resources/Downloads Integration
 
 - NIPs: 33 (30003), 68, 94, 12, 01
-- Dependencies: E1–E3
-- Affected files: src/components/pages/DownloadsContent.tsx; src/app/downloads/*; src/app/downloads/[id]/page.tsx; src/data/resources.ts
+- Dependencies: E0–E3
+- Affected files: `src/components/pages/DownloadsContent.tsx`; `src/app/downloads/*`; `src/app/downloads/[id]/page.tsx`; `src/data/resources.ts`
 - Acceptance criteria: Resources list/detail render from 30003; media resolved; types preserved.
 - Stories
-
+  - S0: Flow wiring (filters/sort + downloads)
+    - Tasks
+      - T0: URL state for category/type/sort; deep-linkable
+      - T0b: Download button opens file URL; show size; handle 404 gracefully
   - S1: Resources list
     - Tasks
       - T1: Query 30003; filter by category/type
@@ -146,11 +181,14 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 ### Epic E7: Elder Voices Integration (+ Reactions)
 
 - NIPs: 23, 94, 68, 25, 12, 01
-- Dependencies: E1–E3
-- Affected files: src/components/pages/ElderVoicesContent.tsx; src/data/elderStories.ts; src/app/elder-voices/*
+- Dependencies: E0–E3
+- Affected files: `src/components/pages/ElderVoicesContent.tsx`; `src/data/elderStories.ts`; `src/app/elder-voices/*`
 - Acceptance criteria: Stories render from NIP-23 with media; ratings mapped from NIP-25 reactions to 0–5 stars.
 - Stories
-
+  - S0: Flow wiring (audio playback + ratings)
+    - Tasks
+      - T0: Audio play/pause/progress with duration; transcript toggle if available
+      - T0b: Star rating interactions (NIP-25) with optimistic update/rollback
   - S1: Narrative + media
     - Tasks
       - T1: Query NIP-23 with category label; join NIP-94 audio/image
@@ -162,10 +200,9 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 - NIPs: 51, 68, 12, 01
 - Dependencies: E4–E7
-- Affected files: src/app/page.tsx; src/data/home.ts
+- Affected files: `src/app/page.tsx`; `src/data/home.ts`
 - Acceptance criteria: Metrics computed from recent queries; featured grids from NIP-51 lists.
 - Stories
-
   - S1: Featured via lists
     - Tasks
       - T1: Load featured-cultures/exhibitions/resources lists; intersect
@@ -177,10 +214,9 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 
 - NIPs: 23, 51, 68, 12, 01
 - Dependencies: E3, E5
-- Affected files: src/components/pages/LanguageContent.tsx; src/app/language/page.tsx
+- Affected files: `src/components/pages/LanguageContent.tsx`; `src/app/language/page.tsx`
 - Acceptance criteria: Language page populated from curated lists and/or long-form guides filtered by `#l:language:*`; no UI change.
 - Stories
-
   - S1: Language-curated lists
     - Tasks
       - T1: Load NIP-51 lists scoped to language labels
@@ -195,7 +231,6 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Affected files: identity display components; publishing utilities (later)
 - Acceptance criteria: Show NIP-05 where available; support delegated signing; remote signing optional.
 - Stories
-
   - S1: Identity display
     - Tasks
       - T1: Resolve and cache NIP-05; fallback to shortened npub
@@ -209,7 +244,6 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E4–E7
 - Acceptance criteria: Sensitive content labeled and gated; optional protected payloads later.
 - Stories
-
   - S1: Sensitive labeling & warnings
     - Tasks
       - T1: Parse NIP-36; render warnings/badges; respect policies
@@ -223,7 +257,6 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E4–E8
 - Acceptance criteria: Featured sets powered by lists; editors can update without redeploy.
 - Stories
-
   - S1: Featured lists integration
     - Tasks
       - T1: Load lists by identifier; intersect with page queries
@@ -234,7 +267,6 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E4–E7, E10
 - Acceptance criteria: Member pages aggregate authored events by pubkey; show NIP-05 and recent contributions.
 - Stories
-
   - S1: Profile aggregation
     - Tasks
       - T1: Query by author pubkey; group by content types
@@ -245,7 +277,6 @@ Each epic lists: motivation, NIPs, dependencies, affected files, acceptance crit
 - Dependencies: E4–E7
 - Acceptance criteria: Events list/detail render from NIP-52; optional expiration via NIP-40.
 - Stories
-
   - S1: Calendar events
     - Tasks
       - T1: Query NIP-52; map to UI; link to NIP-23 descriptions
@@ -290,8 +321,15 @@ Columns: Type, Title, Iteration, Epic, Labels, NIPs, Depends On, Files, Acceptan
 
 ```csv
 Type,Title,Iteration,Epic,Labels,NIPs,Depends On,Files,Acceptance Criteria,Estimate
-Epic,E1: Data Backbone – Adapter & Relay Bootstrap,Iteration 1,E1,"type/epic area/adapter phase/1 priority/P0","01|11|12|19",,src/lib/nostr/*|src/types/content.ts|src/app/*,Flag-based provider serving typed data; no UI change,8
-Story,S1: Feature flag and provider bootstrap,Iteration 1,E1,"type/story area/adapter phase/1 priority/P0","01|11|12|19",,src/lib/nostr/*|src/app/*,Flag toggles Nostr vs mocks per page,3
+Epic,E0: Global UI Flow Foundation,Iteration 1,E0,"type/epic area/flows phase/1 priority/P0","",,src/app/*|src/components/pages/*,"URL state, loading/error/empty patterns, pagination/search hooks",8
+Story,S1: URL state and deep-linking,Iteration 1,E0,"type/story area/flows phase/1","",,shared hooks,"Query params reflect filters/sort/search; back restores state",3
+Task,T1: useQueryParamState hook,Iteration 1,E0,"type/task area/flows phase/1","",,shared hooks,Hook implemented and unit-tested,1
+Story,S2: Loading/empty/error patterns,Iteration 1,E0,"type/story area/flows phase/1","",,routes,"All routes have loading.tsx/error.tsx and empty states",2
+Story,S3: Pagination / infinite scroll,Iteration 1,E0,"type/story area/flows phase/1","",,shared hooks,"Pagination or virtual list present for long lists",2
+Story,S4: Search wiring,Iteration 1,E0,"type/story area/flows phase/1","",,components,"Debounced search input with cancelable queries",2
+
+Epic,E1: Data Backbone – Adapter & Relay Bootstrap,Iteration 1,E1,"type/epic area/adapter phase/1 priority/P0","01|11|12|19",E0,src/lib/nostr/*|src/types/content.ts|src/app/*,Flag-based provider serving typed data; adapter hooks available,8
+Story,S1: Feature flag and provider bootstrap,Iteration 1,E1,"type/story area/adapter phase/1 priority/P0","01|11|12|19",E0,src/lib/nostr/*|src/app/*,Flag toggles Nostr vs mocks per page,3
 Task,T1: Add env flag and config loader,Iteration 1,E1,"type/task area/adapter phase/1","01",,src/lib/nostr/config.ts|.env.local,Env flag present and read at runtime,1
 Task,T2: Create Nostr client and relay pool,Iteration 1,E1,"type/task area/adapter phase/1","01|11",,src/lib/nostr/client.ts,Nostr client connects to configured relays,2
 Task,T3: Query wrapper for NIP-12 filters,Iteration 1,E1,"type/task area/adapter phase/1","12",,src/lib/nostr/query.ts,Can request with kinds/tags/limit/since,2
@@ -311,6 +349,7 @@ Task,T1: Canonical enums/mappings,Iteration 1,E3,"type/task area/labels phase/1"
 Task,T2: Build NIP-12 filter helpers,Iteration 1,E3,"type/task area/labels phase/1","12",,src/lib/nostr/query.ts,Helpers compose label filters efficiently,1
 
 Epic,E4: Exhibitions Integration,Iteration 2,E4,"type/epic area/exhibitions phase/2 priority/P0 page/exhibitions","33|23|68|94|12|01|19",E1|E2|E3,src/components/pages/ExhibitionsContent.tsx|src/app/exhibitions/*,List/detail from relays; filters OK; artifacts hydrate,8
+Story,S0: Flow wiring (filters/sort/pagination + deep links),Iteration 2,E4,"type/story area/flows page/exhibitions","",E0,src/app/exhibitions/page.tsx,"URL-encoded filters/sort; pagination or infinite scroll",2
 Story,S1: List view from 30002 with filters,Iteration 2,E4,"type/story area/exhibitions page/exhibitions","33|68|12",E1|E3,src/components/pages/ExhibitionsContent.tsx,List renders from kinds[30002] with filters,3
 Task,T1: Query 30002 + map fields,Iteration 2,E4,"type/task area/exhibitions","33|68|12",,src/lib/nostr/adapters.ts,Fields mapped (title, region, image, tags),1
 Task,T2: Wire filter UI to label helpers,Iteration 2,E4,"type/task area/exhibitions","68|12",,src/components/pages/ExhibitionsContent.tsx,Filters reflect label selections,1
@@ -319,15 +358,18 @@ Task,T3: Resolve NIP-23 description,Iteration 2,E4,"type/task area/exhibitions",
 Task,T4: Fetch 1063 artifact media,Iteration 2,E4,"type/task area/exhibitions","94",,src/lib/nostr/media.ts,Artifacts render with checksummed URLs,1
 
 Epic,E5: Explore Integration,Iteration 3,E5,"type/epic area/explore phase/2 priority/P1 page/explore","33|68|94|12|01|19",E1|E2|E3,src/components/pages/ExploreContent.tsx|src/app/explore/*,Culture list/detail via 30001 with counts,5
+Story,S0: Flow wiring (facets + deep links),Iteration 3,E5,"type/story area/flows page/explore","",E0,src/app/explore/page.tsx,"Region/language facets in URL; deep-linkable",2
 Story,S1: Culture summaries list,Iteration 3,E5,"type/story area/explore page/explore","33|68|12",E3,src/components/pages/ExploreContent.tsx,List shows culture name, region, hero image,2
 Task,T1: Query 30001; hydrate image,Iteration 3,E5,"type/task area/explore","33|94",,src/lib/nostr/adapters.ts,Image and summary present,1
 Story,S2: Culture detail aggregation,Iteration 3,E5,"type/story area/explore page/explore","68|12",E4,src/app/explore/[id]/page.tsx,Detail aggregates related content by label,3
 
 Epic,E6: Resources/Downloads Integration,Iteration 3,E6,"type/epic area/resources phase/2 priority/P1 page/downloads","33|68|94|12|01",E1|E2|E3,src/components/pages/DownloadsContent.tsx|src/app/downloads/*,Resources list/detail from 30003; media resolved,5
+Story,S0: Flow wiring (filters/sort + downloads),Iteration 3,E6,"type/story area/flows page/downloads","",E0,src/app/downloads/page.tsx,"URL state for category/type/sort; graceful downloads",2
 Story,S1: Resources list,Iteration 3,E6,"type/story area/resources page/downloads","33|68|12",E3,src/components/pages/DownloadsContent.tsx,List filters by category/type,2
 Story,S2: Resource detail,Iteration 3,E6,"type/story area/resources page/downloads","94|33",E2,src/app/downloads/[id]/page.tsx,Primary asset and preview resolved,3
 
 Epic,E7: Elder Voices + Reactions,Iteration 4,E7,"type/epic area/elder-voices phase/2 priority/P1 page/elder-voices","23|94|68|25|12|01",E1|E2|E3,src/components/pages/ElderVoicesContent.tsx,Stories render with media; ratings mapped,5
+Story,S0: Flow wiring (audio playback + ratings),Iteration 4,E7,"type/story area/flows page/elder-voices","",E0,src/app/elder-voices/page.tsx,"Audio controls and ratings interaction present",2
 Story,S1: Narrative + media,Iteration 4,E7,"type/story area/elder-voices page/elder-voices","23|94|68",E2,src/components/pages/ElderVoicesContent.tsx,Card shows title, elder, image/audio,2
 Story,S2: Ratings aggregation,Iteration 4,E7,"type/story area/elder-voices page/elder-voices","25",E7,src/components/pages/ElderVoicesContent.tsx,Stars computed from reactions,3
 
