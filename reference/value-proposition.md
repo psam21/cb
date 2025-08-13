@@ -1,7 +1,7 @@
 # Culture Bridge: Preserving Heritage, Advancing Freedom
 ## A Revolutionary Cultural Preservation Platform Built on Nostr Protocol
 
-**Funding Request:** $1,065,000 USD | **Duration:** 18 months | **Impact:** Global cultural preservation at scale
+**Funding Request:** $750,000 USD | **Duration:** 18 months | **Impact:** Global cultural preservation at scale
 
 ---
 
@@ -136,10 +136,19 @@ All funding flows remain transparent on-chain:
 ## Investment Opportunity: Backing the Future of Cultural Preservation
 
 ### **Market Opportunity**
+
 - **$2.3 billion cultural heritage market** seeking digital transformation
 - **500+ million people** actively seeking cultural connection and learning
 - **UNESCO priorities** align with digital heritage preservation initiatives
 - **Lightning Network growth** creates infrastructure for micropayment economies
+
+### **Timeline & Budget Options**
+
+| Timeline | Budget | Team | Risk Profile |
+|----------|--------|------|--------------|
+| **12 months** | $500,000 | 7.0 FTE | Higher risk: rushed validation |
+| **18 months (Recommended)** | $750,000 | 7.0 FTE | Balanced: thorough development |
+| **24 months** | $1,000,000 | 7.0 FTE | Lower risk: extensive partnerships |
 
 ### **Competitive Advantages**
 - **First-mover advantage** in Nostr cultural applications
@@ -164,7 +173,7 @@ Your investment in Culture Bridge funds more than a platform—it catalyzes a gl
 - **Freedom technology validation** proving decentralized protocols serve humanity's highest needs
 - **Economic justice** where cultural work receives appropriate appreciation and compensation
 
-**We request $1,065,000 over 18 months to build the foundation of global cultural preservation infrastructure.**
+**We request $750,000 over 18 months to build the foundation of global cultural preservation infrastructure.**
 
 Every dollar invested preserves irreplaceable human heritage while advancing the freedom technology movement. This isn't just funding a startup—it's underwriting the preservation of human civilization itself, using the tools of digital sovereignty to protect our collective cultural inheritance.
 
