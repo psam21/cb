@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "metrics:export": "APP_ENV=production ts-node scripts/export-metrics.ts",
-    "bench:signing": "node scripts/signing-benchmark.ts"
+  "bench:signing": "node scripts/signing-benchmark.ts",
+  "enrich:nostr": "node scripts/enrich-nostr-handles.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",
@@ -27,8 +28,8 @@
     "next": "^15.4.6",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "react-intersection-observer": "^9.5.3",
-    "supabase": "^2.34.3"
+  "react-intersection-observer": "^9.5.3",
+  "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.4.6",

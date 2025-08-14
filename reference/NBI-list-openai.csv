@@ -1,0 +1,21 @@
+\#	Name	Affiliation / Project(s)	Area(s) of Influence	Public Contacts	Nostr Handle	Investment/Grant Focus	Events / Conferences	Notes / References
+1	Jack Dorsey	Block; Twitter	Funding, Crypto Evangelism	Twitter: @jack	[npub pending verification]	Open protocols (Nostr, Bluesky)	Bitcoin conferences (e.g., The B Word)	Donated ~$4M to Nostr; references: The Guardian; Wikipedia; X bio lists Nostr pubkey
+2	OpenSats Initiative	Non-profit funding org	Development Grants	Website; Twitter (@OpenSats)	[npub pending verification]	Bitcoin & Nostr open-source projects	Bitcoin/Nostr community events	501(c)(3); funded ~$8.9M via The Nostr Fund; sources: OpenSats site
+3	Arvin	OpenSats (Ops Manager)	Grants, Advocacy	Twitter: @arvin	[handle not publicly found]	Admin of Nostr grant rounds	Bitcoin/Nostr hackathons	Authored multiple grant wave summaries
+4	Ben Price	OpenSats (Founder)	Funding Strategy	Twitter: @abitcoinperson	[handle not found]	Oversees Nostr/Bitcoin grant distribution	Bitcoin open-source events	Co-founder of The Nostr Fund
+5	Gigi (dergigi)	OpenSats (Board); Engineer	Dev & Outreach	Email: [email protected]; Twitter: @dergigi	[handle not listed]	Privacy & Bitcoin tools	Bitcoin/Nostr meetups	Author of "21 Lessons"; Bitcoin privacy advocate
+6	Dread	OpenSats (Board); Flash app	Funding & Dev	Twitter: @PoleVaultDream	[handle not available]	Offline LN wallets	Bitcoin/Nostr offline talks	Former athlete turned Bitcoin & Nostr-focused entrepreneur
+7	Elaine Ou	OpenSats (Board); Writer	Policy & Outreach	Twitter: @elaineou	[handle not found]	Freedom tech & regulation	Policy & academic events	Bloomberg columnist on Bitcoin & open systems
+8	James O’Beirne	Bitcoin Core; OpenSats	Research & Dev	(Prefer minimal public contact)	[handle not available]	Bitcoin scalability	Bitcoin DevCon; Lightning events	Led OP_VAULT research; grant advisor
+9	Will Casarin	Damus (iOS Nostr client)	Development	Email via Damus site	@jb55 (npub pending verification)	Nostr client UX	iOS dev meetups; Nostr hackathons	Founder of Damus (iOS-first Nostr client)
+10	Miljan Braticevic	Primal (CEO)	Startup Development	Twitter (likely @miljan)	[handle not found]	Nostr + Bitcoin social apps	Crypto accelerators	Primal raised >$1M to build Nostr apps
+11	André Neves	Zebedee (Co-founder)	Dev (Games, Nostr)	Twitter: @andreneves	[handle not found]	Gaming + Nostr infra	Blockchain dev events	Leads Nostr integration in Zebedee APIs
+12	Zebedee (ZBD)	Bitcoin API & Gaming	Infrastructure, Nostr	Website: zbd.gg	[handle not found]	Lightning/Nostr infrastructure	Blockchain conferences	Offers APIs with Nostr relay integration
+13	Geyser	Bitcoin crowdfunding & grants	Grants & Events	Website; Twitter (@geyserfund)	[handle not available]	Developer grants (e.g., Nostr Wallet Connect)	Hackathons	Supports Nostr tooling via grant-backed projects
+14	Mick Morucci	Geyser (Co-founder)	Community & Grants	Twitter: @mickmor	[handle not found]	Bitcoin/Nostr funding	Hackathons	Former ChangeTip co-founder; Nostr supporter
+15	Ten31 Capital	Bitcoin VC	Investment	Website; Twitter (@Ten31vc)	[handle not available]	Bitcoin/Nostr startups	VC & crypto summits	Invested in Primal, Fedi, etc.
+16	Marty Bent	Ten31 (Managing Partner)	Media, Investment	Twitter: @martybent	[handle not found]	Bitcoin infrastructure	Bitcoin events; podcasts	Media presence boosts Nostr-aligned startups
+17	Grant Gilliam	Ten31 (Co-founder)	Investment	Twitter (likely @grant_gilliam)	[handle not found]	Bitcoin infrastructure startups	Investor summits	Co-founded Swan Bitcoin; invests in Nostr-friendly tech
+18	Jonathan Kirkwood	Ten31 (Partner)	Investment	Twitter (likely)	[handle not found]	Bitcoin/Lightning technology	Tech investment events	Engineering background supports Nostr integration deals
+19	Hivemind Ventures	Bitcoin VC	Startup Investment	Website; Twitter (@HivemindVC)	[handle not found]	Bitcoin protocol & Nostr	VC & crypto forums	Backer of Primal; funds open communication protocols
+20	Max Webster	Hivemind (Founder)	Investment Strategy	Twitter: @MaxAWebster	[handle not found]	Open protocol startups	Bitcoin/Nostr conferences	Founded Hivemind to accelerate censorship-resistant tech
