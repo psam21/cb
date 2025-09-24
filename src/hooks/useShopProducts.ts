@@ -28,7 +28,7 @@ export const useShopProducts = () => {
 
   const loadProducts = useCallback(async () => {
     try {
-      logger.info('Loading shop products', {
+      logger.info('Loading shop products from relays', {
         service: 'useShopProducts',
         method: 'loadProducts',
       });
@@ -36,15 +36,43 @@ export const useShopProducts = () => {
       setLoadingProducts(true);
       setProductsError(null);
 
-      const productList = await shopBusinessService.listProducts();
-      
-      logger.info('Products loaded successfully', {
-        service: 'useShopProducts',
-        method: 'loadProducts',
-        productCount: productList.length,
-      });
+      // First try to load from relays (this is the primary source)
+      const relayResult = await shopBusinessService.queryProductsFromRelays(
+        (relay, status, count) => {
+          logger.info('Relay query progress', {
+            service: 'useShopProducts',
+            method: 'loadProducts',
+            relay,
+            status,
+            count,
+          });
+        }
+      );
 
-      setProducts(productList);
+      if (relayResult.success) {
+        logger.info('Products loaded from relays successfully', {
+          service: 'useShopProducts',
+          method: 'loadProducts',
+          productCount: relayResult.products.length,
+          queriedRelays: relayResult.queriedRelays.length,
+        });
+        setProducts(relayResult.products);
+      } else {
+        // Fallback to local store if relay query fails
+        logger.warn('Relay query failed, falling back to local store', {
+          service: 'useShopProducts',
+          method: 'loadProducts',
+          error: relayResult.error,
+        });
+        
+        const localProducts = await shopBusinessService.listProducts();
+        logger.info('Products loaded from local store', {
+          service: 'useShopProducts',
+          method: 'loadProducts',
+          productCount: localProducts.length,
+        });
+        setProducts(localProducts);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to load products', error instanceof Error ? error : new Error(errorMessage), {
