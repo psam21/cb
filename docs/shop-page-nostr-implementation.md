@@ -29,13 +29,36 @@ This document provides a **clean, standardized blueprint** for implementing a No
 **Configuration**: Production relays from beginning, no hardcoded relays in code
 
 ### Blossom File Storage Configuration
-**Protocol**: Blossom decentralized file storage
-**Authentication**: Nostr event-based authentication
-**File Identification**: SHA-256 hash-based
-**Redundancy**: Multiple server distribution
-**API**: HTTP endpoints for file operations
+**Protocol**: Blossom decentralized file storage ([GitHub](https://github.com/hzrd149/blossom))
+**Authentication**: Kind 24242 (Authorization event) - Signed Nostr events prove identity
+**File Identification**: SHA-256 hash-based addressing
+**Redundancy**: Multiple server distribution with mirroring support
+**API Endpoints**:
+- `PUT /upload` - Upload blobs (requires signed Nostr event auth)
+- `GET /<sha256>` - Retrieve blob by hash (with optional `.ext`)
+- `HEAD /<sha256>` - Check if blob exists
+- `GET /list/<pubkey>` - List user's blobs (optional auth)
+- `DELETE /<sha256>` - Delete blob (requires signed auth)
+- `PUT /mirror` - Mirror blobs to other servers
+- `PUT /media` - Media optimization (strips metadata per BUD-05)
 **File Size Limit**: 100MB per file
 **Retry Logic**: 3 attempts per server
+**Production Status**: Already integrated in Primal 2.2+, 206 stars, actively maintained
+
+### Blossom Protocol Details (BUDs)
+**BUDs (Blossom Upgrade Documents)**: Short documents outlining additional features
+**Relevant BUDs for Shop Implementation**:
+- **BUD-01**: Server requirements and blob retrieval
+- **BUD-02**: Blob upload and management
+- **BUD-04**: Mirroring blobs (redundancy)
+- **BUD-05**: Media optimization (strips metadata for privacy)
+- **BUD-06**: Upload requirements
+- **BUD-08**: Nostr File Metadata Tags
+- **BUD-09**: Blob Report
+
+**Event Kinds Used**:
+- **Kind 24242**: Authorization event (for all Blossom operations)
+- **Kind 10063**: User Server List (for server discovery)
 
 ### Authentication Configuration
 **Primary Method**: NIP-07 Browser Extension
@@ -261,23 +284,29 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 #### 2. GenericBlossomService
 **Purpose**: Handle file storage using Blossom protocol
 **Location**: `src/services/generic/GenericBlossomService.ts`
-**API Endpoints**:
-- `GET /<sha256>` - Retrieve file using SHA-256 hash
-- `PUT /upload` - Upload new file (requires Nostr authentication)
-- `GET /list/<pubkey>` - List files by public key
-- `DELETE /<sha256>` - Delete file (requires Nostr authentication)
+**API Endpoints** (from [Blossom spec](https://github.com/hzrd149/blossom)):
+- `PUT /upload` - Upload blobs (requires Kind 24242 signed Nostr event)
+- `GET /<sha256>` - Retrieve blob by hash (with optional `.ext`)
+- `HEAD /<sha256>` - Check if blob exists
+- `GET /list/<pubkey>` - List user's blobs (optional signed auth)
+- `DELETE /<sha256>` - Delete blob (requires signed auth)
+- `PUT /mirror` - Mirror blobs to other servers
+- `PUT /media` - Media optimization (strips metadata per BUD-05)
 
 **Key Methods**:
-- `uploadFile(file, signer)` - Upload file to Blossom servers with Nostr authentication
+- `uploadFile(file, signer)` - Upload file to Blossom servers with Kind 24242 auth
 - `getFileHash(file)` - Get SHA-256 hash for file identification
 - `validateFile(file)` - Validate file (100MB limit)
 - `retryUpload(file, maxRetries)` - Retry failed uploads across multiple servers
 - `downloadFile(sha256)` - Download file using SHA-256 hash
 - `listUserFiles(pubkey)` - List files associated with user's public key
-- `deleteFile(sha256, signer)` - Delete file with Nostr authentication
+- `deleteFile(sha256, signer)` - Delete file with Kind 24242 auth
+- `mirrorFile(sha256, targetServer)` - Mirror file to additional server
+- `optimizeMedia(file)` - Strip metadata for privacy (BUD-05)
 
-**Authentication**: Uses signed Nostr events for all file operations
+**Authentication**: Uses Kind 24242 (Authorization event) - Signed Nostr events prove identity
 **Decentralized Storage**: Files distributed across multiple Blossom servers for redundancy
+**Production Ready**: Already integrated in Primal 2.2+, actively maintained
 
 **Logging**:
 - File upload attempts and progress
@@ -651,6 +680,22 @@ src/
     └── relays.ts (imported from cbc3 project)
 ```
 
+## Implementation Confidence
+
+**Confidence Level: 9/10** ⬆️
+
+**High Confidence Because**:
+- ✅ **Blossom API is concrete** - Real endpoints, authentication, and production usage
+- ✅ **Protocol is mature** - Already integrated in Primal 2.2+, 206 stars, actively maintained
+- ✅ **Authentication is simple** - Kind 24242 signed events, no complex auth flows
+- ✅ **File addressing is clear** - SHA-256 hash-based, exactly as designed
+- ✅ **Redundancy is built-in** - Mirroring support for censorship resistance
+- ✅ **Production ready** - Real-world testing already done by Primal users
+
+**Remaining Uncertainty (1 point)**:
+- ⚠️ **End-to-end integration** - Need to test complete flow from signer → Blossom → relays → shop
+- ⚠️ **Real-world testing** - Need to verify Kind 23 + Blossom integration works as designed
+
 ## Notes
 
 - **Fresh implementation** - No dependencies on existing code
@@ -658,3 +703,4 @@ src/
 - **Protocol-native** - Built for Nostr, not adapted to it
 - **User sovereignty** - Users own their data completely
 - **Decentralized** - No single point of failure
+- **Production-ready protocols** - Blossom and Nostr are mature and battle-tested
