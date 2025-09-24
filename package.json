@@ -18,7 +18,6 @@
   "enrich:nostr": "node scripts/enrich-nostr-handles.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.55.0",
     "@tailwindcss/typography": "^0.5.10",
     "@vercel/analytics": "^1.5.0",
     "clsx": "^2.1.1",
