@@ -382,6 +382,12 @@ export const AuthButton = () => {
   const { isAuthenticated, isLoading, npub, name } = useNostrSigner();
   const [showDropdown, setShowDropdown] = useState(false);
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      setShowDropdown(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <button className="btn-outline" disabled>
@@ -400,10 +406,12 @@ export const AuthButton = () => {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" onKeyDown={handleKeyDown}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         className="btn-outline flex items-center gap-2"
+        aria-expanded={showDropdown}
+        aria-haspopup="menu"
       >
         <span>{name || npub?.substring(0, 16) + '...'}</span>
         <svg className={`w-4 h-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,7 +420,11 @@ export const AuthButton = () => {
       </button>
       
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div 
+          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+          role="menu"
+          aria-orientation="vertical"
+        >
           <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
             Signed in via Nostr
           </div>
@@ -420,6 +432,7 @@ export const AuthButton = () => {
             href="/profile"
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             onClick={() => setShowDropdown(false)}
+            role="menuitem"
           >
             My Profile
           </Link>
@@ -427,6 +440,7 @@ export const AuthButton = () => {
             href="/my-shop"
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             onClick={() => setShowDropdown(false)}
+            role="menuitem"
           >
             My Shop
           </Link>
