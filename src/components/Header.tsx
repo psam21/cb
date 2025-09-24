@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
+import AuthButton from './auth/AuthButton';
 
 const navigationLine1 = [
   // Home link removed; users access home via the top-left icon
@@ -103,9 +104,14 @@ export default function Header() {
             ))}
           </div>
 
-          {/* Language Selector & Mobile Menu */}
-          <div className="flex items-center">
-            {/* Mobile menu button only */}
+          {/* Auth Button & Mobile Menu */}
+          <div className="flex items-center space-x-4">
+            {/* Auth Button - Desktop */}
+            <div className="hidden lg:block">
+              <AuthButton />
+            </div>
+            
+            {/* Mobile menu button */}
             <button
               ref={toggleBtnRef}
               onClick={() => setIsOpen((prev: boolean) => !prev)}
@@ -127,6 +133,13 @@ export default function Header() {
               ref={menuRef}
               className="px-2 pt-2 pb-3 space-y-1 bg-white rounded-lg shadow-lg border border-gray-100 mt-2"
             >
+              {/* Auth Button - Mobile */}
+              <div className="px-3 py-2">
+                <AuthButton />
+              </div>
+              
+              <div className="border-t border-gray-100 my-2"></div>
+              
               {allNavigation.map((item, idx) => (
                 <Link
                   key={item.name}

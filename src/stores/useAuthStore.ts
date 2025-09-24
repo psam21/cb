@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { NostrSigner } from '@/types/nostr';
+import { UserProfile } from '@/services/business/ProfileBusinessService';
 
 export interface AuthState {
   // Signer state
@@ -14,8 +15,11 @@ export interface AuthState {
   signer: NostrSigner | null;
   
   // User state
-  npub: string | null;
-  pubkey: string | null;
+  user: {
+    pubkey: string;
+    npub: string;
+    profile: UserProfile;
+  } | null;
   isAuthenticated: boolean;
   
   // Actions
@@ -23,8 +27,9 @@ export interface AuthState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setSigner: (signer: NostrSigner | null) => void;
-  setUser: (npub: string | null, pubkey: string | null) => void;
+  setUser: (user: { pubkey: string; npub: string; profile: UserProfile } | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
+  logout: () => void;
   
   // Utility actions
   reset: () => void;
@@ -45,8 +50,7 @@ export const useAuthStore = create<AuthState>()(
       error: null,
       signer: null,
       
-      npub: null,
-      pubkey: null,
+      user: null,
       isAuthenticated: false,
       
       // Actions
@@ -58,13 +62,17 @@ export const useAuthStore = create<AuthState>()(
       
       setSigner: (signer) => set({ signer }),
       
-      setUser: (npub, pubkey) => set({ 
-        npub, 
-        pubkey,
-        isAuthenticated: !!(npub && pubkey)
+      setUser: (user) => set({ 
+        user,
+        isAuthenticated: !!user
       }),
       
       setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
+      
+      logout: () => set({
+        user: null,
+        isAuthenticated: false
+      }),
       
       // Utility actions
       reset: () => set({
@@ -72,8 +80,7 @@ export const useAuthStore = create<AuthState>()(
         isLoading: true,
         error: null,
         signer: null,
-        npub: null,
-        pubkey: null,
+        user: null,
         isAuthenticated: false
       }),
       

@@ -73,15 +73,8 @@ export const useNostrSigner = () => {
             const detectedSigner = await genericAuthService.getSigner();
             setSigner(detectedSigner);
             
-            // Authenticate with the signer
-            const authResult = await genericAuthService.authenticateWithSigner(detectedSigner);
-            if (authResult.success && authResult.npub && authResult.pubkey) {
-              setUser(authResult.npub, authResult.pubkey);
-              setAuthenticated(true);
-            } else {
-              setError(authResult.error || 'Authentication failed');
-              setAuthenticated(false);
-            }
+            // Note: Authentication will be handled by the signin page
+            // This hook only detects and provides the signer
           } catch (authError) {
             const errorMessage = authError instanceof Error ? authError.message : 'Authentication failed';
             setError(errorMessage);
@@ -94,15 +87,11 @@ export const useNostrSigner = () => {
         } else {
           setError('Signer not available');
           setSigner(null);
-          setUser(null, null);
-          setAuthenticated(false);
         }
       } catch (err) {
         setSignerAvailable(false);
         setError('Signer detection failed');
         setSigner(null);
-        setUser(null, null);
-        setAuthenticated(false);
         logger.error('Signer detection failed', err instanceof Error ? err : new Error('Unknown error'), {
           service: 'useNostrSigner',
           method: 'performDetection',
@@ -154,9 +143,7 @@ export const useNostrSigner = () => {
     isAvailable, 
     isLoading, 
     error, 
-    getSigner,
-    isAuthenticated: useAuthStore.getState().isAuthenticated,
-    npub: useAuthStore.getState().npub,
-    pubkey: useAuthStore.getState().pubkey,
+    signer,
+    getSigner
   };
 };

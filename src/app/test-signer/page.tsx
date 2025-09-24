@@ -1,10 +1,12 @@
 'use client';
 
 import { useNostrSigner } from '@/hooks/useNostrSigner';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useState } from 'react';
 
 export default function TestSignerPage() {
-  const { isAvailable, isLoading, error, getSigner, isAuthenticated, npub, pubkey } = useNostrSigner();
+  const { isAvailable, isLoading, error, getSigner } = useNostrSigner();
+  const { user, isAuthenticated } = useAuthStore();
   const [testResult, setTestResult] = useState<string>('');
   const [isTesting, setIsTesting] = useState(false);
 
@@ -34,8 +36,8 @@ export default function TestSignerPage() {
           <p><strong>Loading:</strong> {isLoading ? '⏳ Yes' : '✅ No'}</p>
           <p><strong>Authenticated:</strong> {isAuthenticated ? '✅ Yes' : '❌ No'}</p>
           <p><strong>Error:</strong> {error || 'None'}</p>
-          {npub && <p><strong>NPUB:</strong> {npub}</p>}
-          {pubkey && <p><strong>Public Key:</strong> {pubkey.substring(0, 16)}...</p>}
+          {user?.npub && <p><strong>NPUB:</strong> {user.npub}</p>}
+          {user?.pubkey && <p><strong>Public Key:</strong> {user.pubkey.substring(0, 16)}...</p>}
         </div>
 
         <div className="p-4 border rounded">

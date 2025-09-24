@@ -8,7 +8,7 @@ import { ProductEventData } from '@/services/nostr/NostrEventService';
 
 export default function TestShopPage() {
   const { isAvailable } = useNostrSigner();
-  const { publishProduct, isPublishing, progress, lastResult } = useShopPublishing();
+  const { publishProduct, isPublishing, progress } = useShopPublishing();
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [testResult, setTestResult] = useState<string>('');
 
