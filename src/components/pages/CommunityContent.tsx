@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { DEFAULT_BLUR } from '@/lib/blur';
+// Removed blur import - using placeholder
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -264,7 +264,7 @@ export default function CommunityContent() {
                       height={80}
                       className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
                       placeholder="blur"
-                      blurDataURL={DEFAULT_BLUR}
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                       data-member-id={member.id}
                       onError={handleImageError}
                     />

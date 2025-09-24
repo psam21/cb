@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { DEFAULT_BLUR } from '@/lib/blur';
+// Removed blur import - using placeholder
 import { motion } from 'framer-motion';
 import { Target, Eye, Award } from 'lucide-react';
 import { timeline, team, values } from '../../data/about';
@@ -221,7 +221,7 @@ export default function AboutContent() {
                     height={150}
                     className="w-full h-full object-cover"
                     placeholder="blur"
-                    blurDataURL={DEFAULT_BLUR}
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                   />
                 </div>
                 <h3 className="text-lg font-serif font-bold text-primary-800 mb-1">
