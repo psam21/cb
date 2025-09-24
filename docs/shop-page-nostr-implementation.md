@@ -690,6 +690,161 @@ Phase 7: Integration Testing (depends on All Components)
 - **Protocol-native** approach using standard Nostr features
 - **Transparent operations** with clear status indicators
 
+## Complete File Structure & Implementation Plan
+
+### Pages (App Router)
+**`src/app/shop/page.tsx`** - Main shop page
+- Displays product grid
+- Shows signer status
+- Handles product creation modal
+- Manages shop state
+
+**`src/app/api/blossom/upload/route.ts`** - Blossom file upload API
+- Handles file uploads to Blossom servers
+- Validates file size (100MB limit)
+- Creates Kind 24242 authorization events
+- Returns file hash and URL
+
+### Services (Business Logic)
+**`src/services/generic/GenericEventService.ts`** - Event creation service
+- `createEvent()` - Create unsigned Nostr events
+- `validateEvent()` - Validate event structure
+- `formatEvent()` - Format event for publishing
+- `createKind23Event()` - Create Kind 23 long-form events
+- `createKind24242Event()` - Create authorization events for Blossom
+
+**`src/services/generic/GenericBlossomService.ts`** - File storage service
+- `uploadFile()` - Upload files to Blossom servers
+- `getFileHash()` - Calculate SHA-256 hash
+- `validateFile()` - Check file size and type
+- `retryUpload()` - Retry failed uploads
+- `downloadFile()` - Download files by hash
+- `listUserFiles()` - List user's files
+- `deleteFile()` - Delete files
+
+**`src/services/generic/GenericRelayService.ts`** - Relay communication service
+- `publishEvent()` - Publish events to all relays
+- `publishWithRetry()` - Publish with retry logic
+- `queryEvents()` - Query events from relays
+- `getRelayStatus()` - Check relay health
+- `trackPublishingProgress()` - Track "X of Y published" status
+
+**`src/services/generic/GenericAuthService.ts`** - Authentication service
+- `getSigner()` - Get current signer instance
+- `signEvent()` - Sign events with current signer
+- `getUserContext()` - Get user public key and context
+- `detectSignerType()` - Detect available signer types
+- `validateSigner()` - Validate signer capabilities
+
+**`src/services/business/ShopBusinessService.ts`** - Shop business logic
+- `createProduct()` - Complete product creation workflow
+- `updateProduct()` - Update product via Kind 23 revision
+- `validateProduct()` - Validate product data
+- `getProducts()` - Query products from relays
+- `getLatestRevision()` - Get latest product revision
+- `formatProductForDisplay()` - Format event for UI display
+
+### Hooks (State Management)
+**`src/hooks/useShopPublishing.ts`** - Product creation state
+- `createProduct()` - Create product with full workflow
+- `uploadImage()` - Upload image to Blossom
+- `publishEvent()` - Publish event to relays
+- `updateProduct()` - Update existing product
+- `clearError()` - Clear error state
+- State: `isPublishing`, `publishingProgress`, `relayStatus`, `error`
+
+**`src/hooks/useShopProducts.ts`** - Product display state
+- `loadProducts()` - Load products from relays
+- `loadProductRevisions()` - Load product revision history
+- `filterProducts()` - Filter products
+- `searchProducts()` - Search products
+- `refreshProducts()` - Refresh product list
+- State: `products`, `loading`, `error`, `filters`
+
+**`src/hooks/useNostrSigner.ts`** - Signer detection hook
+- `detectSigner()` - Check for available signer
+- `getSigner()` - Get signer instance
+- `isAvailable` - Signer availability status
+- `isLoading` - Detection loading state
+- `error` - Detection error messages
+
+### Components (UI)
+**`src/components/shop/ProductCreationForm.tsx`** - Product creation form
+- Form fields: title, description, price, image, custom tags
+- File upload with drag & drop
+- Image preview
+- Form validation
+- Publishing progress display
+- Error handling and retry logic
+
+**`src/components/shop/ProductCard.tsx`** - Individual product display
+- Product image display
+- Title and description
+- Price display
+- Custom tags
+- Seller information
+- Add to cart button (future)
+
+**`src/components/shop/ProductGrid.tsx`** - Product grid layout
+- Responsive grid layout
+- Loading states
+- Empty states
+- Product card rendering
+- Filter integration
+
+**`src/components/auth/SignerStatusIndicator.tsx`** - Signer status display
+- Shows "Connected: [Signer Name]" or "No signer detected"
+- Always visible status indicator
+- Signer detection status
+- Connection error messages
+
+### Configuration Files
+**`src/config/relays.ts`** - Relay configuration
+- Imported from cbc3 project
+- 6 high-reliability relays configured
+- Helper functions for relay selection
+- Environment-specific relay lists
+
+**`src/errors/ErrorTypes.ts`** - Error handling
+- Structured error codes
+- HTTP status mappings
+- Error categories and severity
+- Error metadata helpers
+
+**`src/services/core/LoggingService.ts`** - Centralized logging
+- Log levels: DEBUG, INFO, WARN, ERROR
+- Context-aware logging
+- Performance tracking
+- Error logging with structured context
+
+### Types (TypeScript)
+**`src/types/shop.ts`** - Shop-specific types
+- `Product` interface
+- `ProductFormData` interface
+- `PublishingState` interface
+- `RelayStatus` interface
+- `BlossomFileMetadata` interface
+
+**`src/types/nostr.ts`** - Nostr event types
+- `NostrEvent` interface
+- `NIP23Event` interface
+- `NIP23Content` interface
+- `AuthenticationContext` interface
+- `SigningResult` interface
+
+### State Management (Zustand)
+**`src/stores/shopPublishingStore.ts`** - Publishing state store
+- Publishing status and progress
+- Relay status tracking
+- Error state management
+- Retry attempt tracking
+
+**`src/stores/shopProductsStore.ts`** - Products state store
+- Product list management
+- Loading and error states
+- Filter and search state
+- Product revision history
+
 ## File Structure
 
 ```
@@ -704,12 +859,27 @@ src/
 │       └── ShopBusinessService.ts
 ├── hooks/
 │   ├── useShopPublishing.ts
-│   └── useShopProducts.ts
+│   ├── useShopProducts.ts
+│   └── useNostrSigner.ts
 ├── components/
-│   └── shop/
-│       ├── ProductCreationForm.tsx
-│       ├── ProductCard.tsx
-│       └── ProductGrid.tsx
+│   ├── shop/
+│   │   ├── ProductCreationForm.tsx
+│   │   ├── ProductCard.tsx
+│   │   └── ProductGrid.tsx
+│   └── auth/
+│       └── SignerStatusIndicator.tsx
+├── stores/
+│   ├── shopPublishingStore.ts
+│   └── shopProductsStore.ts
+├── types/
+│   ├── shop.ts
+│   └── nostr.ts
+├── config/
+│   └── relays.ts
+├── errors/
+│   └── ErrorTypes.ts
+├── services/core/
+│   └── LoggingService.ts
 ├── app/
 │   ├── shop/
 │   │   └── page.tsx
