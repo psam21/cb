@@ -59,12 +59,23 @@ export const useNostrSigner = () => {
 
   // Only detect signer when explicitly requested (e.g., on signin page)
   const detectSignerOnDemand = useCallback(async () => {
+    logger.info('Starting detectSignerOnDemand...', {
+      service: 'useNostrSigner',
+      method: 'detectSignerOnDemand'
+    });
+    
     try {
       setLoading(true);
       setError(null);
       
       // Simple check for window.nostr
       const hasSigner = typeof window !== 'undefined' && !!window.nostr;
+      logger.info('Window.nostr check result', { 
+        hasSigner,
+        hasWindow: typeof window !== 'undefined',
+        nostrType: typeof window !== 'undefined' ? typeof window.nostr : 'undefined'
+      });
+      
       setSignerAvailable(hasSigner);
       
       if (hasSigner) {

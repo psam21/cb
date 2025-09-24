@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -8,23 +8,33 @@ import { logger } from '@/services/core/LoggingService';
 
 export default function SigninPage() {
   const router = useRouter();
-  const { isAvailable, isLoading, signer, detectSignerOnDemand, error } = useNostrSigner();
+  const { isAvailable, isLoading, signer, error } = useNostrSigner();
   const { setUser, setAuthenticated } = useAuthStore();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signinError, setSigninError] = useState<string | null>(null);
+  const [signerDetected, setSignerDetected] = useState(false);
 
-  // Don't detect signer automatically - only when user clicks sign in
+  // Detect signer on page load to show status
+  useEffect(() => {
+    const checkSigner = () => {
+      const hasSigner = typeof window !== 'undefined' && !!window.nostr;
+      setSignerDetected(hasSigner);
+      logger.info('Signer check on page load', { hasSigner });
+    };
+    
+    checkSigner();
+  }, []);
 
   const handleSignIn = async () => {
-    console.log('Sign In button clicked - detecting signer...');
-    
-    // Detect signer when user clicks sign in
-    await detectSignerOnDemand();
+    console.log('Sign In button clicked - invoking signer...');
     
     if (!isAvailable || !signer) {
+      logger.warn('No signer available', { isAvailable, hasSigner: !!signer });
       setSigninError('No Nostr signer available. Please install a Nostr browser extension.');
       return;
     }
+
+    logger.info('Invoking signer for authentication...');
 
     setIsSigningIn(true);
     setSigninError(null);
@@ -111,7 +121,7 @@ export default function SigninPage() {
             </p>
           </div>
 
-          {!isAvailable && !isLoading && (
+          {!signerDetected && !isLoading && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h3 className="font-semibold text-yellow-800 mb-2">Nostr Extension Required</h3>
               <p className="text-yellow-700 text-sm mb-3">
@@ -125,6 +135,20 @@ export default function SigninPage() {
                   • nos2x
                 </a>
               </div>
+            </div>
+          )}
+
+          {signerDetected && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <h3 className="font-semibold text-green-800">Signer Detected!</h3>
+              </div>
+              <p className="text-green-700 text-sm mt-1">
+                Your Nostr extension is ready. Click &quot;Sign In with Nostr&quot; to continue.
+              </p>
             </div>
           )}
 
