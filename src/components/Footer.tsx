@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Heart, Globe, Github, Twitter, Mail } from 'lucide-react';
+import { Heart, Globe } from 'lucide-react';
 
 const footerLinks = {
   platform: [
@@ -8,28 +8,25 @@ const footerLinks = {
     { name: 'Contribute', href: '/contribute' },
     { name: 'Elder Voices', href: '/elder-voices' },
     { name: 'Language Learning', href: '/language' },
+    { name: 'Gallery', href: '/gallery' },
   ],
   community: [
     { name: 'Join the Community', href: '/community' },
     { name: 'Cultural Exchange', href: '/exchange' },
     { name: 'Get Involved', href: '/get-involved' },
+    { name: 'User Feed', href: '/user-feed' },
   ],
   resources: [
     { name: 'About Us', href: '/about' },
     { name: 'Nostr', href: '/nostr' },
-    { name: 'Support', href: '/resources#support' },
+    { name: 'Support', href: '/support' },
     { name: 'Downloads', href: '/downloads' },
+    { name: 'Culture Shop', href: '/shop' },
   ],
   about: [
     { name: 'Our Mission', href: '/about' },
   ],
 };
-
-const socialLinks = [
-  { name: 'Twitter', href: '#', icon: Twitter },
-  { name: 'GitHub', href: '#', icon: Github },
-  { name: 'Email', href: 'mailto:hello@culturebridge.org', icon: Mail },
-];
 
 export default function Footer() {
   return (
@@ -54,21 +51,6 @@ export default function Footer() {
               customs to local practices, our platform supports all cultures in telling their own
               stories—authentically, securely, and without gatekeepers.
             </p>
-            <div className="flex items-center space-x-4">
-              {socialLinks.map((social) => {
-                const Icon = social.icon;
-                return (
-                  <a
-                    key={social.name}
-                    href={social.href}
-                    className="w-10 h-10 bg-primary-800 rounded-full flex items-center justify-center hover:bg-accent-600 transition-colors duration-300"
-                    aria-label={social.name}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </a>
-                );
-              })}
-            </div>
           </div>
 
           {/* Platform Links */}
