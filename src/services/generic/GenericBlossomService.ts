@@ -1,6 +1,6 @@
 import { logger } from '../core/LoggingService';
 import { NostrSigner, NostrEvent } from '../../types/nostr';
-import { createBlossomAuthEvent } from './GenericEventService';
+import { BlossomClient } from 'blossom-client-sdk';
 
 export interface BlossomFileMetadata {
   fileId: string;
@@ -82,7 +82,7 @@ export class GenericBlossomService {
           serverName: server.name,
         });
 
-        const result = await this.uploadToServer(file, server, signer);
+        const result = await this.uploadToServerWithSDK(file, server, signer);
         if (result.success) {
           logger.info('File uploaded successfully', {
             service: 'GenericBlossomService',
@@ -122,125 +122,88 @@ export class GenericBlossomService {
   }
 
   /**
-   * Upload file to specific server with retry logic
+   * Upload file to specific server using Blossom Client SDK
+   */
+  private async uploadToServerWithSDK(
+    file: File,
+    server: BlossomServer,
+    signer: NostrSigner
+  ): Promise<BlossomUploadResult> {
+    try {
+      logger.info('Uploading file using Blossom Client SDK', {
+        service: 'GenericBlossomService',
+        method: 'uploadToServerWithSDK',
+        serverUrl: server.url,
+        fileName: file.name,
+      });
+
+      // Create a signer function that matches the SDK's expected interface
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sdkSigner = async (draft: any) => {
+        // Convert EventTemplate to our NostrEvent format
+        const eventDraft: Omit<NostrEvent, 'id' | 'sig'> = {
+          kind: draft.kind,
+          pubkey: draft.pubkey,
+          created_at: draft.created_at,
+          tags: draft.tags || [],
+          content: draft.content || '',
+        };
+        return await signer.signEvent(eventDraft);
+      };
+
+      // Create upload authentication using the SDK
+      const auth = await BlossomClient.createUploadAuth(sdkSigner, file, { 
+        message: `Upload ${file.name}` 
+      });
+
+      // Upload the file using the SDK
+      const result = await BlossomClient.uploadBlob(server.url, file, { auth });
+
+      logger.info('File uploaded successfully using SDK', {
+        service: 'GenericBlossomService',
+        method: 'uploadToServerWithSDK',
+        serverUrl: server.url,
+        result,
+      });
+
+      return {
+        success: true,
+        metadata: {
+          fileId: result.sha256,
+          fileType: file.type,
+          fileSize: file.size,
+          hash: result.sha256,
+          url: result.url || `${server.url}/${result.sha256}`,
+        },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('SDK upload failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'GenericBlossomService',
+        method: 'uploadToServerWithSDK',
+        serverUrl: server.url,
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Upload file to specific server with retry logic (legacy method)
    */
   private async uploadToServer(
     file: File,
     server: BlossomServer,
     signer: NostrSigner
   ): Promise<BlossomUploadResult> {
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      try {
-        logger.info('Upload attempt', {
-          service: 'GenericBlossomService',
-          method: 'uploadToServer',
-          serverUrl: server.url,
-          attempt,
-          maxRetries: this.maxRetries,
-        });
-
-        // Create Kind 24242 authorization event
-        const authEvent = await this.createAuthEvent(signer);
-        
-        // Upload file
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('auth_event', JSON.stringify(authEvent));
-
-        const response = await fetch(`${server.url}/upload`, {
-          method: 'PUT',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.status === 'success' && result.blob_hash) {
-          const metadata: BlossomFileMetadata = {
-            fileId: result.blob_hash,
-            fileType: file.type,
-            fileSize: file.size,
-            url: result.url || `${server.url}/${result.blob_hash}`,
-            hash: result.blob_hash,
-          };
-
-          logger.info('Upload successful', {
-            service: 'GenericBlossomService',
-            method: 'uploadToServer',
-            serverUrl: server.url,
-            attempt,
-            metadata,
-          });
-
-          return {
-            success: true,
-            metadata,
-          };
-        } else {
-          throw new Error(result.error || 'Upload failed');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        logger.warn('Upload attempt failed', {
-          service: 'GenericBlossomService',
-          method: 'uploadToServer',
-          serverUrl: server.url,
-          attempt,
-          error: errorMessage,
-        });
-
-        if (attempt === this.maxRetries) {
-          return {
-            success: false,
-            error: `Server ${server.name} failed after ${this.maxRetries} attempts: ${errorMessage}`,
-          };
-        }
-
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
-    }
-
-    return {
-      success: false,
-      error: 'Max retries exceeded',
-    };
+    // Use the SDK method instead
+    return await this.uploadToServerWithSDK(file, server, signer);
   }
 
-  /**
-   * Create Kind 24242 authorization event for Blossom
-   */
-  private async createAuthEvent(signer: NostrSigner): Promise<NostrEvent> {
-    try {
-      logger.info('Creating Kind 24242 authorization event', {
-        service: 'GenericBlossomService',
-        method: 'createAuthEvent',
-      });
-
-      const pubkey = await signer.getPublicKey();
-      const unsignedEvent = createBlossomAuthEvent(pubkey);
-      const signedEvent = await signer.signEvent(unsignedEvent);
-      
-      logger.info('Authorization event created and signed', {
-        service: 'GenericBlossomService',
-        method: 'createAuthEvent',
-        eventId: signedEvent.id,
-      });
-
-      return signedEvent;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Failed to create authorization event', error instanceof Error ? error : new Error(errorMessage), {
-        service: 'GenericBlossomService',
-        method: 'createAuthEvent',
-        error: errorMessage,
-      });
-      throw error;
-    }
-  }
 
   /**
    * Calculate SHA-256 hash of file
