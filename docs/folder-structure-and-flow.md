@@ -467,6 +467,300 @@ src/stores/ProductStore.ts
 
 ---
 
+## 🌐 **All Pages - Complete File Flow**
+
+### **1. Home Page** (`/`):
+
+```
+User visits /
+   ↓
+src/app/page.tsx
+   ↓
+src/app/home-content.tsx
+   ↓
+src/data/home.ts (stats, cultures, features)
+   ↓
+src/components/primitives/StatBlock.tsx
+   ↓
+src/components/auth/SignerStatusIndicator.tsx
+   ↓
+src/hooks/useNostrSigner.ts
+   ↓
+src/stores/useAuthStore.ts
+```
+
+### **2. About Page** (`/about`):
+
+```
+User visits /about
+   ↓
+src/app/about/page.tsx
+   ↓
+src/components/pages/AboutContent.tsx
+   ↓
+src/data/about.ts
+```
+
+### **3. Community Page** (`/community`):
+
+```
+User visits /community
+   ↓
+src/app/community/page.tsx
+   ↓
+src/components/pages/CommunityContent.tsx
+```
+
+### **4. Community Event Detail** (`/community/events/[id]`):
+
+```
+User visits /community/events/123
+   ↓
+src/app/community/events/[id]/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **5. Community Member Detail** (`/community/members/[id]`):
+
+```
+User visits /community/members/123
+   ↓
+src/app/community/members/[id]/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **6. Contribute Page** (`/contribute`):
+
+```
+User visits /contribute
+   ↓
+src/app/contribute/page.tsx
+   ↓
+src/components/pages/ContributeContent.tsx
+```
+
+### **7. Downloads Page** (`/downloads`):
+
+```
+User visits /downloads
+   ↓
+src/app/downloads/page.tsx
+   ↓
+src/components/pages/DownloadsContent.tsx
+```
+
+### **8. Download Detail** (`/downloads/[id]`):
+
+```
+User visits /downloads/123
+   ↓
+src/app/downloads/[id]/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **9. Download Contribute** (`/downloads/contribute`):
+
+```
+User visits /downloads/contribute
+   ↓
+src/app/downloads/contribute/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **10. Elder Voices Page** (`/elder-voices`):
+
+```
+User visits /elder-voices
+   ↓
+src/app/elder-voices/page.tsx
+   ↓
+src/components/pages/ElderVoicesContent.tsx
+   ↓
+src/data/elderStories.ts
+```
+
+### **11. Exchange Page** (`/exchange`):
+
+```
+User visits /exchange
+   ↓
+src/app/exchange/page.tsx
+   ↓
+src/components/pages/ExchangeContent.tsx
+```
+
+### **12. Exhibitions Page** (`/exhibitions`):
+
+```
+User visits /exhibitions
+   ↓
+src/app/exhibitions/page.tsx
+   ↓
+src/components/pages/ExhibitionsContent.tsx
+   ↓
+src/data/exhibitions.ts
+```
+
+### **13. Exhibition Detail** (`/exhibitions/[slug]`):
+
+```
+User visits /exhibitions/cultural-heritage
+   ↓
+src/app/exhibitions/[slug]/page.tsx
+   ↓
+src/data/exhibitions.ts (find by slug)
+   ↓
+src/components/pages/ExhibitionDetail.tsx
+   OR
+src/components/pages/ExhibitionDetailInteractive.tsx (if enabled)
+```
+
+### **14. Explore Page** (`/explore`):
+
+```
+User visits /explore
+   ↓
+src/app/explore/page.tsx
+   ↓
+src/components/pages/ExploreContent.tsx
+   ↓
+src/data/explore.ts
+```
+
+### **15. Explore Detail** (`/explore/[id]`):
+
+```
+User visits /explore/123
+   ↓
+src/app/explore/[id]/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **16. Get Involved Page** (`/get-involved`):
+
+```
+User visits /get-involved
+   ↓
+src/app/get-involved/page.tsx
+   ↓
+src/components/pages/GetInvolvedContent.tsx
+```
+
+### **17. Language Page** (`/language`):
+
+```
+User visits /language
+   ↓
+src/app/language/page.tsx
+   ↓
+src/components/pages/LanguageContent.tsx
+```
+
+### **18. Nostr Page** (`/nostr`):
+
+```
+User visits /nostr
+   ↓
+src/app/nostr/page.tsx
+   ↓
+src/components/pages/NostrContent.tsx
+```
+
+### **19. Test Upload Page** (`/test-upload`):
+
+```
+User visits /test-upload
+   ↓
+src/app/test-upload/page.tsx
+   ↓
+src/hooks/useNostrSigner.ts
+   ↓
+src/services/generic/GenericBlossomService.ts
+```
+
+### **20. Test Event Page** (`/test-event`):
+
+```
+User visits /test-event
+   ↓
+src/app/test-event/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **21. Test Relay Page** (`/test-relay`):
+
+```
+User visits /test-relay
+   ↓
+src/app/test-relay/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **22. Test Shop Page** (`/test-shop`):
+
+```
+User visits /test-shop
+   ↓
+src/app/test-shop/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+### **23. Test Signer Page** (`/test-signer`):
+
+```
+User visits /test-signer
+   ↓
+src/app/test-signer/page.tsx
+   ↓
+Dynamic content (no component imports)
+```
+
+---
+
+## 📊 **Page Categories Summary**
+
+### **Content Pages** (Static Content):
+- **Home** (`/`) - `home-content.tsx` + `home.ts` data
+- **About** (`/about`) - `AboutContent.tsx` + `about.ts` data
+- **Community** (`/community`) - `CommunityContent.tsx`
+- **Contribute** (`/contribute`) - `ContributeContent.tsx`
+- **Downloads** (`/downloads`) - `DownloadsContent.tsx`
+- **Elder Voices** (`/elder-voices`) - `ElderVoicesContent.tsx` + `elderStories.ts` data
+- **Exchange** (`/exchange`) - `ExchangeContent.tsx`
+- **Exhibitions** (`/exhibitions`) - `ExhibitionsContent.tsx` + `exhibitions.ts` data
+- **Explore** (`/explore`) - `ExploreContent.tsx` + `explore.ts` data
+- **Get Involved** (`/get-involved`) - `GetInvolvedContent.tsx`
+- **Language** (`/language`) - `LanguageContent.tsx`
+- **Nostr** (`/nostr`) - `NostrContent.tsx`
+
+### **Dynamic Pages** (Parameterized):
+- **Community Events** (`/community/events/[id]`) - Dynamic content
+- **Community Members** (`/community/members/[id]`) - Dynamic content
+- **Download Detail** (`/downloads/[id]`) - Dynamic content
+- **Download Contribute** (`/downloads/contribute`) - Dynamic content
+- **Exhibition Detail** (`/exhibitions/[slug]`) - `ExhibitionDetail.tsx` + `exhibitions.ts` data
+- **Explore Detail** (`/explore/[id]`) - Dynamic content
+
+### **Interactive Pages** (With Hooks/Services):
+- **Shop** (`/shop`) - Full service layer integration
+- **Test Upload** (`/test-upload`) - Blossom service integration
+
+### **Test Pages** (Development):
+- **Test Event** (`/test-event`) - Development testing
+- **Test Relay** (`/test-relay`) - Development testing
+- **Test Shop** (`/test-shop`) - Development testing
+- **Test Signer** (`/test-signer`) - Development testing
+
+---
+
 ## 🏛️ **Architecture Principles**
 
 ### **1. Service-Oriented Architecture (SOA)**:
