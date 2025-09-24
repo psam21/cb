@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -8,12 +8,26 @@ import { logger } from '@/services/core/LoggingService';
 
 export default function SigninPage() {
   const router = useRouter();
-  const { isAvailable, isLoading, signer } = useNostrSigner();
+  const { isAvailable, isLoading, signer, detectSignerOnDemand } = useNostrSigner();
   const { setUser, setAuthenticated } = useAuthStore();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signinError, setSigninError] = useState<string | null>(null);
 
+  // Detect signer when signin page loads
+  useEffect(() => {
+    detectSignerOnDemand();
+  }, [detectSignerOnDemand]);
+
   const handleSignIn = async () => {
+    // First detect signer if not already available
+    if (!isAvailable) {
+      await detectSignerOnDemand();
+      if (!isAvailable) {
+        setSigninError('No Nostr signer available. Please install a Nostr browser extension.');
+        return;
+      }
+    }
+
     if (!signer) {
       setSigninError('No Nostr signer available');
       return;
@@ -42,7 +56,7 @@ export default function SigninPage() {
       const npub = profileService.pubkeyToNpub(pubkey);
 
       // Set user in store
-      setUser({
+      const userData = {
         pubkey,
         npub,
         profile: {
@@ -54,9 +68,19 @@ export default function SigninPage() {
           bot: profile.bot || false,
           birthday: profile.birthday || ''
         }
-      });
+      };
 
+      setUser(userData);
       setAuthenticated(true);
+      
+      logger.info('User authentication completed', { 
+        pubkey: pubkey.substring(0, 8) + '...',
+        npub: npub.substring(0, 12) + '...',
+        display_name: userData.profile.display_name
+      });
+      
+      // Add a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       logger.info('User signed in successfully', { pubkey });
       

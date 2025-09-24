@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { NostrSigner } from '@/types/nostr';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -23,8 +23,6 @@ export const useNostrSigner = () => {
     setLoading,
     setError,
     setSigner,
-    setUser,
-    setAuthenticated,
   } = useAuthStore();
 
   // Optimized detection with caching using useRef
@@ -59,54 +57,58 @@ export const useNostrSigner = () => {
     }
   };
 
-  useEffect(() => {
-    const performDetection = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const available = await detectSigner();
-        setSignerAvailable(available);
-        
-        if (available) {
-          try {
-            const detectedSigner = await genericAuthService.getSigner();
-            setSigner(detectedSigner);
-            
-            // Note: Authentication will be handled by the signin page
-            // This hook only detects and provides the signer
-          } catch (authError) {
-            const errorMessage = authError instanceof Error ? authError.message : 'Authentication failed';
-            setError(errorMessage);
-            setAuthenticated(false);
-            logger.error('Authentication failed', authError instanceof Error ? authError : new Error(errorMessage), {
-              service: 'useNostrSigner',
-              method: 'performDetection',
-            });
-          }
-        } else {
-          setError('Signer not available');
-          setSigner(null);
+  // Only detect signer when explicitly requested (e.g., on signin page)
+  const detectSignerOnDemand = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Simple check for window.nostr
+      const hasSigner = typeof window !== 'undefined' && !!window.nostr;
+      setSignerAvailable(hasSigner);
+      
+      if (hasSigner) {
+        try {
+          const detectedSigner = window.nostr!;
+          setSigner(detectedSigner);
+          logger.info('Signer detected successfully', { 
+            service: 'useNostrSigner',
+            method: 'detectSignerOnDemand'
+          });
+        } catch (authError) {
+          const errorMessage = authError instanceof Error ? authError.message : 'Signer detection failed';
+          setError(errorMessage);
+          logger.error('Signer detection failed', authError instanceof Error ? authError : new Error(errorMessage), {
+            service: 'useNostrSigner',
+            method: 'detectSignerOnDemand',
+          });
         }
-      } catch (err) {
-        setSignerAvailable(false);
-        setError('Signer detection failed');
+      } else {
+        setError('Signer not available');
         setSigner(null);
-        logger.error('Signer detection failed', err instanceof Error ? err : new Error('Unknown error'), {
+        logger.info('No signer available', { 
           service: 'useNostrSigner',
-          method: 'performDetection',
+          method: 'detectSignerOnDemand'
         });
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      setSignerAvailable(false);
+      setError('Signer detection failed');
+      setSigner(null);
+      logger.error('Signer detection failed', err instanceof Error ? err : new Error('Unknown error'), {
+        service: 'useNostrSigner',
+        method: 'detectSignerOnDemand',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError, setSignerAvailable, setSigner]);
 
-    performDetection();
-    
-    // Listen for signer availability changes
+  // Listen for signer availability changes
+  useEffect(() => {
     const handleSignerChange = () => {
       lastDetectionRef.current = null; // Clear cache
-      performDetection();
+      detectSignerOnDemand();
     };
     
     window.addEventListener('nostr:signer:available', handleSignerChange);
@@ -116,7 +118,7 @@ export const useNostrSigner = () => {
       window.removeEventListener('nostr:signer:available', handleSignerChange);
       window.removeEventListener('nostr:signer:unavailable', handleSignerChange);
     };
-  }, [setSignerAvailable, setLoading, setError, setSigner, setUser, setAuthenticated]);
+  }, [detectSignerOnDemand]);
 
   // Helper to get signer when needed
   const getSigner = async (): Promise<NostrSigner> => {
@@ -144,6 +146,7 @@ export const useNostrSigner = () => {
     isLoading, 
     error, 
     signer,
-    getSigner
+    getSigner,
+    detectSignerOnDemand
   };
 };

@@ -11,6 +11,15 @@ export default function AuthButton() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Debug logging
+  console.log('AuthButton render:', { 
+    isAuthenticated, 
+    hasUser: !!user, 
+    isAvailable, 
+    isLoading,
+    userDisplayName: user?.profile?.display_name 
+  });
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -37,15 +46,7 @@ export default function AuthButton() {
     setShowDropdown(false);
   };
 
-  // Show loading state while detecting signer
-  if (isLoading) {
-    return (
-      <div className="flex items-center space-x-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-        <span className="text-primary-600 text-sm">Detecting...</span>
-      </div>
-    );
-  }
+  // Don't show loading state on home page - only show when explicitly detecting
 
   // Show sign in button if not authenticated or no signer available
   if (!isAuthenticated || !user || !isAvailable) {
