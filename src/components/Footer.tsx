@@ -5,7 +5,7 @@ import { Heart, Globe } from 'lucide-react';
 const footerLinks = {
   resources: [
     { name: 'About Us', href: '/about' },
-    { name: 'Nostr', href: '/nostr' },
+    { name: 'Why Nostr?', href: '/nostr' },
     { name: 'Downloads', href: '/downloads' },
     { name: 'Elder Voices', href: '/elder-voices' },
   ],
