@@ -27,7 +27,14 @@ export default function ProfilePage() {
   // Redirect if not authenticated
   if (!isAuthenticated || !user) {
     router.push('/signin');
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-primary-800 mb-4">Redirecting to Sign In...</h1>
+          <p className="text-gray-600">Please sign in to view your profile.</p>
+        </div>
+      </div>
+    );
   }
 
   const handleEdit = () => {

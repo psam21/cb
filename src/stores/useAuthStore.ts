@@ -97,8 +97,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-store',
       partialize: (state: AuthState) => ({
+        // Persist user data and authentication state
         // Don't persist sensitive data like signer or keys
-        // Only persist basic availability state
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
         isAvailable: state.isAvailable,
       })
     }
