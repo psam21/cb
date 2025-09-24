@@ -362,8 +362,12 @@ export class ProfileBusinessService {
 
   private npubToPubkey(npub: string): string | null {
     try {
+      if (!npub.startsWith('npub1')) {
+        return null;
+      }
       const { data } = bech32.decode(npub, 1000);
-      return Buffer.from(bech32.fromWords(data)).toString('hex');
+      const pubkey = Buffer.from(bech32.fromWords(data)).toString('hex');
+      return pubkey.length === 64 ? pubkey : null; // Validate hex length
     } catch {
       return null;
     }
