@@ -3,7 +3,7 @@
  * Centralized state for Nostr signer and user authentication
  */
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { NostrSigner } from '@/types/nostr';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 
@@ -43,7 +43,8 @@ export interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       // Initial state
       isAvailable: false,
       isLoading: false,
@@ -93,16 +94,20 @@ export const useAuthStore = create<AuthState>()(
           hasError: !!state.error
         };
       }
-    }),
+      }),
+      {
+        name: 'auth-store',
+        partialize: (state: AuthState) => ({
+          // Persist user data and authentication state
+          // Don't persist sensitive data like signer or keys
+          user: state.user,
+          isAuthenticated: state.isAuthenticated,
+          isAvailable: state.isAvailable,
+        })
+      }
+    ),
     {
-      name: 'auth-store',
-      partialize: (state: AuthState) => ({
-        // Persist user data and authentication state
-        // Don't persist sensitive data like signer or keys
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-        isAvailable: state.isAvailable,
-      })
+      name: 'auth-store-devtools'
     }
   )
 );
