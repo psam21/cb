@@ -17,6 +17,7 @@ const navigationLine2 = [
   { name: 'Cultural Exchange', href: '/exchange' },
   { name: 'Exhibitions', href: '/exhibitions' },
   { name: 'Language Learning', href: '/language' },
+  { name: 'Shop', href: '/shop' },
 ];
 
 // Combined navigation for mobile

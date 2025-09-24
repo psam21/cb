@@ -11,6 +11,7 @@ import {
   featureList as features,
 } from '../data/home';
 import StatBlock from '../components/primitives/StatBlock';
+import { SignerStatusIndicator } from '../components/auth/SignerStatusIndicator';
 
 export default function HomeContent() {
   return (
@@ -35,6 +36,11 @@ export default function HomeContent() {
       {/* Hero Section - Centered and Moved Up */}
       <section className="hero-section bg-pattern flex items-center justify-center min-h-[70vh] pt-8 relative">
         <div className="container-width text-center">
+          {/* Signer Status Indicator */}
+          <div className="mb-6 flex justify-center">
+            <SignerStatusIndicator />
+          </div>
+          
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
