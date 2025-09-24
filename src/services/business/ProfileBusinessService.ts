@@ -205,6 +205,49 @@ export class ProfileBusinessService {
     };
   }
 
+  /**
+   * Fetch user profile from Nostr relays
+   */
+  public async getUserProfile(pubkey: string): Promise<UserProfile | null> {
+    try {
+      logger.info('Fetching user profile from relays', { pubkey: pubkey.substring(0, 8) + '...' });
+      
+      // Import relay service
+      const { genericRelayService } = await import('@/services/generic/GenericRelayService');
+      
+      // Query for Kind 0 (profile) events from this pubkey
+      const events = await genericRelayService.queryEvents([{
+        kinds: [0], // Kind 0 = profile events
+        authors: [pubkey],
+        limit: 1
+      }]);
+
+      if (!events.success || events.events.length === 0) {
+        logger.info('No profile events found for user', { pubkey: pubkey.substring(0, 8) + '...' });
+        return null;
+      }
+
+      // Parse the most recent profile event
+      const profileEvent = events.events[0];
+      const profile = this.parseProfileMetadata(profileEvent);
+      
+      logger.info('Profile fetched successfully', { 
+        display_name: profile.display_name,
+        hasPicture: !!profile.picture,
+        hasAbout: !!profile.about
+      });
+
+      return profile;
+    } catch (error) {
+      logger.error('Failed to fetch user profile', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'ProfileBusinessService',
+        method: 'getUserProfile',
+        pubkey: pubkey.substring(0, 8) + '...'
+      });
+      return null;
+    }
+  }
+
   private isValidUrl(url: string): boolean {
     try {
       new URL(url);

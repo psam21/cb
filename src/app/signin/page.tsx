@@ -34,10 +34,15 @@ export default function SigninPage() {
       logger.info('Requesting public key from signer...');
       const pubkey = await signer.getPublicKey();
       logger.info('Public key received successfully', { pubkey: pubkey.substring(0, 8) + '...' });
-      
-      // Use default profile - will be updated when user edits their profile
-      const profile = {
-        name: 'Anonymous',
+
+      // Generate npub from pubkey
+      const { profileService } = await import('@/services/business/ProfileBusinessService');
+      const npub = profileService.pubkeyToNpub(pubkey);
+
+      // Fetch user's NIP-24 profile from Nostr relays
+      logger.info('Fetching user profile from Nostr relays...');
+      let profile = {
+        display_name: 'Anonymous',
         about: '',
         picture: '',
         website: '',
@@ -46,23 +51,39 @@ export default function SigninPage() {
         birthday: ''
       };
 
-      // Generate npub from pubkey
-      const { profileService } = await import('@/services/business/ProfileBusinessService');
-      const npub = profileService.pubkeyToNpub(pubkey);
+      try {
+        // Try to fetch profile from relays
+        const fetchedProfile = await profileService.getUserProfile(pubkey);
+        if (fetchedProfile) {
+          profile = {
+            display_name: fetchedProfile.display_name || 'Anonymous',
+            about: fetchedProfile.about || '',
+            picture: fetchedProfile.picture || '',
+            website: fetchedProfile.website || '',
+            banner: fetchedProfile.banner || '',
+            bot: fetchedProfile.bot || false,
+            birthday: fetchedProfile.birthday || ''
+          };
+          logger.info('Profile fetched successfully from relays', { 
+            display_name: profile.display_name,
+            hasPicture: !!profile.picture 
+          });
+        } else {
+          logger.info('No profile found in relays, using default');
+        }
+      } catch (profileError) {
+        logger.warn('Failed to fetch profile from relays, using default', {
+          error: profileError instanceof Error ? profileError.message : 'Unknown error',
+          service: 'signin',
+          method: 'handleSignIn'
+        });
+      }
 
       // Set user in store
       const userData = {
         pubkey,
         npub,
-        profile: {
-          display_name: profile.name || 'Anonymous',
-          about: profile.about || '',
-          picture: profile.picture || '',
-          website: profile.website || '',
-          banner: profile.banner || '',
-          bot: profile.bot || false,
-          birthday: profile.birthday || ''
-        }
+        profile
       };
 
       setUser(userData);
