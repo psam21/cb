@@ -15,21 +15,16 @@ export default function SigninPage() {
 
   // Detect signer when signin page loads
   useEffect(() => {
+    console.log('Signin page loaded, detecting signer...');
     detectSignerOnDemand();
   }, [detectSignerOnDemand]);
 
   const handleSignIn = async () => {
-    // First detect signer if not already available
-    if (!isAvailable) {
-      await detectSignerOnDemand();
-      if (!isAvailable) {
-        setSigninError('No Nostr signer available. Please install a Nostr browser extension.');
-        return;
-      }
-    }
-
-    if (!signer) {
-      setSigninError('No Nostr signer available');
+    console.log('Sign In button clicked', { isAvailable, hasSigner: !!signer });
+    
+    // Check if signer is available (already detected on page load)
+    if (!isAvailable || !signer) {
+      setSigninError('No Nostr signer available. Please install a Nostr browser extension.');
       return;
     }
 
@@ -37,8 +32,10 @@ export default function SigninPage() {
     setSigninError(null);
 
     try {
-      // Get user's public key
+      // Get user's public key - this should only require ONE approval
+      logger.info('Requesting public key from signer...');
       const pubkey = await signer.getPublicKey();
+      logger.info('Public key received successfully', { pubkey: pubkey.substring(0, 8) + '...' });
       
       // Use default profile - will be updated when user edits their profile
       const profile = {
