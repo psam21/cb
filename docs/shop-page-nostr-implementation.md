@@ -145,6 +145,12 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 - `validateEvent(event)` - Validate event structure
 - `formatEvent(eventData)` - Format event for publishing
 
+**Logging**:
+- Event creation attempts and results
+- Validation errors with detailed context
+- Performance timing for event operations
+- Error handling with structured context
+
 #### 2. GenericBlossomService
 **Purpose**: Handle file storage using Blossom protocol
 **Location**: `src/services/generic/GenericBlossomService.ts`
@@ -166,6 +172,13 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 **Authentication**: Uses signed Nostr events for all file operations
 **Decentralized Storage**: Files distributed across multiple Blossom servers for redundancy
 
+**Logging**:
+- File upload attempts and progress
+- Blossom API request/response logging
+- Retry attempts with detailed context
+- File validation errors and warnings
+- Performance metrics for upload operations
+
 #### 3. GenericRelayService
 **Purpose**: Handle relay communication and management
 **Location**: `src/services/generic/GenericRelayService.ts`
@@ -176,6 +189,13 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 - `getRelayStatus(relay)` - Check relay health
 - `getRelayList()` - Get all configured relays (imported from cbc3 config)
 - `trackPublishingProgress()` - Track "X of Y published" status
+
+**Logging**:
+- Relay connection attempts and status
+- Publishing progress and results per relay
+- Retry attempts with relay-specific context
+- Relay health monitoring and failures
+- Performance metrics for relay operations
 
 #### 4. GenericAuthService
 **Purpose**: Handle authentication for multiple methods (extensible)
@@ -195,6 +215,13 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 
 **Extensibility**: Designed to support multiple authentication methods
 
+**Logging**:
+- Signer detection and availability
+- Authentication attempts and results
+- Signer type switching and validation
+- User context changes and updates
+- Authentication errors with detailed context
+
 ### Business Services (Create)
 
 #### 5. ShopBusinessService
@@ -208,6 +235,13 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 - `getLatestRevision(productId)` - Get latest revision of product
 - `getRevisionHistory(productId)` - Get all revisions of product
 - `formatProductForDisplay(event)` - Format event for UI
+
+**Logging**:
+- Product creation workflow steps
+- Product validation and business rule checks
+- Product query operations and results
+- Revision management operations
+- Business logic errors and warnings
 
 ### Hooks (Create)
 
@@ -231,6 +265,12 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 - `updateProduct(productId, updates)` - Update product via revision
 - `clearError()` - Clear error state
 
+**Logging**:
+- Publishing state changes and progress
+- Hook method calls and results
+- Error state management and clearing
+- User interaction tracking
+
 #### 7. useShopProducts
 **Purpose**: Manage product display and querying
 **Location**: `src/hooks/useShopProducts.ts`
@@ -248,6 +288,12 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 - `filterProducts(filters)` - Filter products
 - `searchProducts(query)` - Search products
 - `refreshProducts()` - Refresh product list
+
+**Logging**:
+- Product loading operations and results
+- Search and filter operations
+- State updates and changes
+- Error handling in product operations
 
 ### State Management Architecture
 **Primary**: Zustand stores for state management
@@ -319,6 +365,14 @@ Page → Component → Hook → BusinessService → TechnicalService → Relays/
 **Responsive Design**: Mobile-first approach
 **Accessibility**: Follows existing cb accessibility patterns
 **Theme**: Consistent with cb design system
+
+### Logging Architecture
+**Service**: Centralized LoggingService (imported from cbc3)
+**Levels**: DEBUG, INFO, WARN, ERROR
+**Context**: Service, method, user, operation tracking
+**Performance**: Operation timing and API request logging
+**Error Handling**: Structured error logging with error codes
+**Coverage**: All services, hooks, and components
 
 ### API Routes (Create)
 
