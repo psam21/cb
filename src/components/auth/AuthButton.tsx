@@ -56,29 +56,16 @@ export default function AuthButton() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="px-4 py-2 bg-primary-600 text-white rounded-md font-semibold hover:bg-primary-700 transition-colors duration-200 flex items-center gap-2"
+        className="px-4 py-2 bg-accent-600 text-white rounded-md font-semibold hover:bg-accent-700 transition-colors duration-200 flex items-center gap-2"
         aria-expanded={showDropdown}
         aria-haspopup="menu"
         onKeyDown={handleKeyDown}
       >
-        <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
-          {user.profile.picture ? (
-            <img
-              src={user.profile.picture}
-              alt="Profile"
-              className="w-6 h-6 rounded-full object-cover"
-            />
-          ) : (
-            <svg className="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          )}
-        </div>
-        <span className="text-primary-800 font-medium">
+        <span className="text-white font-semibold">
           {user.profile.display_name || 'Anonymous'}
         </span>
         <svg
-          className={`w-4 h-4 text-primary-600 transition-transform duration-200 ${
+          className={`w-4 h-4 text-white transition-transform duration-200 ${
             showDropdown ? 'rotate-180' : ''
           }`}
           fill="none"
