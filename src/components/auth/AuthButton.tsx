@@ -3,22 +3,13 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { useNostrSigner } from '@/hooks/useNostrSigner';
 
 export default function AuthButton() {
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { isAvailable, isLoading } = useNostrSigner();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Debug logging
-  console.log('AuthButton render:', { 
-    isAuthenticated, 
-    hasUser: !!user, 
-    isAvailable, 
-    isLoading,
-    userDisplayName: user?.profile?.display_name 
-  });
+  // Debug logging removed for production
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -48,8 +39,8 @@ export default function AuthButton() {
 
   // Don't show loading state on home page - only show when explicitly detecting
 
-  // Show sign in button if not authenticated or no signer available
-  if (!isAuthenticated || !user || !isAvailable) {
+  // Show sign in button if not authenticated
+  if (!isAuthenticated || !user) {
     return (
       <Link
         href="/signin"
