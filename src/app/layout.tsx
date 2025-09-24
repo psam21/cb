@@ -34,6 +34,11 @@ export const metadata: Metadata = {
     'languages',
   ],
   authors: [{ name: 'Culture Bridge Team' }],
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     title: 'Culture Bridge - Heritage Preservation Network',
     description: 'Preserve Heritage, Empower Communities',

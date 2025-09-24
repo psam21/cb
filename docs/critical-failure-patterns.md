@@ -15,6 +15,7 @@ Go through these along with Rules and Memories.
 - Violating project workflow (build → fix → commit → push)
 
 ### **PREVENTION INSTRUCTIONS:**
+**ALWAYS** ensure SOA is followed. page > component > hooks > business services > technical services > relays (get/set) with feedback on success and failures + extensive logging to debug 
 **NEVER** mark anything as "complete" until it's actually tested and working, and confirmed by user
 **ALWAYS** follow the project workflow: build → fix → commit → push
 **NEVER** assume existing code works as expected - verify it with user if they have tested to confirm
