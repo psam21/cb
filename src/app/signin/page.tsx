@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -12,18 +12,8 @@ export default function SigninPage() {
   const { setUser, setAuthenticated } = useAuthStore();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signinError, setSigninError] = useState<string | null>(null);
-  const [signerDetected, setSignerDetected] = useState(false);
-
-  // Detect signer on page load to show status
-  useEffect(() => {
-    const checkSigner = () => {
-      const hasSigner = typeof window !== 'undefined' && !!window.nostr;
-      setSignerDetected(hasSigner);
-      logger.info('Signer check on page load', { hasSigner });
-    };
-    
-    checkSigner();
-  }, []);
+  // Use isAvailable directly from the hook
+  const signerDetected = isAvailable;
 
   const handleSignIn = async () => {
     console.log('Sign In button clicked - invoking signer...');

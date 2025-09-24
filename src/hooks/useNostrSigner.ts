@@ -152,6 +152,20 @@ export const useNostrSigner = () => {
     throw new Error('No signer available');
   };
 
+  // Auto-detect signer on page load
+  useEffect(() => {
+    const checkSigner = () => {
+      const hasSigner = typeof window !== 'undefined' && !!window.nostr;
+      setSignerAvailable(hasSigner);
+      if (hasSigner) {
+        setSigner(window.nostr!);
+      }
+      logger.info('Auto signer detection on page load', { hasSigner });
+    };
+    
+    checkSigner();
+  }, [setSignerAvailable, setSigner]);
+
   return { 
     isAvailable, 
     isLoading, 
