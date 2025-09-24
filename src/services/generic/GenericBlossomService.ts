@@ -1,5 +1,6 @@
 import { logger } from '../core/LoggingService';
 import { NostrSigner, NostrEvent } from '../../types/nostr';
+import { createBlossomAuthEvent } from './GenericEventService';
 
 export interface BlossomFileMetadata {
   fileId: string;
@@ -219,21 +220,9 @@ export class GenericBlossomService {
         method: 'createAuthEvent',
       });
 
-      const now = Math.floor(Date.now() / 1000);
       const pubkey = await signer.getPublicKey();
-
-      const event: Omit<NostrEvent, 'id' | 'sig'> = {
-        kind: 24242,
-        pubkey,
-        created_at: now,
-        tags: [
-          ['d', 'blossom-auth'],
-          ['purpose', 'file-upload'],
-        ],
-        content: 'Authorization for Blossom file upload',
-      };
-
-      const signedEvent = await signer.signEvent(event);
+      const unsignedEvent = createBlossomAuthEvent(pubkey);
+      const signedEvent = await signer.signEvent(unsignedEvent);
       
       logger.info('Authorization event created and signed', {
         service: 'GenericBlossomService',

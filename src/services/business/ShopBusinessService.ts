@@ -1,8 +1,10 @@
 import { logger } from '../core/LoggingService';
-import { NostrSigner, NostrEvent } from '../../types/nostr';
+import { NostrSigner, NostrEvent, NIP23Event, NIP23Content } from '../../types/nostr';
 import { blossomService, BlossomFileMetadata } from '../generic/GenericBlossomService';
 import { nostrEventService, ProductEventData } from '../nostr/NostrEventService';
 import { productStore } from '../../stores/ProductStore';
+import { createRevisionEvent, signEvent } from '../generic/GenericEventService';
+import { publishEvent, queryEvents } from '../generic/GenericRelayService';
 
 export interface ShopProduct {
   id: string;
@@ -21,6 +23,7 @@ export interface ShopProduct {
   eventId: string;
   publishedRelays: string[];
   author: string;
+  originalEventId?: string; // For tracking revisions
 }
 
 export interface CreateProductResult {
@@ -220,6 +223,320 @@ export class ShopBusinessService {
 
       return {
         success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Update an existing product by creating a revision event
+   */
+  public async updateProduct(
+    originalEventId: string,
+    updatedData: Partial<ProductEventData>,
+    imageFile: File | null,
+    signer: NostrSigner,
+    onProgress?: (progress: ShopPublishingProgress) => void
+  ): Promise<CreateProductResult> {
+    try {
+      logger.info('Starting product update', {
+        service: 'ShopBusinessService',
+        method: 'updateProduct',
+        originalEventId,
+        title: updatedData.title,
+      });
+
+      // Get the original product
+      const originalProduct = productStore.getProduct(originalEventId);
+      if (!originalProduct) {
+        return {
+          success: false,
+          error: 'Original product not found',
+          publishedRelays: [],
+          failedRelays: [],
+        };
+      }
+
+      // Merge updated data with original product data
+      const mergedData: ProductEventData = {
+        title: updatedData.title || originalProduct.title,
+        description: updatedData.description || originalProduct.description,
+        price: updatedData.price !== undefined ? updatedData.price : originalProduct.price,
+        currency: updatedData.currency || originalProduct.currency,
+        tags: updatedData.tags || originalProduct.tags,
+        category: updatedData.category || originalProduct.category,
+        condition: updatedData.condition || originalProduct.condition,
+        location: updatedData.location || originalProduct.location,
+        contact: updatedData.contact || originalProduct.contact,
+        imageUrl: originalProduct.imageUrl,
+        imageHash: originalProduct.imageHash,
+        imageFile: imageFile || undefined,
+      };
+
+      // Handle image upload if new image provided
+      let imageMetadata: BlossomFileMetadata | null = null;
+      if (imageFile) {
+        onProgress?.({
+          step: 'uploading',
+          progress: 10,
+          message: 'Uploading new image...',
+        });
+
+        const uploadResult = await blossomService.uploadFile(imageFile, signer);
+        if (!uploadResult.success) {
+          return {
+            success: false,
+            error: `Image upload failed: ${uploadResult.error}`,
+            publishedRelays: [],
+            failedRelays: [],
+          };
+        }
+
+        imageMetadata = uploadResult.metadata || null;
+        if (imageMetadata) {
+          mergedData.imageUrl = imageMetadata.url;
+          mergedData.imageHash = imageMetadata.hash;
+        }
+
+        onProgress?.({
+          step: 'uploading',
+          progress: 50,
+          message: 'Image uploaded successfully',
+        });
+      }
+
+      // Create revision event
+      onProgress?.({
+        step: 'creating_event',
+        progress: 60,
+        message: 'Creating revision event...',
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+      const pubkey = await signer.getPublicKey();
+
+      // Create NIP-23 content for revision
+      const nip23Content: NIP23Content = {
+        title: mergedData.title,
+        content: mergedData.description,
+        summary: mergedData.description.substring(0, 200) + '...',
+        published_at: now,
+        tags: mergedData.tags,
+        language: 'en',
+        region: mergedData.location,
+        permissions: 'public',
+        file_id: mergedData.imageHash,
+        file_type: 'image',
+        file_size: mergedData.imageFile?.size || 0,
+      };
+
+      // Create revision event using GenericEventService
+      const revisionResult = createRevisionEvent(
+        {
+          id: originalEventId,
+          pubkey,
+          created_at: originalProduct.publishedAt,
+          kind: 23,
+          tags: [], // This will be filled by the revision creation
+          content: '',
+          sig: '',
+        } as NIP23Event,
+        nip23Content,
+        pubkey,
+        1 // revision number
+      );
+
+      if (!revisionResult.success || !revisionResult.event) {
+        return {
+          success: false,
+          error: `Failed to create revision event: ${revisionResult.error}`,
+          publishedRelays: [],
+          failedRelays: [],
+        };
+      }
+
+      // Sign the revision event
+      const signingResult = await signEvent(revisionResult.event, signer);
+      if (!signingResult.success || !signingResult.signedEvent) {
+        return {
+          success: false,
+          error: `Failed to sign revision event: ${signingResult.error}`,
+          publishedRelays: [],
+          failedRelays: [],
+        };
+      }
+
+      onProgress?.({
+        step: 'publishing',
+        progress: 80,
+        message: 'Publishing revision to relays...',
+      });
+
+      // Publish the revision event
+      const publishResult = await publishEvent(signingResult.signedEvent, signer, (progress) => {
+        onProgress?.({
+          step: 'publishing',
+          progress: 80 + (progress.progress * 0.2), // Map 0-100 to 80-100
+          message: progress.message,
+        });
+      });
+
+      if (!publishResult.success) {
+        return {
+          success: false,
+          error: `Failed to publish revision: ${publishResult.error}`,
+          publishedRelays: publishResult.publishedRelays,
+          failedRelays: publishResult.failedRelays,
+        };
+      }
+
+      // Create updated product object
+      const updatedProduct: ShopProduct = {
+        id: signingResult.signedEvent.id,
+        title: mergedData.title,
+        description: mergedData.description,
+        price: mergedData.price,
+        currency: mergedData.currency,
+        imageUrl: mergedData.imageUrl,
+        imageHash: mergedData.imageHash,
+        tags: mergedData.tags,
+        category: mergedData.category,
+        condition: mergedData.condition,
+        location: mergedData.location,
+        contact: mergedData.contact,
+        author: pubkey,
+        publishedAt: now,
+        eventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays,
+        originalEventId: originalEventId,
+      };
+
+      // Update the product in the store
+      productStore.addProduct(updatedProduct);
+
+      onProgress?.({
+        step: 'complete',
+        progress: 100,
+        message: 'Product updated successfully!',
+      });
+
+      logger.info('Product updated successfully', {
+        service: 'ShopBusinessService',
+        method: 'updateProduct',
+        originalEventId,
+        newEventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays.length,
+      });
+
+      return {
+        success: true,
+        product: updatedProduct,
+        eventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Product update failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'updateProduct',
+        originalEventId,
+        error: errorMessage,
+      });
+      return {
+        success: false,
+        error: errorMessage,
+        publishedRelays: [],
+        failedRelays: [],
+      };
+    }
+  }
+
+  /**
+   * Query products from Nostr relays
+   */
+  public async queryProductsFromRelays(
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
+  ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
+    try {
+      logger.info('Starting product query from relays', {
+        service: 'ShopBusinessService',
+        method: 'queryProductsFromRelays',
+      });
+
+      // Create filters for Kind 23 events with shop tag
+      const filters = [
+        {
+          kinds: [23], // Long-form content events
+          '#t': ['culture-bridge-shop'], // Shop identifier tag
+        }
+      ];
+
+      const queryResult = await queryEvents(filters, (progress) => {
+        // Convert GenericRelayService progress to ShopBusinessService format
+        if (progress.step === 'querying' && progress.message.includes('Querying')) {
+          const relayName = progress.message.replace('Querying ', '').replace('...', '');
+          onProgress?.(relayName, 'querying');
+        } else if (progress.step === 'complete') {
+          // This would need to be handled differently in a real implementation
+          // For now, we'll just log the completion
+          logger.info('Query completed', {
+            service: 'ShopBusinessService',
+            method: 'queryProductsFromRelays',
+            progress: progress.progress,
+            message: progress.message,
+          });
+        }
+      });
+
+      if (!queryResult.success) {
+        return {
+          success: false,
+          products: [],
+          queriedRelays: [],
+          failedRelays: [],
+          error: queryResult.error,
+        };
+      }
+
+      // Parse events into products
+      const products: ShopProduct[] = [];
+      for (const event of queryResult.events) {
+        const product = this.parseProductFromEvent(event);
+        if (product) {
+          products.push(product);
+          // Also add to local store for caching
+          productStore.addProduct(product);
+        }
+      }
+
+      logger.info('Product query completed', {
+        service: 'ShopBusinessService',
+        method: 'queryProductsFromRelays',
+        totalEvents: queryResult.events.length,
+        parsedProducts: products.length,
+        relayCount: queryResult.relayCount,
+      });
+
+      return {
+        success: true,
+        products,
+        queriedRelays: [], // Will be populated in real implementation
+        failedRelays: [], // Will be populated in real implementation
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Product query from relays failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'queryProductsFromRelays',
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        products: [],
+        queriedRelays: [],
+        failedRelays: [],
         error: errorMessage,
       };
     }

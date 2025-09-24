@@ -1,20 +1,27 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useNostrSigner } from './useNostrSigner';
+import { useShopStore } from '@/stores/useShopStore';
 import { 
   shopBusinessService, 
-  CreateProductResult, 
-  ShopPublishingProgress 
+  CreateProductResult
 } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
+import { RelayPublishingProgress } from '@/services/generic/GenericRelayService';
 
 export const useShopPublishing = () => {
   const { isAvailable, getSigner } = useNostrSigner();
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [progress, setProgress] = useState<ShopPublishingProgress | null>(null);
-  const [lastResult, setLastResult] = useState<CreateProductResult | null>(null);
+  const {
+    isPublishing,
+    publishingProgress,
+    lastPublishingResult,
+    setPublishing,
+    setPublishingProgress,
+    setLastPublishingResult,
+    addProduct,
+  } = useShopStore();
 
   const publishProduct = useCallback(async (
     productData: ProductEventData,
@@ -28,98 +35,94 @@ export const useShopPublishing = () => {
         hasImage: !!imageFile,
       });
 
+      setPublishing(true);
+      setPublishingProgress({ step: 'connecting', progress: 0, message: 'Initializing...', publishedRelays: [], failedRelays: [] });
+      setLastPublishingResult(null);
+
       if (!isAvailable) {
-        const error = 'Nostr signer not available';
-        logger.error('Signer not available for publishing', new Error(error), {
-          service: 'useShopPublishing',
-          method: 'publishProduct',
-        });
-        return {
-          success: false,
-          error,
-        };
+        const errorMsg = 'Nostr signer not available. Please install a Nostr extension.';
+        logger.error(errorMsg, new Error(errorMsg), { service: 'useShopPublishing', method: 'publishProduct' });
+        const errorResult = { success: false, error: errorMsg, publishedRelays: [], failedRelays: [] };
+        setLastPublishingResult(errorResult);
+        return errorResult;
       }
 
-      setIsPublishing(true);
-      setProgress({
-        step: 'uploading',
-        progress: 0,
-        message: 'Preparing to publish...',
-      });
-
       const signer = await getSigner();
-      
+
       const result = await shopBusinessService.createProduct(
         productData,
         imageFile,
         signer,
-        (progressUpdate) => {
-          logger.info('Publishing progress update', {
+        (p) => {
+          // Convert ShopPublishingProgress to RelayPublishingProgress for store
+          const relayProgress: RelayPublishingProgress = {
+            step: p.step === 'uploading' ? 'connecting' : 
+                  p.step === 'creating_event' ? 'connecting' :
+                  p.step === 'publishing' ? 'publishing' :
+                  p.step === 'complete' ? 'complete' : 'connecting',
+            progress: p.progress,
+            message: p.message,
+            details: p.details,
+            publishedRelays: [],
+            failedRelays: [],
+          };
+          setPublishingProgress(relayProgress);
+          logger.debug('Publishing progress update', {
             service: 'useShopPublishing',
             method: 'publishProduct',
-            step: progressUpdate.step,
-            progress: progressUpdate.progress,
-            message: progressUpdate.message,
+            progress: p.progress,
+            message: p.message,
           });
-          setProgress(progressUpdate);
         }
       );
 
-      setLastResult(result);
-      setIsPublishing(false);
-
-      if (result.success) {
-        logger.info('Product published successfully', {
-          service: 'useShopPublishing',
-          method: 'publishProduct',
-          productId: result.product?.id,
-          eventId: result.eventId,
-          publishedRelays: result.publishedRelays?.length,
-        });
-      } else {
-        logger.error('Product publishing failed', new Error(result.error || 'Unknown error'), {
-          service: 'useShopPublishing',
-          method: 'publishProduct',
-          error: result.error,
-        });
+      // Convert ShopPublishingProgress to RelayPublishingProgress for store
+      if (result.success && result.product) {
+        addProduct(result.product);
       }
 
+      const publishingResult = {
+        success: result.success,
+        eventId: result.eventId,
+        publishedRelays: result.publishedRelays || [],
+        failedRelays: result.failedRelays || [],
+        error: result.error,
+      };
+
+      setLastPublishingResult(publishingResult);
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Product publishing error', error instanceof Error ? error : new Error(errorMessage), {
+      logger.error('Product publishing failed', error instanceof Error ? error : new Error(errorMessage), {
         service: 'useShopPublishing',
         method: 'publishProduct',
         error: errorMessage,
       });
-
-      const result: CreateProductResult = {
-        success: false,
-        error: errorMessage,
-      };
-
-      setLastResult(result);
-      setIsPublishing(false);
-      return result;
+      const errorResult = { success: false, error: errorMessage, publishedRelays: [], failedRelays: [] };
+      setLastPublishingResult(errorResult);
+      return errorResult;
+    } finally {
+      setPublishing(false);
+      setPublishingProgress(null);
     }
-  }, [isAvailable, getSigner]);
+  }, [isAvailable, getSigner, setPublishing, setPublishingProgress, setLastPublishingResult, addProduct]);
 
   const resetPublishing = useCallback(() => {
     logger.info('Resetting publishing state', {
       service: 'useShopPublishing',
       method: 'resetPublishing',
     });
-    setIsPublishing(false);
-    setProgress(null);
-    setLastResult(null);
-  }, []);
+    setPublishing(false);
+    setPublishingProgress(null);
+    setLastPublishingResult(null);
+  }, [setPublishing, setPublishingProgress, setLastPublishingResult]);
 
   return {
-    isPublishing,
-    progress,
-    lastResult,
     publishProduct,
+    isPublishing,
+    progress: publishingProgress,
+    lastResult: lastPublishingResult,
+    canPublish: isAvailable && !isPublishing,
     resetPublishing,
-    canPublish: isAvailable,
   };
 };

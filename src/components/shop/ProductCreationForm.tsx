@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useShopPublishing } from '@/hooks/useShopPublishing';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
-import { ShopPublishingProgress } from '@/services/business/ShopBusinessService';
+import { RelayPublishingProgress } from '@/services/generic/GenericRelayService';
 
 interface ProductCreationFormProps {
   onProductCreated?: (productId: string) => void;
@@ -186,16 +186,18 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
     }
   };
 
-  const getProgressMessage = (progress: ShopPublishingProgress): string => {
+  const getProgressMessage = (progress: RelayPublishingProgress): string => {
     switch (progress.step) {
-      case 'uploading':
-        return 'Uploading image to Blossom...';
-      case 'creating_event':
-        return 'Creating product event...';
+      case 'connecting':
+        return 'Connecting to relays...';
       case 'publishing':
-        return 'Publishing to Nostr relays...';
+        return `Publishing to relays: ${progress.message}`;
+      case 'waiting':
+        return 'Waiting for relay responses...';
       case 'complete':
         return 'Product created successfully!';
+      case 'error':
+        return `Error: ${progress.message}`;
       default:
         return 'Processing...';
     }

@@ -1,6 +1,9 @@
 import { logger } from '../core/LoggingService';
 import { NostrSigner, NostrEvent, NIP23Event, NIP23Content } from '../../types/nostr';
-import { NOSTR_RELAYS } from '../../config/relays';
+import { AppError } from '../../errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
+import { createNIP23Event, signEvent as genericSignEvent } from '../generic/GenericEventService';
+import { publishEvent as genericPublishEvent } from '../generic/GenericRelayService';
 
 export interface ProductEventData {
   title: string;
@@ -54,7 +57,6 @@ export class NostrEventService {
 
       const now = Math.floor(Date.now() / 1000);
       const pubkey = await signer.getPublicKey();
-      const uniqueId = `product-${now}-${Math.random().toString(36).substr(2, 9)}`;
 
       // Create NIP-23 content
       const nip23Content: NIP23Content = {
@@ -71,48 +73,57 @@ export class NostrEventService {
         file_size: productData.imageFile?.size || 0,
       };
 
-      // Create event with tags
-      const event: Omit<NIP23Event, 'id' | 'sig'> = {
-        kind: 23,
-        pubkey,
-        created_at: now,
+      // Create event using GenericEventService
+      const eventResult = createNIP23Event(nip23Content, pubkey, {
+        fileMetadata: productData.imageHash ? {
+          fileId: productData.imageHash,
+          fileType: 'image',
+          fileSize: productData.imageFile?.size || 0,
+        } : undefined,
         tags: [
-          ['d', uniqueId], // Required for replaceable events (NIP-33)
-          ['r', '0'], // Revision number
-          ['title', productData.title],
-          ['lang', 'en'],
-          ['author', pubkey],
-          ['region', productData.location],
-          ['published_at', now.toString()],
-          // Product-specific tags
           ['price', productData.price.toString()],
           ['currency', productData.currency],
           ['category', productData.category],
           ['condition', productData.condition],
           ['contact', productData.contact],
-          // File tags (if image provided)
-          ...(productData.imageHash ? [
-            ['f', productData.imageHash],
-            ['type', 'image'],
-            ['size', (productData.imageFile?.size || 0).toString()],
-          ] : []),
-          // Custom tags
           ...productData.tags.map(tag => ['t', tag]),
+          ['t', 'culture-bridge-shop'], // Shop identifier tag
         ],
-        content: JSON.stringify(nip23Content),
-      };
+      });
+
+      if (!eventResult.success || !eventResult.event) {
+        throw new AppError(
+          'Failed to create product event',
+          ErrorCode.NOSTR_ERROR,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          ErrorCategory.EXTERNAL_SERVICE,
+          ErrorSeverity.HIGH,
+          { error: eventResult.error }
+        );
+      }
 
       // Sign the event
-      const signedEvent = await signer.signEvent(event);
+      const signingResult = await genericSignEvent(eventResult.event, signer);
+
+      if (!signingResult.success || !signingResult.signedEvent) {
+        throw new AppError(
+          'Failed to sign product event',
+          ErrorCode.NOSTR_ERROR,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          ErrorCategory.EXTERNAL_SERVICE,
+          ErrorSeverity.HIGH,
+          { error: signingResult.error }
+        );
+      }
 
       logger.info('Product event created and signed', {
         service: 'NostrEventService',
         method: 'createProductEvent',
-        eventId: signedEvent.id,
+        eventId: signingResult.signedEvent.id,
         title: productData.title,
       });
 
-      return signedEvent as NIP23Event;
+      return signingResult.signedEvent as NIP23Event;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to create product event', error instanceof Error ? error : new Error(errorMessage), {
@@ -138,143 +149,58 @@ export class NostrEventService {
         service: 'NostrEventService',
         method: 'publishEvent',
         eventId: event.id,
-        relayCount: NOSTR_RELAYS.length,
       });
 
-      const publishedRelays: string[] = [];
-      const failedRelays: string[] = [];
-
-      // Publish to all relays in parallel
-      const publishPromises = NOSTR_RELAYS.map(async (relay) => {
-        try {
-          logger.info('Publishing to relay', {
-            service: 'NostrEventService',
-            method: 'publishEvent',
-            relayUrl: relay.url,
-            eventId: event.id,
-          });
-
-          onProgress?.(relay.url, 'publishing');
-
-          // Create WebSocket connection to relay
-          const ws = new WebSocket(relay.url);
-          
-          return new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-              ws.close();
-              reject(new Error('Publish timeout'));
-            }, 10000); // 10 second timeout
-
-            ws.onopen = () => {
-              // Send REQ message to publish event
-              const message = ['EVENT', event];
-              ws.send(JSON.stringify(message));
-              
-              // Wait for OK response
-              ws.onmessage = (msg) => {
-                try {
-                  const data = JSON.parse(msg.data);
-                  if (data[0] === 'OK' && data[1] === event.id) {
-                    clearTimeout(timeout);
-                    ws.close();
-                    
-                    if (data[2] === true) {
-                      publishedRelays.push(relay.url);
-                      onProgress?.(relay.url, 'success');
-                      logger.info('Event published successfully to relay', {
-                        service: 'NostrEventService',
-                        method: 'publishEvent',
-                        relayUrl: relay.url,
-                        eventId: event.id,
-                      });
-                      resolve();
-                    } else {
-                      failedRelays.push(relay.url);
-                      onProgress?.(relay.url, 'failed');
-                      logger.warn('Event rejected by relay', {
-                        service: 'NostrEventService',
-                        method: 'publishEvent',
-                        relayUrl: relay.url,
-                        eventId: event.id,
-                        reason: data[3] || 'Unknown reason',
-                      });
-                      reject(new Error(data[3] || 'Event rejected'));
-                    }
-                  }
-                } catch (parseError) {
-                  logger.warn('Failed to parse relay response', {
-                    service: 'NostrEventService',
-                    method: 'publishEvent',
-                    relayUrl: relay.url,
-                    error: parseError instanceof Error ? parseError.message : 'Unknown error',
-                  });
-                }
-              };
-            };
-
-            ws.onerror = (error) => {
-              clearTimeout(timeout);
-              ws.close();
-              failedRelays.push(relay.url);
-              onProgress?.(relay.url, 'failed');
-              logger.error('WebSocket error during publish', new Error('WebSocket error'), {
-                service: 'NostrEventService',
-                method: 'publishEvent',
-                relayUrl: relay.url,
-              });
-              reject(error);
-            };
-          });
-        } catch (error) {
-          failedRelays.push(relay.url);
-          onProgress?.(relay.url, 'failed');
-          logger.error('Failed to publish to relay', error instanceof Error ? error : new Error('Unknown error'), {
-            service: 'NostrEventService',
-            method: 'publishEvent',
-            relayUrl: relay.url,
-            eventId: event.id,
-          });
+      // Use GenericRelayService for publishing
+      const result = await genericPublishEvent(event, signer, (progress) => {
+        // Convert GenericRelayService progress to NostrEventService format
+        if (progress.currentRelay) {
+          if (progress.step === 'publishing') {
+            onProgress?.(progress.currentRelay, 'publishing');
+          } else if (progress.step === 'complete') {
+            progress.publishedRelays.forEach(relay => onProgress?.(relay, 'success'));
+            progress.failedRelays.forEach(relay => onProgress?.(relay, 'failed'));
+          }
         }
       });
 
-      // Wait for all publish attempts to complete
-      await Promise.allSettled(publishPromises);
-
-      const success = publishedRelays.length > 0;
-      const result: PublishingResult = {
-        success,
-        eventId: event.id,
-        publishedRelays,
-        failedRelays,
-        error: success ? undefined : 'Failed to publish to any relay',
+      const publishingResult: PublishingResult = {
+        success: result.success,
+        eventId: result.eventId,
+        publishedRelays: result.publishedRelays,
+        failedRelays: result.failedRelays,
+        error: result.error,
       };
 
-      logger.info('Event publishing completed', {
-        service: 'NostrEventService',
-        method: 'publishEvent',
-        eventId: event.id,
-        publishedCount: publishedRelays.length,
-        failedCount: failedRelays.length,
-        success,
-      });
+      if (result.success) {
+        logger.info('Event publishing completed successfully', {
+          service: 'NostrEventService',
+          method: 'publishEvent',
+          eventId: event.id,
+          publishedCount: result.publishedRelays.length,
+          failedCount: result.failedRelays.length,
+          successRate: `${result.successRate.toFixed(1)}%`,
+        });
+      } else {
+        logger.error('Event publishing failed', new Error(result.error), {
+          service: 'NostrEventService',
+          method: 'publishEvent',
+          eventId: event.id,
+          failedRelays: result.failedRelays,
+          error: result.error,
+        });
+      }
 
-      return result;
+      return publishingResult;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Event publishing failed', error instanceof Error ? error : new Error(errorMessage), {
+      logger.error('Error during event publishing workflow', error instanceof Error ? error : new Error(errorMessage), {
         service: 'NostrEventService',
         method: 'publishEvent',
         eventId: event.id,
         error: errorMessage,
       });
-
-      return {
-        success: false,
-        eventId: event.id,
-        publishedRelays: [],
-        failedRelays: NOSTR_RELAYS.map(r => r.url),
-        error: errorMessage,
-      };
+      throw new AppError('Error during event publishing', ErrorCode.NOSTR_ERROR, HttpStatus.INTERNAL_SERVER_ERROR, ErrorCategory.EXTERNAL_SERVICE, ErrorSeverity.HIGH, { originalError: errorMessage });
     }
   }
 

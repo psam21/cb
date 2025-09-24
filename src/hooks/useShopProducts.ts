@@ -1,13 +1,30 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { logger } from '@/services/core/LoggingService';
+import { useShopStore } from '@/stores/useShopStore';
 import { shopBusinessService, ShopProduct } from '@/services/business/ShopBusinessService';
 
 export const useShopProducts = () => {
-  const [products, setProducts] = useState<ShopProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    isLoadingProducts,
+    productsError,
+    searchQuery,
+    selectedCategory,
+    sortBy,
+    setProducts,
+    setLoadingProducts,
+    setProductsError,
+    setSearchQuery,
+    setSelectedCategory,
+    setSortBy,
+    getFilteredProducts,
+    getProductById,
+    getProductsByCategory,
+    getProductsByTag,
+    searchProducts,
+    clearFilters,
+  } = useShopStore();
 
   const loadProducts = useCallback(async () => {
     try {
@@ -16,8 +33,8 @@ export const useShopProducts = () => {
         method: 'loadProducts',
       });
 
-      setIsLoading(true);
-      setError(null);
+      setLoadingProducts(true);
+      setProductsError(null);
 
       const productList = await shopBusinessService.listProducts();
       
@@ -35,11 +52,11 @@ export const useShopProducts = () => {
         method: 'loadProducts',
         error: errorMessage,
       });
-      setError(errorMessage);
+      setProductsError(errorMessage);
     } finally {
-      setIsLoading(false);
+      setLoadingProducts(false);
     }
-  }, []);
+  }, [setProducts, setLoadingProducts, setProductsError]);
 
   const refreshProducts = useCallback(() => {
     logger.info('Refreshing products list', {
@@ -57,22 +74,24 @@ export const useShopProducts = () => {
       title: product.title,
     });
 
-    setProducts(prev => {
-      // Check if product already exists
-      const exists = prev.some(p => p.id === product.id);
-      if (exists) {
-        logger.info('Product already exists, updating', {
-          service: 'useShopProducts',
-          method: 'addProduct',
-          productId: product.id,
-        });
-        return prev.map(p => p.id === product.id ? product : p);
-      }
-      
+    // Get current products from store
+    const currentProducts = useShopStore.getState().products;
+    
+    // Check if product already exists
+    const exists = currentProducts.some(p => p.id === product.id);
+    if (exists) {
+      logger.info('Product already exists, updating', {
+        service: 'useShopProducts',
+        method: 'addProduct',
+        productId: product.id,
+      });
+      const updatedProducts = currentProducts.map(p => p.id === product.id ? product : p);
+      setProducts(updatedProducts);
+    } else {
       // Add new product to the beginning of the list
-      return [product, ...prev];
-    });
-  }, []);
+      setProducts([product, ...currentProducts]);
+    }
+  }, [setProducts]);
 
   const removeProduct = useCallback((productId: string) => {
     logger.info('Removing product from local state', {
@@ -81,30 +100,46 @@ export const useShopProducts = () => {
       productId,
     });
 
-    setProducts(prev => prev.filter(p => p.id !== productId));
-  }, []);
+    // Get current products from store
+    const currentProducts = useShopStore.getState().products;
+    const filteredProducts = currentProducts.filter(p => p.id !== productId);
+    setProducts(filteredProducts);
+  }, [setProducts]);
 
-  const getProduct = useCallback((productId: string): ShopProduct | undefined => {
-    return products.find(p => p.id === productId);
-  }, [products]);
+  const handleSearchChange = useCallback((query: string) => {
+    logger.debug('Search query changed', {
+      service: 'useShopProducts',
+      method: 'handleSearchChange',
+      query: query.substring(0, 50),
+    });
+    setSearchQuery(query);
+  }, [setSearchQuery]);
 
-  const getProductsByCategory = useCallback((category: string): ShopProduct[] => {
-    return products.filter(p => p.category.toLowerCase() === category.toLowerCase());
-  }, [products]);
+  const handleCategoryChange = useCallback((category: string) => {
+    logger.debug('Category filter changed', {
+      service: 'useShopProducts',
+      method: 'handleCategoryChange',
+      category,
+    });
+    setSelectedCategory(category);
+  }, [setSelectedCategory]);
 
-  const getProductsByTag = useCallback((tag: string): ShopProduct[] => {
-    return products.filter(p => p.tags.some(t => t.toLowerCase().includes(tag.toLowerCase())));
-  }, [products]);
+  const handleSortChange = useCallback((sortOption: 'newest' | 'oldest' | 'price-low' | 'price-high') => {
+    logger.debug('Sort option changed', {
+      service: 'useShopProducts',
+      method: 'handleSortChange',
+      sortOption,
+    });
+    setSortBy(sortOption);
+  }, [setSortBy]);
 
-  const searchProducts = useCallback((query: string): ShopProduct[] => {
-    const lowercaseQuery = query.toLowerCase();
-    return products.filter(p => 
-      p.title.toLowerCase().includes(lowercaseQuery) ||
-      p.description.toLowerCase().includes(lowercaseQuery) ||
-      p.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery)) ||
-      p.category.toLowerCase().includes(lowercaseQuery)
-    );
-  }, [products]);
+  const handleClearFilters = useCallback(() => {
+    logger.info('Clearing all filters', { 
+      service: 'useShopProducts', 
+      method: 'handleClearFilters' 
+    });
+    clearFilters();
+  }, [clearFilters]);
 
   // Load products on mount
   useEffect(() => {
@@ -112,16 +147,23 @@ export const useShopProducts = () => {
   }, [loadProducts]);
 
   return {
-    products,
-    isLoading,
-    error,
+    products: getFilteredProducts(),
+    isLoading: isLoadingProducts,
+    error: productsError,
+    searchQuery,
+    selectedCategory,
+    sortBy,
     loadProducts,
     refreshProducts,
     addProduct,
     removeProduct,
-    getProduct,
+    getProduct: getProductById,
     getProductsByCategory,
     getProductsByTag,
     searchProducts,
+    handleSearchChange,
+    handleCategoryChange,
+    handleSortChange,
+    clearFilters: handleClearFilters,
   };
 };
