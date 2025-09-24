@@ -12,7 +12,7 @@ interface ProductCreationFormProps {
 }
 
 export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreationFormProps) => {
-  const { publishProduct, isPublishing, progress, lastResult, canPublish } = useShopPublishing();
+  const { publishProduct, isPublishing, progress, lastResult, canPublish, resetPublishing } = useShopPublishing();
   const [formData, setFormData] = useState<ProductEventData>({
     title: '',
     description: '',
@@ -176,6 +176,11 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
       setImageFile(null);
       setTagInput('');
       setErrors({});
+      
+      // Clear success message after a delay
+      setTimeout(() => {
+        resetPublishing();
+      }, 3000);
     } else {
       logger.error('Product creation failed', new Error(result.error || 'Unknown error'), {
         service: 'ProductCreationForm',
@@ -204,8 +209,8 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Product</h2>
+    <div className="max-w-4xl mx-auto p-8 card">
+      <h2 className="text-3xl font-serif font-bold text-primary-800 mb-8">Create New Product</h2>
       
       {!canPublish && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -218,7 +223,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Title */}
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="title" className="block text-sm font-medium text-primary-800 mb-2">
             Product Title *
           </label>
           <input
@@ -226,7 +231,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
             id="title"
             value={formData.title}
             onChange={(e) => handleInputChange('title', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-3 border rounded-default focus:outline-none focus:ring-2 focus:ring-primary-500 ${
               errors.title ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="Enter product title"
@@ -237,7 +242,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
 
         {/* Description */}
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="description" className="block text-sm font-medium text-primary-800 mb-2">
             Description *
           </label>
           <textarea
@@ -245,7 +250,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
             rows={4}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-3 border rounded-default focus:outline-none focus:ring-2 focus:ring-primary-500 ${
               errors.description ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="Describe your product"
@@ -475,7 +480,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="btn-outline-sm"
               disabled={isPublishing}
             >
               Cancel
@@ -484,7 +489,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
           <button
             type="submit"
             disabled={isPublishing || !canPublish}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPublishing ? 'Creating...' : 'Create Product'}
           </button>
