@@ -336,6 +336,137 @@ Service Error → AppError → LoggingService → User Feedback
 
 ---
 
+## 🛍️ **Shop Feature - Detailed File Flow**
+
+### **Shop Page Request Flow** (Exact File Names):
+
+```
+1. User visits /shop
+   ↓
+2. src/app/shop/page.tsx
+   ↓
+3. src/hooks/useShopProducts.ts
+   ↓
+4. src/stores/useShopStore.ts
+   ↓
+5. src/services/business/ShopBusinessService.ts
+   ↓
+6. src/services/generic/GenericRelayService.ts
+   ↓
+7. External Nostr Relays
+```
+
+### **Shop Component Hierarchy** (Exact File Names):
+
+```
+src/app/shop/page.tsx
+├── imports src/hooks/useShopProducts.ts
+├── imports src/components/shop/ProductCreationForm.tsx
+├── imports src/components/shop/ProductGrid.tsx
+└── imports src/services/business/ShopBusinessService.ts (types)
+
+src/components/shop/ProductGrid.tsx
+├── imports src/components/shop/ProductCard.tsx
+└── imports src/services/business/ShopBusinessService.ts (types)
+
+src/components/shop/ProductCard.tsx
+└── imports src/services/business/ShopBusinessService.ts (types)
+
+src/components/shop/ProductCreationForm.tsx
+├── imports src/hooks/useShopPublishing.ts
+└── imports src/services/business/ShopBusinessService.ts (types)
+```
+
+### **Shop Hook Dependencies** (Exact File Names):
+
+```
+src/hooks/useShopProducts.ts
+├── imports src/stores/useShopStore.ts
+└── imports src/services/business/ShopBusinessService.ts
+
+src/hooks/useShopPublishing.ts
+├── imports src/stores/useShopStore.ts
+├── imports src/hooks/useNostrSigner.ts
+└── imports src/services/business/ShopBusinessService.ts
+
+src/hooks/useNostrSigner.ts
+├── imports src/stores/useAuthStore.ts
+└── imports src/services/generic/GenericAuthService.ts
+```
+
+### **Shop Service Dependencies** (Exact File Names):
+
+```
+src/services/business/ShopBusinessService.ts
+├── imports src/services/generic/GenericBlossomService.ts
+├── imports src/services/generic/GenericEventService.ts
+├── imports src/services/generic/GenericRelayService.ts
+├── imports src/services/nostr/NostrEventService.ts
+├── imports src/stores/ProductStore.ts
+└── imports src/services/core/LoggingService.ts
+
+src/services/generic/GenericRelayService.ts
+├── imports src/config/relays.ts
+├── imports src/types/nostr.ts
+└── imports src/services/core/LoggingService.ts
+
+src/services/generic/GenericBlossomService.ts
+├── imports src/types/nostr.ts
+└── imports src/services/core/LoggingService.ts
+
+src/services/generic/GenericEventService.ts
+├── imports src/types/nostr.ts
+└── imports src/services/core/LoggingService.ts
+
+src/services/generic/GenericAuthService.ts
+├── imports src/types/nostr.ts
+└── imports src/services/core/LoggingService.ts
+```
+
+### **Shop Store Dependencies** (Exact File Names):
+
+```
+src/stores/useShopStore.ts
+├── imports src/services/business/ShopBusinessService.ts (types)
+└── imports src/services/generic/GenericRelayService.ts (types)
+
+src/stores/useAuthStore.ts
+└── imports src/types/nostr.ts
+
+src/stores/ProductStore.ts
+└── imports src/services/business/ShopBusinessService.ts (types)
+```
+
+### **Complete Shop Data Flow** (Step by Step):
+
+```
+1. User visits /shop
+   ↓
+2. src/app/shop/page.tsx loads
+   ↓
+3. src/hooks/useShopProducts.ts called
+   ↓
+4. src/stores/useShopStore.ts provides state
+   ↓
+5. src/services/business/ShopBusinessService.queryProductsFromRelays() called
+   ↓
+6. src/services/generic/GenericRelayService.queryEvents() called
+   ↓
+7. src/config/relays.ts provides relay configuration
+   ↓
+8. External Nostr relays queried for Kind 23 events
+   ↓
+9. Events parsed back through service chain
+   ↓
+10. src/stores/useShopStore.ts updated with products
+    ↓
+11. src/components/shop/ProductGrid.tsx re-renders
+    ↓
+12. src/components/shop/ProductCard.tsx renders each product
+```
+
+---
+
 ## 🏛️ **Architecture Principles**
 
 ### **1. Service-Oriented Architecture (SOA)**:
