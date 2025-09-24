@@ -39,7 +39,7 @@ export default function HomeContent() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto"
+            className="container-width"
           >
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-primary-800 mb-6">
               Preserve Heritage, <span className="text-gradient">Empower Communities</span>
@@ -82,7 +82,7 @@ export default function HomeContent() {
       {/* Mission Section */}
       <section className="section-padding bg-gray-50">
         <div className="container-width">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="container-width text-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -96,7 +96,7 @@ export default function HomeContent() {
                 corporations. Culture Bridge returns this power to communities themselves, using
                 decentralized technology to ensure traditions survive and thrive.
               </p>
-              <div className="grid grid-cols-2 gap-8 mt-8 max-w-4xl mx-auto">
+              <div className="grid grid-cols-2 gap-8 mt-8 container-width">
                 {features.map((feature) => {
                   const Icon = feature.icon as React.ComponentType<{ className?: string }>;
                   return (
@@ -214,7 +214,7 @@ export default function HomeContent() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-3xl mx-auto"
+            className="container-width"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
               Your Culture Matters. Your Story Deserves to Be Preserved.
@@ -244,7 +244,7 @@ export default function HomeContent() {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto text-center"
+            className="container-width text-center"
           >
             <div className="mb-8">
               <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 border-4 border-accent-200">

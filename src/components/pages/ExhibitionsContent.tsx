@@ -110,7 +110,7 @@ export default function ExhibitionsContent() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto text-center"
+            className="container-width text-center"
           >
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
               Curated <span className="text-accent-400">Exhibitions</span>
@@ -140,7 +140,7 @@ export default function ExhibitionsContent() {
       {/* Search + Filters */}
       <section className="py-8 bg-white border-b border-gray-200">
         <div className="container-width space-y-6">
-          <div className="max-w-4xl mx-auto relative">
+          <div className="container-width relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
             <input
               type="text"

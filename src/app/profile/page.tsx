@@ -8,7 +8,7 @@ import { UserProfile } from '@/services/business/ProfileBusinessService';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { 
     profile, 
     stats, 
@@ -93,10 +93,6 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
 
   if (isLoadingProfile) {
     return (
@@ -133,14 +129,14 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-accent-50">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="container-width section-padding">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-serif font-bold text-primary-800">My Profile</h1>
+              <h1 className="text-3xl font-serif font-bold text-primary-800">Nostr Profile</h1>
               <p className="text-primary-600 mt-2">
-                Manage your Nostr identity and shop statistics
+                Manage your Nostr identity
               </p>
             </div>
             <div className="flex space-x-3">
@@ -169,12 +165,6 @@ export default function ProfilePage() {
                   </button>
                 </div>
               )}
-              <button
-                onClick={handleLogout}
-                className="btn-outline-sm text-red-600 hover:text-red-700"
-              >
-                Sign Out
-              </button>
             </div>
           </div>
         </div>
@@ -185,7 +175,6 @@ export default function ProfilePage() {
           <div className="lg:col-span-2">
             <div className="card">
               <div className="p-6">
-                <h2 className="text-xl font-serif font-bold text-primary-800 mb-6">Profile Information</h2>
                 
                 {saveError && (
                   <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -381,26 +370,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Public Key Info */}
-            <div className="card">
-              <div className="p-6">
-                <h3 className="text-lg font-serif font-bold text-primary-800 mb-4">Public Key</h3>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-primary-600 mb-1">npub</label>
-                    <p className="text-sm font-mono text-primary-800 break-all">
-                      {user.npub || 'Generating...'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-primary-600 mb-1">pubkey</label>
-                    <p className="text-sm font-mono text-primary-800 break-all">
-                      {user.pubkey.substring(0, 16)}...{user.pubkey.substring(-16)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -146,7 +146,7 @@ export default function CoursesContent() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto text-center"
+            className="container-width text-center"
           >
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
               Cultural <span className="text-white">Courses</span>
@@ -301,7 +301,7 @@ export default function CoursesContent() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="max-w-3xl mx-auto text-center"
+            className="container-width text-center"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
               Share Your Language Heritage

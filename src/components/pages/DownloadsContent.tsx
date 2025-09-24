@@ -64,7 +64,7 @@ export default function DownloadsContent() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto text-center"
+            className="container-width text-center"
           >
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
               Cultural <span className="text-white">Resources</span>
@@ -96,7 +96,7 @@ export default function DownloadsContent() {
         <div className="container-width">
           <div className="space-y-6">
             {/* Search Bar */}
-            <div className="max-w-2xl mx-auto">
+            <div className="container-width">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -338,7 +338,7 @@ export default function DownloadsContent() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="max-w-3xl mx-auto text-center"
+            className="container-width text-center"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
               Share Your Cultural Resources
