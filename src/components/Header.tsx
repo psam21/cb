@@ -8,7 +8,7 @@ import AuthButton from './auth/AuthButton';
 
 const navigationLine1 = [
   // Home link removed; users access home via the top-left icon
-  { name: 'Explore Cultures', href: '/explore' },
+  { name: 'Explore', href: '/explore' },
   { name: 'Contribute', href: '/contribute' },
   { name: 'Elder Voices', href: '/elder-voices' },
   { name: 'Community', href: '/community' },
@@ -104,12 +104,10 @@ export default function Header() {
             ))}
           </div>
 
-          {/* Auth Button & Mobile Menu */}
+          {/* Right side: Auth Button + Mobile Menu */}
           <div className="flex items-center space-x-4">
-            {/* Auth Button - Desktop */}
-            <div className="hidden lg:block">
-              <AuthButton />
-            </div>
+            {/* Auth Button - Always visible */}
+            <AuthButton />
             
             {/* Mobile menu button */}
             <button

@@ -44,7 +44,7 @@ export default function AuthButton() {
     return (
       <Link
         href="/signin"
-        className="btn-outline-sm"
+        className="px-4 py-2 bg-accent-600 text-white rounded-md font-semibold hover:bg-accent-700 transition-colors duration-200"
       >
         Sign In
       </Link>
@@ -56,7 +56,7 @@ export default function AuthButton() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="btn-outline flex items-center gap-2"
+        className="px-4 py-2 bg-primary-600 text-white rounded-md font-semibold hover:bg-primary-700 transition-colors duration-200 flex items-center gap-2"
         aria-expanded={showDropdown}
         aria-haspopup="menu"
         onKeyDown={handleKeyDown}
