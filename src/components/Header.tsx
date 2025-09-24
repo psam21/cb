@@ -10,14 +10,13 @@ const navigationLine1 = [
   // Home link removed; users access home via the top-left icon
   { name: 'Explore', href: '/explore' },
   { name: 'Contribute', href: '/contribute' },
-  { name: 'Elder Voices', href: '/elder-voices' },
   { name: 'Community', href: '/community' },
+  { name: 'Courses', href: '/courses' },
 ];
 
 const navigationLine2 = [
-  { name: 'Cultural Exchange', href: '/exchange' },
   { name: 'Exhibitions', href: '/exhibitions' },
-  { name: 'Language Learning', href: '/language' },
+  { name: 'Meetups', href: '/meetups' },
   { name: 'Shop', href: '/shop' },
 ];
 

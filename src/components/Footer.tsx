@@ -4,24 +4,21 @@ import { Heart, Globe } from 'lucide-react';
 
 const footerLinks = {
   platform: [
-    { name: 'Explore Cultures', href: '/explore' },
+    { name: 'Explore', href: '/explore' },
     { name: 'Contribute', href: '/contribute' },
-    { name: 'Elder Voices', href: '/elder-voices' },
-    { name: 'Language Learning', href: '/language' },
-    { name: 'Gallery', href: '/gallery' },
+    { name: 'Community', href: '/community' },
+    { name: 'Courses', href: '/courses' },
   ],
-  community: [
-    { name: 'Join the Community', href: '/community' },
-    { name: 'Cultural Exchange', href: '/exchange' },
-    { name: 'Get Involved', href: '/get-involved' },
-    { name: 'User Feed', href: '/user-feed' },
+  events: [
+    { name: 'Exhibitions', href: '/exhibitions' },
+    { name: 'Meetups', href: '/meetups' },
+    { name: 'Shop', href: '/shop' },
   ],
   resources: [
     { name: 'About Us', href: '/about' },
     { name: 'Nostr', href: '/nostr' },
     { name: 'Support', href: '/support' },
     { name: 'Downloads', href: '/downloads' },
-    { name: 'Culture Shop', href: '/shop' },
   ],
   about: [
     { name: 'Our Mission', href: '/about' },
@@ -70,11 +67,11 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Community Links */}
+          {/* Events Links */}
           <div>
-            <h4 className="font-serif font-semibold text-lg mb-4">Community</h4>
+            <h4 className="font-serif font-semibold text-lg mb-4">Events</h4>
             <ul className="space-y-3">
-              {footerLinks.community.map((link) => (
+              {footerLinks.events.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}

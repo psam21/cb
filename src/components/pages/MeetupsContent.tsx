@@ -20,24 +20,24 @@ import {
 } from 'lucide-react';
 
 // Data extracted from original page (could be moved to data module later)
-const exchangeTypes = [
+const meetupTypes = [
   {
     icon: MessageSquare,
-    title: 'Cultural Conversations',
+    title: 'Cultural Discussions',
     description:
-      'Engage in themed dialogue sessions exploring cultural practices, stories, and shared values.',
+      'Join themed discussion groups exploring cultural practices, stories, and shared values.',
   },
   {
     icon: Video,
-    title: 'Live Workshops',
+    title: 'Workshop Meetups',
     description:
-      'Participate in immersive craft, music, language, and storytelling workshops led by cultural practitioners.',
+      'Participate in hands-on craft, music, language, and storytelling sessions with cultural practitioners.',
   },
   {
     icon: Users,
-    title: 'Community Circles',
+    title: 'Community Gatherings',
     description:
-      'Join small-group circles for deeper cultural exchange, reflection, and learning across traditions.',
+      'Connect with local and global communities for cultural exchange, reflection, and learning.',
   },
   {
     icon: Star,
@@ -46,7 +46,7 @@ const exchangeTypes = [
   },
 ];
 
-const exchangePrograms = [
+const meetupEvents = [
   {
     id: 1,
     title: 'Storytelling Circle: Ancestral Legends',
@@ -102,21 +102,21 @@ const exchangePrograms = [
   },
 ];
 
-export default function ExchangeContent() {
+export default function MeetupsContent() {
   const [selectedType, setSelectedType] = useState<string>('All');
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const target = e.target as HTMLImageElement;
-    const programId = target.getAttribute('data-program-id');
-    const program = exchangePrograms.find((p) => p.id.toString() === programId);
-    if (program) target.src = program.fallback;
+    const eventId = target.getAttribute('data-event-id');
+    const event = meetupEvents.find((p) => p.id.toString() === eventId);
+    if (event) target.src = event.fallback;
   };
 
-  const programTypes = ['All', 'Storytelling', 'Ceremony', 'Craft', 'Dance', 'Music'];
-  const filteredPrograms =
+  const eventTypes = ['All', 'Storytelling', 'Ceremony', 'Craft', 'Dance', 'Music'];
+  const filteredEvents =
     selectedType === 'All'
-      ? exchangePrograms
-      : exchangePrograms.filter((p) => p.type === selectedType);
+      ? meetupEvents
+      : meetupEvents.filter((p) => p.type === selectedType);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -130,24 +130,23 @@ export default function ExchangeContent() {
             className="max-w-4xl mx-auto text-center"
           >
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
-              Cultural <span className="text-accent-400">Exchange Programs</span>
+              Cultural <span className="text-accent-400">Meetups</span>
             </h1>
             <p className="text-xl md:text-2xl text-primary-100 leading-relaxed mb-8">
-              Connect directly with cultural practitioners from around the world. Learn, share, and
-              build bridges through authentic cultural experiences.
+              Join cultural meetups, community gatherings, and collaborative heritage events in your area and online.
             </p>
             <div className="flex items-center justify-center space-x-6 text-primary-200">
               <div className="flex items-center">
                 <Users className="w-5 h-5 mr-2" />
-                <span>Live Sessions</span>
+                <span>Community Events</span>
               </div>
               <div className="flex items-center">
                 <Globe className="w-5 h-5 mr-2" />
-                <span>Global Community</span>
+                <span>Local & Global</span>
               </div>
               <div className="flex items-center">
                 <Heart className="w-5 h-5 mr-2" />
-                <span>Authentic Exchange</span>
+                <span>Cultural Connection</span>
               </div>
             </div>
           </motion.div>
@@ -164,16 +163,15 @@ export default function ExchangeContent() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">
-              Ways to Connect &amp; Learn
+              Types of Meetups
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Choose the type of cultural exchange that resonates with your learning style and
-              interests.
+              Choose the type of cultural meetup that resonates with your interests and learning style.
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            {exchangeTypes.map((type, index) => {
+            {meetupTypes.map((type, index) => {
               const Icon = type.icon;
               return (
                 <motion.div
@@ -201,7 +199,7 @@ export default function ExchangeContent() {
       <section className="py-6 bg-gray-100 border-y border-gray-200">
         <div className="container-width">
           <div className="flex flex-wrap justify-center gap-3">
-            {programTypes.map((type) => (
+            {eventTypes.map((type) => (
               <button
                 key={type}
                 onClick={() => setSelectedType(type)}
@@ -228,17 +226,17 @@ export default function ExchangeContent() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">
-              Upcoming Cultural Exchanges
+              Upcoming Meetups
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Join live sessions with cultural practitioners sharing their traditions and wisdom.
+              Join cultural meetups and community events with practitioners sharing their traditions and wisdom.
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPrograms.map((program, index) => (
+            {filteredEvents.map((event, index) => (
               <motion.div
-                key={program.id}
+                key={event.id}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -246,54 +244,54 @@ export default function ExchangeContent() {
               >
                 <div className="relative h-48">
                   <Image
-                    src={program.image}
-                    alt={`${program.title} cultural exchange`}
+                    src={event.image}
+                    alt={`${event.title} cultural meetup`}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width:1200px) 50vw, 33vw"
                     className="object-cover"
-                    data-program-id={program.id}
+                    data-event-id={event.id}
                     onError={handleImageError}
                       placeholder="blur"
                       blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                   />
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-medium text-primary-800">
-                    {program.type}
+                    {event.type}
                   </div>
                   <div className="absolute top-4 right-4 bg-accent-600/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-medium text-white">
-                    {program.level}
+                    {event.level}
                   </div>
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-serif font-bold text-primary-800 mb-2">
-                    {program.title}
+                    {event.title}
                   </h3>
                   <div className="flex items-center text-sm text-gray-600 mb-3">
                     <User className="w-4 h-4 mr-1" />
-                    <span className="mr-4">{program.host}</span>
+                    <span className="mr-4">{event.host}</span>
                     <MapPin className="w-4 h-4 mr-1" />
-                    <span>{program.culture}</span>
+                    <span>{event.culture}</span>
                   </div>
                   <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-                    {program.description}
+                    {event.description}
                   </p>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-600">
                       <Calendar className="w-4 h-4 mr-2" />
-                      <span>{program.nextSession}</span>
+                      <span>{event.nextSession}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Clock className="w-4 h-4 mr-2" />
-                      <span>{program.time}</span>
+                      <span>{event.time}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
                       <span>
-                        {program.participants}/{program.maxParticipants} participants
+                        {event.participants}/{event.maxParticipants} participants
                       </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Globe className="w-4 h-4 mr-2" />
-                      <span>{program.language}</span>
+                      <span>{event.language}</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
@@ -303,11 +301,11 @@ export default function ExchangeContent() {
                       ))}
                     </div>
                     <Link
-                      href={`/exchange/programs/${program.id}`}
+                      href={`/meetups/events/${event.id}`}
                       className="btn-primary"
-                      aria-label={`Join exchange program: ${program.title}`}
+                      aria-label={`Join meetup: ${event.title}`}
                     >
-                      Join Exchange
+                      Join Meetup
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </div>
@@ -328,27 +326,27 @@ export default function ExchangeContent() {
             className="max-w-3xl mx-auto text-center"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-6">
-              Ready to Bridge Cultures?
+              Ready to Connect?
             </h2>
             <p className="text-xl text-gray-700 mb-8 leading-relaxed">
               Join our global community of cultural learners and share your own traditions while
-              discovering the beauty of other cultures.
+              discovering the beauty of other cultures through meetups and events.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/exchange/programs"
+                href="/meetups/events"
                 className="btn-primary"
-                aria-label="Browse all exchange programs"
+                aria-label="Browse all meetups"
               >
-                Browse All Programs
+                Browse All Meetups
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link
-                href="/exchange/host"
+                href="/meetups/host"
                 className="btn-outline"
-                aria-label="Host an exchange program"
+                aria-label="Host a meetup"
               >
-                Host an Exchange
+                Host a Meetup
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </div>

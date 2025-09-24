@@ -6,96 +6,93 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Globe,
-  Volume2,
   BookOpen,
   Users,
   Heart,
-  Mic,
-  Headphones,
   ArrowRight,
   CheckCircle,
 } from 'lucide-react';
 
-const languages = [
+const courses = [
   {
     id: 1,
-    name: 'Quechua',
-    nativeName: 'Runasimi',
+    name: 'Andean Cultures',
+    nativeName: 'Culturas Andinas',
     speakers: '8 million',
     region: 'Andes Mountains',
     description:
-      'Learn the ancient language of the Incas, still spoken by millions across Peru, Bolivia, and Ecuador.',
+      'Explore the rich cultural heritage of Andean communities, including Quechua language, weaving traditions, and spiritual practices.',
     image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
     fallback:
-      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5RdWVjaHVhPC90ZXh0Pjwvc3ZnPg==',
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5BbmRlYW4gQ3VsdHVyZXM8L3RleHQ+PC9zdmc+',
     lessons: 24,
     level: 'Beginner to Intermediate',
-    features: ['Audio pronunciation', 'Cultural context', 'Elder recordings'],
+    features: ['Language basics', 'Cultural context', 'Traditional crafts'],
   },
   {
     id: 2,
-    name: 'Irish Gaelic',
-    nativeName: 'Gaeilge',
+    name: 'Celtic Traditions',
+    nativeName: 'Traidisiúin Cheilteacha',
     speakers: '1.7 million',
-    region: 'Ireland',
+    region: 'Ireland & Scotland',
     description:
-      'Discover the Celtic language that carries centuries of Irish culture, music, and storytelling traditions.',
+      'Discover Celtic culture through language, music, storytelling, and traditional practices from Ireland and Scotland.',
     image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=300&fit=crop',
     fallback:
-      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5HYWVpbGdlPC90ZXh0Pjwvc3ZnPg==',
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5DZWx0aWMgVHJhZGl0aW9uczwvdGV4dD48L3N2Zz4=',
     lessons: 18,
     level: 'All Levels',
-    features: ['Traditional songs', 'Pub conversations', 'Poetry readings'],
+    features: ['Language basics', 'Traditional music', 'Storytelling'],
   },
   {
     id: 3,
-    name: 'Japanese',
-    nativeName: '日本語',
+    name: 'Japanese Arts & Culture',
+    nativeName: '日本の芸術と文化',
     speakers: '125 million',
     region: 'Japan',
     description:
-      'Learn Japanese through the lens of traditional origami, calligraphy, and cultural practices.',
+      'Explore Japanese culture through traditional arts, tea ceremony, origami, calligraphy, and cultural practices.',
     image: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=400&h=300&fit=crop',
     fallback:
       'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij7ml6XmnKzoqp48L3RleHQ+PC9zdmc+',
     lessons: 32,
     level: 'Beginner to Advanced',
-    features: ['Origami language', 'Calligraphy basics', 'Cultural etiquette'],
+    features: ['Traditional arts', 'Tea ceremony', 'Cultural etiquette'],
   },
   {
     id: 4,
-    name: 'Zapotec',
-    nativeName: 'Diidxazá',
+    name: 'Oaxacan Traditions',
+    nativeName: 'Tradiciones Oaxaqueñas',
     speakers: '460,000',
     region: 'Oaxaca, Mexico',
     description:
-      'Connect with the indigenous language of Oaxacan pottery masters and weaving traditions.',
+      'Explore the rich cultural heritage of Oaxaca through pottery, weaving, language, and traditional ceremonies.',
     image: 'https://images.unsplash.com/photo-1578932750355-5eb30ece487a?w=400&h=300&fit=crop',
     fallback:
-      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5EaWlkeGF6w6E8L3RleHQ+PC9zdmc+',
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5PYXhhY2FuIFRyYWRpdGlvbnM8L3RleHQ+PC9zdmc+',
     lessons: 16,
     level: 'Beginner',
-    features: ['Pottery vocabulary', 'Traditional ceremonies', 'Community stories'],
+    features: ['Traditional crafts', 'Cultural ceremonies', 'Community stories'],
   },
   {
     id: 5,
-    name: 'Navajo',
+    name: 'Navajo Culture & Traditions',
     nativeName: 'Diné bizaad',
     speakers: '170,000',
     region: 'Southwest United States',
     description:
-      'Learn the sacred language of Navajo weaving traditions and connection to the land.',
+      'Explore Navajo culture through weaving traditions, sacred stories, and deep connection to the land.',
     image: 'https://images.unsplash.com/photo-1551582045-6ec9c11d8697?w=400&h=300&fit=crop',
     fallback:
-      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5EaW7DqSBiaXphYWQ8L3RleHQ+PC9zdmc+',
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM3MzRjMmQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjUwIiBmaWxsPSIjOGZiYzk0Ii8+PHRleHQgeD0iMjAwIiB5PSIyMDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE2Ij5OYXZham8gQ3VsdHVyZTwvdGV4dD48L3N2Zz4=',
     lessons: 20,
     level: 'Beginner to Intermediate',
-    features: ['Weaving terms', 'Land connection', 'Sacred stories'],
+    features: ['Weaving traditions', 'Sacred stories', 'Land connection'],
   },
   {
     id: 6,
-    name: 'Spanish (Tango)',
-    nativeName: 'Español Rioplatense',
+    name: 'Argentine Culture & Tango',
+    nativeName: 'Cultura Argentina y Tango',
     speakers: '47 million',
     region: 'Buenos Aires, Argentina',
     description:
@@ -111,34 +108,34 @@ const languages = [
 
 const learningMethods = [
   {
-    icon: Headphones,
-    title: 'Listen & Learn',
-    description:
-      'Immerse yourself in authentic recordings from native speakers and cultural practitioners.',
-  },
-  {
-    icon: Mic,
-    title: 'Speak with Purpose',
-    description: 'Practice pronunciation with cultural context and meaningful conversations.',
-  },
-  {
     icon: BookOpen,
-    title: 'Cultural Stories',
-    description: 'Learn through traditional stories, songs, and cultural narratives.',
+    title: 'Structured Learning',
+    description:
+      'Follow organized courses with clear learning objectives and cultural milestones.',
   },
   {
     icon: Users,
     title: 'Community Practice',
-    description: 'Connect with native speakers and fellow learners from around the world.',
+    description: 'Learn alongside others and practice with cultural practitioners and experts.',
+  },
+  {
+    icon: Heart,
+    title: 'Cultural Immersion',
+    description: 'Experience authentic cultural practices, traditions, and ways of life.',
+  },
+  {
+    icon: Globe,
+    title: 'Global Perspectives',
+    description: 'Connect with diverse cultures and communities from around the world.',
   },
 ];
 
-export default function LanguageContent() {
+export default function CoursesContent() {
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const target = e.target as HTMLImageElement;
-    const languageId = target.getAttribute('data-language-id');
-    const language = languages.find((l) => l.id.toString() === languageId);
-    if (language) target.src = language.fallback;
+    const courseId = target.getAttribute('data-course-id');
+    const course = courses.find((c) => c.id.toString() === courseId);
+    if (course) target.src = course.fallback;
   };
 
   return (
@@ -152,24 +149,23 @@ export default function LanguageContent() {
             className="max-w-4xl mx-auto text-center"
           >
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
-              Learn Languages Through <span className="text-white">Cultural Stories</span>
+              Cultural <span className="text-white">Courses</span>
             </h1>
             <p className="text-xl md:text-2xl text-accent-50 leading-relaxed mb-8">
-              Master languages by immersing yourself in authentic cultural practices. Learn from
-              masters, storytellers, artisans, and cultural keepers.
+              Learn about different cultures through structured courses, workshops, and educational programs led by cultural practitioners.
             </p>
             <div className="flex items-center justify-center space-x-6 text-accent-100">
               <div className="flex items-center">
                 <Globe className="w-5 h-5 mr-2" />
-                <span>6 Languages</span>
+                <span>6 Cultures</span>
               </div>
               <div className="flex items-center">
-                <Volume2 className="w-5 h-5 mr-2" />
-                <span>Native Speakers</span>
+                <BookOpen className="w-5 h-5 mr-2" />
+                <span>Structured Learning</span>
               </div>
               <div className="flex items-center">
                 <Heart className="w-5 h-5 mr-2" />
-                <span>Cultural Context</span>
+                <span>Cultural Immersion</span>
               </div>
             </div>
           </motion.div>
@@ -185,11 +181,11 @@ export default function LanguageContent() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">
-              How We Teach Languages
+              How We Teach Cultures
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Our approach connects language learning with cultural understanding, making every
-              lesson a bridge to new perspectives.
+              Our approach connects cultural learning with hands-on experiences, making every
+              course a bridge to new perspectives and understanding.
             </p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
@@ -226,16 +222,16 @@ export default function LanguageContent() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">
-              Choose Your Cultural Language Journey
+              Choose Your Cultural Learning Journey
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Each language course is designed around authentic cultural practices and traditions.
+              Each course is designed around authentic cultural practices, traditions, and hands-on learning experiences.
             </p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {languages.map((language, index) => (
+            {courses.map((course, index) => (
               <motion.div
-                key={language.id}
+                key={course.id}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -243,38 +239,38 @@ export default function LanguageContent() {
               >
                 <div className="relative h-48">
                   <Image
-                    src={language.image}
-                    alt={`${language.name} cultural landscape`}
+                    src={course.image}
+                    alt={`${course.name} cultural course`}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width:1200px) 50vw, 33vw"
                     className="object-cover"
-                    data-language-id={language.id}
+                    data-course-id={course.id}
                     onError={handleImageError}
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                   />
                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-medium text-primary-800">
-                    {language.level}
+                    {course.level}
                   </div>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-xl font-serif font-bold text-primary-800">
-                      {language.name}
+                      {course.name}
                     </h3>
-                    <span className="text-gray-600 font-medium">{language.nativeName}</span>
+                    <span className="text-gray-600 font-medium">{course.nativeName}</span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600 mb-3">
                     <Users className="w-4 h-4 mr-1" />
-                    <span className="mr-4">{language.speakers} speakers</span>
+                    <span className="mr-4">{course.speakers} speakers</span>
                     <Globe className="w-4 h-4 mr-1" />
-                    <span>{language.region}</span>
+                    <span>{course.region}</span>
                   </div>
                   <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-                    {language.description}
+                    {course.description}
                   </p>
                   <div className="space-y-2 mb-4">
-                    {language.features.map((feature, idx) => (
+                    {course.features.map((feature, idx) => (
                       <div key={idx} className="flex items-center text-sm text-gray-600">
                         <CheckCircle className="w-4 h-4 mr-2 text-accent-600" />
                         <span>{feature}</span>
@@ -282,11 +278,11 @@ export default function LanguageContent() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{language.lessons} lessons</span>
+                    <span className="text-sm text-gray-600">{course.lessons} lessons</span>
                     <Link
-                      href={`/language/${language.id}`}
+                      href={`/courses/learn/${course.id}`}
                       className="btn-primary"
-                      aria-label={`Start learning ${language.name}`}
+                      aria-label={`Start learning ${course.name}`}
                     >
                       Start Learning
                       <ArrowRight className="w-4 h-4 ml-2" />
