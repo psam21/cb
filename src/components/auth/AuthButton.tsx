@@ -44,7 +44,7 @@ export default function AuthButton() {
     return (
       <Link
         href="/signin"
-        className="px-4 py-2 bg-accent-600 text-white rounded-md font-semibold hover:bg-accent-700 transition-colors duration-200"
+        className="px-4 py-2 bg-accent-600 text-white rounded-full font-medium hover:bg-accent-700 transition-colors duration-200 whitespace-nowrap"
       >
         Sign In
       </Link>
@@ -56,14 +56,12 @@ export default function AuthButton() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="px-4 py-2 bg-accent-600 text-white rounded-md font-semibold hover:bg-accent-700 transition-colors duration-200 flex items-center gap-2"
+        className="flex items-center justify-center px-4 py-2 rounded-full bg-accent-600 hover:bg-accent-700 text-white transition-colors duration-200 font-medium space-x-2"
         aria-expanded={showDropdown}
         aria-haspopup="menu"
         onKeyDown={handleKeyDown}
       >
-        <span className="text-white font-semibold">
-          {user.profile.display_name || 'Anonymous'}
-        </span>
+        <span>{user.profile.display_name || 'Anonymous'}</span>
         <svg
           className={`w-4 h-4 text-white transition-transform duration-200 ${
             showDropdown ? 'rotate-180' : ''

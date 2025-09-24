@@ -105,7 +105,7 @@ export default function Header() {
           </div>
 
           {/* Right side: Auth Button + Mobile Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {/* Auth Button - Always visible */}
             <AuthButton />
             
