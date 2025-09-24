@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       // Initial state
       isAvailable: false,
-      isLoading: true,
+      isLoading: false,
       error: null,
       signer: null,
       
