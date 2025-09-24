@@ -159,7 +159,7 @@ export default function SigninPage() {
             </div>
           )}
 
-          {isAvailable && (
+          {signerDetected && (
             <div className="space-y-4">
               <button
                 onClick={handleSignIn}
