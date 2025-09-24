@@ -221,7 +221,7 @@ const revisionTags = [
 ];
 ```
 
-### 7. **Error Handling & Recovery**
+### 7. **Error Handling & Transparency**
 
 #### 7.1 Edit-Specific Errors
 ```typescript
@@ -233,13 +233,17 @@ export enum EditErrorCode {
   IMAGE_UPLOAD_FAILED = 'IMAGE_UPLOAD_FAILED',
   REVISION_CREATION_FAILED = 'REVISION_CREATION_FAILED',
   PUBLISHING_FAILED = 'PUBLISHING_FAILED',
+  RELAY_CONNECTION_FAILED = 'RELAY_CONNECTION_FAILED',
+  PARTIAL_PUBLISH_FAILED = 'PARTIAL_PUBLISH_FAILED',
 }
 ```
 
-#### 7.2 Retry Logic
-- Automatic retry for failed relay publishing
-- Manual retry option for failed updates
-- Graceful degradation for partial failures
+#### 7.2 Transparency & Retry Logic
+- **Show all failures transparently** - User sees exactly what failed
+- **Detailed relay status** - Which relays succeeded/failed and why
+- **Manual retry options** - User controls when to retry
+- **No rollbacks** - User owns their data, they decide what to do
+- **Partial success handling** - Show which relays worked, which didn't
 
 ### 8. **Implementation Phases**
 
@@ -310,8 +314,9 @@ src/
 - ✅ Intuitive edit workflow
 - ✅ Clear ownership indicators
 - ✅ Responsive edit forms
-- ✅ Error recovery options
-- ✅ Success confirmation
+- ✅ **Transparent error reporting** - Show exactly what failed and why
+- ✅ **Detailed success feedback** - Show which relays published successfully
+- ✅ **Manual retry controls** - User decides when and how to retry
 
 #### 10.3 Technical Requirements
 - ✅ No breaking changes to existing functionality
@@ -329,10 +334,10 @@ src/
 4. **Edit Form**: Basic edit functionality
 
 ### **Medium Priority** (Phase 2)
-1. **Progress Feedback**: Real-time update progress
-2. **Error Handling**: Edit-specific error states
+1. **Progress Feedback**: Real-time update progress with relay status
+2. **Error Transparency**: Detailed failure reporting and relay status
 3. **Image Updates**: Handle image changes
-4. **Success States**: Clear completion feedback
+4. **Success Feedback**: Detailed relay publishing results
 
 ### **Low Priority** (Phase 3)
 1. **Product Deletion**: Soft delete functionality
@@ -340,10 +345,51 @@ src/
 3. **Bulk Operations**: Multiple product editing
 4. **Advanced Validation**: Enhanced data validation
 
+## Nostr Architecture Principles
+
+### **🎯 Key Nostr Principles for Product Editing**
+
+1. **User Owns Their Data**
+   - No optimistic updates or rollbacks
+   - User sees all failures transparently
+   - User controls retry decisions
+
+2. **Transparency Over Smooth UX**
+   - Show exactly which relays succeeded/failed
+   - Display detailed error messages
+   - Let user decide how to handle failures
+
+3. **Client IS the Backend**
+   - All validation happens client-side
+   - All event creation happens client-side
+   - Relays are just storage/communication layer
+
+4. **Event-Driven Updates**
+   - Create revision events (Kind 23)
+   - Publish to multiple relays
+   - Show publishing progress and results
+
+### **🔄 Recommended Edit Flow**
+
+```
+1. User clicks "Edit Product"
+2. Show edit form with current data
+3. User makes changes and clicks "Save"
+4. Show "Creating revision event..." status
+5. Show "Publishing to relays..." with progress
+6. Show detailed results:
+   - ✅ Published to 4/6 relays
+   - ❌ Failed: relay.damus.io (connection timeout)
+   - ❌ Failed: nos.lol (rate limited)
+7. Provide retry options for failed relays
+8. User can retry failed relays or accept partial success
+```
+
 ## Conclusion
 
-The product editing capabilities require significant UI/UX work but leverage the existing Nostr infrastructure. The core business logic (`updateProduct`) is already partially implemented, making this primarily a frontend enhancement project. The implementation should follow the existing patterns for consistency and maintainability.
+The product editing capabilities require significant UI/UX work but leverage the existing Nostr infrastructure. The core business logic (`updateProduct`) is already partially implemented, making this primarily a frontend enhancement project. The implementation should follow Nostr principles: **transparency, user control, and event-driven updates**.
 
 **Estimated Development Time**: 2-3 weeks for full implementation
 **Complexity**: Medium (primarily UI/UX work)
 **Risk Level**: Low (no breaking changes to existing functionality)
+**Architecture**: Follows Nostr principles of transparency and user ownership
