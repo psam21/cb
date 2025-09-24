@@ -1,0 +1,499 @@
+# Shop Page Nostr Implementation - Fresh Blueprint
+
+## Overview
+
+This document provides a **clean, standardized blueprint** for implementing a Nostr-native shop page that allows users to create and display products using Kind 23 events with Blossom file storage.
+
+## Core Requirements
+
+### User Flow
+**User with Signer** → **Creates product form** → **Uploads image to Blossom** → **Creates Kind 23 event** → **Signer signs event** → **Publishes to all configured relays** → **Shows "X of Y published" status** → **Product appears in shop**
+
+### Relay Strategy
+- **Publish to all configured relays** with full transparency (configurable: 1, 6, or 10 relays)
+- **Show "X of Y published"** progress to give users confidence
+- **Three retries per relay** to handle temporary network issues
+- **Minimum 1 successful publish** required for success
+- **Maintain decentralized resilience** through multiple relay publishing
+
+### Relay Configuration
+**Source**: Relay configuration imported from cbc3 project
+**Relays**: 6 high-reliability relays configured
+- wss://relay.damus.io (Damus Relay)
+- wss://nos.lol (Nos.lol)
+- wss://relay.snort.social (Snort Social)
+- wss://relay.nostr.band (Nostr.band)
+- wss://relay.primal.net (Primal)
+- wss://offchain.pub (Offchain Pub)
+
+**Configuration**: Production relays from beginning, no hardcoded relays in code
+
+### Blossom File Storage Configuration
+**Protocol**: Blossom decentralized file storage
+**Authentication**: Nostr event-based authentication
+**File Identification**: SHA-256 hash-based
+**Redundancy**: Multiple server distribution
+**API**: HTTP endpoints for file operations
+**File Size Limit**: 100MB per file
+**Retry Logic**: 3 attempts per server
+
+### Authentication Configuration
+**Primary Method**: NIP-07 Browser Extension
+**Future Methods**: NSEC private key, NIP-46 remote signing
+**Signer Detection**: Automatic detection of available signers
+**Event Signing**: All events signed before publishing to relays
+**User Context**: Public key and signer capabilities tracked
+
+### Event Structure (Kind 23)
+**Base Structure**: Extends cbc3's robust NIP-23 structure
+**Shop-Specific Tags**: Adds blueprint's commerce tags
+
+```json
+{
+  "kind": 23,
+  "content": "{\"title\":\"Product Title\",\"content\":\"Product description content here...\",\"summary\":\"Product summary\",\"published_at\":1234567890,\"tags\":[\"culture-bridge-shop\"],\"language\":\"en\",\"region\":\"global\",\"permissions\":\"community\",\"file_id\":\"blossom-file-hash\",\"file_type\":\"image/jpeg\",\"file_size\":1024000}",
+  "tags": [
+    ["d", "product-unique-identifier"],
+    ["r", "0"],
+    ["title", "Product Title"],
+    ["lang", "en"],
+    ["author", "user_pubkey_hex"],
+    ["region", "global"],
+    ["published_at", "1234567890"],
+    ["f", "blossom-file-hash"],
+    ["type", "image/jpeg"],
+    ["size", "1024000"],
+    ["permissions", "community"],
+    ["t", "culture-bridge-shop"],
+    ["t", "culture-bridge-nostr"],
+    ["t", "bitcoin"],
+    ["t", "lightning"],
+    ["t", "price-199.99"],
+    ["url", "https://blossom.nostr.build/file-hash"],
+    ["m", "image/jpeg"],
+    ["x", "sha256:file-hash"]
+  ],
+  "pubkey": "user_pubkey_hex",
+  "created_at": 1234567890
+}
+```
+
+### Kind 23 Revisions
+- **Product updates** handled through Kind 23 revisions
+- **Consistent product identifier** via `["d", "product-unique-identifier"]` tag
+- **Merchants can update** prices, stock levels, product details
+- **Latest revision** automatically displayed in shop
+- **Revision history** available if needed
+
+### Required Tags
+**Base NIP-23 Tags** (from cbc3):
+- **["d", "unique-id"]** - Replaceable event identifier
+- **["r", "0"]** - Revision number
+- **["title", "Product Title"]** - Product title
+- **["lang", "en"]** - Language
+- **["author", "pubkey"]** - Author public key
+- **["region", "global"]** - Geographic region
+- **["published_at", "timestamp"]** - Publication timestamp
+- **["f", "file-hash"]** - File identifier
+- **["type", "mime-type"]** - File MIME type
+- **["size", "bytes"]** - File size in bytes
+- **["permissions", "level"]** - Access permissions
+
+**Shop-Specific Tags** (from blueprint):
+- **["t", "culture-bridge-shop"]** - Identifies as shop product
+- **["t", "culture-bridge-nostr"]** - Platform identifier
+- **["t", "bitcoin"]** - Payment method
+- **["t", "lightning"]** - Payment method
+- **["t", "price-{amount}"]** - Product price
+- **["url", "blossom-url"]** - Blossom file URL
+- **["m", "mime-type"]** - File MIME type
+- **["x", "sha256-hash"]** - SHA-256 file hash
+
+**User-Defined Tags** (custom identification):
+- **["t", "user-tag-1"]** - User-defined identification tags
+- **["t", "user-tag-2"]** - Additional custom tags
+- **["t", "category"]** - Product category tags
+- **["t", "custom-identifier"]** - Custom product identifiers
+
+### Product Data Structure
+**Core Fields** (required):
+- Title - Product name
+- Description - Detailed product description
+- Price - Product price in sats/bitcoin
+- Image - Product image file
+- Custom Tags - User-defined identification tags
+
+**Optional Metadata** (expandable):
+- Additional product information
+- Future fields can be added without breaking changes
+- Metadata stored in event content JSON
+
+## Architecture
+
+### Service Layer Structure
+```
+Page → Component → Hook → BusinessService → TechnicalService → Relays/Blossom
+```
+
+### Generic Services (Create)
+
+#### 1. GenericEventService
+**Purpose**: Create and manage any type of Nostr event
+**Location**: `src/services/generic/GenericEventService.ts`
+**Key Methods**:
+- `createEvent(kind, content, tags, pubkey)` - Create unsigned event
+- `validateEvent(event)` - Validate event structure
+- `formatEvent(eventData)` - Format event for publishing
+
+#### 2. GenericBlossomService
+**Purpose**: Handle file storage using Blossom protocol
+**Location**: `src/services/generic/GenericBlossomService.ts`
+**API Endpoints**:
+- `GET /<sha256>` - Retrieve file using SHA-256 hash
+- `PUT /upload` - Upload new file (requires Nostr authentication)
+- `GET /list/<pubkey>` - List files by public key
+- `DELETE /<sha256>` - Delete file (requires Nostr authentication)
+
+**Key Methods**:
+- `uploadFile(file, signer)` - Upload file to Blossom servers with Nostr authentication
+- `getFileHash(file)` - Get SHA-256 hash for file identification
+- `validateFile(file)` - Validate file (100MB limit)
+- `retryUpload(file, maxRetries)` - Retry failed uploads across multiple servers
+- `downloadFile(sha256)` - Download file using SHA-256 hash
+- `listUserFiles(pubkey)` - List files associated with user's public key
+- `deleteFile(sha256, signer)` - Delete file with Nostr authentication
+
+**Authentication**: Uses signed Nostr events for all file operations
+**Decentralized Storage**: Files distributed across multiple Blossom servers for redundancy
+
+#### 3. GenericRelayService
+**Purpose**: Handle relay communication and management
+**Location**: `src/services/generic/GenericRelayService.ts`
+**Key Methods**:
+- `publishEvent(event, relays)` - Publish event to all relays with retry logic
+- `publishWithRetry(event, relay, maxRetries)` - Publish with 3 retries per relay
+- `queryEvents(filters, relays)` - Query events from relays
+- `getRelayStatus(relay)` - Check relay health
+- `getRelayList()` - Get all configured relays (imported from cbc3 config)
+- `trackPublishingProgress()` - Track "X of Y published" status
+
+#### 4. GenericAuthService
+**Purpose**: Handle authentication for multiple methods (extensible)
+**Location**: `src/services/generic/GenericAuthService.ts`
+**Authentication Methods**:
+- **NIP-07 Browser Extension** (primary) - Browser-based signer
+- **NSEC Private Key** (future) - Private key stored in state
+- **NIP-46 Remote Signing** (future) - Remote signing protocol
+
+**Key Methods**:
+- `getSigner()` - Get current signer instance (NIP-07)
+- `signEvent(event, signer)` - Sign event with current signer
+- `getUserContext()` - Get current user context
+- `detectSignerType()` - Detect available signer types
+- `switchSignerType(type)` - Switch between signer types
+- `validateSigner(signer)` - Validate signer capabilities
+
+**Extensibility**: Designed to support multiple authentication methods
+
+### Business Services (Create)
+
+#### 5. ShopBusinessService
+**Purpose**: Handle shop product business logic
+**Location**: `src/services/business/ShopBusinessService.ts`
+**Key Methods**:
+- `createProduct(productData, authContext)` - Create product workflow
+- `updateProduct(productId, updates, authContext)` - Update product via Kind 23 revision
+- `validateProduct(productData)` - Validate product data
+- `getProducts(filters)` - Query products from relays
+- `getLatestRevision(productId)` - Get latest revision of product
+- `getRevisionHistory(productId)` - Get all revisions of product
+- `formatProductForDisplay(event)` - Format event for UI
+
+### Hooks (Create)
+
+#### 6. useShopPublishing
+**Purpose**: Manage product creation state and operations
+**Location**: `src/hooks/useShopPublishing.ts`
+**State Management**: Zustand store with hook interface
+**State**:
+- `isPublishing` - Publishing status
+- `publishingProgress` - Progress percentage (0-100)
+- `publishingSteps` - Current step description
+- `relayStatus` - Individual relay success/failure status
+- `relayProgress` - "X of Y published" counter
+- `retryAttempts` - Retry attempts per relay
+- `error` - Error messages with technical details
+
+**Methods**:
+- `createProduct(productData)` - Create product with full workflow
+- `uploadImage(file)` - Upload image to Blossom with retry
+- `publishEvent(event)` - Publish event to all configured relays
+- `updateProduct(productId, updates)` - Update product via revision
+- `clearError()` - Clear error state
+
+#### 7. useShopProducts
+**Purpose**: Manage product display and querying
+**Location**: `src/hooks/useShopProducts.ts`
+**State Management**: Zustand store with hook interface
+**State**:
+- `products` - Array of products (latest revisions only)
+- `loading` - Loading status
+- `error` - Error messages
+- `filters` - Current filters
+- `revisionHistory` - Product revision history when needed
+
+**Methods**:
+- `loadProducts()` - Load products from relays (latest revisions)
+- `loadProductRevisions(productId)` - Load all revisions of a product
+- `filterProducts(filters)` - Filter products
+- `searchProducts(query)` - Search products
+- `refreshProducts()` - Refresh product list
+
+### State Management Architecture
+**Primary**: Zustand stores for state management
+**Hook Layer**: React hooks that interface with Zustand stores
+**Store Structure**:
+- `useShopPublishingStore` - Product creation and publishing state
+- `useShopProductsStore` - Product display and querying state
+- `useShopCartStore` - Shopping cart state (future)
+- `useShopAuthStore` - Authentication and user context state
+
+### Components (Create/Update)
+
+#### 8. ProductCreationForm
+**Purpose**: Form for creating new products
+**Location**: `src/components/shop/ProductCreationForm.tsx`
+**UI Primitives**: Uses existing cb UI primitives
+**Fields**:
+- Title (required)
+- Description (required)
+- Price (required)
+- Image (required, 100MB limit)
+- Custom Tags (required) - User-defined tags for identification
+- Optional Metadata (optional) - Additional product information
+
+**Features**:
+- File upload with progress and retry logic
+- Form validation with clear error messages
+- Publishing status display ("X of Y published")
+- Individual relay status indicators
+- Retry attempts display ("Retrying relay-name (attempt 2/3)")
+- Technical error messages from Blossom/relays
+- Custom tag input with validation
+- Expandable metadata section for future fields
+
+#### 9. ProductCard
+**Purpose**: Display individual product
+**Location**: `src/components/shop/ProductCard.tsx`
+**UI Primitives**: Uses existing cb UI primitives
+**Features**:
+- Product image display
+- Title and description
+- Price display
+- Add to cart button
+- Cultural significance
+
+#### 10. ProductGrid
+**Purpose**: Grid layout for products
+**Location**: `src/components/shop/ProductGrid.tsx`
+**UI Primitives**: Uses existing cb UI primitives
+**Features**:
+- Responsive grid layout
+- Loading states
+- Empty states
+- Filter integration
+
+#### 11. ShopPage
+**Purpose**: Main shop page
+**Location**: `src/app/shop/page.tsx`
+**UI Primitives**: Uses existing cb UI primitives
+**Features**:
+- Product grid display
+- Search and filter
+- Product creation form
+- Shopping cart integration
+
+### UI Architecture
+**Styling**: Tailwind CSS (existing cb patterns)
+**Components**: Built on existing cb UI primitives
+**Responsive Design**: Mobile-first approach
+**Accessibility**: Follows existing cb accessibility patterns
+**Theme**: Consistent with cb design system
+
+### API Routes (Create)
+
+#### 12. Blossom Upload Route
+**Purpose**: Handle file uploads to Blossom
+**Location**: `src/app/api/blossom/upload/route.ts`
+**Features**:
+- File validation (100MB limit)
+- Blossom integration
+- Retry logic
+- Error handling
+
+## Implementation Flow (Dependency-Based)
+
+### Dependency Diagram
+```
+Phase 1: Foundation Services
+├── GenericEventService
+├── GenericAuthService
+└── Relay Configuration
+
+Phase 2: File Storage (depends on Auth)
+└── GenericBlossomService
+
+Phase 3: Relay Communication (depends on Event Service)
+└── GenericRelayService
+
+Phase 4: Business Logic (depends on All Generic Services)
+└── ShopBusinessService
+
+Phase 5: State Management (depends on Business Services)
+├── Zustand Stores
+├── useShopPublishing
+└── useShopProducts
+
+Phase 6: UI Components (depends on Hooks)
+├── ProductCard
+├── ProductGrid
+├── ProductCreationForm
+└── ShopPage
+
+Phase 7: Integration Testing (depends on All Components)
+└── Complete Workflow Testing
+```
+
+### Phase 1: Foundation Services (No Dependencies)
+1. Create `GenericEventService` - Event creation and validation
+2. Create `GenericAuthService` - Authentication handling
+3. Create relay configuration import from cbc3
+
+### Phase 2: File Storage (Depends on Auth)
+1. Create `GenericBlossomService` - File upload and management
+2. Create Blossom upload API route
+
+### Phase 3: Relay Communication (Depends on Event Service)
+1. Create `GenericRelayService` - Relay communication
+2. Test relay publishing functionality
+
+### Phase 4: Business Logic (Depends on All Generic Services)
+1. Create `ShopBusinessService` - Product business logic
+2. Update `ServiceFactory` - Add new services
+
+### Phase 5: State Management (Depends on Business Services)
+1. Create Zustand stores for shop state
+2. Create `useShopPublishing` hook
+3. Create `useShopProducts` hook
+
+### Phase 6: UI Components (Depends on Hooks)
+1. Create `ProductCard` component
+2. Create `ProductGrid` component
+3. Create `ProductCreationForm` component
+4. Create `ShopPage` main page
+
+### Phase 7: Integration Testing (Depends on All Components)
+1. Test complete product creation workflow
+2. Test product display and querying
+3. Test file upload and relay publishing
+4. Manual testing on Vercel deployment
+
+### Testing Strategy
+**Environment**: Production relays from beginning
+**Testing Method**: Manual testing on Vercel URL
+**Relay Configuration**: No hardcoded relays in code
+**Error Handling**: Technical error messages for debugging
+**User Feedback**: Clear status indicators and error messages
+
+## Success Criteria
+
+### Product Creation
+- User can create product with title, description, price, image
+- Image uploads to Blossom with retry logic (3 attempts)
+- Kind 23 event created with required tags and unique identifier
+- Event published to all 6 configured relays with transparency
+- Shows "X of 6 published" progress to user
+- Minimum 1 successful publish required for success
+- Clear technical error messages from Blossom/relays
+
+### Product Updates
+- Merchants can update prices, stock levels, product details
+- Updates handled via Kind 23 revisions with same identifier
+- Latest revision automatically displayed in shop
+- Revision history available when needed
+
+### Product Display
+- Products load from relay data (latest revisions only)
+- Products display with images from Blossom
+- Search and filter functionality works
+- Products are discoverable by any Nostr client
+
+### Technical Requirements
+- No database calls made
+- No custom event kinds needed
+- Uses production relays from config file (no hardcoded relays)
+- 3 retries per relay for temporary network issues
+- Clear error messages from Blossom/relays
+- 100MB file size limit enforced
+- Maintains decentralized resilience through multiple relays
+- Manual testing on Vercel deployment
+
+## Scaling Philosophy
+
+### Start Simple
+- **Begin with 6 high-quality relays** for robust foundation
+- **Focus on core functionality** before optimizations
+- **Avoid over-engineering** while keeping functionality robust
+- **User experience first** with transparent progress indicators
+
+### Future Optimizations (As Usage Grows)
+- **Caching layer** for frequently accessed products
+- **Image compression** for faster loading
+- **Advanced validation** for product data
+- **Relay health monitoring** and automatic failover
+- **Performance metrics** and usage analytics
+
+### Core Principles
+- **Decentralized resilience** through multiple relays
+- **User sovereignty** with full data control
+- **Protocol-native** approach using standard Nostr features
+- **Transparent operations** with clear status indicators
+
+## File Structure
+
+```
+src/
+├── services/
+│   ├── generic/
+│   │   ├── GenericEventService.ts
+│   │   ├── GenericBlossomService.ts
+│   │   ├── GenericRelayService.ts
+│   │   └── GenericAuthService.ts
+│   └── business/
+│       └── ShopBusinessService.ts
+├── hooks/
+│   ├── useShopPublishing.ts
+│   └── useShopProducts.ts
+├── components/
+│   └── shop/
+│       ├── ProductCreationForm.tsx
+│       ├── ProductCard.tsx
+│       └── ProductGrid.tsx
+├── app/
+│   ├── shop/
+│   │   └── page.tsx
+│   └── api/
+│       └── blossom/
+│           └── upload/
+│               └── route.ts
+└── config/
+    └── relays.ts (imported from cbc3 project)
+```
+
+## Notes
+
+- **Fresh implementation** - No dependencies on existing code
+- **Standardized approach** - Reusable patterns for other features
+- **Protocol-native** - Built for Nostr, not adapted to it
+- **User sovereignty** - Users own their data completely
+- **Decentralized** - No single point of failure
