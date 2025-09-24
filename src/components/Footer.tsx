@@ -3,25 +3,17 @@ import Link from 'next/link';
 import { Heart, Globe } from 'lucide-react';
 
 const footerLinks = {
-  platform: [
-    { name: 'Explore', href: '/explore' },
-    { name: 'Contribute', href: '/contribute' },
-    { name: 'Community', href: '/community' },
-    { name: 'Courses', href: '/courses' },
-  ],
-  events: [
-    { name: 'Exhibitions', href: '/exhibitions' },
-    { name: 'Meetups', href: '/meetups' },
-    { name: 'Shop', href: '/shop' },
-  ],
   resources: [
     { name: 'About Us', href: '/about' },
     { name: 'Nostr', href: '/nostr' },
-    { name: 'Support', href: '/support' },
     { name: 'Downloads', href: '/downloads' },
+    { name: 'Elder Voices', href: '/elder-voices' },
   ],
-  about: [
-    { name: 'Our Mission', href: '/about' },
+  community: [
+    { name: 'Get Involved', href: '/get-involved' },
+    { name: 'Documentation', href: '/docs' },
+    { name: 'Privacy Policy', href: '/privacy' },
+    { name: 'Terms of Service', href: '/terms' },
   ],
 };
 
@@ -30,7 +22,7 @@ export default function Footer() {
     <footer className="bg-primary-900 text-white">
       {/* Main Footer Content */}
       <div className="container-width section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-3 mb-4">
@@ -50,40 +42,6 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Platform Links */}
-          <div>
-            <h4 className="font-serif font-semibold text-lg mb-4">Platform</h4>
-            <ul className="space-y-3">
-              {footerLinks.platform.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-primary-200 hover:text-white transition-colors duration-200"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Events Links */}
-          <div>
-            <h4 className="font-serif font-semibold text-lg mb-4">Events</h4>
-            <ul className="space-y-3">
-              {footerLinks.events.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-primary-200 hover:text-white transition-colors duration-200"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {/* Resources Links */}
           <div>
             <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
@@ -100,24 +58,68 @@ export default function Footer() {
               ))}
             </ul>
           </div>
+
+          {/* Community Links */}
+          <div>
+            <h4 className="font-serif font-semibold text-lg mb-4">Community</h4>
+            <ul className="space-y-3">
+              {footerLinks.community.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className="text-primary-200 hover:text-white transition-colors duration-200"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        {/* Newsletter Signup */}
+        {/* Stay Connected Section */}
         <div className="mt-12 pt-8 border-t border-primary-800">
-          <div className="max-w-md">
-            <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
-            <p className="text-primary-200 mb-4">
-              Get updates on new cultures, features, and community events.
-            </p>
-            <div className="flex">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 rounded-l-lg bg-primary-800 text-white placeholder-primary-300 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400"
-              />
-              <button className="px-6 py-2 bg-accent-600 text-white rounded-r-lg hover:bg-accent-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-400">
-                Subscribe
-              </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Newsletter Signup */}
+            <div>
+              <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
+              <p className="text-primary-200 text-sm mb-4">
+                Get updates on new cultural content, community events, and platform features.
+              </p>
+              <div className="flex">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="flex-1 px-4 py-2 rounded-l-lg bg-primary-800 text-white placeholder-primary-300 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                />
+                <button className="px-6 py-2 bg-accent-600 text-white rounded-r-lg hover:bg-accent-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-400">
+                  Subscribe
+                </button>
+              </div>
+            </div>
+
+            {/* Community Links */}
+            <div>
+              <h4 className="font-serif font-semibold text-lg mb-2">Join Our Community</h4>
+              <p className="text-primary-200 text-sm mb-4">
+                Connect with cultural practitioners, share your heritage, and learn from others.
+              </p>
+              <div className="flex space-x-4">
+                <a
+                  href="#"
+                  className="flex items-center space-x-2 text-primary-200 hover:text-white transition-colors duration-200"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span>Nostr Community</span>
+                </a>
+                <a
+                  href="#"
+                  className="flex items-center space-x-2 text-primary-200 hover:text-white transition-colors duration-200"
+                >
+                  <Heart className="w-4 h-4" />
+                  <span>Cultural Exchange</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>

@@ -18,6 +18,7 @@ const navigationLine2 = [
   { name: 'Exhibitions', href: '/exhibitions' },
   { name: 'Meetups', href: '/meetups' },
   { name: 'Shop', href: '/shop' },
+  { name: 'Support', href: '/support' },
 ];
 
 // Combined navigation for mobile
