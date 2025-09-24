@@ -44,6 +44,113 @@ This document provides a **clean, standardized blueprint** for implementing a No
 **Event Signing**: All events signed before publishing to relays
 **User Context**: Public key and signer capabilities tracked
 
+### User Experience - Signer Detection
+**Assumption**: Users have already installed and configured Nostr signer extension
+**No Signer Detected**: Show clear message "No signer detected - please install Nostr signer"
+**Signer Status Indicator**: Always visible showing "Connected: [Signer Name]" or "No signer detected"
+**User Flow**: Signer detection happens automatically on page load
+
+### User Experience - Product Creation (Standard Shop Practices)
+**Form Display**: Modal overlay (standard e-commerce pattern)
+**Image Upload**: Click to browse + drag & drop (standard file upload)
+**Image Preview**: Show thumbnail before upload (standard UX)
+**Custom Tags**: Comma-separated input field (simple, lightweight)
+**Publishing Process**: 
+- Disable form during upload/publishing
+- Show progress: "Uploading image..." → "Publishing to relays (X of Y)..."
+- Success: "Product published! Event ID: [eventid]"
+- Error: "Publishing failed: [error details] - Retry"
+**Form Validation**: Real-time validation with clear error messages
+**Responsive Design**: Mobile-first with Tailwind CSS
+**Nostr Ethos**: Decentralized, user-controlled, transparent operations
+
+### User Experience - Product Display (Simple & Scalable)
+**Layout**: Card-based grid design (standard e-commerce)
+**Product Cards**: All details shown in card (no modals/popups)
+**Card Content**: Image, title, description, price, tags, seller info
+**Interactions**: Click to view full details (expand card or inline)
+**Loading States**: Skeleton cards during product loading
+**Empty States**: "No products found" with call-to-action
+**Search/Filter**: Not implemented initially (add when scaling)
+**Responsive**: Mobile-first grid that adapts to screen size
+**Nostr Ethos**: All product data from relays, no central database
+
+### User Experience - Error Handling & Success Feedback
+**Image Upload Failures**:
+- Retry 3 times automatically before showing failure
+- Technical error messages logged to console for debugging
+- User sees: "Image upload failed after 3 attempts - please try again"
+- Console shows: Detailed technical error for developer debugging
+
+**Relay Publishing**:
+- Unlikely all relays will fail (6 high-reliability relays)
+- Show progress: "Publishing to relays (X of Y successful)"
+- Partial success: "Published to X of Y relays - product is live"
+
+**Signer Failures**:
+- No publishing if signer fails/disconnects
+- Clear message: "Signer disconnected - please reconnect and try again"
+- Show exactly where failure occurred in the process
+
+**Success Feedback**:
+- Clear success message with event ID
+- Provide njump link to view the event on Nostr
+- Show "Product is now live in the shop" confirmation
+- Refresh shop page to show the new product
+
+**Network Issues**:
+- Auto-retry for temporary network issues
+- Clear "Connection lost" message if persistent
+- Manual retry button for user-initiated retry
+
+### Proof of Functionality - End-to-End Verification
+**Product Creation Proof**:
+- Show event ID after successful creation
+- Provide njump link to view the event on Nostr
+- Verify product appears in shop after creation
+
+**Image Upload Proof**:
+- Show Blossom URL after successful upload
+- Verify image loads in product card
+- Confirm file hash matches event tags
+
+**Relay Publishing Proof**:
+- Show relay status (X of Y successful)
+- Provide event verification link
+- Confirm event is discoverable on Nostr
+
+**Page Refresh Behavior**:
+- Products reload from relays on refresh
+- Maintain user state and signer connection
+- Show loading states during data fetch
+
+**Product Updates/Revisions**:
+- Show revision history when needed
+- Allow editing via Kind 23 revisions
+- Maintain product continuity with same identifier
+
+### MVP & Testing Strategy - Piece by Piece Implementation
+**Minimum Viable Product (MVP)**:
+- Create 1 product with image
+- Upload 1 image to Blossom
+- Publish to 1 relay (minimum success)
+- Show product in shop
+
+**Critical Path That Must Work**:
+- Signer detection → form → image upload → event creation → relay publishing → shop display
+
+**Testing Strategy - Build & Test Each Piece**:
+- Phase 1: Test signer detection first
+- Phase 2: Test image upload to Blossom
+- Phase 3: Test event creation and publishing
+- Phase 4: Test products show in shop
+
+**Proof of Success for Each Phase**:
+- Phase 1: Signer works (detected and can sign)
+- Phase 2: Image uploads to Blossom (get URL and hash)
+- Phase 3: Events publish to relays (get event ID and njump link)
+- Phase 4: Products show in shop (verify end-to-end functionality)
+
 ### Event Structure (Kind 23)
 **Base Structure**: Extends cbc3's robust NIP-23 structure
 **Shop-Specific Tags**: Adds blueprint's commerce tags
