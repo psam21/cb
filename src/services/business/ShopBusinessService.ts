@@ -24,6 +24,9 @@ export interface ShopProduct {
   publishedRelays: string[];
   author: string;
   originalEventId?: string; // For tracking revisions
+  isDeleted?: boolean; // Soft delete flag
+  deletedAt?: number; // Deletion timestamp
+  lastModified?: number; // Last modification timestamp
 }
 
 export interface CreateProductResult {
@@ -793,6 +796,262 @@ export class ShopBusinessService {
       return [];
     }
   }
+
+  /**
+   * Query products by specific author from Nostr relays
+   */
+  public async queryProductsByAuthor(
+    authorPubkey: string,
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
+  ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
+    try {
+      logger.info('Starting product query by author', {
+        service: 'ShopBusinessService',
+        method: 'queryProductsByAuthor',
+        authorPubkey: authorPubkey.substring(0, 8) + '...',
+      });
+
+      // Create filters for Kind 23 events with shop tag and specific author
+      const filters = [
+        {
+          kinds: [23], // Long-form content events
+          authors: [authorPubkey], // Filter by specific author
+          '#t': ['culture-bridge-shop'], // Shop identifier tag
+        }
+      ];
+
+      const queryResult = await queryEvents(filters, (progress) => {
+        // Convert GenericRelayService progress to ShopBusinessService format
+        if (progress.step === 'querying' && progress.message.includes('Querying')) {
+          const relayName = progress.message.replace('Querying ', '').replace('...', '');
+          onProgress?.(relayName, 'querying');
+        } else if (progress.step === 'complete') {
+          logger.info('Author product query completed', {
+            service: 'ShopBusinessService',
+            method: 'queryProductsByAuthor',
+            progress: progress.progress,
+            message: progress.message,
+          });
+        }
+      });
+
+      if (!queryResult.success) {
+        return {
+          success: false,
+          products: [],
+          queriedRelays: [],
+          failedRelays: [],
+          error: queryResult.error,
+        };
+      }
+
+      // Parse events into products
+      const products: ShopProduct[] = [];
+      for (const event of queryResult.events) {
+        const product = this.parseProductFromEvent(event);
+        if (product) {
+          products.push(product);
+          // Also add to local store for caching
+          productStore.addProduct(product);
+        }
+      }
+
+      logger.info('Author product query completed', {
+        service: 'ShopBusinessService',
+        method: 'queryProductsByAuthor',
+        authorPubkey: authorPubkey.substring(0, 8) + '...',
+        totalEvents: queryResult.events.length,
+        parsedProducts: products.length,
+        relayCount: queryResult.relayCount,
+      });
+
+      return {
+        success: true,
+        products,
+        queriedRelays: [], // Will be populated in real implementation
+        failedRelays: [], // Will be populated in real implementation
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Author product query failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'queryProductsByAuthor',
+        authorPubkey: authorPubkey.substring(0, 8) + '...',
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        products: [],
+        queriedRelays: [],
+        failedRelays: [],
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Delete a product by creating a deletion event
+   */
+  public async deleteProduct(
+    productId: string,
+    signer: NostrSigner,
+    onProgress?: (progress: ShopPublishingProgress) => void
+  ): Promise<{ success: boolean; error?: string; eventId?: string; publishedRelays?: string[]; failedRelays?: string[] }> {
+    try {
+      logger.info('Starting product deletion', {
+        service: 'ShopBusinessService',
+        method: 'deleteProduct',
+        productId,
+      });
+
+      // Get user's pubkey for ownership verification
+      const userPubkey = await signer.getPublicKey();
+      
+      // Get the product to verify ownership
+      const product = productStore.getProduct(productId);
+      if (!product) {
+        return {
+          success: false,
+          error: 'Product not found',
+        };
+      }
+
+      if (product.author !== userPubkey) {
+        return {
+          success: false,
+          error: 'You can only delete your own products',
+        };
+      }
+
+      // Create deletion event (Kind 23 with deletion tags)
+      onProgress?.({
+        step: 'creating_event',
+        progress: 30,
+        message: 'Creating deletion event...',
+        details: 'Preparing product deletion for Nostr network',
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+      
+      // Create NIP-23 content for deletion
+      const nip23Content: NIP23Content = {
+        title: `[DELETED] ${product.title}`,
+        content: 'This product has been deleted by the author.',
+        summary: 'Product deleted',
+        published_at: now,
+        tags: ['culture-bridge-shop', 'product-deletion'],
+        language: 'en',
+        region: product.location,
+        permissions: 'public',
+      };
+
+      // Create deletion event using GenericEventService
+      const deletionResult = createRevisionEvent(
+        {
+          id: productId,
+          pubkey: userPubkey,
+          created_at: product.publishedAt,
+          kind: 23,
+          tags: [], // This will be filled by the revision creation
+          content: '',
+          sig: '',
+        } as NIP23Event,
+        nip23Content,
+        userPubkey,
+        1 // revision number
+      );
+
+      if (!deletionResult.success || !deletionResult.event) {
+        return {
+          success: false,
+          error: `Failed to create deletion event: ${deletionResult.error}`,
+        };
+      }
+
+      // Sign the deletion event
+      const signingResult = await signEvent(deletionResult.event, signer);
+      if (!signingResult.success || !signingResult.signedEvent) {
+        return {
+          success: false,
+          error: `Failed to sign deletion event: ${signingResult.error}`,
+        };
+      }
+
+      onProgress?.({
+        step: 'publishing',
+        progress: 60,
+        message: 'Publishing deletion to relays...',
+        details: 'Broadcasting deletion to decentralized network',
+      });
+
+      // Publish the deletion event
+      const publishResult = await publishEvent(signingResult.signedEvent, signer, (progress) => {
+        onProgress?.({
+          step: 'publishing',
+          progress: 60 + (progress.progress * 0.4), // Map 0-100 to 60-100
+          message: progress.message,
+        });
+      });
+
+      if (!publishResult.success) {
+        return {
+          success: false,
+          error: `Failed to publish deletion: ${publishResult.error}`,
+          publishedRelays: publishResult.publishedRelays,
+          failedRelays: publishResult.failedRelays,
+        };
+      }
+
+      // Mark as deleted in local store (soft delete)
+      const deletedProduct: ShopProduct = {
+        ...product,
+        title: `[DELETED] ${product.title}`,
+        description: 'This product has been deleted by the author.',
+        isDeleted: true,
+        deletedAt: now,
+        eventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays,
+      };
+
+      productStore.addProduct(deletedProduct);
+
+      onProgress?.({
+        step: 'complete',
+        progress: 100,
+        message: 'Product deleted successfully!',
+        details: `Published to ${publishResult.publishedRelays.length} relays`,
+      });
+
+      logger.info('Product deleted successfully', {
+        service: 'ShopBusinessService',
+        method: 'deleteProduct',
+        productId,
+        deletionEventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays.length,
+      });
+
+      return {
+        success: true,
+        eventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Product deletion failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'deleteProduct',
+        productId,
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
 }
 
 // Export singleton instance
@@ -817,3 +1076,14 @@ export const getProduct = (eventId: string) =>
 
 export const listProducts = () =>
   shopBusinessService.listProducts();
+
+export const queryProductsByAuthor = (
+  authorPubkey: string,
+  onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
+) => shopBusinessService.queryProductsByAuthor(authorPubkey, onProgress);
+
+export const deleteProduct = (
+  productId: string,
+  signer: NostrSigner,
+  onProgress?: (progress: ShopPublishingProgress) => void
+) => shopBusinessService.deleteProduct(productId, signer, onProgress);
