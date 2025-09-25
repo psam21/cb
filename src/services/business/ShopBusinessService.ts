@@ -1069,18 +1069,8 @@ export class ShopBusinessService {
         };
       }
 
-      // Mark as deleted in local store (soft delete)
-      const deletedProduct: ShopProduct = {
-        ...product,
-        title: `[DELETED] ${product.title}`,
-        description: 'This product has been deleted by the author.',
-        isDeleted: true,
-        deletedAt: now,
-        eventId: signingResult.signedEvent.id,
-        publishedRelays: publishResult.publishedRelays,
-      };
-
-      productStore.addProduct(deletedProduct);
+      // Don't add deletion events to ProductStore - they should only exist on relays
+      // The soft delete filtering will handle this during query
 
       onProgress?.({
         step: 'complete',

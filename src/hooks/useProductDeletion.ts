@@ -83,6 +83,9 @@ export const useProductDeletion = () => {
           publishedRelays: result.publishedRelays?.length || 0,
         });
 
+        // Add a small delay to allow deletion event to propagate to relays
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         return { success: true };
       } else {
         const error = result.error || 'Deletion failed';
