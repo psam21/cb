@@ -510,8 +510,19 @@ export class ShopBusinessService {
 
       for (const event of queryResult.events) {
         // Check if this is a deletion event BEFORE parsing as product
-        const isDeletedTitle = event.content?.includes('[DELETED]') || false;
-        const hasDeletedDescription = event.content?.includes('deleted by the author') || false;
+        // Parse the JSON content to check for deletion patterns
+        let isDeletedTitle = false;
+        let hasDeletedDescription = false;
+        
+        try {
+          const parsedContent = JSON.parse(event.content || '{}');
+          isDeletedTitle = parsedContent.title?.includes('[DELETED]') || false;
+          hasDeletedDescription = parsedContent.content?.includes('deleted by the author') || false;
+        } catch (error) {
+          // If JSON parsing fails, fall back to raw content check
+          isDeletedTitle = event.content?.includes('[DELETED]') || false;
+          hasDeletedDescription = event.content?.includes('deleted by the author') || false;
+        }
         
         if (isDeletedTitle || hasDeletedDescription) {
           // This is a deletion event - find the original event ID
@@ -936,41 +947,46 @@ export class ShopBusinessService {
           continue;
         }
         
+        // Check if this is a deletion event BEFORE parsing as product
+        // Parse the JSON content to check for deletion patterns
+        let isDeletedTitle = false;
+        let hasDeletedDescription = false;
+        
+        try {
+          const parsedContent = JSON.parse(event.content || '{}');
+          isDeletedTitle = parsedContent.title?.includes('[DELETED]') || false;
+          hasDeletedDescription = parsedContent.content?.includes('deleted by the author') || false;
+        } catch (error) {
+          // If JSON parsing fails, fall back to raw content check
+          isDeletedTitle = event.content?.includes('[DELETED]') || false;
+          hasDeletedDescription = event.content?.includes('deleted by the author') || false;
+        }
+        
+        if (isDeletedTitle || hasDeletedDescription) {
+          // This is a deletion event - find the original event ID it references
+          const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
+          if (eventRefTag && eventRefTag[1]) {
+            deletedOriginalIds.add(eventRefTag[1]);
+            logger.info('Found deletion event', {
+              service: 'ShopBusinessService',
+              method: 'queryProductsByAuthor',
+              deletionEventId: event.id,
+              originalEventId: eventRefTag[1],
+            });
+          } else {
+            logger.warn('Deletion event found but no event reference tag', {
+              service: 'ShopBusinessService',
+              method: 'queryProductsByAuthor',
+              deletionEventId: event.id,
+              eventTags: event.tags,
+            });
+          }
+          // Skip processing deletion events as products - they should only be used for filtering
+          continue;
+        }
+
         const product = this.parseProductFromEvent(event);
         if (product) {
-          logger.info('Processing event for soft delete filtering', {
-            service: 'ShopBusinessService',
-            method: 'queryProductsByAuthor',
-            eventId: event.id,
-            title: product.title,
-            isDeletedTitle: product.title.startsWith('[DELETED]'),
-            hasDeletedDescription: product.description.includes('deleted by the author'),
-            eventTags: event.tags,
-          });
-          
-          // Check if this is a deletion event
-          if (product.title.startsWith('[DELETED]') || product.description.includes('deleted by the author')) {
-            // This is a deletion event - find the original event ID it references
-            const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
-            if (eventRefTag && eventRefTag[1]) {
-              deletedOriginalIds.add(eventRefTag[1]);
-              logger.info('Found deletion event', {
-                service: 'ShopBusinessService',
-                method: 'queryProductsByAuthor',
-                deletionEventId: event.id,
-                originalEventId: eventRefTag[1],
-              });
-            } else {
-              logger.warn('Deletion event found but no event reference tag', {
-                service: 'ShopBusinessService',
-                method: 'queryProductsByAuthor',
-                deletionEventId: event.id,
-                eventTags: event.tags,
-              });
-            }
-            // Skip processing deletion events as products - they should only be used for filtering
-            continue;
-          }
           
           // This is a regular product event
           const groupKey = product.eventId;
