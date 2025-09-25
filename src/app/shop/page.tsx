@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
 import { ProductCreationForm } from '@/components/shop/ProductCreationForm';
-import { ProductGrid } from '@/components/shop/ProductGrid';
+import { BaseGrid } from '@/components/ui/BaseGrid';
+import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 
 export default function ShopPage() {
@@ -118,9 +119,52 @@ export default function ShopPage() {
 
         {/* Products Grid */}
         {!isLoading && !error && (
-          <ProductGrid
-            products={products}
-            onContact={handleContact}
+          <BaseGrid
+            data={products.map(product => ({
+              id: product.id,
+              title: product.title,
+              description: product.description,
+              imageUrl: product.imageUrl,
+              tags: product.tags,
+              publishedAt: product.publishedAt,
+              author: product.author,
+              price: product.price,
+              currency: product.currency,
+              category: product.category,
+              condition: product.condition,
+              location: product.location,
+              contact: product.contact,
+              eventId: product.eventId,
+              publishedRelays: product.publishedRelays,
+            }))}
+            renderItem={(item) => (
+              <BaseCard
+                data={item}
+                variant="shop"
+                onContact={(data) => {
+                  // Convert BaseCardData back to ShopProduct for the handler
+                  const product = products.find(p => p.id === data.id);
+                  if (product) handleContact(product);
+                }}
+              />
+            )}
+            searchFields={[
+              { key: 'title', label: 'Title', weight: 3 },
+              { key: 'description', label: 'Description', weight: 2 },
+              { key: 'tags', label: 'Tags', weight: 1 },
+              { key: 'category', label: 'Category', weight: 1 },
+            ]}
+            filterFields={[
+              { key: 'category', label: 'Category', type: 'select' },
+            ]}
+            sortOptions={[
+              { key: 'publishedAt', label: 'Newest First', direction: 'desc' },
+              { key: 'publishedAt', label: 'Oldest First', direction: 'asc' },
+              { key: 'price', label: 'Price: Low to High', direction: 'asc' },
+              { key: 'price', label: 'Price: High to Low', direction: 'desc' },
+            ]}
+            searchPlaceholder="Search products..."
+            gridClassName="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8"
           />
         )}
 

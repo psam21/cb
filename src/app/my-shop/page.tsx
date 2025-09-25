@@ -10,7 +10,8 @@ import { MyShopHeader } from '@/components/shop/MyShopHeader';
 import { ProductEditForm } from '@/components/shop/ProductEditForm';
 import { ProductDeleteDialog } from '@/components/shop/ProductDeleteDialog';
 import { EditProgressIndicator } from '@/components/shop/EditProgressIndicator';
-import { ProductGrid } from '@/components/shop/ProductGrid';
+import { BaseGrid } from '@/components/ui/BaseGrid';
+import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
@@ -209,11 +210,57 @@ export default function MyShopPage() {
                 </button>
               </div>
             ) : (
-              <ProductGrid
-                products={products}
-                onEdit={handleEditProduct}
-                onDelete={handleDeleteProduct}
-                variant="my-shop"
+              <BaseGrid
+                data={products.map(product => ({
+                  id: product.id,
+                  title: product.title,
+                  description: product.description,
+                  imageUrl: product.imageUrl,
+                  tags: product.tags,
+                  publishedAt: product.publishedAt,
+                  author: product.author,
+                  price: product.price,
+                  currency: product.currency,
+                  category: product.category,
+                  condition: product.condition,
+                  location: product.location,
+                  contact: product.contact,
+                  eventId: product.eventId,
+                  publishedRelays: product.publishedRelays,
+                }))}
+                renderItem={(item) => (
+                  <BaseCard
+                    data={item}
+                    variant="my-shop"
+                    onEdit={(data) => {
+                      // Convert BaseCardData back to ShopProduct for the handler
+                      const product = products.find(p => p.id === data.id);
+                      if (product) handleEditProduct(product);
+                    }}
+                    onDelete={(data) => {
+                      // Convert BaseCardData back to ShopProduct for the handler
+                      const product = products.find(p => p.id === data.id);
+                      if (product) handleDeleteProduct(product);
+                    }}
+                  />
+                )}
+                searchFields={[
+                  { key: 'title', label: 'Title', weight: 3 },
+                  { key: 'description', label: 'Description', weight: 2 },
+                  { key: 'tags', label: 'Tags', weight: 1 },
+                  { key: 'category', label: 'Category', weight: 1 },
+                ]}
+                filterFields={[
+                  { key: 'category', label: 'Category', type: 'select' },
+                ]}
+                sortOptions={[
+                  { key: 'publishedAt', label: 'Newest First', direction: 'desc' },
+                  { key: 'publishedAt', label: 'Oldest First', direction: 'asc' },
+                  { key: 'price', label: 'Price: Low to High', direction: 'asc' },
+                  { key: 'price', label: 'Price: High to Low', direction: 'desc' },
+                ]}
+                searchPlaceholder="Search your products..."
+                gridClassName="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8"
               />
             )}
           </>
