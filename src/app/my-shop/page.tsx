@@ -19,6 +19,7 @@ export default function MyShopPage() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const { products, isLoading, error, refreshProducts } = useMyShopProducts();
   const { 
     editingProduct, 
@@ -103,15 +104,14 @@ export default function MyShopPage() {
     showDeleteConfirmation(product);
   };
 
-  const handleViewProduct = (product: ShopProduct) => {
-    logger.info('Viewing product', {
+
+  const handleToggleDeleted = () => {
+    logger.info('Toggling deleted items display', {
       service: 'MyShopPage',
-      method: 'handleViewProduct',
-      productId: product.id,
-      title: product.title,
+      method: 'handleToggleDeleted',
+      showDeleted: !showDeleted,
     });
-    // For now, just show an alert. In the future, this could navigate to a product detail page
-    alert(`Viewing: ${product.title}\nPrice: ${product.price} ${product.currency}\nDescription: ${product.description}`);
+    setShowDeleted(!showDeleted);
   };
 
   const handleSaveProduct = async (productId: string, updatedData: Partial<ProductEventData>, imageFile: File | null) => {
@@ -157,6 +157,8 @@ export default function MyShopPage() {
         onCreateNew={handleCreateNew}
         onRefresh={refreshProducts}
         isLoading={isLoading}
+        showDeleted={showDeleted}
+        onToggleDeleted={handleToggleDeleted}
       />
 
       {/* Main Content */}
@@ -215,7 +217,6 @@ export default function MyShopPage() {
                     product={product}
                     onEdit={handleEditProduct}
                     onDelete={handleDeleteProduct}
-                    onView={handleViewProduct}
                   />
                 ))}
               </div>

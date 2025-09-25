@@ -6,14 +6,12 @@ interface MyShopProductCardProps {
   product: ShopProduct;
   onEdit: (product: ShopProduct) => void;
   onDelete: (product: ShopProduct) => void;
-  onView: (product: ShopProduct) => void;
 }
 
 export const MyShopProductCard: React.FC<MyShopProductCardProps> = ({ 
   product, 
   onEdit, 
-  onDelete, 
-  onView 
+  onDelete
 }) => {
   const formatPrice = (price: number, currency: string) => {
     if (currency === 'BTC' || currency === 'SATS') {
@@ -58,15 +56,6 @@ export const MyShopProductCard: React.FC<MyShopProductCardProps> = ({
     onDelete(product);
   };
 
-  const handleView = () => {
-    logger.info('View product clicked', {
-      service: 'MyShopProductCard',
-      method: 'handleView',
-      productId: product.id,
-      title: product.title,
-    });
-    onView(product);
-  };
 
   return (
     <div className="card overflow-hidden hover:shadow-xl transition-all duration-300 group">
@@ -158,12 +147,17 @@ export const MyShopProductCard: React.FC<MyShopProductCardProps> = ({
         
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <button 
-            onClick={handleView} 
-            className="btn-outline-sm flex-1"
+          <a
+            href={`https://njump.me/${product.eventId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline-sm flex items-center justify-center px-3"
+            title="View on njump.me"
           >
-            View
-          </button>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
           <button 
             onClick={handleEdit} 
             className="btn-primary-sm flex-1"

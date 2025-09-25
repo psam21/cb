@@ -50,8 +50,10 @@ export const useMyShopProducts = () => {
       });
 
       if (result.success) {
-        // Filter out deleted products for display
-        const activeProducts = result.products.filter(product => !product.isDeleted);
+        // Filter out deleted products for display and sort by newest first
+        const activeProducts = result.products
+          .filter(product => !product.isDeleted)
+          .sort((a, b) => b.publishedAt - a.publishedAt);
         setMyProducts(activeProducts);
         
         logger.info('User products loaded successfully', {

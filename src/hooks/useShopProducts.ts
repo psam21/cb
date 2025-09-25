@@ -56,7 +56,9 @@ export const useShopProducts = () => {
           productCount: relayResult.products.length,
           queriedRelays: relayResult.queriedRelays.length,
         });
-        setProducts(relayResult.products);
+        // Sort products by newest first (publishedAt descending)
+        const sortedProducts = relayResult.products.sort((a, b) => b.publishedAt - a.publishedAt);
+        setProducts(sortedProducts);
       } else {
         // Fallback to local store if relay query fails
         logger.warn('Relay query failed, falling back to local store', {
@@ -71,7 +73,9 @@ export const useShopProducts = () => {
           method: 'loadProducts',
           productCount: localProducts.length,
         });
-        setProducts(localProducts);
+        // Sort products by newest first (publishedAt descending)
+        const sortedLocalProducts = localProducts.sort((a, b) => b.publishedAt - a.publishedAt);
+        setProducts(sortedLocalProducts);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

@@ -6,13 +6,17 @@ interface MyShopHeaderProps {
   onCreateNew: () => void;
   onRefresh: () => void;
   isLoading: boolean;
+  showDeleted: boolean;
+  onToggleDeleted: () => void;
 }
 
 export const MyShopHeader: React.FC<MyShopHeaderProps> = ({ 
   productCount, 
   onCreateNew, 
   onRefresh, 
-  isLoading 
+  isLoading,
+  showDeleted,
+  onToggleDeleted
 }) => {
   const handleCreateNew = () => {
     logger.info('Create new product clicked', {
@@ -30,6 +34,15 @@ export const MyShopHeader: React.FC<MyShopHeaderProps> = ({
     onRefresh();
   };
 
+  const handleToggleDeleted = () => {
+    logger.info('Toggle deleted items clicked', {
+      service: 'MyShopHeader',
+      method: 'handleToggleDeleted',
+      showDeleted: !showDeleted,
+    });
+    onToggleDeleted();
+  };
+
   return (
     <div className="bg-white shadow-sm border-b">
       <div className="container-width py-8">
@@ -41,6 +54,12 @@ export const MyShopHeader: React.FC<MyShopHeaderProps> = ({
             </p>
           </div>
           <div className="mt-4 lg:mt-0 flex gap-3">
+            <button 
+              onClick={handleToggleDeleted} 
+              className={`btn-outline ${showDeleted ? 'bg-accent-100 text-accent-700 border-accent-300' : ''}`}
+            >
+              {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
+            </button>
             <button 
               onClick={handleRefresh} 
               disabled={isLoading} 
