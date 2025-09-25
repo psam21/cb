@@ -47,15 +47,11 @@ export const useMyShopProducts = (showDeleted: boolean = false) => {
           status,
           count,
         });
-      });
+      }, showDeleted);
 
       if (result.success) {
-        // Filter products based on showDeleted parameter and sort by newest first
-        const filteredProducts = showDeleted 
-          ? result.products // Show all products including deleted
-          : result.products.filter(product => !product.isDeleted); // Show only active products
-        
-        const sortedProducts = filteredProducts.sort((a, b) => b.publishedAt - a.publishedAt);
+        // Sort products by newest first (server-side filtering already handled)
+        const sortedProducts = result.products.sort((a, b) => b.publishedAt - a.publishedAt);
         setMyProducts(sortedProducts);
         
         logger.info('User products loaded successfully', {

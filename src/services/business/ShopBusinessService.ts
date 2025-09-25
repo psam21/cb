@@ -802,7 +802,8 @@ export class ShopBusinessService {
    */
   public async queryProductsByAuthor(
     authorPubkey: string,
-    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
+    showDeleted: boolean = false
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query by author', {
@@ -940,7 +941,7 @@ export class ShopBusinessService {
           revisionsCount: group.revisions.length,
         });
         
-        if (!isDeleted) {
+        if (!isDeleted || showDeleted) {
           // Use the most recent revision or the original
           if (group.revisions.length > 0) {
             // Sort revisions by publishedAt and take the latest
@@ -1171,8 +1172,9 @@ export const listProducts = () =>
 
 export const queryProductsByAuthor = (
   authorPubkey: string,
-  onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
-) => shopBusinessService.queryProductsByAuthor(authorPubkey, onProgress);
+  onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
+  showDeleted: boolean = false
+) => shopBusinessService.queryProductsByAuthor(authorPubkey, onProgress, showDeleted);
 
 export const deleteProduct = (
   productId: string,
