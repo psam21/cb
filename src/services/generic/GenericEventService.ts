@@ -173,6 +173,8 @@ export class GenericEventService {
           ] : []),
           // Permissions tag
           ['permissions', revisedContent.permissions || 'community'],
+          // Shop identifier tag
+          ['t', 'culture-bridge-shop'],
         ],
         content: JSON.stringify(revisedContent),
       };
