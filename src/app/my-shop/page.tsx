@@ -6,7 +6,6 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useMyShopProducts } from '@/hooks/useMyShopProducts';
 import { useProductEditing } from '@/hooks/useProductEditing';
 import { useProductDeletion } from '@/hooks/useProductDeletion';
-import { MyShopHeader } from '@/components/shop/MyShopHeader';
 import { ProductEditForm } from '@/components/shop/ProductEditForm';
 import { ProductDeleteDialog } from '@/components/shop/ProductDeleteDialog';
 import { EditProgressIndicator } from '@/components/shop/EditProgressIndicator';
@@ -77,13 +76,6 @@ export default function MyShopPage() {
     );
   }
 
-  const handleCreateNew = () => {
-    logger.info('Navigating to create new product', {
-      service: 'MyShopPage',
-      method: 'handleCreateNew',
-    });
-    router.push('/shop?create=true');
-  };
 
   const handleEditProduct = (product: ShopProduct) => {
     logger.info('Starting product edit', {
@@ -106,14 +98,6 @@ export default function MyShopPage() {
   };
 
 
-  const handleToggleDeleted = () => {
-    logger.info('Toggling deleted items display', {
-      service: 'MyShopPage',
-      method: 'handleToggleDeleted',
-      showDeleted: !showDeleted,
-    });
-    setShowDeleted(!showDeleted);
-  };
 
   const handleSaveProduct = async (productId: string, updatedData: Partial<ProductEventData>, imageFile: File | null) => {
     logger.info('Saving product updates', {
@@ -151,119 +135,146 @@ export default function MyShopPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-accent-50">
+    <div className="min-h-screen bg-primary-50">
       {/* Header */}
-      <MyShopHeader
-        onCreateNew={handleCreateNew}
-        onRefresh={refreshProducts}
-        isLoading={isLoading}
-        showDeleted={showDeleted}
-        onToggleDeleted={handleToggleDeleted}
-      />
+      <div className="bg-white shadow-sm border-b">
+        <div className="container-width py-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-gray-600 text-lg">
+                Manage your product listings
+              </p>
+            </div>
+            <div className="mt-4 lg:mt-0 flex items-center space-x-3">
+              <button
+                onClick={() => setShowDeleted(!showDeleted)}
+                className={`btn-outline-sm ${showDeleted ? 'bg-gray-100' : ''}`}
+              >
+                {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
+              </button>
+              <button
+                onClick={refreshProducts}
+                className="btn-primary-sm"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="container-width py-8">
         {/* Loading State */}
         {isLoading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-primary-600 text-lg">Loading your products...</p>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 text-lg">Loading products...</p>
+            </div>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" />
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
+              <div>
+                <h3 className="text-lg font-medium text-red-800">Error Loading Products</h3>
+                <p className="text-red-600 mt-1">{error}</p>
+              </div>
             </div>
-            <h2 className="text-2xl font-serif font-bold text-primary-800 mb-2">Error Loading Products</h2>
-            <p className="text-primary-600 mb-6">{error}</p>
-            <button
-              onClick={refreshProducts}
-              className="btn-primary"
-            >
-              Try Again
-            </button>
           </div>
         )}
 
         {/* Products Grid */}
         {!isLoading && !error && (
-          <>
-            {products.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-serif font-bold text-primary-800 mb-2">No Products Yet</h2>
-                <p className="text-primary-600 mb-6">Start building your shop by creating your first product.</p>
-                <button
-                  onClick={handleCreateNew}
-                  className="btn-primary-sm"
-                >
-                  Create Your First Product
-                </button>
-              </div>
-            ) : (
-              <BaseGrid
-                data={products.map(product => ({
-                  id: product.id,
-                  title: product.title,
-                  description: product.description,
-                  imageUrl: product.imageUrl,
-                  tags: product.tags,
-                  publishedAt: product.publishedAt,
-                  author: product.author,
-                  price: product.price,
-                  currency: product.currency,
-                  category: product.category,
-                  condition: product.condition,
-                  location: product.location,
-                  contact: product.contact,
-                  eventId: product.eventId,
-                  publishedRelays: product.publishedRelays,
-                }))}
-                renderItem={(item) => (
-                  <BaseCard
-                    data={item}
-                    variant="my-shop"
-                    onEdit={(data) => {
-                      // Convert BaseCardData back to ShopProduct for the handler
-                      const product = products.find(p => p.id === data.id);
-                      if (product) handleEditProduct(product);
-                    }}
-                    onDelete={(data) => {
-                      // Convert BaseCardData back to ShopProduct for the handler
-                      const product = products.find(p => p.id === data.id);
-                      if (product) handleDeleteProduct(product);
-                    }}
-                  />
-                )}
-                searchFields={[
-                  { key: 'title', label: 'Title', weight: 3 },
-                  { key: 'description', label: 'Description', weight: 2 },
-                  { key: 'tags', label: 'Tags', weight: 1 },
-                  { key: 'category', label: 'Category', weight: 1 },
-                ]}
-                filterFields={[
-                  { key: 'category', label: 'Category', type: 'select' },
-                ]}
-                sortOptions={[
-                  { key: 'publishedAt', label: 'Newest First', direction: 'desc' },
-                  { key: 'publishedAt', label: 'Oldest First', direction: 'asc' },
-                  { key: 'price', label: 'Price: Low to High', direction: 'asc' },
-                  { key: 'price', label: 'Price: High to Low', direction: 'desc' },
-                ]}
-                searchPlaceholder="Search your products..."
-                gridClassName="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8"
+          <BaseGrid
+            data={products.map(product => ({
+              id: product.id,
+              title: product.title,
+              description: product.description,
+              imageUrl: product.imageUrl,
+              tags: product.tags,
+              publishedAt: product.publishedAt,
+              author: product.author,
+              price: product.price,
+              currency: product.currency,
+              category: product.category,
+              condition: product.condition,
+              location: product.location,
+              contact: product.contact,
+              eventId: product.eventId,
+              publishedRelays: product.publishedRelays,
+            }))}
+            renderItem={(item) => (
+              <BaseCard
+                data={item}
+                variant="my-shop"
+                onEdit={(data) => {
+                  // Convert BaseCardData back to ShopProduct for the handler
+                  const product = products.find(p => p.id === data.id);
+                  if (product) handleEditProduct(product);
+                }}
+                onDelete={(data) => {
+                  // Convert BaseCardData back to ShopProduct for the handler
+                  const product = products.find(p => p.id === data.id);
+                  if (product) handleDeleteProduct(product);
+                }}
               />
             )}
-          </>
+            searchFields={[
+              { key: 'title', label: 'Title', weight: 3 },
+              { key: 'description', label: 'Description', weight: 2 },
+              { key: 'tags', label: 'Tags', weight: 1 },
+              { key: 'category', label: 'Category', weight: 1 },
+            ]}
+            filterFields={[
+              { key: 'category', label: 'Category', type: 'select' },
+            ]}
+            sortOptions={[
+              { key: 'publishedAt', label: 'Newest First', direction: 'desc' },
+              { key: 'publishedAt', label: 'Oldest First', direction: 'asc' },
+              { key: 'price', label: 'Price: Low to High', direction: 'asc' },
+              { key: 'price', label: 'Price: High to Low', direction: 'desc' },
+            ]}
+            searchPlaceholder="Search your products..."
+            gridClassName="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8"
+          />
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && products.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-primary-300 mb-4">
+              <svg
+                className="w-16 h-16 mx-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-serif font-bold text-primary-800 mb-2">No products yet</h3>
+            <p className="text-gray-600 mb-6 text-lg">
+              Start by creating your first product listing!
+            </p>
+            <button
+              onClick={() => router.push('/shop')}
+              className="btn-primary-sm"
+            >
+              Create Your First Product
+            </button>
+          </div>
         )}
       </div>
 
