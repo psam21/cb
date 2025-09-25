@@ -811,18 +811,12 @@ export class ShopBusinessService {
         authorPubkey: authorPubkey.substring(0, 8) + '...',
       });
 
-      // Create filters for Kind 23 events with shop tag and specific author
-      // Also include events that might be deletion events (with [DELETED] in title)
+      // Create filter for Kind 23 events with shop tag and specific author
       const filters = [
         {
           kinds: [23], // Long-form content events
           authors: [authorPubkey], // Filter by specific author
           '#t': ['culture-bridge-shop'], // Shop identifier tag
-        },
-        {
-          kinds: [23], // Long-form content events
-          authors: [authorPubkey], // Filter by specific author
-          // No tag filter to catch deletion events that might not have the shop tag
         },
       ];
 
