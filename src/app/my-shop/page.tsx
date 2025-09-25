@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useMyShopProducts } from '@/hooks/useMyShopProducts';
 import { useProductEditing } from '@/hooks/useProductEditing';
@@ -17,6 +18,7 @@ import { logger } from '@/services/core/LoggingService';
 export default function MyShopPage() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
+  const [isClient, setIsClient] = useState(false);
   const { products, isLoading, error, refreshProducts } = useMyShopProducts();
   const { 
     editingProduct, 
@@ -37,8 +39,13 @@ export default function MyShopPage() {
     cancelDelete 
   } = useProductDeletion();
 
-  // Redirect if not authenticated
-  if (!isAuthenticated || !user) {
+  // Client-side hydration check
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Redirect if not authenticated (only on client)
+  if (isClient && (!isAuthenticated || !user)) {
     logger.warn('User not authenticated, redirecting to signin', {
       service: 'MyShopPage',
       method: 'render',
@@ -51,6 +58,18 @@ export default function MyShopPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-primary-800 mb-4">Redirecting to Sign In...</h1>
           <p className="text-gray-600">Please sign in to manage your shop listings.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading during SSR
+  if (!isClient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-accent-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-primary-800 mb-4">Loading...</h1>
+          <p className="text-gray-600">Please wait while we load your shop.</p>
         </div>
       </div>
     );

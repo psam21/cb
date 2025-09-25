@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Heart, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 const footerLinks = {
   resources: [
