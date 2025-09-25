@@ -905,8 +905,27 @@ export class ShopBusinessService {
 
       // Filter out products that have deletion events
       const activeProducts: ShopProduct[] = [];
+      
+      logger.info('Starting soft delete filtering', {
+        service: 'ShopBusinessService',
+        method: 'queryProductsByAuthor',
+        deletedOriginalIds: Array.from(deletedOriginalIds),
+        eventGroupsCount: eventGroups.size,
+        eventGroupKeys: Array.from(eventGroups.keys()),
+      });
+      
       for (const [eventId, group] of eventGroups) {
-        if (!deletedOriginalIds.has(eventId)) {
+        const isDeleted = deletedOriginalIds.has(eventId);
+        logger.info('Processing event group for filtering', {
+          service: 'ShopBusinessService',
+          method: 'queryProductsByAuthor',
+          eventId,
+          isDeleted,
+          hasOriginal: !!group.original,
+          revisionsCount: group.revisions.length,
+        });
+        
+        if (!isDeleted) {
           // Use the most recent revision or the original
           if (group.revisions.length > 0) {
             // Sort revisions by publishedAt and take the latest
