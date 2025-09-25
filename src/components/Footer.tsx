@@ -17,9 +17,9 @@ export default function Footer() {
     <footer className="bg-primary-900 text-white">
       {/* Main Footer Content */}
       <div className="container-width section-padding">
-        <div>
-          {/* Brand Section */}
-          <div className="mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Brand and Description */}
+          <div>
             <Link href="/" className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center">
                 <Heart className="w-5 h-5 text-white" />
@@ -29,31 +29,29 @@ export default function Footer() {
                 <p className="text-sm text-primary-200">Heritage Preservation Network</p>
               </div>
             </Link>
-            <p className="text-primary-200 mb-6 max-w-2xl">
+            <p className="text-primary-200 mb-6">
               Empowering communities to preserve, share, and celebrate their heritage through free technology, ensuring traditions endure and stories are told authentically, securely, and—most importantly—without gatekeepers.
             </p>
-          </div>
 
-          {/* Resources Links */}
-          <div>
-            <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
-            <div className="flex flex-wrap gap-6">
-              {footerLinks.resources.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="text-primary-200 hover:text-white transition-colors duration-200"
-                >
-                  {link.name}
-                </Link>
-              ))}
+            {/* Resources Links */}
+            <div>
+              <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
+              <div className="flex flex-wrap gap-6">
+                {footerLinks.resources.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-primary-200 hover:text-white transition-colors duration-200"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Newsletter Signup */}
-        <div className="mt-12 pt-8 border-t border-primary-800">
-          <div className="max-w-md">
+          {/* Right Column - Stay Connected */}
+          <div>
             <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
             <p className="text-primary-200 text-sm mb-4">
               Get updates on new cultural content, community events, and platform features.
