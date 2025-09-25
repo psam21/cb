@@ -11,6 +11,7 @@ const footerLinks = {
   ],
   community: [
     { name: 'Get Involved', href: '/get-involved' },
+    { name: 'Support', href: '/support' },
   ],
 };
 
