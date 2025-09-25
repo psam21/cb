@@ -67,16 +67,6 @@ export default function HomeContent() {
           </motion.div>
         </div>
 
-        {/* Floating Elements */}
-        <div className="absolute top-20 left-10 floating-element">
-          <div className="w-20 h-20 bg-accent-200 rounded-full opacity-60"></div>
-        </div>
-        <div
-          className="absolute bottom-32 right-16 floating-element"
-          style={{ animationDelay: '2s' }}
-        >
-          <div className="w-16 h-16 bg-primary-200 rounded-full opacity-40"></div>
-        </div>
       </section>
 
       {/* Mission Section */}

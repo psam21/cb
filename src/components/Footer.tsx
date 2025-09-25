@@ -17,25 +17,20 @@ export default function Footer() {
     <footer className="bg-primary-900 text-white">
       {/* Main Footer Content */}
       <div className="container-width section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
-          {/* Column 1 - Brand and Description (5/12 width) */}
-          <div className="lg:col-span-5">
-            <Link href="/" className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-serif font-bold">Culture Bridge</h3>
-                <p className="text-sm text-primary-200">Heritage Preservation Network</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 gap-8">
+          {/* Column 1 - Brand and Description (45% width) */}
+          <div className="md:col-span-5 lg:col-span-5">
+            <Link href="/" className="mb-4">
+              <h3 className="text-xl font-serif font-bold">Culture Bridge</h3>
+              <p className="text-sm text-primary-200">Heritage Preservation Network</p>
             </Link>
             <p className="text-primary-200 mb-6">
               Empowering communities to preserve, share, and celebrate their heritage through free technology, ensuring traditions endure and stories are told authentically, securely, and—most importantly—without gatekeepers.
             </p>
           </div>
 
-          {/* Column 2 - Resources (3/12 width) */}
-          <div className="lg:col-span-3 lg:col-start-7">
+          {/* Column 2 - Resources (15% width) */}
+          <div className="md:col-span-2 lg:col-span-2 md:col-start-6 lg:col-start-7">
             <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
@@ -51,8 +46,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3 - Stay Connected (4/12 width) */}
-          <div className="lg:col-span-4">
+          {/* Column 3 - Stay Connected (40% width) */}
+          <div className="md:col-span-5 lg:col-span-5 md:col-start-8 lg:col-start-9">
             <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
             <p className="text-primary-200 text-sm mb-4">
               Get updates on new cultural content, community events, and platform features.
@@ -76,16 +71,16 @@ export default function Footer() {
         <div className="container-width py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
-              <p className="text-primary-200 text-sm">
-                © 2025 Culture Bridge. Built with ❤️ for cultural preservation.
-              </p>
+            <p className="text-primary-200 text-sm">
+              2025 Culture Bridge. Built with ❤️ for cultural preservation.
+            </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4 text-sm" />
               </div>
             </div>
             <div className="flex items-center space-x-2 text-primary-200 text-sm">
               <Globe className="w-4 h-4" />
-              <span>Decentralized on Nostr</span>
+              <span>Decentralized on <a href="https://en.wikipedia.org/wiki/Nostr" target="_blank" rel="noopener noreferrer" className="text-accent-400 hover:text-accent-300 underline">Nostr</a></span>
             </div>
           </div>
         </div>

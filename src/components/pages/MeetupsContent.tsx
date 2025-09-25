@@ -130,7 +130,7 @@ export default function MeetupsContent() {
             className="container-width text-center"
           >
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
-              Cultural <span className="text-accent-400">Meetups</span>
+              Cultural <span className="text-accent-400">Exchange</span>
             </h1>
             <p className="text-xl md:text-2xl text-primary-100 leading-relaxed mb-8">
               Join cultural meetups, community gatherings, and collaborative heritage events in your area and online.
@@ -162,9 +162,6 @@ export default function MeetupsContent() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">
-              Types of Meetups
-            </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Choose the type of cultural meetup that resonates with your interests and learning style.
             </p>
