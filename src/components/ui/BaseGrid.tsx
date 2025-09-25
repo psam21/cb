@@ -287,7 +287,11 @@ export const BaseGrid = ({
       {/* Grid */}
       {filteredData.length > 0 ? (
         <div className={gridClassName}>
-          {filteredData.map((item, index) => renderItem(item, index))}
+          {filteredData.map((item, index) => (
+            <div key={item.id || index}>
+              {renderItem(item, index)}
+            </div>
+          ))}
         </div>
       ) : (
         <div className="text-center py-12">

@@ -145,7 +145,7 @@ export default function MyShopPage() {
                 Manage your product listings
               </p>
             </div>
-            <div className="mt-4 lg:mt-0">
+            <div className="mt-4 lg:mt-0 flex items-center space-x-3">
               <button
                 onClick={() => setShowDeleted(!showDeleted)}
                 className={`btn-outline-sm ${showDeleted ? 'bg-gray-100' : ''}`}
