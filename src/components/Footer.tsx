@@ -4,11 +4,11 @@ import { Heart, Globe } from 'lucide-react';
 
 const footerLinks = {
   resources: [
-    { name: 'About Us', href: '/about' },
-    { name: 'Downloads', href: '/downloads' },
+    { name: 'Why Nostr?', href: '/nostr' },
     { name: 'Get Involved', href: '/get-involved' },
     { name: 'Support', href: '/support' },
-    { name: 'Why Nostr?', href: '/nostr' },
+    { name: 'Downloads', href: '/downloads' },
+    { name: 'About Us', href: '/about' },
   ],
 };
 
@@ -17,9 +17,9 @@ export default function Footer() {
     <footer className="bg-primary-900 text-white">
       {/* Main Footer Content */}
       <div className="container-width section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Column 1 - Brand and Description */}
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
+          {/* Column 1 - Brand and Description (5/12 width) */}
+          <div className="lg:col-span-5">
             <Link href="/" className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center">
                 <Heart className="w-5 h-5 text-white" />
@@ -34,8 +34,8 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Column 2 - Resources */}
-          <div>
+          {/* Column 2 - Resources (3/12 width) */}
+          <div className="lg:col-span-3 lg:col-start-7">
             <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
@@ -51,8 +51,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3 - Stay Connected */}
-          <div>
+          {/* Column 3 - Stay Connected (4/12 width) */}
+          <div className="lg:col-span-4">
             <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
             <p className="text-primary-200 text-sm mb-4">
               Get updates on new cultural content, community events, and platform features.
