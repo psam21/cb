@@ -135,7 +135,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-serif font-bold text-primary-800">Nostr Profile</h1>
-              <p className="text-primary-600 mt-2">
+              <p className="text-accent-600 mt-2 font-medium">
                 Manage your Nostr identity
               </p>
             </div>
@@ -195,7 +195,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   {/* Display Name */}
                   <div>
-                    <label className="block text-sm font-medium text-primary-700 mb-2">
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
                       Display Name
                     </label>
                     {isEditing ? (
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                         type="text"
                         value={editForm.display_name || ''}
                         onChange={(e) => handleInputChange('display_name', e.target.value)}
-                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                         placeholder="Enter your display name"
                         maxLength={100}
                       />
@@ -216,14 +216,14 @@ export default function ProfilePage() {
 
                   {/* About */}
                   <div>
-                    <label className="block text-sm font-medium text-primary-700 mb-2">
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
                       About
                     </label>
                     {isEditing ? (
                       <textarea
                         value={editForm.about || ''}
                         onChange={(e) => handleInputChange('about', e.target.value)}
-                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                         placeholder="Tell us about yourself"
                         rows={4}
                         maxLength={1000}
@@ -237,7 +237,7 @@ export default function ProfilePage() {
 
                   {/* Website */}
                   <div>
-                    <label className="block text-sm font-medium text-primary-700 mb-2">
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
                       Website
                     </label>
                     {isEditing ? (
@@ -245,7 +245,7 @@ export default function ProfilePage() {
                         type="url"
                         value={editForm.website || ''}
                         onChange={(e) => handleInputChange('website', e.target.value)}
-                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                         placeholder="https://your-website.com"
                       />
                     ) : (
@@ -268,7 +268,7 @@ export default function ProfilePage() {
 
                   {/* Birthday */}
                   <div>
-                    <label className="block text-sm font-medium text-primary-700 mb-2">
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
                       Birthday
                     </label>
                     {isEditing ? (
@@ -276,7 +276,7 @@ export default function ProfilePage() {
                         type="date"
                         value={editForm.birthday || ''}
                         onChange={(e) => handleInputChange('birthday', e.target.value)}
-                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                       />
                     ) : (
                       <p className="text-primary-600">
@@ -287,7 +287,7 @@ export default function ProfilePage() {
 
                   {/* Bot Status */}
                   <div>
-                    <label className="block text-sm font-medium text-primary-700 mb-2">
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
                       Account Type
                     </label>
                     {isEditing ? (
@@ -296,9 +296,9 @@ export default function ProfilePage() {
                           type="checkbox"
                           checked={editForm.bot || false}
                           onChange={(e) => handleInputChange('bot', e.target.checked)}
-                          className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-primary-300 rounded"
+                          className="h-4 w-4 text-accent-600 focus:ring-accent-500 border-accent-300 rounded"
                         />
-                        <span className="ml-2 text-sm text-primary-700">
+                        <span className="ml-2 text-sm text-accent-700">
                           This is a bot account
                         </span>
                       </label>
@@ -318,22 +318,22 @@ export default function ProfilePage() {
             {/* Profile Picture */}
             <div className="card">
               <div className="p-6">
-                <h3 className="text-lg font-serif font-bold text-primary-800 mb-4">Profile Picture</h3>
+                <h3 className="text-lg font-serif font-bold text-accent-800 mb-4">Profile Picture</h3>
                 <div className="text-center">
                   {profile?.picture ? (
                     <img
                       src={profile.picture}
                       alt="Profile"
-                      className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+                      className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-2 border-accent-200"
                     />
                   ) : (
-                    <div className="w-24 h-24 bg-primary-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-24 h-24 bg-accent-100 rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-accent-200">
+                      <svg className="w-8 h-8 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                   )}
-                  <p className="text-sm text-primary-600">
+                  <p className="text-sm text-accent-600 font-medium">
                     {profile?.picture ? 'Profile picture set' : 'No profile picture'}
                   </p>
                 </div>
@@ -343,11 +343,11 @@ export default function ProfilePage() {
             {/* Statistics */}
             <div className="card">
               <div className="p-6">
-                <h3 className="text-lg font-serif font-bold text-primary-800 mb-4">Shop Statistics</h3>
+                <h3 className="text-lg font-serif font-bold text-accent-800 mb-4">Shop Statistics</h3>
                 {isLoadingStats ? (
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-primary-600">Loading stats...</p>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-accent-600">Loading stats...</p>
                   </div>
                 ) : statsError ? (
                   <div className="text-center">
@@ -356,12 +356,12 @@ export default function ProfilePage() {
                 ) : (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-primary-600">Products Created</span>
-                      <span className="font-bold text-primary-800">{stats?.productsCreated || 0}</span>
+                      <span className="text-accent-600 font-medium">Products Created</span>
+                      <span className="font-bold text-accent-800 bg-accent-100 px-2 py-1 rounded">{stats?.productsCreated || 0}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-primary-600">Last Active</span>
-                      <span className="font-bold text-primary-800">
+                      <span className="text-accent-600 font-medium">Last Active</span>
+                      <span className="font-bold text-accent-800 bg-accent-100 px-2 py-1 rounded">
                         {stats?.lastActive ? new Date(stats.lastActive).toLocaleDateString() : 'Never'}
                       </span>
                     </div>
