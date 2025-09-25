@@ -7,10 +7,10 @@ import { useMyShopProducts } from '@/hooks/useMyShopProducts';
 import { useProductEditing } from '@/hooks/useProductEditing';
 import { useProductDeletion } from '@/hooks/useProductDeletion';
 import { MyShopHeader } from '@/components/shop/MyShopHeader';
-import { MyShopProductCard } from '@/components/shop/MyShopProductCard';
 import { ProductEditForm } from '@/components/shop/ProductEditForm';
 import { ProductDeleteDialog } from '@/components/shop/ProductDeleteDialog';
 import { EditProgressIndicator } from '@/components/shop/EditProgressIndicator';
+import { MyShopProductGrid } from '@/components/shop/MyShopProductGrid';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
@@ -153,7 +153,6 @@ export default function MyShopPage() {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-accent-50">
       {/* Header */}
       <MyShopHeader
-        productCount={products.length}
         onCreateNew={handleCreateNew}
         onRefresh={refreshProducts}
         isLoading={isLoading}
@@ -162,7 +161,7 @@ export default function MyShopPage() {
       />
 
       {/* Main Content */}
-      <div className="container-width section-padding">
+      <div className="container-width py-8">
         {/* Loading State */}
         {isLoading && (
           <div className="text-center py-12">
@@ -204,22 +203,17 @@ export default function MyShopPage() {
                 <p className="text-primary-600 mb-6">Start building your shop by creating your first product.</p>
                 <button
                   onClick={handleCreateNew}
-                  className="btn-primary"
+                  className="btn-primary-sm"
                 >
                   Create Your First Product
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <MyShopProductCard
-                    key={product.id}
-                    product={product}
-                    onEdit={handleEditProduct}
-                    onDelete={handleDeleteProduct}
-                  />
-                ))}
-              </div>
+              <MyShopProductGrid
+                products={products}
+                onEdit={handleEditProduct}
+                onDelete={handleDeleteProduct}
+              />
             )}
           </>
         )}

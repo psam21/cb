@@ -73,9 +73,8 @@ export default function ShopPage() {
         <div className="container-width py-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-4xl font-serif font-bold text-primary-800">Nostr Shop</h1>
-              <p className="text-gray-600 mt-2 text-lg">
-                Buy and sell products using decentralized Nostr technology
+              <p className="text-gray-600 text-lg">
+                Buy and sell Culture and Heritage products directly interacting with Customers
               </p>
             </div>
             <div className="mt-4 lg:mt-0">
