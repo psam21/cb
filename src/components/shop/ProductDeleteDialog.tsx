@@ -97,10 +97,13 @@ export const ProductDeleteDialog: React.FC<ProductDeleteDialogProps> = ({
                     {product.title}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: product.currency,
-                    }).format(product.price)} • {product.category}
+                    {product.currency === 'BTC' || product.currency === 'SATS' 
+                      ? `${product.price} ${product.currency}`
+                      : new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: product.currency,
+                        }).format(product.price)
+                    } • {product.category}
                   </p>
                 </div>
               </div>

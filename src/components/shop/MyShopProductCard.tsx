@@ -16,6 +16,9 @@ export const MyShopProductCard: React.FC<MyShopProductCardProps> = ({
   onView 
 }) => {
   const formatPrice = (price: number, currency: string) => {
+    if (currency === 'BTC' || currency === 'SATS') {
+      return `${price} ${currency}`;
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
