@@ -1,12 +1,11 @@
-import { useEffect, useCallback, useState } from 'react';
-import { useNostrSigner } from './useNostrSigner';
+import { useEffect, useCallback } from 'react';
+import { useAuthStore } from '../stores/useAuthStore';
 import { useMyShopStore } from '../stores/useMyShopStore';
 import { shopBusinessService } from '../services/business/ShopBusinessService';
 import { logger } from '../services/core/LoggingService';
 
 export const useMyShopProducts = () => {
-  const { signer, isAvailable } = useNostrSigner();
-  const [pubkey, setPubkey] = useState<string | null>(null);
+  const { user, isAuthenticated } = useAuthStore();
   const {
     myProducts,
     isLoadingMyProducts,
@@ -16,37 +15,16 @@ export const useMyShopProducts = () => {
     setMyProductsError,
   } = useMyShopStore();
 
-  // Get pubkey from signer
-  useEffect(() => {
-    const getPubkey = async () => {
-      if (signer && isAvailable) {
-        try {
-          const userPubkey = await signer.getPublicKey();
-          setPubkey(userPubkey);
-          logger.info('Got pubkey from signer', {
-            service: 'useMyShopProducts',
-            method: 'getPubkey',
-            pubkey: userPubkey.substring(0, 8) + '...',
-          });
-        } catch (error) {
-          logger.error('Failed to get pubkey from signer', error instanceof Error ? error : new Error('Unknown error'), {
-            service: 'useMyShopProducts',
-            method: 'getPubkey',
-          });
-        }
-      }
-    };
-
-    getPubkey();
-  }, [signer, isAvailable]);
+  // Get pubkey from authenticated user
+  const pubkey = user?.pubkey || null;
 
   const loadMyProducts = useCallback(async () => {
-    if (!pubkey || !isAvailable) {
-      logger.warn('Cannot load products: No pubkey or signer not available', {
+    if (!pubkey || !isAuthenticated) {
+      logger.warn('Cannot load products: No pubkey or user not authenticated', {
         service: 'useMyShopProducts',
         method: 'loadMyProducts',
         hasPubkey: !!pubkey,
-        isAvailable,
+        isAuthenticated,
       });
       return;
     }
@@ -105,14 +83,14 @@ export const useMyShopProducts = () => {
     } finally {
       setLoadingMyProducts(false);
     }
-  }, [pubkey, isAvailable, setMyProducts, setLoadingMyProducts, setMyProductsError]);
+  }, [pubkey, isAuthenticated, setMyProducts, setLoadingMyProducts, setMyProductsError]);
 
   // Load products when pubkey becomes available
   useEffect(() => {
-    if (pubkey && isAvailable) {
+    if (pubkey && isAuthenticated) {
       loadMyProducts();
     }
-  }, [pubkey, isAvailable, loadMyProducts]);
+  }, [pubkey, isAuthenticated, loadMyProducts]);
 
   return {
     products: myProducts,
