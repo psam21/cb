@@ -145,27 +145,25 @@ export default function MyShopPage() {
                 Manage your product listings
               </p>
             </div>
-            <div className="mt-4 lg:mt-0">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setShowDeleted(!showDeleted)}
-                  className={`btn-outline-sm ${showDeleted ? 'bg-gray-100' : ''}`}
-                >
-                  {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
-                </button>
-                <button
-                  onClick={refreshProducts}
-                  className="btn-outline-sm"
-                >
-                  Refresh
-                </button>
-                <button
-                  onClick={() => router.push('/shop')}
-                  className="btn-primary-sm"
-                >
-                  Create Product
-                </button>
-              </div>
+            <div className="mt-4 lg:mt-0 flex items-center space-x-3">
+              <button
+                onClick={() => setShowDeleted(!showDeleted)}
+                className={`btn-outline-sm ${showDeleted ? 'bg-gray-100' : ''}`}
+              >
+                {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
+              </button>
+              <button
+                onClick={refreshProducts}
+                className="btn-outline-sm"
+              >
+                Refresh
+              </button>
+              <button
+                onClick={() => router.push('/shop')}
+                className="btn-primary-sm"
+              >
+                Create Product
+              </button>
             </div>
           </div>
         </div>
