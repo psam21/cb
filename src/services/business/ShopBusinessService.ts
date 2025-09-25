@@ -509,29 +509,29 @@ export class ShopBusinessService {
       const deletedOriginalIds = new Set<string>();
 
       for (const event of queryResult.events) {
+        // Check if this is a deletion event BEFORE parsing as product
+        const isDeletedTitle = event.content?.includes('[DELETED]') || false;
+        const hasDeletedDescription = event.content?.includes('deleted by the author') || false;
+        
+        if (isDeletedTitle || hasDeletedDescription) {
+          // This is a deletion event - find the original event ID
+          const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
+          if (eventRefTag) {
+            const originalEventId = eventRefTag[1];
+            deletedOriginalIds.add(originalEventId);
+            logger.info('Found deletion event', {
+              service: 'ShopBusinessService',
+              method: 'queryProductsFromRelays',
+              deletionEventId: event.id,
+              originalEventId,
+            });
+          }
+          continue; // Skip processing deletion events as products
+        }
+        
         const product = this.parseProductFromEvent(event);
         if (product) {
           allProducts.push(product);
-          
-          // Check if this is a deletion event
-          const isDeletedTitle = product.title.includes('[DELETED]');
-          const hasDeletedDescription = product.description?.includes('deleted by the author') || false;
-          
-          if (isDeletedTitle || hasDeletedDescription) {
-            // This is a deletion event - find the original event ID
-            const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
-            if (eventRefTag) {
-              const originalEventId = eventRefTag[1];
-              deletedOriginalIds.add(originalEventId);
-              logger.info('Found deletion event', {
-                service: 'ShopBusinessService',
-                method: 'queryProductsFromRelays',
-                deletionEventId: event.id,
-                originalEventId,
-              });
-            }
-            continue; // Skip processing deletion events as products
-          }
           
           // This is a regular product event
           const groupKey = product.eventId;
