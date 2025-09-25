@@ -811,12 +811,18 @@ export class ShopBusinessService {
         authorPubkey: authorPubkey.substring(0, 8) + '...',
       });
 
-      // Create filter for Kind 23 events with shop tag and specific author
+      // Create filters for Kind 23 events with shop tag and specific author
+      // Also include events that might be deletion events (with [DELETED] in title)
       const filters = [
         {
           kinds: [23], // Long-form content events
           authors: [authorPubkey], // Filter by specific author
           '#t': ['culture-bridge-shop'], // Shop identifier tag
+        },
+        {
+          kinds: [23], // Long-form content events
+          authors: [authorPubkey], // Filter by specific author
+          // No tag filter to catch deletion events that might not have the shop tag
         },
       ];
 
@@ -850,6 +856,15 @@ export class ShopBusinessService {
       const deletedOriginalIds = new Set<string>();
 
       for (const event of queryResult.events) {
+        // Only process events that are shop-related (have culture-bridge-shop tag) or are deletion events
+        const hasShopTag = event.tags.some(tag => tag[0] === 't' && tag[1] === 'culture-bridge-shop');
+        const isDeletionEvent = event.content.includes('[DELETED]') || event.content.includes('deleted by the author');
+        
+        if (!hasShopTag && !isDeletionEvent) {
+          // Skip non-shop events that aren't deletion events
+          continue;
+        }
+        
         const product = this.parseProductFromEvent(event);
         if (product) {
           logger.info('Processing event for soft delete filtering', {
