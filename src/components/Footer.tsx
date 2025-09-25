@@ -5,13 +5,10 @@ import { Heart, Globe } from 'lucide-react';
 const footerLinks = {
   resources: [
     { name: 'About Us', href: '/about' },
-    { name: 'Why Nostr?', href: '/nostr' },
     { name: 'Downloads', href: '/downloads' },
-    { name: 'Elder Voices', href: '/elder-voices' },
-  ],
-  community: [
     { name: 'Get Involved', href: '/get-involved' },
     { name: 'Support', href: '/support' },
+    { name: 'Why Nostr?', href: '/nostr' },
   ],
 };
 
@@ -20,7 +17,7 @@ export default function Footer() {
     <footer className="bg-primary-900 text-white">
       {/* Main Footer Content */}
       <div className="container-width section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-3 mb-4">
@@ -45,23 +42,6 @@ export default function Footer() {
             <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-primary-200 hover:text-white transition-colors duration-200"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Community Links */}
-          <div>
-            <h4 className="font-serif font-semibold text-lg mb-4">Community</h4>
-            <ul className="space-y-3">
-              {footerLinks.community.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}

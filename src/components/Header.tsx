@@ -15,6 +15,7 @@ const navigationLine1 = [
 ];
 
 const navigationLine2 = [
+  { name: 'Elder Voices', href: '/elder-voices' },
   { name: 'Exhibitions', href: '/exhibitions' },
   { name: 'Meetups', href: '/meetups' },
   { name: 'Shop', href: '/shop' },
