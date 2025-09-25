@@ -882,21 +882,23 @@ export class ShopBusinessService {
                 eventTags: event.tags,
               });
             }
+            // Skip processing deletion events as products - they should only be used for filtering
+            continue;
+          }
+          
+          // This is a regular product event
+          const groupKey = product.eventId;
+          if (!eventGroups.has(groupKey)) {
+            eventGroups.set(groupKey, { revisions: [], deletions: [] });
+          }
+          
+          const group = eventGroups.get(groupKey)!;
+          if (event.tags.some(tag => tag[0] === 'r')) {
+            // This is a revision
+            group.revisions.push(product);
           } else {
-            // This is a regular product event
-            const groupKey = product.eventId;
-            if (!eventGroups.has(groupKey)) {
-              eventGroups.set(groupKey, { revisions: [], deletions: [] });
-            }
-            
-            const group = eventGroups.get(groupKey)!;
-            if (event.tags.some(tag => tag[0] === 'r')) {
-              // This is a revision
-              group.revisions.push(product);
-            } else {
-              // This is the original
-              group.original = product;
-            }
+            // This is the original
+            group.original = product;
           }
         }
       }
