@@ -17,9 +17,9 @@ export default function Footer() {
     <footer className="bg-primary-900 text-white">
       {/* Main Footer Content */}
       <div className="container-width section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
           {/* Brand Section */}
-          <div>
+          <div className="mb-8">
             <Link href="/" className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center">
                 <Heart className="w-5 h-5 text-white" />
@@ -29,7 +29,7 @@ export default function Footer() {
                 <p className="text-sm text-primary-200">Heritage Preservation Network</p>
               </div>
             </Link>
-            <p className="text-primary-200 mb-6 max-w-md">
+            <p className="text-primary-200 mb-6 max-w-2xl">
               Empowering communities to preserve, share, and celebrate their heritage through free technology, ensuring traditions endure and stories are told authentically, securely, and—most importantly—without gatekeepers.
             </p>
           </div>
@@ -37,18 +37,17 @@ export default function Footer() {
           {/* Resources Links */}
           <div>
             <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
-            <ul className="space-y-3">
+            <div className="flex flex-wrap gap-6">
               {footerLinks.resources.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-primary-200 hover:text-white transition-colors duration-200"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="text-primary-200 hover:text-white transition-colors duration-200"
+                >
+                  {link.name}
+                </Link>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
 
