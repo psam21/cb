@@ -145,16 +145,16 @@ export default function MyShopPage() {
                 Manage your product listings
               </p>
             </div>
-            <div className="mt-4 lg:mt-0 flex items-center space-x-3">
+            <div className="mt-4 lg:mt-0">
               <button
                 onClick={() => setShowDeleted(!showDeleted)}
-                className={`btn-outline-sm ${showDeleted ? 'bg-gray-100' : ''}`}
+                className={`btn-outline-sm mr-3 ${showDeleted ? 'bg-gray-100' : ''}`}
               >
                 {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
               </button>
               <button
                 onClick={refreshProducts}
-                className="btn-outline-sm"
+                className="btn-outline-sm mr-3"
               >
                 Refresh
               </button>
