@@ -3,14 +3,18 @@
 import { useState, useMemo } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { ProductCard } from './ProductCard';
+import { MyShopProductCard } from './MyShopProductCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 
 interface ProductGridProps {
   products: ShopProduct[];
   onContact?: (product: ShopProduct) => void;
+  onEdit?: (product: ShopProduct) => void;
+  onDelete?: (product: ShopProduct) => void;
+  variant?: 'shop' | 'my-shop';
 }
 
-export const ProductGrid = ({ products, onContact }: ProductGridProps) => {
+export const ProductGrid = ({ products, onContact, onEdit, onDelete, variant = 'shop' }: ProductGridProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high'>('newest');
@@ -173,13 +177,25 @@ export const ProductGrid = ({ products, onContact }: ProductGridProps) => {
       {/* Products Grid */}
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onContact={onContact}
-            />
-          ))}
+          {filteredProducts.map((product) => {
+            if (variant === 'my-shop') {
+              return (
+                <MyShopProductCard
+                  key={product.id}
+                  product={product}
+                  onEdit={onEdit || (() => {})}
+                  onDelete={onDelete || (() => {})}
+                />
+              );
+            }
+            return (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onContact={onContact}
+              />
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12">

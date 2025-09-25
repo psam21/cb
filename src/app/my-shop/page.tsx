@@ -10,7 +10,7 @@ import { MyShopHeader } from '@/components/shop/MyShopHeader';
 import { ProductEditForm } from '@/components/shop/ProductEditForm';
 import { ProductDeleteDialog } from '@/components/shop/ProductDeleteDialog';
 import { EditProgressIndicator } from '@/components/shop/EditProgressIndicator';
-import { MyShopProductGrid } from '@/components/shop/MyShopProductGrid';
+import { ProductGrid } from '@/components/shop/ProductGrid';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
@@ -209,10 +209,11 @@ export default function MyShopPage() {
                 </button>
               </div>
             ) : (
-              <MyShopProductGrid
+              <ProductGrid
                 products={products}
                 onEdit={handleEditProduct}
                 onDelete={handleDeleteProduct}
+                variant="my-shop"
               />
             )}
           </>
