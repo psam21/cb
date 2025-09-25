@@ -11,9 +11,6 @@ const footerLinks = {
   ],
   community: [
     { name: 'Get Involved', href: '/get-involved' },
-    { name: 'Documentation', href: '/docs' },
-    { name: 'Privacy Policy', href: '/privacy' },
-    { name: 'Terms of Service', href: '/terms' },
   ],
 };
 
@@ -77,49 +74,22 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Stay Connected Section */}
+        {/* Newsletter Signup */}
         <div className="mt-12 pt-8 border-t border-primary-800">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Newsletter Signup */}
-            <div>
-              <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
-              <p className="text-primary-200 text-sm mb-4">
-                Get updates on new cultural content, community events, and platform features.
-              </p>
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 px-4 py-2 rounded-l-lg bg-primary-800 text-white placeholder-primary-300 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400"
-                />
-                <button className="px-6 py-2 bg-accent-600 text-white rounded-r-lg hover:bg-accent-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-400">
-                  Subscribe
-                </button>
-              </div>
-            </div>
-
-            {/* Community Links */}
-            <div>
-              <h4 className="font-serif font-semibold text-lg mb-2">Join Our Community</h4>
-              <p className="text-primary-200 text-sm mb-4">
-                Connect with cultural practitioners, share your heritage, and learn from others.
-              </p>
-              <div className="flex space-x-4">
-                <a
-                  href="#"
-                  className="flex items-center space-x-2 text-primary-200 hover:text-white transition-colors duration-200"
-                >
-                  <Globe className="w-4 h-4" />
-                  <span>Nostr Community</span>
-                </a>
-                <a
-                  href="#"
-                  className="flex items-center space-x-2 text-primary-200 hover:text-white transition-colors duration-200"
-                >
-                  <Heart className="w-4 h-4" />
-                  <span>Cultural Exchange</span>
-                </a>
-              </div>
+          <div className="max-w-md">
+            <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
+            <p className="text-primary-200 text-sm mb-4">
+              Get updates on new cultural content, community events, and platform features.
+            </p>
+            <div className="flex">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-4 py-2 rounded-l-lg bg-primary-800 text-white placeholder-primary-300 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400"
+              />
+              <button className="px-6 py-2 bg-accent-600 text-white rounded-r-lg hover:bg-accent-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-400">
+                Subscribe
+              </button>
             </div>
           </div>
         </div>
