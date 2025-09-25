@@ -39,27 +39,35 @@ export const useMyShopProducts = (showDeleted: boolean = false) => {
     setMyProductsError(null);
 
     try {
-      const result = await shopBusinessService.queryProductsByAuthor(pubkey, (relay, status, count) => {
-        logger.info('Relay query progress', {
-          service: 'useMyShopProducts',
-          method: 'loadMyProducts',
-          relay,
-          status,
-          count,
-        });
-      }, showDeleted);
+      // Use the same SoA as /shop page - fetch ALL products by tag, then filter by author
+      const result = await shopBusinessService.queryProductsFromRelays(
+        (relay, status, count) => {
+          logger.info('Relay query progress', {
+            service: 'useMyShopProducts',
+            method: 'loadMyProducts',
+            relay,
+            status,
+            count,
+          });
+        },
+        showDeleted // Pass showDeleted parameter
+      );
 
       if (result.success) {
-        // Sort products by newest first (server-side filtering already handled)
-        const sortedProducts = result.products.sort((a, b) => b.publishedAt - a.publishedAt);
+        // Filter products by current user's pubkey (SoA: fetch all, then filter by author)
+        const userProducts = result.products.filter(product => product.author === pubkey);
+        
+        // Sort products by newest first
+        const sortedProducts = userProducts.sort((a, b) => b.publishedAt - a.publishedAt);
         setMyProducts(sortedProducts);
         
         logger.info('User products loaded successfully', {
           service: 'useMyShopProducts',
           method: 'loadMyProducts',
-          totalProducts: result.products.length,
-          activeProducts: result.products.filter(p => !p.isDeleted).length,
-          deletedProducts: result.products.filter(p => p.isDeleted).length,
+          totalProductsFromRelays: result.products.length,
+          userProducts: userProducts.length,
+          activeProducts: userProducts.filter(p => !p.isDeleted).length,
+          deletedProducts: userProducts.filter(p => p.isDeleted).length,
           showingDeleted: showDeleted,
           displayedProducts: sortedProducts.length,
         });
