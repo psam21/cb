@@ -845,42 +845,84 @@ export class ShopBusinessService {
         };
       }
 
-      // Separate products and deletion events
-      const allProducts: ShopProduct[] = [];
-      const deletionEvents: Set<string> = new Set();
+      // Group events by their original event ID (for revisions) or event ID (for originals)
+      const eventGroups = new Map<string, { original?: ShopProduct; revisions: ShopProduct[]; deletions: ShopProduct[] }>();
+      const deletedOriginalIds = new Set<string>();
 
       for (const event of queryResult.events) {
         const product = this.parseProductFromEvent(event);
         if (product) {
+          logger.info('Processing event for soft delete filtering', {
+            service: 'ShopBusinessService',
+            method: 'queryProductsByAuthor',
+            eventId: event.id,
+            title: product.title,
+            isDeletedTitle: product.title.startsWith('[DELETED]'),
+            hasDeletedDescription: product.description.includes('deleted by the author'),
+            eventTags: event.tags,
+          });
+          
           // Check if this is a deletion event
           if (product.title.startsWith('[DELETED]') || product.description.includes('deleted by the author')) {
             // This is a deletion event - find the original event ID it references
             const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
             if (eventRefTag && eventRefTag[1]) {
-              deletionEvents.add(eventRefTag[1]);
+              deletedOriginalIds.add(eventRefTag[1]);
               logger.info('Found deletion event', {
                 service: 'ShopBusinessService',
                 method: 'queryProductsByAuthor',
                 deletionEventId: event.id,
                 originalEventId: eventRefTag[1],
               });
+            } else {
+              logger.warn('Deletion event found but no event reference tag', {
+                service: 'ShopBusinessService',
+                method: 'queryProductsByAuthor',
+                deletionEventId: event.id,
+                eventTags: event.tags,
+              });
             }
           } else {
-            allProducts.push(product);
+            // This is a regular product event
+            const groupKey = product.eventId;
+            if (!eventGroups.has(groupKey)) {
+              eventGroups.set(groupKey, { revisions: [], deletions: [] });
+            }
+            
+            const group = eventGroups.get(groupKey)!;
+            if (event.tags.some(tag => tag[0] === 'r')) {
+              // This is a revision
+              group.revisions.push(product);
+            } else {
+              // This is the original
+              group.original = product;
+            }
           }
         }
       }
 
       // Filter out products that have deletion events
-      const activeProducts = allProducts.filter(product => !deletionEvents.has(product.eventId));
+      const activeProducts: ShopProduct[] = [];
+      for (const [eventId, group] of eventGroups) {
+        if (!deletedOriginalIds.has(eventId)) {
+          // Use the most recent revision or the original
+          if (group.revisions.length > 0) {
+            // Sort revisions by publishedAt and take the latest
+            const latestRevision = group.revisions.sort((a, b) => b.publishedAt - a.publishedAt)[0];
+            activeProducts.push(latestRevision);
+          } else if (group.original) {
+            activeProducts.push(group.original);
+          }
+        }
+      }
 
       logger.info('Author product query completed with soft delete filtering', {
         service: 'ShopBusinessService',
         method: 'queryProductsByAuthor',
         authorPubkey: authorPubkey.substring(0, 8) + '...',
         totalEvents: queryResult.events.length,
-        allProducts: allProducts.length,
-        deletionEvents: deletionEvents.size,
+        eventGroups: eventGroups.size,
+        deletedOriginalIds: deletedOriginalIds.size,
         activeProducts: activeProducts.length,
         relayCount: queryResult.relayCount,
       });
@@ -921,6 +963,7 @@ export class ShopBusinessService {
   public async deleteProduct(
     productId: string,
     signer: NostrSigner,
+    userPubkey: string,
     onProgress?: (progress: ShopPublishingProgress) => void
   ): Promise<{ success: boolean; error?: string; eventId?: string; publishedRelays?: string[]; failedRelays?: string[] }> {
     try {
@@ -928,10 +971,8 @@ export class ShopBusinessService {
         service: 'ShopBusinessService',
         method: 'deleteProduct',
         productId,
+        userPubkey: userPubkey.substring(0, 8) + '...',
       });
-
-      // Get user's pubkey for ownership verification
-      const userPubkey = await signer.getPublicKey();
       
       // Get the product to verify ownership
       const product = productStore.getProduct(productId);
@@ -1110,5 +1151,7 @@ export const queryProductsByAuthor = (
 export const deleteProduct = (
   productId: string,
   signer: NostrSigner,
+  userPubkey: string,
   onProgress?: (progress: ShopPublishingProgress) => void
-) => shopBusinessService.deleteProduct(productId, signer, onProgress);
+) => shopBusinessService.deleteProduct(productId, signer, userPubkey, onProgress);
+

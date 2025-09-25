@@ -1,11 +1,13 @@
 import { useCallback } from 'react';
 import { useNostrSigner } from './useNostrSigner';
+import { useAuthStore } from '../stores/useAuthStore';
 import { useMyShopStore } from '../stores/useMyShopStore';
 import { shopBusinessService, ShopProduct, ShopPublishingProgress } from '../services/business/ShopBusinessService';
 import { logger } from '../services/core/LoggingService';
 
 export const useProductDeletion = () => {
   const { signer, isAvailable } = useNostrSigner();
+  const { user } = useAuthStore();
   const {
     deletingProduct,
     showDeleteDialog,
@@ -55,6 +57,7 @@ export const useProductDeletion = () => {
       const result = await shopBusinessService.deleteProduct(
         productId,
         signer,
+        user!.pubkey,
         (progress: ShopPublishingProgress) => {
           logger.info('Delete progress', {
             service: 'useProductDeletion',
@@ -110,7 +113,7 @@ export const useProductDeletion = () => {
       setDeleting(false);
       setDeleteProgress(null);
     }
-  }, [signer, isAvailable, setDeleting, setDeleteError, setDeleteProgress, removeProduct]);
+  }, [signer, isAvailable, user, setDeleting, setDeleteError, setDeleteProgress, removeProduct]);
 
   const cancelDelete = useCallback(() => {
     logger.info('Cancelling product deletion', {
