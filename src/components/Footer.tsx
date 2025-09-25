@@ -18,8 +18,8 @@ export default function Footer() {
       {/* Main Footer Content */}
       <div className="container-width section-padding">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Left Column - Brand and Description */}
-          <div className="lg:col-span-2 flex flex-col justify-start">
+          {/* Column 1 - Brand and Description */}
+          <div>
             <Link href="/" className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center">
                 <Heart className="w-5 h-5 text-white" />
@@ -32,14 +32,9 @@ export default function Footer() {
             <p className="text-primary-200 mb-6">
               Empowering communities to preserve, share, and celebrate their heritage through free technology, ensuring traditions endure and stories are told authentically, securely, and—most importantly—without gatekeepers.
             </p>
-            <div className="mt-auto">
-              <p className="text-primary-200 text-sm">
-                Join us in building a better future for cultural heritage preservation.
-              </p>
-            </div>
           </div>
 
-          {/* Middle Column - Resources */}
+          {/* Column 2 - Resources */}
           <div>
             <h4 className="font-serif font-semibold text-lg mb-4">Resources</h4>
             <ul className="space-y-3">
@@ -56,7 +51,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Right Column - Stay Connected */}
+          {/* Column 3 - Stay Connected */}
           <div>
             <h4 className="font-serif font-semibold text-lg mb-2">Stay Connected</h4>
             <p className="text-primary-200 text-sm mb-4">
