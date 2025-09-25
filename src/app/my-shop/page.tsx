@@ -20,7 +20,7 @@ export default function MyShopPage() {
   const { isAuthenticated, user } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
-  const { products, isLoading, error, refreshProducts } = useMyShopProducts();
+  const { products, isLoading, error, refreshProducts } = useMyShopProducts(showDeleted);
   const { 
     editingProduct, 
     isEditing, 

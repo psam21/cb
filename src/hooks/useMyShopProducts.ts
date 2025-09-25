@@ -4,7 +4,7 @@ import { useMyShopStore } from '../stores/useMyShopStore';
 import { shopBusinessService } from '../services/business/ShopBusinessService';
 import { logger } from '../services/core/LoggingService';
 
-export const useMyShopProducts = () => {
+export const useMyShopProducts = (showDeleted: boolean = false) => {
   const { user, isAuthenticated } = useAuthStore();
   const {
     myProducts,
@@ -50,18 +50,22 @@ export const useMyShopProducts = () => {
       });
 
       if (result.success) {
-        // Filter out deleted products for display and sort by newest first
-        const activeProducts = result.products
-          .filter(product => !product.isDeleted)
-          .sort((a, b) => b.publishedAt - a.publishedAt);
-        setMyProducts(activeProducts);
+        // Filter products based on showDeleted parameter and sort by newest first
+        const filteredProducts = showDeleted 
+          ? result.products // Show all products including deleted
+          : result.products.filter(product => !product.isDeleted); // Show only active products
+        
+        const sortedProducts = filteredProducts.sort((a, b) => b.publishedAt - a.publishedAt);
+        setMyProducts(sortedProducts);
         
         logger.info('User products loaded successfully', {
           service: 'useMyShopProducts',
           method: 'loadMyProducts',
           totalProducts: result.products.length,
-          activeProducts: activeProducts.length,
-          deletedProducts: result.products.length - activeProducts.length,
+          activeProducts: result.products.filter(p => !p.isDeleted).length,
+          deletedProducts: result.products.filter(p => p.isDeleted).length,
+          showingDeleted: showDeleted,
+          displayedProducts: sortedProducts.length,
         });
       } else {
         const errorMessage = result.error || 'Failed to load products';
@@ -85,7 +89,7 @@ export const useMyShopProducts = () => {
     } finally {
       setLoadingMyProducts(false);
     }
-  }, [pubkey, isAuthenticated, setMyProducts, setLoadingMyProducts, setMyProductsError]);
+  }, [pubkey, isAuthenticated, showDeleted, setMyProducts, setLoadingMyProducts, setMyProductsError]);
 
   // Load products when pubkey becomes available
   useEffect(() => {
