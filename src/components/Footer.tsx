@@ -17,9 +17,9 @@ export default function Footer() {
     <footer className="bg-primary-900 text-white">
       {/* Main Footer Content */}
       <div className="container-width section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Brand Section */}
-          <div className="lg:col-span-2">
+          <div>
             <Link href="/" className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center">
                 <Heart className="w-5 h-5 text-white" />
