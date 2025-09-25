@@ -2,8 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { logger } from '@/services/core/LoggingService';
-import { ProductCard } from './ProductCard';
-import { MyShopProductCard } from './MyShopProductCard';
+import { BaseCard, BaseCardData } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 
 interface ProductGridProps {
@@ -178,21 +177,33 @@ export const ProductGrid = ({ products, onContact, onEdit, onDelete, variant = '
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
           {filteredProducts.map((product) => {
-            if (variant === 'my-shop') {
-              return (
-                <MyShopProductCard
-                  key={product.id}
-                  product={product}
-                  onEdit={onEdit || (() => {})}
-                  onDelete={onDelete || (() => {})}
-                />
-              );
-            }
+            // Convert ShopProduct to BaseCardData
+            const cardData: BaseCardData = {
+              id: product.id,
+              title: product.title,
+              description: product.description,
+              imageUrl: product.imageUrl,
+              tags: product.tags,
+              publishedAt: product.publishedAt,
+              author: product.author,
+              price: product.price,
+              currency: product.currency,
+              category: product.category,
+              condition: product.condition,
+              location: product.location,
+              contact: product.contact,
+              eventId: product.eventId,
+              publishedRelays: product.publishedRelays,
+            };
+
             return (
-              <ProductCard
+              <BaseCard
                 key={product.id}
-                product={product}
-                onContact={onContact}
+                data={cardData}
+                variant={variant}
+                onContact={onContact ? (data) => onContact(product) : undefined}
+                onEdit={onEdit ? (data) => onEdit(product) : undefined}
+                onDelete={onDelete ? (data) => onDelete(product) : undefined}
               />
             );
           })}
