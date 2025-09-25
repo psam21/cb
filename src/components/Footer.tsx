@@ -30,10 +30,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-primary-200 mb-6 max-w-md">
-              Empowering communities to preserve and share their cultural heritage through
-              decentralized technology, ensuring traditions endure across generations. From ancient
-              customs to local practices, our platform supports all cultures in telling their own
-              stories—authentically, securely, and without gatekeepers.
+              Empowering communities to preserve, share, and celebrate their heritage through free technology, ensuring traditions endure and stories are told authentically, securely, and—most importantly—without gatekeepers.
             </p>
           </div>
 
