@@ -46,7 +46,8 @@ export const useShopProducts = () => {
             status,
             count,
           });
-        }
+        },
+        false // showDeleted = false for public shop page
       );
 
       if (relayResult.success) {

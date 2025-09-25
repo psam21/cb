@@ -459,7 +459,8 @@ export class ShopBusinessService {
    * Query products from Nostr relays
    */
   public async queryProductsFromRelays(
-    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
+    showDeleted: boolean = false
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query from relays', {
@@ -502,22 +503,91 @@ export class ShopBusinessService {
         };
       }
 
-      // Parse events into products
-      const products: ShopProduct[] = [];
+      // Parse events into products and group them for soft delete filtering
+      const allProducts: ShopProduct[] = [];
+      const eventGroups = new Map<string, { original?: ShopProduct; revisions: ShopProduct[]; deletions: ShopProduct[] }>();
+      const deletedOriginalIds = new Set<string>();
+
       for (const event of queryResult.events) {
         const product = this.parseProductFromEvent(event);
         if (product) {
-          products.push(product);
-          // Also add to local store for caching
-          productStore.addProduct(product);
+          allProducts.push(product);
+          
+          // Check if this is a deletion event
+          const isDeletedTitle = product.title.includes('[DELETED]');
+          const hasDeletedDescription = product.description?.includes('deleted by the author') || false;
+          
+          if (isDeletedTitle || hasDeletedDescription) {
+            // This is a deletion event - find the original event ID
+            const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
+            if (eventRefTag) {
+              const originalEventId = eventRefTag[1];
+              deletedOriginalIds.add(originalEventId);
+              logger.info('Found deletion event', {
+                service: 'ShopBusinessService',
+                method: 'queryProductsFromRelays',
+                deletionEventId: event.id,
+                originalEventId,
+              });
+            }
+            continue; // Skip processing deletion events as products
+          }
+          
+          // This is a regular product event
+          const groupKey = product.eventId;
+          if (!eventGroups.has(groupKey)) {
+            eventGroups.set(groupKey, { revisions: [], deletions: [] });
+          }
+          
+          const group = eventGroups.get(groupKey)!;
+          if (event.tags.some(tag => tag[0] === 'r')) {
+            // This is a revision
+            group.revisions.push(product);
+          } else {
+            // This is the original
+            group.original = product;
+          }
         }
       }
 
-      logger.info('Product query completed', {
+      // Filter out products that have deletion events (unless showDeleted is true)
+      const products: ShopProduct[] = [];
+      
+      logger.info('Starting soft delete filtering for all products', {
+        service: 'ShopBusinessService',
+        method: 'queryProductsFromRelays',
+        deletedOriginalIds: Array.from(deletedOriginalIds),
+        eventGroupsCount: eventGroups.size,
+        showDeleted,
+      });
+      
+      for (const [eventId, group] of eventGroups) {
+        const isDeleted = deletedOriginalIds.has(eventId);
+        
+        if (!isDeleted || showDeleted) {
+          // Use the most recent revision or the original
+          if (group.revisions.length > 0) {
+            // Sort revisions by publishedAt and take the latest
+            const latestRevision = group.revisions.sort((a, b) => b.publishedAt - a.publishedAt)[0];
+            products.push(latestRevision);
+            // Also add to local store for caching
+            productStore.addProduct(latestRevision);
+          } else if (group.original) {
+            products.push(group.original);
+            // Also add to local store for caching
+            productStore.addProduct(group.original);
+          }
+        }
+      }
+
+      logger.info('Product query completed with soft delete filtering', {
         service: 'ShopBusinessService',
         method: 'queryProductsFromRelays',
         totalEvents: queryResult.events.length,
-        parsedProducts: products.length,
+        eventGroups: eventGroups.size,
+        deletedOriginalIds: deletedOriginalIds.size,
+        activeProducts: products.length,
+        showDeleted,
         relayCount: queryResult.relayCount,
       });
 
