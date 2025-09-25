@@ -81,7 +81,7 @@ export default function ShopPage() {
             <div className="mt-4 lg:mt-0">
               <button
                 onClick={handleCreateProduct}
-                className="btn-primary"
+                className="btn-primary-sm"
               >
                 Create Product
               </button>
@@ -149,7 +149,7 @@ export default function ShopPage() {
             </p>
             <button
               onClick={handleCreateProduct}
-              className="btn-primary"
+              className="btn-primary-sm"
             >
               Create First Product
             </button>
