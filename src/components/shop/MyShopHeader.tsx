@@ -56,20 +56,20 @@ export const MyShopHeader: React.FC<MyShopHeaderProps> = ({
           <div className="mt-4 lg:mt-0 flex gap-3">
             <button 
               onClick={handleToggleDeleted} 
-              className={`btn-outline ${showDeleted ? 'bg-accent-100 text-accent-700 border-accent-300' : ''}`}
+              className={`btn-outline-sm ${showDeleted ? 'bg-accent-100 text-accent-700 border-accent-300' : ''}`}
             >
               {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
             </button>
             <button 
               onClick={handleRefresh} 
               disabled={isLoading} 
-              className="btn-outline"
+              className="btn-outline-sm"
             >
               {isLoading ? 'Refreshing...' : 'Refresh'}
             </button>
             <button 
               onClick={handleCreateNew} 
-              className="btn-primary"
+              className="btn-primary-sm"
             >
               Create New Product
             </button>
