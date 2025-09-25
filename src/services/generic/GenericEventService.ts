@@ -163,10 +163,8 @@ export class GenericEventService {
           ['author', userPubkey],
           ['region', revisedContent.region || 'global'],
           ['published_at', now.toString()],
-          // Reference to original event
-          ['a', `23:${originalEvent.pubkey}:${originalEvent.tags.find(tag => tag[0] === 'd')?.[1] || ''}`],
-          // Original event ID for tracking
-          ['original-event', originalEvent.id],
+          // Reference to original event using proper Nostr event reference
+          ['e', originalEvent.id, 'reply'],
           // File tags if applicable
           ...(revisedContent.file_id ? [
             ['f', revisedContent.file_id],

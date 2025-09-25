@@ -798,7 +798,7 @@ export class ShopBusinessService {
   }
 
   /**
-   * Query products by specific author from Nostr relays
+   * Query products by specific author from Nostr relays with proper soft delete handling
    */
   public async queryProductsByAuthor(
     authorPubkey: string,
@@ -845,29 +845,54 @@ export class ShopBusinessService {
         };
       }
 
-      // Parse events into products
-      const products: ShopProduct[] = [];
+      // Separate products and deletion events
+      const allProducts: ShopProduct[] = [];
+      const deletionEvents: Set<string> = new Set();
+
       for (const event of queryResult.events) {
         const product = this.parseProductFromEvent(event);
         if (product) {
-          products.push(product);
-          // Also add to local store for caching
-          productStore.addProduct(product);
+          // Check if this is a deletion event
+          if (product.title.startsWith('[DELETED]') || product.description.includes('deleted by the author')) {
+            // This is a deletion event - find the original event ID it references
+            const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
+            if (eventRefTag && eventRefTag[1]) {
+              deletionEvents.add(eventRefTag[1]);
+              logger.info('Found deletion event', {
+                service: 'ShopBusinessService',
+                method: 'queryProductsByAuthor',
+                deletionEventId: event.id,
+                originalEventId: eventRefTag[1],
+              });
+            }
+          } else {
+            allProducts.push(product);
+          }
         }
       }
 
-      logger.info('Author product query completed', {
+      // Filter out products that have deletion events
+      const activeProducts = allProducts.filter(product => !deletionEvents.has(product.eventId));
+
+      logger.info('Author product query completed with soft delete filtering', {
         service: 'ShopBusinessService',
         method: 'queryProductsByAuthor',
         authorPubkey: authorPubkey.substring(0, 8) + '...',
         totalEvents: queryResult.events.length,
-        parsedProducts: products.length,
+        allProducts: allProducts.length,
+        deletionEvents: deletionEvents.size,
+        activeProducts: activeProducts.length,
         relayCount: queryResult.relayCount,
       });
 
+      // Add active products to local store for caching
+      for (const product of activeProducts) {
+        productStore.addProduct(product);
+      }
+
       return {
         success: true,
-        products,
+        products: activeProducts,
         queriedRelays: [], // Will be populated in real implementation
         failedRelays: [], // Will be populated in real implementation
       };
