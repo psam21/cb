@@ -540,7 +540,9 @@ export class ShopBusinessService {
           continue; // Skip processing deletion events as products
         }
         
-        const product = this.parseProductFromEvent(event);
+        // Get relay information for this event
+        const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
+        const product = this.parseProductFromEvent(event, eventRelays);
         if (product) {
           allProducts.push(product);
           
@@ -629,7 +631,7 @@ export class ShopBusinessService {
   /**
    * Parse product from Nostr event
    */
-  public parseProductFromEvent(event: NostrEvent): ShopProduct | null {
+  public parseProductFromEvent(event: NostrEvent, publishedRelays: string[] = []): ShopProduct | null {
     try {
       logger.info('Parsing product from event', {
         service: 'ShopBusinessService',
@@ -677,7 +679,7 @@ export class ShopBusinessService {
         contact: productData.contact || '',
         publishedAt: event.created_at,
         eventId: event.id,
-        publishedRelays: [], // Will be populated when we have relay info
+        publishedRelays: publishedRelays, // Use actual relay information
         author: event.pubkey,
       };
 
@@ -985,7 +987,9 @@ export class ShopBusinessService {
           continue;
         }
 
-        const product = this.parseProductFromEvent(event);
+        // Get relay information for this event
+        const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
+        const product = this.parseProductFromEvent(event, eventRelays);
         if (product) {
           
           // This is a regular product event
@@ -1244,8 +1248,8 @@ export const createProduct = (
   onProgress?: (progress: ShopPublishingProgress) => void
 ) => shopBusinessService.createProduct(productData, imageFile, signer, onProgress);
 
-export const parseProductFromEvent = (event: NostrEvent) =>
-  shopBusinessService.parseProductFromEvent(event);
+export const parseProductFromEvent = (event: NostrEvent, publishedRelays: string[] = []) =>
+  shopBusinessService.parseProductFromEvent(event, publishedRelays);
 
 export const validateProductData = (productData: ProductEventData) =>
   shopBusinessService.validateProductData(productData);

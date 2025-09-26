@@ -22,6 +22,7 @@ export interface RelayQueryResult {
   success: boolean;
   events: NostrEvent[];
   relayCount: number;
+  eventRelayMap: Map<string, string[]>; // Maps event ID to array of relay URLs that returned it
   error?: string;
 }
 
@@ -377,6 +378,7 @@ export class GenericRelayService {
 
       const allEvents: NostrEvent[] = [];
       const eventIds = new Set<string>();
+      const eventRelayMap = new Map<string, string[]>();
       let completedRelays = 0;
 
       // Query all relays in parallel
@@ -390,12 +392,13 @@ export class GenericRelayService {
 
           const events = await this.queryRelay(relay.url, filters);
           
-          // Deduplicate events by ID
+          // Track which relay returned each event
           events.forEach(event => {
-            if (!eventIds.has(event.id)) {
-              eventIds.add(event.id);
+            if (!eventRelayMap.has(event.id)) {
+              eventRelayMap.set(event.id, []);
               allEvents.push(event);
             }
+            eventRelayMap.get(event.id)!.push(relay.url);
           });
 
           completedRelays++;
@@ -438,6 +441,7 @@ export class GenericRelayService {
         success: true,
         events: allEvents,
         relayCount: completedRelays,
+        eventRelayMap,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -451,6 +455,7 @@ export class GenericRelayService {
         success: false,
         events: [],
         relayCount: 0,
+        eventRelayMap: new Map(),
         error: errorMessage,
       };
     }
