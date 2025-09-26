@@ -299,7 +299,7 @@ export const BaseCard = ({
           {variant === 'my-shop' && onEdit && (
             <button
               onClick={handleEdit}
-              className="btn-primary-sm flex-1"
+              className="flex-1 btn-primary-sm"
             >
               Edit
             </button>
@@ -308,7 +308,7 @@ export const BaseCard = ({
           {variant === 'my-shop' && onDelete && (
             <button
               onClick={handleDelete}
-              className="btn-danger-sm"
+              className="flex-1 btn-danger-sm"
             >
               Delete
             </button>
