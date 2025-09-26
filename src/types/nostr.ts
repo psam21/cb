@@ -9,7 +9,7 @@ export interface NostrEvent {
 }
 
 export interface NIP23Event extends NostrEvent {
-  kind: 23;
+  kind: 30023; // Parameterized replaceable long-form content
   event_id?: string;
 }
 

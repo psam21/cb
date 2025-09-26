@@ -377,7 +377,6 @@ export class GenericRelayService {
       });
 
       const allEvents: NostrEvent[] = [];
-      const eventIds = new Set<string>();
       const eventRelayMap = new Map<string, string[]>();
       let completedRelays = 0;
 

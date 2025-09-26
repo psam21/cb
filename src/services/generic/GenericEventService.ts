@@ -17,12 +17,14 @@ export interface EventCreationOptions {
     fileType: string;
     fileSize: number;
   };
+  dTag?: string; // Custom d tag for parameterized replaceable events
 }
 
 export interface EventCreationResult {
   success: boolean;
   event?: Omit<NostrEvent, 'id' | 'sig'>;
   error?: string;
+  dTag?: string; // The d tag used for parameterized replaceable events
 }
 
 export interface EventValidationResult {
@@ -56,7 +58,7 @@ export class GenericEventService {
   }
 
   /**
-   * Create a new Kind 23 long-form content event
+   * Create a new Kind 30023 parameterized replaceable long-form content event
    */
   public createNIP23Event(
     content: NIP23Content,
@@ -64,7 +66,7 @@ export class GenericEventService {
     options: EventCreationOptions = {}
   ): EventCreationResult {
     try {
-      logger.info('Creating Kind 23 event', {
+      logger.info('Creating Kind 30023 parameterized replaceable event', {
         service: 'GenericEventService',
         method: 'createNIP23Event',
         userPubkey: userPubkey.substring(0, 8) + '...',
@@ -73,21 +75,21 @@ export class GenericEventService {
       });
 
       const now = Math.floor(Date.now() / 1000);
-      const uniqueId = `${userPubkey}-${now}-${content.title.replace(/\s/g, '-').toLowerCase().substring(0, 20)}`;
+      // Create a deterministic d tag based on content - this allows for proper replacement
+      const dTag = options.dTag || `product-${now}-${Math.random().toString(36).substring(2, 8)}`;
 
-      // Create event with tags following NIP-23 specification
+      // Create event with tags following NIP-23 and NIP-33 specifications
       const event: Omit<NIP23Event, 'id' | 'sig'> = {
-        kind: 23,
+        kind: 30023, // Parameterized replaceable long-form content
         pubkey: userPubkey,
         created_at: now,
         tags: [
-          ['d', uniqueId], // Required for replaceable events (NIP-33)
-          ['r', '0'], // Revision number
+          ['d', dTag], // Required d tag for parameterized replaceable events (NIP-33)
           ['title', content.title],
+          ['published_at', now.toString()],
           ['lang', content.language || 'en'],
           ['author', userPubkey],
           ['region', content.region || 'global'],
-          ['published_at', now.toString()],
           // File tags (if applicable)
           ...(options.fileMetadata?.fileId ? [
             ['f', options.fileMetadata.fileId],
@@ -102,16 +104,18 @@ export class GenericEventService {
         content: JSON.stringify(content),
       };
 
-      logger.info('Kind 23 event created successfully', {
+      logger.info('Kind 30023 event created successfully', {
         service: 'GenericEventService',
         method: 'createNIP23Event',
         title: content.title,
+        dTag,
         hasFile: !!options.fileMetadata?.fileId,
       });
 
       return {
         success: true,
         event,
+        dTag, // Return the d tag for reference
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Event creation failed';
@@ -147,24 +151,26 @@ export class GenericEventService {
         revisionNumber,
       });
 
-      const now = Math.floor(Date.now() / 1000);
-      const uniqueId = `${userPubkey}-${now}-${revisedContent.title.replace(/\s/g, '-').toLowerCase().substring(0, 20)}`;
+      // Extract the original d tag from the original event
+      const originalDTag = originalEvent.tags.find(tag => tag[0] === 'd')?.[1];
+      if (!originalDTag) {
+        throw new Error('Original event missing required d tag for parameterized replaceable event');
+      }
 
-      // Create revision event
+      const now = Math.floor(Date.now() / 1000);
+
+      // Create revision event with SAME d tag to replace original
       const revisionEvent: Omit<NIP23Event, 'id' | 'sig'> = {
-        kind: 23,
+        kind: 30023, // Parameterized replaceable long-form content
         pubkey: userPubkey,
         created_at: now,
         tags: [
-          ['d', uniqueId], // New unique identifier for this revision
-          ['r', revisionNumber.toString()], // Revision number
+          ['d', originalDTag], // SAME d tag - this will replace the original event
           ['title', revisedContent.title],
+          ['published_at', now.toString()],
           ['lang', revisedContent.language || 'en'],
           ['author', userPubkey],
           ['region', revisedContent.region || 'global'],
-          ['published_at', now.toString()],
-          // Reference to original event using proper Nostr event reference
-          ['e', originalEvent.id, 'reply'],
           // File tags if applicable
           ...(revisedContent.file_id ? [
             ['f', revisedContent.file_id],

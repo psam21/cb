@@ -66,8 +66,8 @@ export const useMyShopProducts = (showDeleted: boolean = false) => {
           method: 'loadMyProducts',
           totalProductsFromRelays: result.products.length,
           userProducts: userProducts.length,
-          activeProducts: userProducts.filter(p => !p.isDeleted).length,
-          deletedProducts: userProducts.filter(p => p.isDeleted).length,
+          activeProducts: userProducts.length, // Kind 30023 only shows active products
+          deletedProducts: 0, // Deleted products are replaced, not shown
           showingDeleted: showDeleted,
           displayedProducts: sortedProducts.length,
         });

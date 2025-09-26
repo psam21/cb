@@ -3,11 +3,12 @@ import { NostrSigner, NostrEvent, NIP23Event, NIP23Content } from '../../types/n
 import { blossomService, BlossomFileMetadata } from '../generic/GenericBlossomService';
 import { nostrEventService, ProductEventData } from '../nostr/NostrEventService';
 import { productStore } from '../../stores/ProductStore';
-import { createRevisionEvent, signEvent } from '../generic/GenericEventService';
+import { createRevisionEvent, signEvent, createNIP23Event } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
 
 export interface ShopProduct {
   id: string;
+  dTag: string; // NIP-33 d tag identifier for parameterized replaceable events
   title: string;
   description: string;
   price: number;
@@ -23,10 +24,7 @@ export interface ShopProduct {
   eventId: string;
   publishedRelays: string[];
   author: string;
-  originalEventId?: string; // For tracking revisions
-  isDeleted?: boolean; // Soft delete flag
-  deletedAt?: number; // Deletion timestamp
-  lastModified?: number; // Last modification timestamp
+  // Note: Removed revision tracking fields - Kind 30023 handles this automatically
 }
 
 export interface CreateProductResult {
@@ -170,8 +168,15 @@ export class ShopBusinessService {
       }
 
       // Step 4: Create product object
+      // Extract dTag from event
+      const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
+      if (!dTag) {
+        throw new Error('Created event missing required d tag');
+      }
+
       const product: ShopProduct = {
         id: event.id,
+        dTag, // NIP-33 d tag identifier
         title: productData.title,
         description: productData.description,
         price: productData.price,
@@ -315,59 +320,32 @@ export class ShopBusinessService {
         message: 'Creating revision event...',
       });
 
-      const now = Math.floor(Date.now() / 1000);
       const pubkey = await signer.getPublicKey();
 
-      // Create NIP-23 content for revision
-      const nip23Content: NIP23Content = {
+      // For Kind 30023, we create a new event with the same dTag to replace the original
+      const updatedProductData: ProductEventData = {
         title: mergedData.title,
-        content: mergedData.description,
-        summary: mergedData.description.substring(0, 200) + '...',
-        published_at: now,
+        description: mergedData.description,
+        price: mergedData.price,
+        currency: mergedData.currency,
         tags: mergedData.tags,
-        language: 'en',
-        region: mergedData.location,
-        permissions: 'public',
-        file_id: mergedData.imageHash,
-        file_type: 'image',
-        file_size: mergedData.imageFile?.size || 0,
+        category: mergedData.category,
+        condition: mergedData.condition,
+        location: mergedData.location,
+        contact: mergedData.contact,
+        imageUrl: mergedData.imageUrl,
+        imageHash: mergedData.imageHash,
+        imageFile: mergedData.imageFile,
       };
 
-      // Create revision event using GenericEventService
-      const revisionResult = createRevisionEvent(
-        {
-          id: originalEventId,
-          pubkey,
-          created_at: originalProduct.publishedAt,
-          kind: 23,
-          tags: [], // This will be filled by the revision creation
-          content: '',
-          sig: '',
-        } as NIP23Event,
-        nip23Content,
-        pubkey,
-        1 // revision number
+      // Create updated product event with the same dTag (this will replace the original)
+      const updatedEvent = await nostrEventService.createProductEvent(
+        updatedProductData,
+        signer,
+        originalProduct.dTag // Use same dTag to replace original
       );
 
-      if (!revisionResult.success || !revisionResult.event) {
-        return {
-          success: false,
-          error: `Failed to create revision event: ${revisionResult.error}`,
-          publishedRelays: [],
-          failedRelays: [],
-        };
-      }
-
-      // Sign the revision event
-      const signingResult = await signEvent(revisionResult.event, signer);
-      if (!signingResult.success || !signingResult.signedEvent) {
-        return {
-          success: false,
-          error: `Failed to sign revision event: ${signingResult.error}`,
-          publishedRelays: [],
-          failedRelays: [],
-        };
-      }
+      // The event is already signed by createProductEvent, so we can publish directly
 
       onProgress?.({
         step: 'publishing',
@@ -375,14 +353,20 @@ export class ShopBusinessService {
         message: 'Publishing revision to relays...',
       });
 
-      // Publish the revision event
-      const publishResult = await publishEvent(signingResult.signedEvent, signer, (progress) => {
-        onProgress?.({
-          step: 'publishing',
-          progress: 80 + (progress.progress * 0.2), // Map 0-100 to 80-100
-          message: progress.message,
-        });
-      });
+      // Publish the updated event
+      const publishResult = await nostrEventService.publishEvent(
+        updatedEvent,
+        signer,
+        (relay, status) => {
+          logger.info('Relay publishing status for product update', {
+            service: 'ShopBusinessService',
+            method: 'updateProduct',
+            relay,
+            status,
+            eventId: updatedEvent.id,
+          });
+        }
+      );
 
       if (!publishResult.success) {
         return {
@@ -395,7 +379,8 @@ export class ShopBusinessService {
 
       // Create updated product object
       const updatedProduct: ShopProduct = {
-        id: signingResult.signedEvent.id,
+        id: updatedEvent.id,
+        dTag: originalProduct.dTag, // Keep same dTag
         title: mergedData.title,
         description: mergedData.description,
         price: mergedData.price,
@@ -408,10 +393,9 @@ export class ShopBusinessService {
         location: mergedData.location,
         contact: mergedData.contact,
         author: pubkey,
-        publishedAt: now,
-        eventId: signingResult.signedEvent.id,
+        publishedAt: updatedEvent.created_at,
+        eventId: updatedEvent.id,
         publishedRelays: publishResult.publishedRelays,
-        originalEventId: originalEventId,
       };
 
       // Update the product in the store
@@ -427,14 +411,14 @@ export class ShopBusinessService {
         service: 'ShopBusinessService',
         method: 'updateProduct',
         originalEventId,
-        newEventId: signingResult.signedEvent.id,
+        newEventId: updatedEvent.id,
         publishedRelays: publishResult.publishedRelays.length,
       });
 
       return {
         success: true,
         product: updatedProduct,
-        eventId: signingResult.signedEvent.id,
+        eventId: updatedEvent.id,
         publishedRelays: publishResult.publishedRelays,
         failedRelays: publishResult.failedRelays,
       };
@@ -460,7 +444,7 @@ export class ShopBusinessService {
    */
   public async queryProductsFromRelays(
     onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-    showDeleted: boolean = false
+    _showDeleted: boolean = false // Not used with Kind 30023, kept for compatibility
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query from relays', {
@@ -468,10 +452,10 @@ export class ShopBusinessService {
         method: 'queryProductsFromRelays',
       });
 
-      // Create filters for Kind 23 events with shop tag
+      // Create filters for Kind 30023 events with shop tag
       const filters = [
         {
-          kinds: [23], // Long-form content events
+          kinds: [30023], // Parameterized replaceable long-form content events
           '#t': ['culture-bridge-shop'], // Shop identifier tag
         }
       ];
@@ -503,104 +487,25 @@ export class ShopBusinessService {
         };
       }
 
-      // Parse events into products and group them for soft delete filtering
-      const allProducts: ShopProduct[] = [];
-      const eventGroups = new Map<string, { original?: ShopProduct; revisions: ShopProduct[]; deletions: ShopProduct[] }>();
-      const deletedOriginalIds = new Set<string>();
+      // Parse events into products - Kind 30023 handles revisions automatically
+      const products: ShopProduct[] = [];
 
       for (const event of queryResult.events) {
-        // Check if this is a deletion event BEFORE parsing as product
-        // Parse the JSON content to check for deletion patterns
-        let isDeletedTitle = false;
-        let hasDeletedDescription = false;
-        
-        try {
-          const parsedContent = JSON.parse(event.content || '{}');
-          isDeletedTitle = parsedContent.title?.includes('[DELETED]') || false;
-          hasDeletedDescription = parsedContent.content?.includes('deleted by the author') || false;
-        } catch (error) {
-          // If JSON parsing fails, fall back to raw content check
-          isDeletedTitle = event.content?.includes('[DELETED]') || false;
-          hasDeletedDescription = event.content?.includes('deleted by the author') || false;
-        }
-        
-        if (isDeletedTitle || hasDeletedDescription) {
-          // This is a deletion event - find the original event ID
-          const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
-          if (eventRefTag) {
-            const originalEventId = eventRefTag[1];
-            deletedOriginalIds.add(originalEventId);
-            logger.info('Found deletion event', {
-              service: 'ShopBusinessService',
-              method: 'queryProductsFromRelays',
-              deletionEventId: event.id,
-              originalEventId,
-            });
-          }
-          continue; // Skip processing deletion events as products
-        }
-        
         // Get relay information for this event
         const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
         const product = this.parseProductFromEvent(event, eventRelays);
         if (product) {
-          allProducts.push(product);
-          
-          // This is a regular product event
-          const groupKey = product.eventId;
-          if (!eventGroups.has(groupKey)) {
-            eventGroups.set(groupKey, { revisions: [], deletions: [] });
-          }
-          
-          const group = eventGroups.get(groupKey)!;
-          if (event.tags.some(tag => tag[0] === 'r')) {
-            // This is a revision
-            group.revisions.push(product);
-          } else {
-            // This is the original
-            group.original = product;
-          }
+          products.push(product);
+          // Add to local store for caching
+          productStore.addProduct(product);
         }
       }
 
-      // Filter out products that have deletion events (unless showDeleted is true)
-      const products: ShopProduct[] = [];
-      
-      logger.info('Starting soft delete filtering for all products', {
-        service: 'ShopBusinessService',
-        method: 'queryProductsFromRelays',
-        deletedOriginalIds: Array.from(deletedOriginalIds),
-        eventGroupsCount: eventGroups.size,
-        showDeleted,
-      });
-      
-      for (const [eventId, group] of eventGroups) {
-        const isDeleted = deletedOriginalIds.has(eventId);
-        
-        if (!isDeleted || showDeleted) {
-          // Use the most recent revision or the original
-          if (group.revisions.length > 0) {
-            // Sort revisions by publishedAt and take the latest
-            const latestRevision = group.revisions.sort((a, b) => b.publishedAt - a.publishedAt)[0];
-            products.push(latestRevision);
-            // Also add to local store for caching
-            productStore.addProduct(latestRevision);
-          } else if (group.original) {
-            products.push(group.original);
-            // Also add to local store for caching
-            productStore.addProduct(group.original);
-          }
-        }
-      }
-
-      logger.info('Product query completed with soft delete filtering', {
+      logger.info('Product query completed', {
         service: 'ShopBusinessService',
         method: 'queryProductsFromRelays',
         totalEvents: queryResult.events.length,
-        eventGroups: eventGroups.size,
-        deletedOriginalIds: deletedOriginalIds.size,
         activeProducts: products.length,
-        showDeleted,
         relayCount: queryResult.relayCount,
       });
 
@@ -640,12 +545,23 @@ export class ShopBusinessService {
         kind: event.kind,
       });
 
-      if (event.kind !== 23) {
-        logger.warn('Event is not Kind 23', {
+      if (event.kind !== 30023) {
+        logger.warn('Event is not Kind 30023', {
           service: 'ShopBusinessService',
           method: 'parseProductFromEvent',
           eventId: event.id,
           kind: event.kind,
+        });
+        return null;
+      }
+
+      // Extract d tag for NIP-33 parameterized replaceable events
+      const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
+      if (!dTag) {
+        logger.warn('Event missing required d tag', {
+          service: 'ShopBusinessService',
+          method: 'parseProductFromEvent',
+          eventId: event.id,
         });
         return null;
       }
@@ -666,6 +582,7 @@ export class ShopBusinessService {
 
       const product: ShopProduct = {
         id: event.id,
+        dTag, // NIP-33 d tag identifier
         title: productData.title,
         description: content.content,
         price: productData.price || 0,
@@ -886,7 +803,7 @@ export class ShopBusinessService {
   public async queryProductsByAuthor(
     authorPubkey: string,
     onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-    showDeleted: boolean = false
+    _showDeleted: boolean = false // Not used with Kind 30023, kept for compatibility
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query by author', {
@@ -895,18 +812,12 @@ export class ShopBusinessService {
         authorPubkey: authorPubkey.substring(0, 8) + '...',
       });
 
-      // Create filters for Kind 23 events with shop tag and specific author
-      // Also include events that might be deletion events (with [DELETED] in title)
+      // Create filters for Kind 30023 events with shop tag and specific author
       const filters = [
         {
-          kinds: [23], // Long-form content events
+          kinds: [30023], // Parameterized replaceable long-form content events
           authors: [authorPubkey], // Filter by specific author
           '#t': ['culture-bridge-shop'], // Shop identifier tag
-        },
-        {
-          kinds: [23], // Long-form content events
-          authors: [authorPubkey], // Filter by specific author
-          // No tag filter to catch deletion events that might not have the shop tag
         },
       ];
 
@@ -935,121 +846,23 @@ export class ShopBusinessService {
         };
       }
 
-      // Group events by their original event ID (for revisions) or event ID (for originals)
-      const eventGroups = new Map<string, { original?: ShopProduct; revisions: ShopProduct[]; deletions: ShopProduct[] }>();
-      const deletedOriginalIds = new Set<string>();
+      // Parse events into products - Kind 30023 handles revisions automatically
+      const activeProducts: ShopProduct[] = [];
 
       for (const event of queryResult.events) {
-        // Only process events that are shop-related (have culture-bridge-shop tag) or are deletion events
-        const hasShopTag = event.tags.some(tag => tag[0] === 't' && tag[1] === 'culture-bridge-shop');
-        const isDeletionEvent = event.content.includes('[DELETED]') || event.content.includes('deleted by the author');
-        
-        if (!hasShopTag && !isDeletionEvent) {
-          // Skip non-shop events that aren't deletion events
-          continue;
-        }
-        
-        // Check if this is a deletion event BEFORE parsing as product
-        // Parse the JSON content to check for deletion patterns
-        let isDeletedTitle = false;
-        let hasDeletedDescription = false;
-        
-        try {
-          const parsedContent = JSON.parse(event.content || '{}');
-          isDeletedTitle = parsedContent.title?.includes('[DELETED]') || false;
-          hasDeletedDescription = parsedContent.content?.includes('deleted by the author') || false;
-        } catch (error) {
-          // If JSON parsing fails, fall back to raw content check
-          isDeletedTitle = event.content?.includes('[DELETED]') || false;
-          hasDeletedDescription = event.content?.includes('deleted by the author') || false;
-        }
-        
-        if (isDeletedTitle || hasDeletedDescription) {
-          // This is a deletion event - find the original event ID it references
-          const eventRefTag = event.tags.find(tag => tag[0] === 'e' && tag[2] === 'reply');
-          if (eventRefTag && eventRefTag[1]) {
-            deletedOriginalIds.add(eventRefTag[1]);
-            logger.info('Found deletion event', {
-              service: 'ShopBusinessService',
-              method: 'queryProductsByAuthor',
-              deletionEventId: event.id,
-              originalEventId: eventRefTag[1],
-            });
-          } else {
-            logger.warn('Deletion event found but no event reference tag', {
-              service: 'ShopBusinessService',
-              method: 'queryProductsByAuthor',
-              deletionEventId: event.id,
-              eventTags: event.tags,
-            });
-          }
-          // Skip processing deletion events as products - they should only be used for filtering
-          continue;
-        }
-
         // Get relay information for this event
         const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
         const product = this.parseProductFromEvent(event, eventRelays);
         if (product) {
-          
-          // This is a regular product event
-          const groupKey = product.eventId;
-          if (!eventGroups.has(groupKey)) {
-            eventGroups.set(groupKey, { revisions: [], deletions: [] });
-          }
-          
-          const group = eventGroups.get(groupKey)!;
-          if (event.tags.some(tag => tag[0] === 'r')) {
-            // This is a revision
-            group.revisions.push(product);
-          } else {
-            // This is the original
-            group.original = product;
-          }
+          activeProducts.push(product);
         }
       }
 
-      // Filter out products that have deletion events
-      const activeProducts: ShopProduct[] = [];
-      
-      logger.info('Starting soft delete filtering', {
-        service: 'ShopBusinessService',
-        method: 'queryProductsByAuthor',
-        deletedOriginalIds: Array.from(deletedOriginalIds),
-        eventGroupsCount: eventGroups.size,
-        eventGroupKeys: Array.from(eventGroups.keys()),
-      });
-      
-      for (const [eventId, group] of eventGroups) {
-        const isDeleted = deletedOriginalIds.has(eventId);
-        logger.info('Processing event group for filtering', {
-          service: 'ShopBusinessService',
-          method: 'queryProductsByAuthor',
-          eventId,
-          isDeleted,
-          hasOriginal: !!group.original,
-          revisionsCount: group.revisions.length,
-        });
-        
-        if (!isDeleted || showDeleted) {
-          // Use the most recent revision or the original
-          if (group.revisions.length > 0) {
-            // Sort revisions by publishedAt and take the latest
-            const latestRevision = group.revisions.sort((a, b) => b.publishedAt - a.publishedAt)[0];
-            activeProducts.push(latestRevision);
-          } else if (group.original) {
-            activeProducts.push(group.original);
-          }
-        }
-      }
-
-      logger.info('Author product query completed with soft delete filtering', {
+      logger.info('Author product query completed', {
         service: 'ShopBusinessService',
         method: 'queryProductsByAuthor',
         authorPubkey: authorPubkey.substring(0, 8) + '...',
         totalEvents: queryResult.events.length,
-        eventGroups: eventGroups.size,
-        deletedOriginalIds: deletedOriginalIds.size,
         activeProducts: activeProducts.length,
         relayCount: queryResult.relayCount,
       });
@@ -1139,21 +952,13 @@ export class ShopBusinessService {
         permissions: 'public',
       };
 
-      // Create deletion event using GenericEventService
-      const deletionResult = createRevisionEvent(
-        {
-          id: productId,
-          pubkey: userPubkey,
-          created_at: product.publishedAt,
-          kind: 23,
-          tags: [], // This will be filled by the revision creation
-          content: '',
-          sig: '',
-        } as NIP23Event,
-        nip23Content,
-        userPubkey,
-        1 // revision number
-      );
+      // For Kind 30023 deletion, create a new event with same dTag and deletion content
+      const deletionResult = createNIP23Event(nip23Content, userPubkey, {
+        dTag: product.dTag, // Use same dTag to replace the original
+        tags: [
+          ['t', 'culture-bridge-shop'], // Shop identifier tag
+        ],
+      });
 
       if (!deletionResult.success || !deletionResult.event) {
         return {

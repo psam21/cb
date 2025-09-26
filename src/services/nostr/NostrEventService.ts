@@ -41,18 +41,20 @@ export class NostrEventService {
   }
 
   /**
-   * Create a new Kind 23 product event
+   * Create a new Kind 30023 parameterized replaceable product event
    */
   public async createProductEvent(
     productData: ProductEventData,
-    signer: NostrSigner
+    signer: NostrSigner,
+    dTag?: string
   ): Promise<NIP23Event> {
     try {
-      logger.info('Creating Kind 23 product event', {
+      logger.info('Creating Kind 30023 product event', {
         service: 'NostrEventService',
         method: 'createProductEvent',
         title: productData.title,
         category: productData.category,
+        dTag,
       });
 
       const now = Math.floor(Date.now() / 1000);
@@ -75,6 +77,7 @@ export class NostrEventService {
 
       // Create event using GenericEventService
       const eventResult = createNIP23Event(nip23Content, pubkey, {
+        dTag, // Pass custom d tag if provided
         fileMetadata: productData.imageHash ? {
           fileId: productData.imageHash,
           fileType: 'image',
@@ -331,10 +334,10 @@ export class NostrEventService {
         };
       }
 
-      if (event.kind !== 23) {
+      if (event.kind !== 30023) {
         return {
           valid: false,
-          error: 'Event must be Kind 23 for products',
+          error: 'Event must be Kind 30023 for products',
         };
       }
 
