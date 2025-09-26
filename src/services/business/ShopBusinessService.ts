@@ -452,10 +452,10 @@ export class ShopBusinessService {
         method: 'queryProductsFromRelays',
       });
 
-      // Create filters for both Kind 23 (legacy) and Kind 30023 (new) events with shop tag
+      // Create filters for Kind 30023 events with shop tag
       const filters = [
         {
-          kinds: [23, 30023], // Support both legacy (23) and new (30023) events
+          kinds: [30023], // Parameterized replaceable long-form content events
           '#t': ['culture-bridge-shop'], // Shop identifier tag
         }
       ];
@@ -545,8 +545,8 @@ export class ShopBusinessService {
         kind: event.kind,
       });
 
-      if (event.kind !== 23 && event.kind !== 30023) {
-        logger.warn('Event is not Kind 23 or Kind 30023', {
+      if (event.kind !== 30023) {
+        logger.warn('Event is not Kind 30023', {
           service: 'ShopBusinessService',
           method: 'parseProductFromEvent',
           eventId: event.id,
@@ -555,26 +555,15 @@ export class ShopBusinessService {
         return null;
       }
 
-      // Extract d tag - required for Kind 30023, generate fallback for Kind 23
-      let dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
+      // Extract d tag for NIP-33 parameterized replaceable events
+      const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
       if (!dTag) {
-        if (event.kind === 30023) {
-          logger.warn('Kind 30023 event missing required d tag', {
-            service: 'ShopBusinessService',
-            method: 'parseProductFromEvent',
-            eventId: event.id,
-          });
-          return null;
-        } else {
-          // For legacy Kind 23 events, generate a fallback dTag based on event ID
-          dTag = `legacy-${event.id}`;
-          logger.info('Generated fallback dTag for Kind 23 event', {
-            service: 'ShopBusinessService',
-            method: 'parseProductFromEvent',
-            eventId: event.id,
-            dTag,
-          });
-        }
+        logger.warn('Event missing required d tag', {
+          service: 'ShopBusinessService',
+          method: 'parseProductFromEvent',
+          eventId: event.id,
+        });
+        return null;
       }
 
       const productData = nostrEventService.extractProductData(event as import('../../types/nostr').NIP23Event);
@@ -823,10 +812,10 @@ export class ShopBusinessService {
         authorPubkey: authorPubkey.substring(0, 8) + '...',
       });
 
-      // Create filters for both Kind 23 (legacy) and Kind 30023 (new) events with shop tag and specific author
+      // Create filters for Kind 30023 events with shop tag and specific author
       const filters = [
         {
-          kinds: [23, 30023], // Support both legacy (23) and new (30023) events
+          kinds: [30023], // Parameterized replaceable long-form content events
           authors: [authorPubkey], // Filter by specific author
           '#t': ['culture-bridge-shop'], // Shop identifier tag
         },
