@@ -334,10 +334,10 @@ export class NostrEventService {
         };
       }
 
-      if (event.kind !== 30023) {
+      if (event.kind !== 23 && event.kind !== 30023) {
         return {
           valid: false,
-          error: 'Event must be Kind 30023 for products',
+          error: 'Event must be Kind 23 (legacy) or Kind 30023 for products',
         };
       }
 

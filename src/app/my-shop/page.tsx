@@ -4,15 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useMyShopProducts } from '@/hooks/useMyShopProducts';
-import { useProductEditing } from '@/hooks/useProductEditing';
+// useProductEditing removed - edit functionality handled by dedicated page
 import { useProductDeletion } from '@/hooks/useProductDeletion';
-import { ProductEditForm } from '@/components/shop/ProductEditForm';
 import { ProductDeleteDialog } from '@/components/shop/ProductDeleteDialog';
 import { EditProgressIndicator } from '@/components/shop/EditProgressIndicator';
 import { BaseGrid } from '@/components/ui/BaseGrid';
 import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
-import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
 import { filterLatestRevisions } from '@/utils/revisionFilter';
 
@@ -30,15 +28,7 @@ export default function MyShopPage() {
     console.log(`[MyShopPage] Filtered products count: ${filtered.length}`);
     return filtered;
   }, [products, showDeleted]);
-  const { 
-    editingProduct, 
-    isEditing, 
-    isUpdating, 
-    updateProgress, 
-    startEditing, 
-    updateProductData, 
-    cancelEdit 
-  } = useProductEditing();
+  // Edit functionality now handled by dedicated edit page
   const { 
     deletingProduct, 
     showDeleteDialog, 
@@ -87,13 +77,13 @@ export default function MyShopPage() {
 
 
   const handleEditProduct = (product: ShopProduct) => {
-    logger.info('Starting product edit', {
+    logger.info('Navigating to product edit page', {
       service: 'MyShopPage',
       method: 'handleEditProduct',
       productId: product.id,
       title: product.title,
     });
-    startEditing(product);
+    router.push(`/my-shop/edit/${product.id}`);
   };
 
   const handleDeleteProduct = (product: ShopProduct) => {
@@ -108,23 +98,7 @@ export default function MyShopPage() {
 
 
 
-  const handleSaveProduct = async (productId: string, updatedData: Partial<ProductEventData>, imageFile: File | null) => {
-    logger.info('Saving product updates', {
-      service: 'MyShopPage',
-      method: 'handleSaveProduct',
-      productId,
-      hasImage: !!imageFile,
-    });
-
-    const result = await updateProductData(productId, updatedData, imageFile);
-    
-    if (result.success) {
-      // Refresh the products list
-      await refreshProducts();
-    }
-    
-    return result;
-  };
+  // handleSaveProduct removed - now handled by dedicated edit page
 
   const handleConfirmDelete = async () => {
     logger.info('Confirming product deletion', {
@@ -299,16 +273,7 @@ export default function MyShopPage() {
         )}
       </div>
 
-      {/* Edit Form Modal */}
-      {isEditing && editingProduct && (
-        <ProductEditForm
-          product={editingProduct}
-          onSave={handleSaveProduct}
-          onCancel={cancelEdit}
-          isUpdating={isUpdating}
-          updateProgress={updateProgress}
-        />
-      )}
+      {/* Edit Form is now handled by dedicated page at /my-shop/edit/[id] */}
 
       {/* Delete Confirmation Dialog */}
       <ProductDeleteDialog
@@ -319,15 +284,7 @@ export default function MyShopPage() {
         isDeleting={isDeleting}
       />
 
-      {/* Progress Indicators */}
-      {updateProgress && (
-        <EditProgressIndicator
-          progress={updateProgress}
-          isVisible={isUpdating}
-          onClose={() => {}}
-        />
-      )}
-
+      {/* Delete Progress Indicator */}
       {deleteProgress && (
         <EditProgressIndicator
           progress={deleteProgress}
