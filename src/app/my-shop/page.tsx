@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useMyShopProducts } from '@/hooks/useMyShopProducts';
 import { useProductEditing } from '@/hooks/useProductEditing';
@@ -14,6 +14,7 @@ import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
+import { filterLatestRevisions } from '@/utils/revisionFilter';
 
 export default function MyShopPage() {
   const router = useRouter();
@@ -21,6 +22,11 @@ export default function MyShopPage() {
   const [isClient, setIsClient] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const { products, isLoading, error, refreshProducts } = useMyShopProducts(showDeleted);
+
+  // Filter products to show only latest revisions
+  const filteredProducts = useMemo(() => {
+    return filterLatestRevisions(products);
+  }, [products]);
   const { 
     editingProduct, 
     isEditing, 
@@ -199,7 +205,7 @@ export default function MyShopPage() {
         {/* Products Grid */}
         {!isLoading && !error && (
           <BaseGrid
-            data={products.map(product => ({
+            data={filteredProducts.map(product => ({
               id: product.id,
               title: product.title,
               description: product.description,
@@ -222,12 +228,12 @@ export default function MyShopPage() {
                 variant="my-shop"
                 onEdit={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
-                  const product = products.find(p => p.id === data.id);
+                  const product = filteredProducts.find(p => p.id === data.id);
                   if (product) handleEditProduct(product);
                 }}
                 onDelete={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
-                  const product = products.find(p => p.id === data.id);
+                  const product = filteredProducts.find(p => p.id === data.id);
                   if (product) handleDeleteProduct(product);
                 }}
               />
@@ -253,7 +259,7 @@ export default function MyShopPage() {
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && products.length === 0 && (
+        {!isLoading && !error && filteredProducts.length === 0 && (
           <div className="text-center py-12">
             <div className="text-primary-300 mb-4">
               <svg

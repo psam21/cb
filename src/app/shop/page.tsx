@@ -1,16 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
 import { ProductCreationForm } from '@/components/shop/ProductCreationForm';
 import { BaseGrid } from '@/components/ui/BaseGrid';
 import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
+import { filterLatestRevisions } from '@/utils/revisionFilter';
 
 export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // Filter products to show only latest revisions
+  const filteredProducts = useMemo(() => {
+    return filterLatestRevisions(products);
+  }, [products]);
 
   const handleProductCreated = (productId: string) => {
     logger.info('Product created successfully', {
@@ -120,7 +126,7 @@ export default function ShopPage() {
         {/* Products Grid */}
         {!isLoading && !error && (
           <BaseGrid
-            data={products.map(product => ({
+            data={filteredProducts.map(product => ({
               id: product.id,
               title: product.title,
               description: product.description,
@@ -143,7 +149,7 @@ export default function ShopPage() {
                 variant="shop"
                 onContact={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
-                  const product = products.find(p => p.id === data.id);
+                  const product = filteredProducts.find(p => p.id === data.id);
                   if (product) handleContact(product);
                 }}
               />
