@@ -12,6 +12,8 @@ export function filterLatestRevisions(products: ShopProduct[]): ShopProduct[] {
     return [];
   }
 
+  console.log(`[RevisionFilter] Processing ${products.length} products`);
+
   // Group products by original event ID
   const revisionGroups = new Map<string, ShopProduct[]>();
   
@@ -41,8 +43,17 @@ export function filterLatestRevisions(products: ShopProduct[]): ShopProduct[] {
   revisionGroups.forEach((revisions, originalEventId) => {
     // Sort by timestamp (latest first)
     const sortedRevisions = revisions.sort((a, b) => b.publishedAt - a.publishedAt);
+    
+    if (revisions.length > 1) {
+      console.log(`[RevisionFilter] Found ${revisions.length} revisions for ${originalEventId}:`, 
+        revisions.map(r => ({ id: r.id, title: r.title, publishedAt: r.publishedAt }))
+      );
+    }
+    
     latestProducts.push(sortedRevisions[0]); // Take the latest
   });
+  
+  console.log(`[RevisionFilter] Filtered ${products.length} products down to ${latestProducts.length} latest revisions`);
   
   return latestProducts;
 }
