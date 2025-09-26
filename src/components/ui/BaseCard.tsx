@@ -163,6 +163,8 @@ export const BaseCard = ({
 
   const handleNjumpClick = () => {
     if (data.eventId) {
+      console.log('Njump click - eventId:', data.eventId);
+      console.log('Njump URL:', `https://njump.me/${data.eventId}`);
       window.open(`https://njump.me/${data.eventId}`, '_blank');
     }
   };
@@ -314,7 +316,7 @@ export const BaseCard = ({
             </button>
           )}
 
-          {data.eventId && (
+          {data.eventId && data.eventId !== 'undefined' && data.eventId.length === 64 && (
             <a
               href={`https://njump.me/${data.eventId}`}
               target="_blank"

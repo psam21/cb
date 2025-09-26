@@ -131,23 +131,26 @@ export default function ShopPage() {
         {/* Products Grid */}
         {!isLoading && !error && (
           <BaseGrid
-            data={filteredProducts.map(product => ({
-              id: product.id,
-              title: product.title,
-              description: product.description,
-              imageUrl: product.imageUrl,
-              tags: product.tags,
-              publishedAt: product.publishedAt,
-              author: product.author,
-              price: product.price,
-              currency: product.currency,
-              category: product.category,
-              condition: product.condition,
-              location: product.location,
-              contact: product.contact,
-              eventId: product.eventId,
-              publishedRelays: product.publishedRelays,
-            }))}
+            data={filteredProducts.map(product => {
+              console.log('Product eventId:', product.eventId, 'Type:', typeof product.eventId);
+              return {
+                id: product.id,
+                title: product.title,
+                description: product.description,
+                imageUrl: product.imageUrl,
+                tags: product.tags,
+                publishedAt: product.publishedAt,
+                author: product.author,
+                price: product.price,
+                currency: product.currency,
+                category: product.category,
+                condition: product.condition,
+                location: product.location,
+                contact: product.contact,
+                eventId: product.eventId,
+                publishedRelays: product.publishedRelays,
+              };
+            })}
             renderItem={(item) => (
               <BaseCard
                 data={item}
