@@ -244,6 +244,7 @@ export class ShopBusinessService {
     updatedData: Partial<ProductEventData>,
     imageFile: File | null,
     signer: NostrSigner,
+    userPubkey: string, // Add pubkey parameter to avoid extra signer call
     onProgress?: (progress: ShopPublishingProgress) => void
   ): Promise<CreateProductResult> {
     try {
@@ -320,7 +321,7 @@ export class ShopBusinessService {
         message: 'Creating revision event...',
       });
 
-      const pubkey = await signer.getPublicKey();
+      // Use provided pubkey instead of calling signer.getPublicKey() to avoid extra prompt
 
       // For Kind 30023, we create a new event with the same dTag to replace the original
       const updatedProductData: ProductEventData = {
@@ -392,7 +393,7 @@ export class ShopBusinessService {
         condition: mergedData.condition,
         location: mergedData.location,
         contact: mergedData.contact,
-        author: pubkey,
+        author: userPubkey,
         publishedAt: updatedEvent.created_at,
         eventId: updatedEvent.id,
         publishedRelays: publishResult.publishedRelays,

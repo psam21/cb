@@ -209,8 +209,8 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 card">
-      <h2 className="text-3xl font-serif font-bold text-primary-800 mb-8">Create New Product</h2>
+    <div className="bg-white rounded-lg shadow-sm border p-6">
+      <h2 className="text-2xl font-serif font-bold text-primary-800 mb-6">Create New Product</h2>
       
       {!canPublish && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">

@@ -1,12 +1,14 @@
 import { useCallback } from 'react';
 import { useNostrSigner } from './useNostrSigner';
 import { useMyShopStore } from '../stores/useMyShopStore';
+import { useAuthStore } from '../stores/useAuthStore';
 import { shopBusinessService, ShopProduct, ShopPublishingProgress } from '../services/business/ShopBusinessService';
 import { ProductEventData } from '../services/nostr/NostrEventService';
 import { logger } from '../services/core/LoggingService';
 
 export const useProductEditing = () => {
   const { signer, isAvailable } = useNostrSigner();
+  const { user } = useAuthStore();
   const {
     editingProduct,
     isEditing,
@@ -46,6 +48,16 @@ export const useProductEditing = () => {
       return { success: false, error };
     }
 
+    if (!user?.pubkey) {
+      const error = 'User pubkey not available';
+      logger.error('Cannot update product: No pubkey', new Error(error), {
+        service: 'useProductEditing',
+        method: 'updateProductData',
+        productId,
+      });
+      return { success: false, error };
+    }
+
     logger.info('Starting product update', {
       service: 'useProductEditing',
       method: 'updateProductData',
@@ -63,6 +75,7 @@ export const useProductEditing = () => {
         updatedData,
         imageFile,
         signer,
+        user.pubkey, // Pass pubkey to avoid extra signer prompt
         (progress: ShopPublishingProgress) => {
           logger.info('Update progress', {
             service: 'useProductEditing',
@@ -118,7 +131,7 @@ export const useProductEditing = () => {
       setUpdating(false);
       setUpdateProgress(null);
     }
-  }, [signer, isAvailable, setUpdating, setUpdateError, setUpdateProgress, updateProduct]);
+  }, [signer, isAvailable, user?.pubkey, setUpdating, setUpdateError, setUpdateProgress, updateProduct]);
 
   const cancelEdit = useCallback(() => {
     logger.info('Cancelling product edit', {

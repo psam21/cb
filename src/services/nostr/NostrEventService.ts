@@ -90,7 +90,8 @@ export class NostrEventService {
           ['condition', productData.condition],
           ['contact', productData.contact],
           ...productData.tags.map(tag => ['t', tag]),
-          ['t', 'culture-bridge-shop'], // Shop identifier tag
+          // Only add culture-bridge-shop tag if not already present
+          ...(productData.tags.includes('culture-bridge-shop') ? [] : [['t', 'culture-bridge-shop']]),
         ],
       });
 

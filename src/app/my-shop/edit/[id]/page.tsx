@@ -148,30 +148,27 @@ export default function ProductEditPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="container-width py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleCancel}
-                className="btn-outline-sm flex items-center space-x-2"
-                disabled={isUpdating}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>Back to My Shop</span>
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-primary-800">Edit Product</h1>
-                <p className="text-gray-600 mt-1">{product.title}</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-primary-800">Edit Product</h1>
+              <p className="text-gray-600 mt-1">{product.title}</p>
             </div>
+            <button
+              onClick={handleCancel}
+              className="btn-outline-sm flex items-center space-x-2"
+              disabled={isUpdating}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Back to My Shop</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="container-width py-8">
-        <div className="max-w-4xl mx-auto">
-          <ProductEditForm
+        <ProductEditForm
             product={product}
             onSave={handleSaveProduct}
             onCancel={handleCancel}
@@ -179,7 +176,6 @@ export default function ProductEditPage() {
             updateProgress={updateProgress}
             isPage={true} // New prop to indicate this is a page, not modal
           />
-        </div>
       </div>
 
       {/* Progress Indicator */}
