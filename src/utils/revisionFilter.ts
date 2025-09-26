@@ -24,12 +24,14 @@ export function filterLatestRevisions(products: ShopProduct[]): ShopProduct[] {
     if (revisionTags.length > 0) {
       // This is a revision - group by the referenced event ID
       const originalEventId = revisionTags[0].substring(2); // Remove 'r:' prefix
+      console.log(`[RevisionFilter] Found revision: "${product.title}" (${product.id}) -> original: ${originalEventId}`);
       if (!revisionGroups.has(originalEventId)) {
         revisionGroups.set(originalEventId, []);
       }
       revisionGroups.get(originalEventId)!.push(product);
     } else {
       // This is an original product - group by its own event ID
+      console.log(`[RevisionFilter] Found original: "${product.title}" (${product.id})`);
       if (!revisionGroups.has(product.eventId)) {
         revisionGroups.set(product.eventId, []);
       }

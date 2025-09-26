@@ -15,7 +15,10 @@ export default function ShopPage() {
 
   // Filter products to show only latest revisions
   const filteredProducts = useMemo(() => {
-    return filterLatestRevisions(products);
+    console.log(`[ShopPage] Raw products count: ${products.length}`);
+    const filtered = filterLatestRevisions(products);
+    console.log(`[ShopPage] Filtered products count: ${filtered.length}`);
+    return filtered;
   }, [products]);
 
   const handleProductCreated = (productId: string) => {

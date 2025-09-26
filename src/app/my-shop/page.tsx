@@ -25,8 +25,11 @@ export default function MyShopPage() {
 
   // Filter products to show only latest revisions
   const filteredProducts = useMemo(() => {
-    return filterLatestRevisions(products);
-  }, [products]);
+    console.log(`[MyShopPage] Raw products count: ${products.length}, showDeleted: ${showDeleted}`);
+    const filtered = filterLatestRevisions(products);
+    console.log(`[MyShopPage] Filtered products count: ${filtered.length}`);
+    return filtered;
+  }, [products, showDeleted]);
   const { 
     editingProduct, 
     isEditing, 
@@ -153,13 +156,19 @@ export default function MyShopPage() {
             </div>
             <div className="mt-4 lg:mt-0 flex items-center space-x-3">
               <button
-                onClick={() => setShowDeleted(!showDeleted)}
+                onClick={() => {
+                  console.log(`[MyShopPage] Toggling showDeleted from ${showDeleted} to ${!showDeleted}`);
+                  setShowDeleted(!showDeleted);
+                }}
                 className={`btn-primary-sm ${showDeleted ? 'bg-gray-100 text-gray-800' : ''}`}
               >
                 {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
               </button>
               <button
-                onClick={refreshProducts}
+                onClick={() => {
+                  console.log(`[MyShopPage] Refresh button clicked, showDeleted: ${showDeleted}`);
+                  refreshProducts();
+                }}
                 className="btn-primary-sm"
               >
                 Refresh
