@@ -5,6 +5,7 @@ import { logger } from '@/services/core/LoggingService';
 import { useShopPublishing } from '@/hooks/useShopPublishing';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { RelayPublishingProgress } from '@/services/generic/GenericRelayService';
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
 
 interface ProductCreationFormProps {
   onProductCreated?: (productId: string) => void;
@@ -17,7 +18,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
     title: '',
     description: '',
     price: 0,
-    currency: 'USD',
+    currency: DEFAULT_CURRENCY,
     tags: [],
     category: '',
     condition: 'new',
@@ -289,10 +290,11 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
               onChange={(e) => handleInputChange('currency', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="BTC">BTC</option>
-              <option value="SATS">SATS</option>
+              {SUPPORTED_CURRENCIES.map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {formatCurrencyDisplay(currency)}
+                </option>
+              ))}
             </select>
           </div>
         </div>

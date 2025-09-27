@@ -24,6 +24,7 @@ export interface ShopProduct {
   eventId: string;
   publishedRelays: string[];
   author: string;
+  isDeleted: boolean; // Track if this is a deleted product
   // Note: Removed revision tracking fields - Kind 30023 handles this automatically
 }
 
@@ -192,6 +193,7 @@ export class ShopBusinessService {
         eventId: event.id,
         publishedRelays: publishResult.publishedRelays,
         author: event.pubkey,
+        isDeleted: false, // New products are never deleted
       };
 
       // Store the product in the local store
@@ -397,6 +399,7 @@ export class ShopBusinessService {
         publishedAt: updatedEvent.created_at,
         eventId: updatedEvent.id,
         publishedRelays: publishResult.publishedRelays,
+        isDeleted: false, // Updated products are not deleted
       };
 
       // Update the product in the store
@@ -445,7 +448,7 @@ export class ShopBusinessService {
    */
   public async queryProductsFromRelays(
     onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-    _showDeleted: boolean = false // Not used with Kind 30023, kept for compatibility
+    showDeleted: boolean = false // Show deleted products or not
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query from relays', {
@@ -488,19 +491,22 @@ export class ShopBusinessService {
         };
       }
 
-      // Parse events into products - Kind 30023 handles revisions automatically
-      const products: ShopProduct[] = [];
+        // Parse events into products - Kind 30023 handles revisions automatically
+        const products: ShopProduct[] = [];
 
-      for (const event of queryResult.events) {
-        // Get relay information for this event
-        const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
-        const product = this.parseProductFromEvent(event, eventRelays);
-        if (product) {
-          products.push(product);
-          // Add to local store for caching
-          productStore.addProduct(product);
+        for (const event of queryResult.events) {
+          // Get relay information for this event
+          const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
+          const product = this.parseProductFromEvent(event, eventRelays);
+          if (product) {
+            // Filter deleted products unless explicitly requested
+            if (showDeleted || !product.isDeleted) {
+              products.push(product);
+            }
+            // Always add to store for caching (even deleted ones)
+            productStore.addProduct(product);
+          }
         }
-      }
 
       logger.info('Product query completed', {
         service: 'ShopBusinessService',
@@ -581,6 +587,9 @@ export class ShopBusinessService {
         return null;
       }
 
+      // Check if this is a deleted product (title starts with [DELETED])
+      const isDeleted = productData.title.startsWith('[DELETED]');
+
       const product: ShopProduct = {
         id: event.id,
         dTag, // NIP-33 d tag identifier
@@ -599,6 +608,7 @@ export class ShopBusinessService {
         eventId: event.id,
         publishedRelays: publishedRelays, // Use actual relay information
         author: event.pubkey,
+        isDeleted, // Track deletion status
       };
 
       logger.info('Product parsed successfully', {
@@ -804,7 +814,7 @@ export class ShopBusinessService {
   public async queryProductsByAuthor(
     authorPubkey: string,
     onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-    _showDeleted: boolean = false // Not used with Kind 30023, kept for compatibility
+    showDeleted: boolean = false // Show deleted products or not
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query by author', {
@@ -847,38 +857,46 @@ export class ShopBusinessService {
         };
       }
 
-      // Parse events into products - Kind 30023 handles revisions automatically
-      const activeProducts: ShopProduct[] = [];
+        // Parse events into products - Kind 30023 handles revisions automatically
+        const products: ShopProduct[] = [];
 
-      for (const event of queryResult.events) {
-        // Get relay information for this event
-        const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
-        const product = this.parseProductFromEvent(event, eventRelays);
-        if (product) {
-          activeProducts.push(product);
+        for (const event of queryResult.events) {
+          // Get relay information for this event
+          const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
+          const product = this.parseProductFromEvent(event, eventRelays);
+          if (product) {
+            // Filter deleted products unless explicitly requested
+            if (showDeleted || !product.isDeleted) {
+              products.push(product);
+            }
+          }
         }
-      }
 
-      logger.info('Author product query completed', {
-        service: 'ShopBusinessService',
-        method: 'queryProductsByAuthor',
-        authorPubkey: authorPubkey.substring(0, 8) + '...',
-        totalEvents: queryResult.events.length,
-        activeProducts: activeProducts.length,
-        relayCount: queryResult.relayCount,
-      });
+        logger.info('Author product query completed', {
+          service: 'ShopBusinessService',
+          method: 'queryProductsByAuthor',
+          authorPubkey: authorPubkey.substring(0, 8) + '...',
+          totalEvents: queryResult.events.length,
+          filteredProducts: products.length,
+          showDeleted,
+          relayCount: queryResult.relayCount,
+        });
 
-      // Add active products to local store for caching
-      for (const product of activeProducts) {
-        productStore.addProduct(product);
-      }
+        // Add products to local store for caching
+        for (const event of queryResult.events) {
+          const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
+          const product = this.parseProductFromEvent(event, eventRelays);
+          if (product) {
+            productStore.addProduct(product); // Cache all products, even deleted ones
+          }
+        }
 
-      return {
-        success: true,
-        products: activeProducts,
-        queriedRelays: [], // Will be populated in real implementation
-        failedRelays: [], // Will be populated in real implementation
-      };
+        return {
+          success: true,
+          products,
+          queriedRelays: [], // Will be populated in real implementation
+          failedRelays: [], // Will be populated in real implementation
+        };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Author product query failed', error instanceof Error ? error : new Error(errorMessage), {
@@ -951,6 +969,9 @@ export class ShopBusinessService {
         language: 'en',
         region: product.location,
         permissions: 'public',
+        // IMPORTANT: Keep the original imageHash so image still renders
+        file_id: product.imageHash,
+        file_type: 'image',
       };
 
       // For Kind 30023 deletion, create a new event with same dTag and deletion content
@@ -958,6 +979,14 @@ export class ShopBusinessService {
         dTag: product.dTag, // Use same dTag to replace the original
         tags: [
           ['t', 'culture-bridge-shop'], // Shop identifier tag
+          // Preserve original product metadata as tags so it can still be parsed
+          ['price', product.price.toString()],
+          ['currency', product.currency],
+          ['category', product.category],
+          ['condition', product.condition],
+          ['contact', product.contact],
+          // Preserve original tags (except duplicates)
+          ...product.tags.filter(tag => tag !== 'culture-bridge-shop').map(tag => ['t', tag]),
         ],
       });
 

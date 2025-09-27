@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
 
 interface ProductEditFormProps {
   product: ShopProduct;
@@ -275,18 +276,18 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
                   Currency *
                 </label>
                 <select
-                  value={formData.currency || 'USD'}
+                  value={formData.currency || DEFAULT_CURRENCY}
                   onChange={(e) => handleInputChange('currency', e.target.value)}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
                     errors.currency ? 'border-red-300' : 'border-accent-300'
                   }`}
                   disabled={isUpdating}
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="CAD">CAD</option>
-                  <option value="AUD">AUD</option>
+                  {SUPPORTED_CURRENCIES.map((currency) => (
+                    <option key={currency.code} value={currency.code}>
+                      {formatCurrencyDisplay(currency)}
+                    </option>
+                  ))}
                 </select>
                 {errors.currency && (
                   <p className="mt-1 text-sm text-red-600">{errors.currency}</p>
