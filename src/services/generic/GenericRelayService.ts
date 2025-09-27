@@ -7,6 +7,7 @@ import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 import { NostrEvent, NostrSigner } from '../../types/nostr';
 import { NOSTR_RELAYS } from '../../config/relays';
+import { profileService } from '../business/ProfileBusinessService';
 
 export interface RelayPublishingResult {
   success: boolean;
@@ -16,6 +17,12 @@ export interface RelayPublishingResult {
   totalRelays: number;
   successRate: number;
   error?: string;
+  // Enhanced analytics data
+  npub?: string;
+  processedTimestamp?: number;
+  processingDuration?: number;
+  averageResponseTime?: number;
+  retryAttempts?: number;
 }
 
 export interface RelayQueryResult {
@@ -98,6 +105,8 @@ export class GenericRelayService {
     onProgress?: (progress: RelayPublishingProgress) => void
   ): Promise<RelayPublishingResult> {
     try {
+      const startTime = Date.now(); // Track overall processing time
+      
       logger.info('Starting event publishing to relays', {
         service: 'GenericRelayService',
         method: 'publishEvent',
@@ -108,6 +117,7 @@ export class GenericRelayService {
       const publishedRelays: string[] = [];
       const failedRelays: string[] = [];
       const totalRelays = NOSTR_RELAYS.length;
+      const responseTimes: number[] = []; // Track individual relay response times
 
       // Initialize progress
       onProgress?.({
@@ -132,6 +142,11 @@ export class GenericRelayService {
 
           const result = await this.publishToRelay(event, relay.url);
           
+          // Track response time if available
+          if (result.responseTime !== undefined) {
+            responseTimes.push(result.responseTime);
+          }
+          
           if (result.success) {
             publishedRelays.push(relay.url);
             logger.info('Event published successfully to relay', {
@@ -140,6 +155,7 @@ export class GenericRelayService {
               relayUrl: relay.url,
               relayName: relay.name,
               eventId: event.id,
+              responseTime: result.responseTime,
             });
           } else {
             failedRelays.push(relay.url);
@@ -150,6 +166,7 @@ export class GenericRelayService {
               relayName: relay.name,
               eventId: event.id,
               error: result.error,
+              responseTime: result.responseTime,
             });
           }
         } catch (error) {
@@ -171,6 +188,26 @@ export class GenericRelayService {
 
       const success = publishedRelays.length > 0;
       const successRate = (publishedRelays.length / totalRelays) * 100;
+      
+      // Calculate enhanced analytics
+      const processedTimestamp = Date.now();
+      const processingDuration = processedTimestamp - startTime;
+      const averageResponseTime = responseTimes.length > 0 
+        ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+        : 0;
+      const retryAttempts = 0; // No retry logic currently implemented
+      
+      // Convert pubkey to npub
+      let npub: string | undefined;
+      try {
+        npub = profileService.pubkeyToNpub(event.pubkey);
+      } catch (error) {
+        logger.warn('Failed to convert pubkey to npub', {
+          service: 'GenericRelayService',
+          method: 'publishEvent',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
 
       // Final progress update
       onProgress?.({
@@ -194,6 +231,12 @@ export class GenericRelayService {
         totalRelays,
         successRate,
         error: success ? undefined : 'Failed to publish to any relay',
+        // Enhanced analytics data
+        npub,
+        processedTimestamp,
+        processingDuration,
+        averageResponseTime,
+        retryAttempts,
       };
 
       if (success) {
@@ -204,6 +247,9 @@ export class GenericRelayService {
           publishedCount: publishedRelays.length,
           failedCount: failedRelays.length,
           successRate: `${successRate.toFixed(1)}%`,
+          processingDuration: `${processingDuration}ms`,
+          averageResponseTime: `${averageResponseTime}ms`,
+          npub: npub?.substring(0, 12) + '...',
         });
       } else {
         logger.error('Event publishing failed to all relays', new Error(result.error), {
@@ -248,9 +294,11 @@ export class GenericRelayService {
   /**
    * Publish an event to a specific relay
    */
-  private async publishToRelay(event: NostrEvent, relayUrl: string): Promise<{ success: boolean; error?: string }> {
+  private async publishToRelay(event: NostrEvent, relayUrl: string): Promise<{ success: boolean; error?: string; responseTime?: number }> {
     return new Promise((resolve) => {
       try {
+        const startTime = Date.now(); // Track response time
+        
         logger.debug('Publishing event to relay', {
           service: 'GenericRelayService',
           method: 'publishToRelay',
@@ -268,6 +316,7 @@ export class GenericRelayService {
             resolve({
               success: false,
               error: 'Publish timeout',
+              responseTime: Date.now() - startTime,
             });
           }
         }, this.publishTimeout);
@@ -294,13 +343,15 @@ export class GenericRelayService {
               
               if (!resolved) {
                 resolved = true;
+                const responseTime = Date.now() - startTime;
                 
                 if (data[2] === true) {
-                  resolve({ success: true });
+                  resolve({ success: true, responseTime });
                 } else {
                   resolve({
                     success: false,
                     error: data[3] || 'Event rejected by relay',
+                    responseTime,
                   });
                 }
               }
@@ -324,6 +375,7 @@ export class GenericRelayService {
             resolve({
               success: false,
               error: 'WebSocket connection error',
+              responseTime: Date.now() - startTime,
             });
           }
         };
@@ -335,6 +387,7 @@ export class GenericRelayService {
             resolve({
               success: false,
               error: 'WebSocket connection closed',
+              responseTime: Date.now() - startTime,
             });
           }
         };
@@ -350,6 +403,7 @@ export class GenericRelayService {
         resolve({
           success: false,
           error: errorMessage,
+          responseTime: 0, // No meaningful response time for connection errors
         });
       }
     });
