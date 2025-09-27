@@ -259,6 +259,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
       <p className="mt-1 text-sm text-gray-500">Get started by adding some files.</p>
       <div className="mt-6">
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
@@ -333,6 +334,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
               <p className="mt-2 text-sm text-gray-600">
                 Drag and drop files here, or{' '}
                 <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="text-blue-600 hover:text-blue-500 font-medium"
                 >
@@ -365,6 +367,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
           <div className="flex items-center space-x-2">
             {allowSelection && attachmentManager.state.selection.selectedIds.size > 0 && (
               <button
+                type="button"
                 onClick={() => attachmentManager.removeSelected()}
                 className="text-sm text-red-600 hover:text-red-700 font-medium"
               >
@@ -373,6 +376,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
             )}
             
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={!attachmentManager.canAddMore()}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -495,12 +499,14 @@ const AttachmentItem = <T extends GenericAttachment>({
           className="hidden"
         />
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
         >
           Replace
         </button>
         <button
+          type="button"
           onClick={onRemove}
           className="text-sm text-red-600 hover:text-red-700 font-medium"
         >
