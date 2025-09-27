@@ -19,6 +19,14 @@ export enum ErrorCode {
   FILE_TOO_LARGE = 'FILE_TOO_LARGE',
   INVALID_FILE_TYPE = 'INVALID_FILE_TYPE',
 
+  // Media-specific Errors (400-499)
+  MEDIA_VALIDATION_FAILED = 'MEDIA_VALIDATION_FAILED',
+  UNSUPPORTED_FILE_TYPE = 'UNSUPPORTED_FILE_TYPE',
+  ATTACHMENT_PROCESSING_FAILED = 'ATTACHMENT_PROCESSING_FAILED',
+  BATCH_SIZE_EXCEEDED = 'BATCH_SIZE_EXCEEDED',
+  TOTAL_SIZE_EXCEEDED = 'TOTAL_SIZE_EXCEEDED',
+  MEDIA_EXTRACTION_FAILED = 'MEDIA_EXTRACTION_FAILED',
+
   // Resource Errors (400-499)
   NOT_FOUND = 'NOT_FOUND',
   RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
@@ -173,6 +181,42 @@ export const ERROR_TYPE_MAP: Record<ErrorCode, ErrorMetadata> = {
     severity: ErrorSeverity.LOW,
     retryable: false,
     userVisible: true,
+  },
+  [ErrorCode.MEDIA_VALIDATION_FAILED]: {
+    category: ErrorCategory.VALIDATION,
+    severity: ErrorSeverity.MEDIUM,
+    retryable: false,
+    userVisible: true,
+  },
+  [ErrorCode.UNSUPPORTED_FILE_TYPE]: {
+    category: ErrorCategory.VALIDATION,
+    severity: ErrorSeverity.LOW,
+    retryable: false,
+    userVisible: true,
+  },
+  [ErrorCode.ATTACHMENT_PROCESSING_FAILED]: {
+    category: ErrorCategory.INTERNAL,
+    severity: ErrorSeverity.HIGH,
+    retryable: true,
+    userVisible: true,
+  },
+  [ErrorCode.BATCH_SIZE_EXCEEDED]: {
+    category: ErrorCategory.VALIDATION,
+    severity: ErrorSeverity.LOW,
+    retryable: false,
+    userVisible: true,
+  },
+  [ErrorCode.TOTAL_SIZE_EXCEEDED]: {
+    category: ErrorCategory.VALIDATION,
+    severity: ErrorSeverity.LOW,
+    retryable: false,
+    userVisible: true,
+  },
+  [ErrorCode.MEDIA_EXTRACTION_FAILED]: {
+    category: ErrorCategory.INTERNAL,
+    severity: ErrorSeverity.LOW,
+    retryable: true,
+    userVisible: false,
   },
   [ErrorCode.NOT_FOUND]: {
     category: ErrorCategory.RESOURCE,
