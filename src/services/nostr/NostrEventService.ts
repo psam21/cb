@@ -57,15 +57,35 @@ export class NostrEventService {
         title: productData.title,
         category: productData.category,
         dTag,
+        attachmentCount: productData.attachments?.length || 0,
+        attachments: productData.attachments
       });
 
       const now = Math.floor(Date.now() / 1000);
       const pubkey = await signer.getPublicKey();
 
+      // Create markdown content with embedded media
+      let markdownContent = productData.description;
+      
+      // Add embedded media to markdown content
+      if (productData.attachments && productData.attachments.length > 0) {
+        markdownContent += '\n\n## Media\n\n';
+        
+        for (const attachment of productData.attachments) {
+          if (attachment.type === 'image') {
+            markdownContent += `![${attachment.name}](${attachment.url})\n\n`;
+          } else if (attachment.type === 'video') {
+            markdownContent += `[${attachment.name}](${attachment.url})\n\n`;
+          } else if (attachment.type === 'audio') {
+            markdownContent += `[🎵 ${attachment.name}](${attachment.url})\n\n`;
+          }
+        }
+      }
+      
       // Create NIP-23 content
       const nip23Content: NIP23Content = {
         title: productData.title,
-        content: productData.description,
+        content: markdownContent,
         summary: productData.description.substring(0, 200) + '...',
         published_at: now,
         tags: productData.tags,
@@ -334,80 +354,63 @@ export class NostrEventService {
       allTags: event.tags
     });
     
-    // Group tags by attachment ID to reconstruct attachments
-    const attachmentMap = new Map<string, {
-      id: string;
-      hash?: string;
-      type?: 'image' | 'video' | 'audio';
-      size?: number;
-      name?: string;
-      mimeType?: string;
-    }>();
-    
+    // Extract attachments from imeta tags
     for (const tag of event.tags) {
-      if (tag[0] === 'attachment_id' && tag[1]) {
-        const attachmentId = tag[1];
-        if (!attachmentMap.has(attachmentId)) {
-          attachmentMap.set(attachmentId, { id: attachmentId });
-        }
-      }
-    }
-    
-    // Extract data for each attachment
-    for (const tag of event.tags) {
-      if (tag[0] === 'attachment_id' && tag[1]) {
-        const attachmentId = tag[1];
-        const attachment = attachmentMap.get(attachmentId);
-        
-        // Find the next tags that belong to this attachment
-        const attachmentIndex = event.tags.findIndex(t => t[0] === 'attachment_id' && t[1] === attachmentId);
-        
-        // Look for the corresponding f, file_type, file_size, file_name, mime_type tags
-        for (let i = attachmentIndex + 1; i < event.tags.length; i++) {
-          const nextTag = event.tags[i];
+      if (tag[0] === 'imeta' && tag[1]) {
+        try {
+          const imetaData = JSON.parse(tag[1]);
           
-          // Stop if we hit another attachment_id
-          if (nextTag[0] === 'attachment_id') break;
+          // Determine media type from MIME type
+          let type: 'image' | 'video' | 'audio' = 'image';
+          if (imetaData.m) {
+            if (imetaData.m.startsWith('video/')) type = 'video';
+            else if (imetaData.m.startsWith('audio/')) type = 'audio';
+            else if (imetaData.m.startsWith('image/')) type = 'image';
+          }
           
-          if (attachment) {
-            switch (nextTag[0]) {
-              case 'f':
-                attachment.hash = nextTag[1];
-                break;
-              case 'file_type':
-                attachment.type = nextTag[1] as 'image' | 'video' | 'audio';
-                break;
-              case 'file_size':
-                attachment.size = parseInt(nextTag[1]) || 0;
-                break;
-              case 'file_name':
-                attachment.name = nextTag[1];
-                break;
-              case 'mime_type':
-                attachment.mimeType = nextTag[1];
-                break;
+          // Parse dimensions if available
+          let dimensions: { width: number; height: number } | undefined;
+          if (imetaData.dim && typeof imetaData.dim === 'string') {
+            const [width, height] = imetaData.dim.split('x').map(Number);
+            if (!isNaN(width) && !isNaN(height)) {
+              dimensions = { width, height };
             }
           }
+          
+          const attachment: import('../business/ShopBusinessService').ProductAttachment = {
+            id: `imeta-${imetaData.x || Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            hash: imetaData.x || '',
+            url: imetaData.url || '',
+            type,
+            name: imetaData.alt || 'Media attachment',
+            size: imetaData.size || 0,
+            mimeType: imetaData.m || 'image/jpeg',
+            metadata: {
+              dimensions
+            }
+          };
+          
+          attachments.push(attachment);
+          
+          logger.debug('Extracted attachment from imeta tag', {
+            service: 'NostrEventService',
+            method: 'extractAttachmentsFromEvent',
+            eventId: event.id,
+            attachment: attachment
+          });
+        } catch (error) {
+          logger.warn('Failed to parse imeta tag', {
+            service: 'NostrEventService',
+            method: 'extractAttachmentsFromEvent',
+            eventId: event.id,
+            tag: tag[1],
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       }
     }
     
-    // Convert to ProductAttachment objects
-    for (const [, data] of attachmentMap) {
-      if (data.hash && data.type && data.mimeType) {
-        attachments.push({
-          id: data.id,
-          hash: data.hash,
-          url: '', // Will be constructed by business layer
-          type: data.type,
-          name: data.name || 'unknown',
-          size: data.size || 0,
-          mimeType: data.mimeType,
-        });
-      }
-    }
-    
-    logger.debug('Found attachments from new format', {
+    logger.debug('Found attachments from imeta tags', {
       service: 'NostrEventService',
       method: 'extractAttachmentsFromEvent',
       eventId: event.id,
@@ -415,7 +418,7 @@ export class NostrEventService {
       attachments: attachments
     });
     
-    // Fallback: If no attachments found but we have legacy imageHash, create one
+    // Fallback: If no imeta attachments found but we have legacy f tag, create one
     if (attachments.length === 0) {
       const legacyImageHash = event.tags.find(tag => tag[0] === 'f')?.[1];
       if (legacyImageHash) {
@@ -456,27 +459,34 @@ export class NostrEventService {
   private createAttachmentTags(attachments: import('../business/ShopBusinessService').ProductAttachment[]): string[][] {
     const tags: string[][] = [];
     
+    logger.debug('Creating attachment tags for multiple attachments', {
+      service: 'NostrEventService',
+      method: 'createAttachmentTags',
+      attachmentCount: attachments.length,
+      attachments: attachments
+    });
+    
     for (const attachment of attachments) {
-      // Add file hash tag
-      tags.push(['f', attachment.hash]);
+      // Create imeta tag for each media file with metadata
+      const imetaData = {
+        url: attachment.url,
+        m: attachment.mimeType,
+        x: attachment.hash,
+        size: attachment.size,
+        dim: attachment.metadata?.dimensions ? `${attachment.metadata.dimensions.width}x${attachment.metadata.dimensions.height}` : undefined,
+        alt: attachment.name || 'Media attachment'
+      };
       
-      // Add file type tag
-      tags.push(['file_type', attachment.type]);
-      
-      // Add file size tag
-      tags.push(['file_size', attachment.size.toString()]);
-      
-      // Add file name tag (if available)
-      if (attachment.name && attachment.name !== 'legacy-image') {
-        tags.push(['file_name', attachment.name]);
-      }
-      
-      // Add MIME type tag
-      tags.push(['mime_type', attachment.mimeType]);
-      
-      // Add attachment ID for reference
-      tags.push(['attachment_id', attachment.id]);
+      // Add imeta tag with JSON metadata
+      tags.push(['imeta', JSON.stringify(imetaData)]);
     }
+    
+    logger.debug('Created attachment tags', {
+      service: 'NostrEventService',
+      method: 'createAttachmentTags',
+      tagCount: tags.length,
+      tags: tags
+    });
     
     return tags;
   }
