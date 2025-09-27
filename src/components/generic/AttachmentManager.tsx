@@ -68,7 +68,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     ...config,
     showPreview,
     showMetadata
-  }, onAttachmentsChange);
+  }, onAttachmentsChange, initialAttachments);
 
   // Note: onAttachmentsChange is now handled directly by the useAttachmentManager hook
 

@@ -49,10 +49,14 @@ const createInitialState = <T extends GenericAttachment>(config: AttachmentManag
  */
 export const useAttachmentManager = <T extends GenericAttachment = GenericAttachment>(
   initialConfig: Partial<AttachmentManagerConfig> = {},
-  onAttachmentsChange?: (attachments: T[]) => void
+  onAttachmentsChange?: (attachments: T[]) => void,
+  initialAttachments: T[] = []
 ): UseAttachmentManagerReturn<T> => {
   const config = useMemo(() => ({ ...DEFAULT_ATTACHMENT_CONFIG, ...initialConfig }), [initialConfig]);
-  const [managerState, setManagerState] = useState<AttachmentManagerState<T>>(() => createInitialState<T>(config));
+  const [managerState, setManagerState] = useState<AttachmentManagerState<T>>(() => ({
+    ...createInitialState<T>(config),
+    attachments: initialAttachments
+  }));
 
   // ============================================================================
   // CORE OPERATIONS
