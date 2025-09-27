@@ -645,6 +645,7 @@ export class ShopBusinessService {
   private constructUserBlossomUrl(userPubkey: string, imageHash: string): string {
     try {
       // Import profileService to convert pubkey to npub
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { profileService } = require('../business/ProfileBusinessService');
       const userNpub = profileService.pubkeyToNpub(userPubkey);
       

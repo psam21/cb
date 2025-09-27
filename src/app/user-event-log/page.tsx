@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { UserEventData } from '@/services/core/KVService';
 import { logger } from '@/services/core/LoggingService';
 import { EventTable } from '@/components/user-event-log/EventTable';
@@ -9,7 +8,8 @@ import { Pagination } from '@/components/user-event-log/Pagination';
 // NpubInput removed - now showing ALL events globally
 
 export default function UserEventLogPage() {
-  const { user, isAuthenticated } = useAuthStore();
+  // Note: user and isAuthenticated removed as we now show global events
+  // const { user, isAuthenticated } = useAuthStore();
   const [events, setEvents] = useState<UserEventData[]>([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -22,11 +22,6 @@ export default function UserEventLogPage() {
   const [sortField, setSortField] = useState<keyof UserEventData>('processedTimestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [autoRefresh, setAutoRefresh] = useState(false);
-
-  // Auto-load events on component mount
-  useEffect(() => {
-    fetchEvents(1); // Load first page immediately
-  }, []);
 
   const fetchEvents = useCallback(async (page: number = 1) => {
     setLoading(true);
@@ -104,6 +99,11 @@ export default function UserEventLogPage() {
       setLoading(false);
     }
   }, [pagination.limit, sortField, sortDirection]);
+
+  // Auto-load events on component mount
+  useEffect(() => {
+    fetchEvents(1); // Load first page immediately
+  }, [fetchEvents]);
 
   // Remove npub-specific handlers - now global
 
