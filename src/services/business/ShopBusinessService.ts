@@ -5,6 +5,7 @@ import { nostrEventService, ProductEventData } from '../nostr/NostrEventService'
 import { productStore } from '../../stores/ProductStore';
 import { createRevisionEvent, signEvent, createNIP23Event, createDeletionEvent } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
+import { eventLoggingService } from '../core/EventLoggingService';
 
 export interface ShopProduct {
   id: string;
@@ -157,6 +158,9 @@ export class ShopBusinessService {
           });
         }
       );
+
+      // Log event publishing analytics (async, non-blocking)
+      eventLoggingService.logEventPublishingAsync(event, publishResult);
 
       if (!publishResult.success) {
         return {
@@ -370,6 +374,9 @@ export class ShopBusinessService {
           });
         }
       );
+
+      // Log event publishing analytics (async, non-blocking)
+      eventLoggingService.logEventPublishingAsync(updatedEvent, publishResult);
 
       if (!publishResult.success) {
         return {
@@ -1000,6 +1007,9 @@ export class ShopBusinessService {
           message: progress.message,
         });
       });
+
+      // Log event publishing analytics (async, non-blocking)
+      eventLoggingService.logEventPublishingAsync(signingResult.signedEvent, publishResult);
 
       if (!publishResult.success) {
         return {
