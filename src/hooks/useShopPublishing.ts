@@ -157,6 +157,28 @@ export const useShopPublishing = () => {
       totalSize: attachmentFiles.reduce((sum, f) => sum + f.size, 0),
     });
 
+    // Show consent dialog before starting upload
+    if (attachmentFiles.length > 0) {
+      const userAccepted = await consentDialog.showConsentDialog(attachmentFiles);
+      if (!userAccepted) {
+        logger.info('User cancelled upload during consent phase', {
+          service: 'useShopPublishing',
+          method: 'publishProductWithAttachments',
+          attachmentCount: attachmentFiles.length
+        });
+        
+        return {
+          success: false,
+          error: 'User cancelled upload',
+          attachmentResults: {
+            successful: [],
+            failed: attachmentFiles.map(file => ({ file, error: 'User cancelled' })),
+            partialSuccess: false
+          }
+        };
+      }
+    }
+
     setPublishing(true);
     setPublishingProgress(null);
 

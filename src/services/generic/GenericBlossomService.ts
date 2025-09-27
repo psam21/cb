@@ -551,7 +551,7 @@ export class GenericBlossomService {
       totalSize,
       estimatedTime,
       requiredApprovals: files.length, // Each file needs signer approval
-      userAccepted: false, // Will be set by UI component
+      userAccepted: true, // Auto-accept for now - UI will handle the dialog
       timestamp: Date.now(),
       files: files.map(file => ({
         name: file.name,
@@ -569,9 +569,8 @@ export class GenericBlossomService {
       requiredApprovals: consent.requiredApprovals
     });
 
-    // Return consent object for UI component to handle
-    // The UI component will set userAccepted based on user interaction
-
+    // For now, auto-accept the consent
+    // The real consent dialog should be handled at the UI layer before calling this method
     return consent;
   }
 
