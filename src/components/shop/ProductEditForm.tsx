@@ -101,8 +101,8 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
       newErrors.price = 'Price must be 0 or greater';
     }
 
-    if (!formData.currency || formData.currency.length !== 3) {
-      newErrors.currency = 'Currency must be a 3-letter code';
+    if (!formData.currency || formData.currency.trim().length === 0) {
+      newErrors.currency = 'Currency is required';
     }
 
     if (!formData.category || formData.category.trim().length === 0) {

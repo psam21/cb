@@ -679,10 +679,10 @@ export class ShopBusinessService {
         };
       }
 
-      if (!productData.currency || productData.currency.length !== 3) {
+      if (!productData.currency || productData.currency.trim().length === 0) {
         return {
           valid: false,
-          error: 'Currency must be a 3-letter code (e.g., USD, EUR)',
+          error: 'Currency is required',
         };
       }
 

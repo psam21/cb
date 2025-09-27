@@ -30,6 +30,7 @@ export const SUPPORTED_CURRENCIES: Currency[] = [
   { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
   { code: 'PLN', name: 'Polish Złoty', symbol: 'zł' },
   { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+  { code: 'Satoshis', name: 'Satoshis', symbol: '⚡' },
 ];
 
 // Default currency
