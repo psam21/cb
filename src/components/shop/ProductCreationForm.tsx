@@ -52,6 +52,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
       service: 'ProductCreationForm',
       method: 'handleAttachmentsChange',
       attachmentCount: newAttachments.length,
+      attachmentIds: newAttachments.map(a => a.id),
     });
 
     setAttachments(newAttachments);
@@ -138,6 +139,8 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
       method: 'handleSubmit',
       title: formData.title,
       attachmentCount: attachments.length,
+      attachmentIds: attachments.map(a => a.id),
+      attachmentFiles: attachments.filter(att => att.originalFile).map(att => att.originalFile!.name),
     });
 
     if (!validateForm()) {

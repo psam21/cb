@@ -60,6 +60,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
+  const hasInitialized = useRef(false);
 
   // Initialize attachment manager
   const attachmentManager = useAttachmentManager<T>({
@@ -71,6 +72,12 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
   // Watch for attachment changes and notify parent
   useEffect(() => {
+    // Skip the initial render to avoid overriding state with empty array
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      return;
+    }
+    
     onAttachmentsChange?.(attachmentManager.state.attachments);
   }, [attachmentManager.state.attachments, onAttachmentsChange]);
 
@@ -87,6 +94,8 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
     try {
       await attachmentManager.addAttachments(files);
+      // Immediately notify parent after adding files
+      onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
       logger.error('Failed to add files', error instanceof Error ? error : new Error(errorMessage), {
@@ -153,6 +162,8 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
     try {
       await attachmentManager.addAttachments(files);
+      // Immediately notify parent after adding files
+      onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
       logger.error('Failed to add dropped files', error instanceof Error ? error : new Error(errorMessage), {
