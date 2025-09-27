@@ -3,7 +3,7 @@
  * Provides drag-and-drop, selection, and management for any content type
  */
 
-import React, { useState, useCallback, useRef, DragEvent } from 'react';
+import React, { useState, useCallback, useRef, DragEvent, useEffect } from 'react';
 import { logger } from '../../services/core/LoggingService';
 import { 
   GenericAttachment, 
@@ -69,6 +69,11 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     showMetadata
   });
 
+  // Watch for attachment changes and notify parent
+  useEffect(() => {
+    onAttachmentsChange?.(attachmentManager.state.attachments);
+  }, [attachmentManager.state.attachments, onAttachmentsChange]);
+
   // Handle file input change
   const handleFileInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -82,7 +87,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
     try {
       await attachmentManager.addAttachments(files);
-      onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
       logger.error('Failed to add files', error instanceof Error ? error : new Error(errorMessage), {
@@ -97,7 +101,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [attachmentManager, onAttachmentsChange, onError]);
+  }, [attachmentManager, onError]);
 
   // Handle drag events
   const handleDragEnter = useCallback((e: DragEvent) => {
@@ -149,7 +153,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
     try {
       await attachmentManager.addAttachments(files);
-      onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
       logger.error('Failed to add dropped files', error instanceof Error ? error : new Error(errorMessage), {
@@ -159,7 +162,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
       });
       onError?.(errorMessage);
     }
-  }, [allowDragDrop, attachmentManager, onAttachmentsChange, onError]);
+  }, [allowDragDrop, attachmentManager, onError]);
 
   // Handle selection
   const handleSelectionChange = useCallback((attachmentId: string, selected: boolean) => {
@@ -186,8 +189,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     });
 
     attachmentManager.reorderAttachments(fromIndex, toIndex);
-    onAttachmentsChange?.(attachmentManager.state.attachments);
-  }, [allowReorder, attachmentManager, onAttachmentsChange]);
+  }, [allowReorder, attachmentManager]);
 
   // Handle remove
   const handleRemove = useCallback((attachmentId: string) => {
@@ -198,8 +200,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     });
 
     attachmentManager.removeAttachment(attachmentId);
-    onAttachmentsChange?.(attachmentManager.state.attachments);
-  }, [attachmentManager, onAttachmentsChange]);
+  }, [attachmentManager]);
 
   // Handle replace
   const handleReplace = useCallback(async (attachmentId: string, file: File) => {
@@ -212,7 +213,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
     try {
       await attachmentManager.replaceAttachment(attachmentId, file);
-      onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to replace file';
       logger.error('Failed to replace attachment', error instanceof Error ? error : new Error(errorMessage), {
@@ -223,7 +223,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
       });
       onError?.(errorMessage);
     }
-  }, [attachmentManager, onAttachmentsChange, onError]);
+  }, [attachmentManager, onError]);
 
   // Default attachment renderer
   const defaultRenderAttachment = useCallback((attachment: T, index: number) => (
