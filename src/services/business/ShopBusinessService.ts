@@ -5,7 +5,7 @@ import { nostrEventService, ProductEventData } from '../nostr/NostrEventService'
 import { productStore } from '../../stores/ProductStore';
 import { signEvent, createDeletionEvent } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
-import { eventLoggingService } from '../core/EventLoggingService';
+// eventLoggingService removed - now handled automatically in GenericRelayService
 
 export interface ShopProduct {
   id: string;
@@ -159,8 +159,7 @@ export class ShopBusinessService {
         }
       );
 
-      // Log event publishing analytics (async, non-blocking)
-      eventLoggingService.logEventPublishingAsync(event, publishResult);
+      // Event logging now handled automatically in GenericRelayService
 
       if (!publishResult.success) {
         return {
@@ -375,8 +374,7 @@ export class ShopBusinessService {
         }
       );
 
-      // Log event publishing analytics (async, non-blocking)
-      eventLoggingService.logEventPublishingAsync(updatedEvent, publishResult);
+      // Event logging now handled automatically in GenericRelayService
 
       if (!publishResult.success) {
         return {
@@ -1008,8 +1006,7 @@ export class ShopBusinessService {
         });
       });
 
-      // Log event publishing analytics (async, non-blocking)
-      eventLoggingService.logEventPublishingAsync(signingResult.signedEvent, publishResult);
+      // Event logging now handled automatically in GenericRelayService
 
       if (!publishResult.success) {
         return {

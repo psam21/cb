@@ -35,12 +35,29 @@ export interface PaginatedEventResponse {
 export class KVService {
   private static instance: KVService;
   private redis: RedisClientType | null = null;
+  private connectionPromise: Promise<void> | null = null;
+  private isConnected = false;
 
   private constructor() {
-    this.initializeRedis();
+    // Don't initialize connection in constructor for serverless
   }
 
-  private async initializeRedis() {
+  private async initializeRedis(): Promise<void> {
+    // Return existing connection promise if already connecting
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
+
+    // Return immediately if already connected
+    if (this.isConnected && this.redis?.isReady) {
+      return Promise.resolve();
+    }
+
+    this.connectionPromise = this.connectToRedis();
+    return this.connectionPromise;
+  }
+
+  private async connectToRedis(): Promise<void> {
     try {
       // Check for Redis URL in environment variables (with fallback)
       const redisUrl = process.env.cb_redis_storage_REDIS_URL || process.env.REDIS_URL;
@@ -48,59 +65,93 @@ export class KVService {
       if (!redisUrl) {
         logger.warn('Redis URL not configured - KV service will not be available', {
           service: 'KVService',
-          method: 'initializeRedis',
+          method: 'connectToRedis',
           checkedVars: ['cb_redis_storage_REDIS_URL', 'REDIS_URL'],
         });
-        return;
+        throw new Error('Redis URL not configured');
       }
 
-      logger.info('Initializing Redis connection', {
+      logger.info('Connecting to Redis', {
         service: 'KVService',
-        method: 'initializeRedis',
+        method: 'connectToRedis',
         redisHost: redisUrl.split('@')[1]?.split(':')[0] || 'unknown',
       });
 
-      this.redis = createClient({ url: redisUrl });
-      
-      this.redis.on('error', (err) => {
-        logger.error('Redis client error', err, {
-          service: 'KVService',
-          method: 'initializeRedis',
+      // Create new client if doesn't exist or is closed
+      if (!this.redis || !this.redis.isOpen) {
+        this.redis = createClient({ 
+          url: redisUrl,
+          socket: {
+            connectTimeout: 10000, // 10 seconds
+          }
         });
-      });
+        
+        this.redis.on('error', (err) => {
+          logger.error('Redis client error', err, {
+            service: 'KVService',
+            method: 'connectToRedis',
+          });
+          this.isConnected = false;
+        });
 
-      await this.redis.connect();
+        this.redis.on('connect', () => {
+          logger.info('Redis connected', {
+            service: 'KVService',
+            method: 'connectToRedis',
+          });
+        });
+
+        this.redis.on('ready', () => {
+          logger.info('Redis ready', {
+            service: 'KVService',
+            method: 'connectToRedis',
+          });
+          this.isConnected = true;
+        });
+
+        this.redis.on('end', () => {
+          logger.info('Redis connection ended', {
+            service: 'KVService',
+            method: 'connectToRedis',
+          });
+          this.isConnected = false;
+        });
+      }
+
+      // Connect if not already connected
+      if (!this.redis.isOpen) {
+        await this.redis.connect();
+      }
+      
+      this.isConnected = true;
       
       logger.info('Redis client connected successfully', {
         service: 'KVService',
-        method: 'initializeRedis',
+        method: 'connectToRedis',
+        isReady: this.redis.isReady,
       });
     } catch (error) {
-      logger.error('Failed to initialize Redis client', error instanceof Error ? error : new Error('Unknown error'), {
+      this.isConnected = false;
+      this.connectionPromise = null;
+      logger.error('Failed to connect to Redis', error instanceof Error ? error : new Error('Unknown error'), {
         service: 'KVService',
-        method: 'initializeRedis',
+        method: 'connectToRedis',
       });
+      throw error;
     }
   }
 
   private async ensureConnected(): Promise<boolean> {
-    if (!this.redis) {
+    try {
+      await this.initializeRedis();
+      return this.isConnected && this.redis?.isReady === true;
+    } catch (error) {
+      logger.error('Failed to ensure Redis connection', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'KVService',
+        method: 'ensureConnected',
+      });
       return false;
     }
-    
-    if (!this.redis.isReady) {
-      try {
-        await this.redis.connect();
-      } catch (error) {
-        logger.error('Failed to reconnect to Redis', error instanceof Error ? error : new Error('Unknown error'), {
-          service: 'KVService',
-          method: 'ensureConnected',
-        });
-        return false;
-      }
-    }
-    
-    return true;
   }
 
   public static getInstance(): KVService {
@@ -280,6 +331,145 @@ export class KVService {
 
       throw new AppError(
         'Failed to retrieve user events',
+        ErrorCode.INTERNAL_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        ErrorCategory.INTERNAL,
+        ErrorSeverity.HIGH
+      );
+    }
+  }
+
+  /**
+   * Get all events from all users (global dashboard)
+   */
+  public async getAllEvents(
+    page: number = 1,
+    limit: number = 20,
+    eventKind?: number,
+    startDate?: number,
+    endDate?: number
+  ): Promise<PaginatedEventResponse> {
+    try {
+      if (!(await this.ensureConnected())) {
+        throw new Error('Redis connection not available');
+      }
+
+      logger.info('Retrieving all events globally', {
+        service: 'KVService',
+        method: 'getAllEvents',
+        page,
+        limit,
+        eventKind,
+        startDate,
+        endDate,
+      });
+
+      // Get all event keys from all users using a pattern scan
+      const allEventKeys: string[] = [];
+      
+      // Scan for all user_events keys
+      let cursor = 0;
+      do {
+        const scanResult = await this.redis!.scan(cursor.toString(), {
+          MATCH: 'user_events:*',
+          COUNT: 1000
+        });
+        
+        cursor = typeof scanResult.cursor === 'string' ? parseInt(scanResult.cursor) : scanResult.cursor;
+        allEventKeys.push(...scanResult.keys.filter(key => 
+          // Only include actual event keys, not index keys
+          !key.includes('user_events_index:')
+        ));
+      } while (cursor !== 0);
+
+      if (allEventKeys.length === 0) {
+        return {
+          events: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+        };
+      }
+
+      // Sort keys by timestamp (newest first) - extract timestamp from key
+      const sortedKeys = allEventKeys.sort((a, b) => {
+        const timestampA = parseInt(a.split(':')[2] || '0');
+        const timestampB = parseInt(b.split(':')[2] || '0');
+        return timestampB - timestampA; // Newest first
+      });
+
+      // Calculate pagination
+      const totalCount = sortedKeys.length;
+      const offset = (page - 1) * limit;
+      const totalPages = Math.ceil(totalCount / limit);
+      const paginatedKeys = sortedKeys.slice(offset, offset + limit);
+
+      // Fetch event data
+      const events: UserEventData[] = [];
+      
+      for (const eventKey of paginatedKeys) {
+        try {
+          const eventDataStr = await this.redis!.get(eventKey);
+          if (eventDataStr) {
+            const eventData: UserEventData = JSON.parse(eventDataStr);
+            
+            // Apply filters if provided
+            if (eventKind !== undefined && eventData.eventKind !== eventKind) {
+              continue;
+            }
+            
+            if (startDate !== undefined && eventData.processedTimestamp < startDate) {
+              continue;
+            }
+            
+            if (endDate !== undefined && eventData.processedTimestamp > endDate) {
+              continue;
+            }
+            
+            events.push(eventData);
+          }
+        } catch (error) {
+          logger.warn('Failed to fetch individual event data', {
+            service: 'KVService',
+            method: 'getAllEvents',
+            eventKey,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      const result: PaginatedEventResponse = {
+        events,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages,
+        },
+      };
+
+      logger.info('All events retrieved successfully', {
+        service: 'KVService',
+        method: 'getAllEvents',
+        eventCount: events.length,
+        totalCount,
+        page,
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to retrieve all events', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'KVService',
+        method: 'getAllEvents',
+        error: errorMessage,
+      });
+
+      throw new AppError(
+        'Failed to retrieve all events',
         ErrorCode.INTERNAL_ERROR,
         HttpStatus.INTERNAL_SERVER_ERROR,
         ErrorCategory.INTERNAL,

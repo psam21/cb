@@ -8,6 +8,7 @@ import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../error
 import { NostrEvent, NostrSigner } from '../../types/nostr';
 import { NOSTR_RELAYS } from '../../config/relays';
 import { profileService } from '../business/ProfileBusinessService';
+import { eventLoggingService } from '../core/EventLoggingService';
 
 export interface RelayPublishingResult {
   success: boolean;
@@ -238,6 +239,9 @@ export class GenericRelayService {
         averageResponseTime,
         retryAttempts,
       };
+
+      // 🚀 UNIVERSAL EVENT LOGGING - Log ALL events automatically
+      eventLoggingService.logEventPublishingAsync(event, result);
 
       if (success) {
         logger.info('Event publishing completed successfully', {

@@ -6,7 +6,7 @@ import { UserEventData } from '@/services/core/KVService';
 import { logger } from '@/services/core/LoggingService';
 import { EventTable } from '@/components/user-event-log/EventTable';
 import { Pagination } from '@/components/user-event-log/Pagination';
-import { NpubInput } from '@/components/user-event-log/NpubInput';
+// NpubInput removed - now showing ALL events globally
 
 export default function UserEventLogPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -19,39 +19,33 @@ export default function UserEventLogPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentNpub, setCurrentNpub] = useState<string>('');
   const [sortField, setSortField] = useState<keyof UserEventData>('processedTimestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
-  // Initialize with user's npub if authenticated
+  // Auto-load events on component mount
   useEffect(() => {
-    if (isAuthenticated && user?.npub && !currentNpub) {
-      setCurrentNpub(user.npub);
-    }
-  }, [isAuthenticated, user, currentNpub]);
+    fetchEvents(1); // Load first page immediately
+  }, []);
 
-  const fetchEvents = useCallback(async (npub: string, page: number = 1) => {
-    if (!npub) return;
-
+  const fetchEvents = useCallback(async (page: number = 1) => {
     setLoading(true);
     setError(null);
 
     try {
-      logger.info('Fetching user events', {
+      logger.info('Fetching all events globally', {
         service: 'UserEventLogPage',
         method: 'fetchEvents',
-        npub: npub.substring(0, 12) + '...',
         page,
         limit: pagination.limit,
       });
 
       const params = new URLSearchParams({
-        npub,
         page: page.toString(),
         limit: pagination.limit.toString(),
       });
 
-      const response = await fetch(`/api/get-user-events?${params}`);
+      const response = await fetch(`/api/get-all-events?${params}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -89,7 +83,7 @@ export default function UserEventLogPage() {
       setEvents(sortedEvents);
       setPagination(data.pagination);
 
-      logger.info('User events fetched successfully', {
+      logger.info('All events fetched successfully', {
         service: 'UserEventLogPage',
         method: 'fetchEvents',
         eventCount: data.events.length,
@@ -101,10 +95,9 @@ export default function UserEventLogPage() {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setError(errorMessage);
       
-      logger.error('Failed to fetch user events', error instanceof Error ? error : new Error(errorMessage), {
+      logger.error('Failed to fetch all events', error instanceof Error ? error : new Error(errorMessage), {
         service: 'UserEventLogPage',
         method: 'fetchEvents',
-        npub: npub.substring(0, 12) + '...',
         error: errorMessage,
       });
     } finally {
@@ -112,21 +105,17 @@ export default function UserEventLogPage() {
     }
   }, [pagination.limit, sortField, sortDirection]);
 
-  const handleNpubSubmit = useCallback((npub: string) => {
-    setCurrentNpub(npub);
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
-    fetchEvents(npub, 1);
-  }, [fetchEvents]);
+  // Remove npub-specific handlers - now global
 
   const handlePageChange = useCallback((newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
-    fetchEvents(currentNpub, newPage);
-  }, [currentNpub, fetchEvents]);
+    fetchEvents(newPage);
+  }, [fetchEvents]);
 
   const handleLimitChange = useCallback((newLimit: number) => {
     setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
-    fetchEvents(currentNpub, 1);
-  }, [currentNpub, fetchEvents]);
+    fetchEvents(1);
+  }, [fetchEvents]);
 
   const handleSort = useCallback((field: keyof UserEventData) => {
     const newDirection = field === sortField && sortDirection === 'desc' ? 'asc' : 'desc';
@@ -161,17 +150,18 @@ export default function UserEventLogPage() {
   }, [sortField, sortDirection, events]);
 
   const handleRefresh = useCallback(() => {
-    if (currentNpub) {
-      fetchEvents(currentNpub, pagination.page);
-    }
-  }, [currentNpub, pagination.page, fetchEvents]);
+    fetchEvents(pagination.page);
+  }, [pagination.page, fetchEvents]);
 
-  // Auto-fetch if user is authenticated and npub is set
+  // Auto-refresh functionality
   useEffect(() => {
-    if (currentNpub && pagination.page === 1) {
-      fetchEvents(currentNpub, 1);
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        fetchEvents(pagination.page);
+      }, 30000); // Refresh every 30 seconds
+      return () => clearInterval(interval);
     }
-  }, [currentNpub]); // Only run when npub changes, not on every pagination change
+  }, [autoRefresh, pagination.page, fetchEvents]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -180,16 +170,26 @@ export default function UserEventLogPage() {
         <div className="container-width py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-primary-800">User Activity Log</h1>
+              <h1 className="text-2xl font-bold text-primary-800">Global Event Activity</h1>
               <p className="text-gray-600 mt-1">
-                View Nostr event publishing analytics and relay performance metrics
+                Real-time Nostr event publishing analytics from all Culture Bridge users
               </p>
             </div>
-            <button
-              onClick={handleRefresh}
-              disabled={loading || !currentNpub}
-              className="btn-outline-sm flex items-center space-x-2 disabled:opacity-50"
-            >
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700">Auto-refresh (30s)</span>
+              </label>
+              <button
+                onClick={handleRefresh}
+                disabled={loading}
+                className="btn-outline-sm flex items-center space-x-2 disabled:opacity-50"
+              >
               <svg 
                 className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} 
                 fill="none" 
@@ -203,22 +203,27 @@ export default function UserEventLogPage() {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
                 />
               </svg>
-              <span>Refresh</span>
-            </button>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container-width py-8">
-        {/* Npub Input */}
-        <div className="mb-6">
-          <NpubInput
-            value={currentNpub}
-            onSubmit={handleNpubSubmit}
-            loading={loading}
-            isAuthenticated={isAuthenticated}
-            userNpub={user?.npub}
-          />
+        {/* Global Dashboard Info */}
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">Global Event Dashboard</h3>
+              <p className="text-sm text-blue-700 mt-1">
+                Showing all Nostr events published through Culture Bridge from all users. Events are logged automatically when users create, edit, or delete products.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Error State */}
@@ -254,7 +259,7 @@ export default function UserEventLogPage() {
         )}
 
         {/* Events Table */}
-        {!loading && currentNpub && (
+        {!loading && (
           <>
             <EventTable
               events={events}
@@ -280,25 +285,37 @@ export default function UserEventLogPage() {
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No events found</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No events yet</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  This user hasn&apos;t published any events through Culture Bridge yet.
+                  No Nostr events have been published through Culture Bridge yet. Try creating, editing, or deleting a product to see events appear here.
                 </p>
               </div>
             )}
           </>
         )}
 
-        {/* Instructions */}
-        {!currentNpub && !loading && (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Enter an npub to get started</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Enter a Nostr public key (npub) above to view event publishing analytics.
-            </p>
+        {/* Event Statistics */}
+        {events.length > 0 && (
+          <div className="mt-6 bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Activity Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Total Events:</span>
+                <span className="font-medium ml-1">{pagination.total}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">This Page:</span>
+                <span className="font-medium ml-1">{events.length}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Event Types:</span>
+                <span className="font-medium ml-1">{[...new Set(events.map(e => e.eventKind))].length}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Users:</span>
+                <span className="font-medium ml-1">{[...new Set(events.map(e => e.npub))].length}</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
