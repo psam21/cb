@@ -42,15 +42,25 @@ export class KVService {
 
   private async initializeRedis() {
     try {
-      if (!process.env.REDIS_URL) {
-        logger.warn('REDIS_URL not configured - KV service will not be available', {
+      // Check for Redis URL in environment variables (with fallback)
+      const redisUrl = process.env.cb_redis_storage_REDIS_URL || process.env.REDIS_URL;
+      
+      if (!redisUrl) {
+        logger.warn('Redis URL not configured - KV service will not be available', {
           service: 'KVService',
           method: 'initializeRedis',
+          checkedVars: ['cb_redis_storage_REDIS_URL', 'REDIS_URL'],
         });
         return;
       }
 
-      this.redis = createClient({ url: process.env.REDIS_URL });
+      logger.info('Initializing Redis connection', {
+        service: 'KVService',
+        method: 'initializeRedis',
+        redisHost: redisUrl.split('@')[1]?.split(':')[0] || 'unknown',
+      });
+
+      this.redis = createClient({ url: redisUrl });
       
       this.redis.on('error', (err) => {
         logger.error('Redis client error', err, {
