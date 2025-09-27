@@ -3,7 +3,7 @@ import { NostrSigner, NostrEvent, NIP23Event, NIP23Content } from '../../types/n
 import { blossomService, BlossomFileMetadata } from '../generic/GenericBlossomService';
 import { nostrEventService, ProductEventData } from '../nostr/NostrEventService';
 import { productStore } from '../../stores/ProductStore';
-import { createRevisionEvent, signEvent, createNIP23Event } from '../generic/GenericEventService';
+import { createRevisionEvent, signEvent, createNIP23Event, createDeletionEvent } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
 
 export interface ShopProduct {
@@ -949,46 +949,25 @@ export class ShopBusinessService {
         };
       }
 
-      // Create deletion event (Kind 23 with deletion tags)
+      // Create NIP-09 Kind 5 deletion event
       onProgress?.({
         step: 'creating_event',
         progress: 30,
         message: 'Creating deletion event...',
-        details: 'Preparing product deletion for Nostr network',
+        details: 'Preparing NIP-09 deletion for Nostr network',
       });
 
-      const now = Math.floor(Date.now() / 1000);
-      
-      // Create NIP-23 content for deletion
-      const nip23Content: NIP23Content = {
-        title: `[DELETED] ${product.title}`,
-        content: 'This product has been deleted by the author.',
-        summary: 'Product deleted',
-        published_at: now,
-        tags: ['culture-bridge-shop', 'product-deletion'],
-        language: 'en',
-        region: product.location,
-        permissions: 'public',
-        // IMPORTANT: Keep the original imageHash so image still renders
-        file_id: product.imageHash,
-        file_type: 'image',
-      };
-
-      // For Kind 30023 deletion, create a new event with same dTag and deletion content
-      const deletionResult = createNIP23Event(nip23Content, userPubkey, {
-        dTag: product.dTag, // Use same dTag to replace the original
-        tags: [
-          ['t', 'culture-bridge-shop'], // Shop identifier tag
-          // Preserve original product metadata as tags so it can still be parsed
-          ['price', product.price.toString()],
-          ['currency', product.currency],
-          ['category', product.category],
-          ['condition', product.condition],
-          ['contact', product.contact],
-          // Preserve original tags (except duplicates)
-          ...product.tags.filter(tag => tag !== 'culture-bridge-shop').map(tag => ['t', tag]),
-        ],
-      });
+      // Create proper NIP-09 Kind 5 deletion event
+      const deletionResult = createDeletionEvent(
+        [product.eventId], // Event ID to delete
+        userPubkey,
+        {
+          reason: `Product "${product.title}" deleted by author`,
+          additionalTags: [
+            ['t', 'culture-bridge-shop'], // Help identify this is a shop product deletion
+          ],
+        }
+      );
 
       if (!deletionResult.success || !deletionResult.event) {
         return {
@@ -1031,22 +1010,24 @@ export class ShopBusinessService {
         };
       }
 
-      // Don't add deletion events to ProductStore - they should only exist on relays
-      // The soft delete filtering will handle this during query
+      // Remove the deleted product from local store
+      productStore.removeProduct(productId);
 
       onProgress?.({
         step: 'complete',
         progress: 100,
         message: 'Product deleted successfully!',
-        details: `Published to ${publishResult.publishedRelays.length} relays`,
+        details: `NIP-09 deletion published to ${publishResult.publishedRelays.length} relays`,
       });
 
-      logger.info('Product deleted successfully', {
+      logger.info('Product deleted successfully with NIP-09', {
         service: 'ShopBusinessService',
         method: 'deleteProduct',
         productId,
+        originalEventId: product.eventId,
         deletionEventId: signingResult.signedEvent.id,
         publishedRelays: publishResult.publishedRelays.length,
+        deletionType: 'NIP-09 Kind 5',
       });
 
       return {

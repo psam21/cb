@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import Image from 'next/image';
+import { filterVisibleTags } from '@/utils/tagFilter';
 
 export interface BaseCardData {
   id: string;
@@ -256,23 +257,26 @@ export const BaseCard = ({
         )}
 
         {/* Tags */}
-        {data.tags && data.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {data.tags.slice(0, 3).map((tag, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-accent-50 text-accent-700 text-xs rounded-full font-medium"
-              >
-                #{tag}
-              </span>
-            ))}
-            {data.tags.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                +{data.tags.length - 3} more
-              </span>
-            )}
-          </div>
-        )}
+        {data.tags && data.tags.length > 0 && (() => {
+          const visibleTags = filterVisibleTags(data.tags);
+          return visibleTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {visibleTags.slice(0, 3).map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-accent-50 text-accent-700 text-xs rounded-full font-medium"
+                >
+                  #{tag}
+                </span>
+              ))}
+              {visibleTags.length > 3 && (
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                  +{visibleTags.length - 3} more
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Contact and Published Info */}
         <div className="flex items-center justify-between text-xs text-gray-400 mb-4">

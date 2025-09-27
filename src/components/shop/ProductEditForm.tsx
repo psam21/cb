@@ -3,6 +3,7 @@ import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBus
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
+import { filterVisibleTags } from '@/utils/tagFilter';
 
 interface ProductEditFormProps {
   product: ShopProduct;

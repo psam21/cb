@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 import { logger } from '@/services/core/LoggingService';
+import { filterVisibleTags } from '@/utils/tagFilter';
 
 interface MyShopProductCardProps {
   product: ShopProduct;
@@ -127,23 +128,26 @@ export const MyShopProductCard: React.FC<MyShopProductCardProps> = ({
         </div>
         
         {/* Tags */}
-        {product.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {product.tags.slice(0, 3).map((tag, index) => (
-              <span 
-                key={index}
-                className="bg-accent-50 text-accent-700 text-xs rounded-full font-medium px-2 py-1"
-              >
-                #{tag}
-              </span>
-            ))}
-            {product.tags.length > 3 && (
-              <span className="text-gray-500 text-xs">
-                +{product.tags.length - 3} more
-              </span>
-            )}
-          </div>
-        )}
+        {product.tags.length > 0 && (() => {
+          const visibleTags = filterVisibleTags(product.tags);
+          return visibleTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {visibleTags.slice(0, 3).map((tag, index) => (
+                <span 
+                  key={index}
+                  className="bg-accent-50 text-accent-700 text-xs rounded-full font-medium px-2 py-1"
+                >
+                  #{tag}
+                </span>
+              ))}
+              {visibleTags.length > 3 && (
+                <span className="text-gray-500 text-xs">
+                  +{visibleTags.length - 3} more
+                </span>
+              )}
+            </div>
+          );
+        })()}
         
         {/* Action Buttons */}
         <div className="flex gap-2">

@@ -20,6 +20,11 @@ export interface EventCreationOptions {
   dTag?: string; // Custom d tag for parameterized replaceable events
 }
 
+export interface DeletionEventOptions {
+  reason?: string;
+  additionalTags?: string[][];
+}
+
 export interface EventCreationResult {
   success: boolean;
   event?: Omit<NostrEvent, 'id' | 'sig'>;
@@ -581,6 +586,66 @@ export class GenericEventService {
       content: JSON.stringify({ servers }),
     };
   }
+
+  /**
+   * Create a NIP-09 Kind 5 deletion event
+   * This properly deletes events according to Nostr protocol
+   */
+  public createDeletionEvent(
+    eventIdsToDelete: string[],
+    userPubkey: string,
+    options: DeletionEventOptions = {}
+  ): EventCreationResult {
+    try {
+      logger.info('Creating NIP-09 Kind 5 deletion event', {
+        service: 'GenericEventService',
+        method: 'createDeletionEvent',
+        userPubkey: userPubkey.substring(0, 8) + '...',
+        eventCount: eventIdsToDelete.length,
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+
+      const event: Omit<NostrEvent, 'id' | 'sig'> = {
+        kind: 5, // NIP-09 Deletion event
+        pubkey: userPubkey,
+        created_at: now,
+        tags: [
+          // Reference the events to delete
+          ...eventIdsToDelete.map(eventId => ['e', eventId]),
+          // Optional reason for deletion
+          ...(options.reason ? [['reason', options.reason]] : []),
+          // Any additional tags
+          ...(options.additionalTags || []),
+        ],
+        content: options.reason || '', // Optional deletion reason
+      };
+
+      logger.info('Kind 5 deletion event created successfully', {
+        service: 'GenericEventService',
+        method: 'createDeletionEvent',
+        eventCount: eventIdsToDelete.length,
+        hasReason: !!options.reason,
+      });
+
+      return {
+        success: true,
+        event,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to create deletion event', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'GenericEventService',
+        method: 'createDeletionEvent',
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
 }
 
 // Export singleton instance
@@ -592,6 +657,9 @@ export const createNIP23Event = (content: NIP23Content, userPubkey: string, opti
 
 export const createRevisionEvent = (originalEvent: NIP23Event, revisedContent: NIP23Content, userPubkey: string, revisionNumber?: number) =>
   genericEventService.createRevisionEvent(originalEvent, revisedContent, userPubkey, revisionNumber);
+
+export const createDeletionEvent = (eventIdsToDelete: string[], userPubkey: string, options?: DeletionEventOptions) =>
+  genericEventService.createDeletionEvent(eventIdsToDelete, userPubkey, options);
 
 export const signEvent = (event: Omit<NostrEvent, 'id' | 'sig'>, signer: NostrSigner) =>
   genericEventService.signEvent(event, signer);
