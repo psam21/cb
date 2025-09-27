@@ -1,9 +1,9 @@
 import { logger } from '../core/LoggingService';
-import { NostrSigner, NostrEvent, NIP23Event, NIP23Content } from '../../types/nostr';
+import { NostrSigner, NostrEvent } from '../../types/nostr';
 import { blossomService, BlossomFileMetadata } from '../generic/GenericBlossomService';
 import { nostrEventService, ProductEventData } from '../nostr/NostrEventService';
 import { productStore } from '../../stores/ProductStore';
-import { createRevisionEvent, signEvent, createNIP23Event, createDeletionEvent } from '../generic/GenericEventService';
+import { signEvent, createDeletionEvent } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
 import { eventLoggingService } from '../core/EventLoggingService';
 

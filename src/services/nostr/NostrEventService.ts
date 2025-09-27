@@ -3,7 +3,7 @@ import { NostrSigner, NostrEvent, NIP23Event, NIP23Content } from '../../types/n
 import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 import { createNIP23Event, signEvent as genericSignEvent } from '../generic/GenericEventService';
-import { publishEvent as genericPublishEvent } from '../generic/GenericRelayService';
+import { publishEvent as genericPublishEvent, RelayPublishingResult } from '../generic/GenericRelayService';
 
 export interface ProductEventData {
   title: string;
@@ -147,7 +147,7 @@ export class NostrEventService {
     event: NostrEvent,
     signer: NostrSigner,
     onProgress?: (relay: string, status: 'publishing' | 'success' | 'failed') => void
-  ): Promise<PublishingResult> {
+  ): Promise<RelayPublishingResult> {
     try {
       logger.info('Publishing event to relays', {
         service: 'NostrEventService',
@@ -168,14 +168,7 @@ export class NostrEventService {
         }
       });
 
-      const publishingResult: PublishingResult = {
-        success: result.success,
-        eventId: result.eventId,
-        publishedRelays: result.publishedRelays,
-        failedRelays: result.failedRelays,
-        error: result.error,
-      };
-
+      // Return the full RelayPublishingResult with analytics data
       if (result.success) {
         logger.info('Event publishing completed successfully', {
           service: 'NostrEventService',
@@ -184,6 +177,8 @@ export class NostrEventService {
           publishedCount: result.publishedRelays.length,
           failedCount: result.failedRelays.length,
           successRate: `${result.successRate.toFixed(1)}%`,
+          processingDuration: result.processingDuration,
+          averageResponseTime: result.averageResponseTime,
         });
       } else {
         logger.error('Event publishing failed', new Error(result.error), {
@@ -195,7 +190,7 @@ export class NostrEventService {
         });
       }
 
-      return publishingResult;
+      return result; // Return the full RelayPublishingResult with analytics
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Error during event publishing workflow', error instanceof Error ? error : new Error(errorMessage), {

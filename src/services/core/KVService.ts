@@ -5,7 +5,7 @@
 import { createClient, RedisClientType } from 'redis';
 import { logger } from './LoggingService';
 import { AppError } from '../../errors/AppError';
-import { ErrorCode, HttpStatus } from '../../errors/ErrorTypes';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 
 export interface UserEventData {
   npub: string;
@@ -156,7 +156,8 @@ export class KVService {
         'Failed to store event analytics data',
         ErrorCode.INTERNAL_ERROR,
         HttpStatus.INTERNAL_SERVER_ERROR,
-        { eventId: eventData.eventId, error: errorMessage }
+        ErrorCategory.INTERNAL,
+        ErrorSeverity.HIGH
       );
     }
   }
@@ -281,7 +282,8 @@ export class KVService {
         'Failed to retrieve user events',
         ErrorCode.INTERNAL_ERROR,
         HttpStatus.INTERNAL_SERVER_ERROR,
-        { npub, error: errorMessage }
+        ErrorCategory.INTERNAL,
+        ErrorSeverity.HIGH
       );
     }
   }

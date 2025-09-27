@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { UserEventData, PaginatedEventResponse } from '@/services/core/KVService';
+import { UserEventData } from '@/services/core/KVService';
 import { logger } from '@/services/core/LoggingService';
 import { EventTable } from '@/components/user-event-log/EventTable';
 import { Pagination } from '@/components/user-event-log/Pagination';
@@ -282,7 +282,7 @@ export default function UserEventLogPage() {
                 </svg>
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No events found</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  This user hasn't published any events through Culture Bridge yet.
+                  This user hasn&apos;t published any events through Culture Bridge yet.
                 </p>
               </div>
             )}
