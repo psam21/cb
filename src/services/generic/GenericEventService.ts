@@ -541,7 +541,15 @@ export class GenericEventService {
           break;
         case 'f': // File hash
           data.imageHash = tag[1];
-          data.imageUrl = `https://blossom.nostr.build/${tag[1]}`;
+          // Use the event publisher's npub for their personal Blossom server (Nostr ethos)
+          try {
+            const { profileService } = require('../business/ProfileBusinessService');
+            const publisherNpub = profileService.pubkeyToNpub(event.pubkey);
+            data.imageUrl = `https://${publisherNpub}.blossom.band/${tag[1]}`;
+          } catch (error) {
+            // Fallback to shared server if npub conversion fails
+            data.imageUrl = `https://blossom.nostr.build/${tag[1]}`;
+          }
           break;
         case 't': // Custom tags
           if (tag[1] && !tag[1].startsWith('culture-bridge')) {

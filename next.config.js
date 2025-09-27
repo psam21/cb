@@ -19,7 +19,12 @@ const baseConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'npub13dhmafj7pn4k2yj36jsqypgn53cunrtpzw032qdgle5w4h8e3mpqlelfau.blossom.band',
+        hostname: '*.blossom.band',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.blosstr.com',
         pathname: '**',
       },
       {

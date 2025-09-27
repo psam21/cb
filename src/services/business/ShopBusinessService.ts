@@ -602,7 +602,7 @@ export class ShopBusinessService {
         description: content.content,
         price: productData.price || 0,
         currency: productData.currency || 'USD',
-        imageUrl: productData.imageHash ? `https://blossom.nostr.build/${productData.imageHash}` : undefined,
+        imageUrl: productData.imageHash ? this.constructUserBlossomUrl(event.pubkey, productData.imageHash) : undefined,
         imageHash: productData.imageHash,
         tags: productData.tags || [],
         category: productData.category || 'general',
@@ -634,6 +634,29 @@ export class ShopBusinessService {
         error: errorMessage,
       });
       return null;
+    }
+  }
+
+  /**
+   * Construct user-specific Blossom URL following Nostr decentralization ethos
+   */
+  private constructUserBlossomUrl(userPubkey: string, imageHash: string): string {
+    try {
+      // Import profileService to convert pubkey to npub
+      const { profileService } = require('../business/ProfileBusinessService');
+      const userNpub = profileService.pubkeyToNpub(userPubkey);
+      
+      // Return user's personal Blossom server URL
+      return `https://${userNpub}.blossom.band/${imageHash}`;
+    } catch (error) {
+      logger.warn('Failed to construct user-specific Blossom URL, falling back to shared server', {
+        service: 'ShopBusinessService',
+        method: 'constructUserBlossomUrl',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      
+      // Fallback to shared server if npub conversion fails
+      return `https://blossom.nostr.build/${imageHash}`;
     }
   }
 
