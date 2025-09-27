@@ -2,9 +2,15 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
-// Import Blossom configuration for dynamic domain configuration
-// Note: Using require with .js extension for Next.js compatibility
-const { getAllBlossomDomains } = require('./src/config/blossom');
+// Static Blossom domains configuration (avoid TypeScript import issues in next.config.js)
+const getAllBlossomDomains = () => {
+  return [
+    '*.blossom.band',     // User-owned Blossom servers
+    '*.blosstr.com',      // Alternative user-owned servers
+    'blossom.nostr.build', // Shared Blossom server
+    'blosstr.com',        // Alternative shared server
+  ];
+};
 
 /** @type {import('next').NextConfig} */
 const baseConfig = {
