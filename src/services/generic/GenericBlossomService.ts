@@ -35,12 +35,14 @@ export interface SequentialUploadProgress {
   currentFile: {
     name: string;
     size: number;
-    status: 'waiting' | 'authenticating' | 'uploading' | 'completed' | 'failed';
+    status: 'waiting' | 'authenticating' | 'uploading' | 'completed' | 'failed' | 'retrying';
     progress: number; // 0-100
     error?: string;
+    retryCount?: number;
+    maxRetries?: number;
   };
   completedFiles: BlossomFileMetadata[];
-  failedFiles: { name: string; error: string }[];
+  failedFiles: { name: string; error: string; retryCount: number }[];
   overallProgress: number; // 0-100
   nextAction: string; // e.g., "Please approve image2.jpg in your signer"
   estimatedTimeRemaining?: number; // seconds
@@ -54,6 +56,13 @@ export interface BatchUploadConsent {
   userAccepted: boolean;
   timestamp: number;
   files: { name: string; size: number; type: string }[];
+}
+
+export interface RetryConfig {
+  maxRetries: number;
+  retryDelay: number; // milliseconds
+  backoffMultiplier: number; // exponential backoff
+  retryableErrors: string[]; // error patterns that should trigger retry
 }
 
 export interface BlossomServer {
@@ -71,6 +80,21 @@ export class GenericBlossomService {
   }));
   private readonly maxFileSize = BLOSSOM_CONFIG.maxFileSize;
   private readonly maxRetries = 3;
+  
+  // Enhanced retry configuration for sequential uploads
+  private readonly retryConfig: RetryConfig = {
+    maxRetries: 2, // Max 2 retries per file (3 total attempts)
+    retryDelay: 1000, // Start with 1 second delay
+    backoffMultiplier: 2, // Double delay each retry (1s, 2s, 4s)
+    retryableErrors: [
+      'network error',
+      'timeout',
+      'connection failed',
+      'server error',
+      'rate limit',
+      'temporary failure'
+    ]
+  };
 
   private constructor() {}
 
@@ -576,10 +600,12 @@ export class GenericBlossomService {
               name: file.name,
               size: file.size,
               status: 'authenticating',
-              progress: 0
+              progress: 0,
+              retryCount: 0,
+              maxRetries: this.retryConfig.maxRetries
             },
             completedFiles: uploadedFiles,
-            failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+            failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error, retryCount: 0 })),
             overallProgress: Math.round((i / files.length) * 100),
             nextAction: `Please approve "${file.name}" in your signer`,
             estimatedTimeRemaining: this.calculateEstimatedTime(i, files.length, startTime)
@@ -607,15 +633,15 @@ export class GenericBlossomService {
               progress: 50
             },
             completedFiles: uploadedFiles,
-            failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+            failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error, retryCount: 0 })),
             overallProgress: Math.round(((i + 0.5) / files.length) * 100),
             nextAction: `Uploading "${file.name}"...`,
             estimatedTimeRemaining: this.calculateEstimatedTime(i, files.length, startTime)
           });
         }
 
-        // Actual file upload using existing single-file method
-        const uploadResult = await this.uploadFile(file, signer);
+        // Actual file upload with retry logic
+        const { result: uploadResult, retryCount } = await this.uploadFileWithRetry(file, signer);
 
         if (uploadResult.success && uploadResult.metadata) {
           uploadedFiles.push(uploadResult.metadata);
@@ -632,7 +658,7 @@ export class GenericBlossomService {
                 progress: 100
               },
               completedFiles: uploadedFiles,
-              failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+              failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error, retryCount: 0 })),
               overallProgress: Math.round(((i + 1) / files.length) * 100),
               nextAction: i < files.length - 1 ? `Next: "${files[i + 1].name}"` : 'Upload complete!',
               estimatedTimeRemaining: this.calculateEstimatedTime(i + 1, files.length, startTime)
@@ -661,10 +687,12 @@ export class GenericBlossomService {
                 size: file.size,
                 status: 'failed',
                 progress: 0,
-                error
+                error,
+                retryCount,
+                maxRetries: this.retryConfig.maxRetries
               },
               completedFiles: uploadedFiles,
-              failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+              failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error, retryCount })),
               overallProgress: Math.round(((i + 1) / files.length) * 100),
               nextAction: i < files.length - 1 ? `Next: "${files[i + 1].name}"` : 'Upload complete with errors',
               estimatedTimeRemaining: this.calculateEstimatedTime(i + 1, files.length, startTime)
@@ -731,6 +759,74 @@ export class GenericBlossomService {
     const remainingFiles = totalFiles - currentIndex;
     
     return Math.ceil(remainingFiles * avgTimePerFile);
+  }
+
+  /**
+   * Check if an error is retryable based on error message patterns
+   */
+  private isRetryableError(error: string): boolean {
+    const errorLower = error.toLowerCase();
+    return this.retryConfig.retryableErrors.some(pattern => 
+      errorLower.includes(pattern.toLowerCase())
+    );
+  }
+
+  /**
+   * Calculate retry delay with exponential backoff
+   */
+  private calculateRetryDelay(retryCount: number): number {
+    return this.retryConfig.retryDelay * Math.pow(this.retryConfig.backoffMultiplier, retryCount);
+  }
+
+  /**
+   * Upload a single file with retry logic
+   */
+  private async uploadFileWithRetry(
+    file: File,
+    signer: NostrSigner,
+    maxRetries: number = this.retryConfig.maxRetries
+  ): Promise<{ result: BlossomUploadResult; retryCount: number }> {
+    let lastError = '';
+    let retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        const result = await this.uploadFile(file, signer);
+        return { result, retryCount };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown upload error';
+        lastError = errorMessage;
+        
+        // Check if we should retry
+        if (retryCount < maxRetries && this.isRetryableError(errorMessage)) {
+          retryCount++;
+          const delay = this.calculateRetryDelay(retryCount - 1);
+          
+          logger.warn('File upload failed, retrying', {
+            service: 'GenericBlossomService',
+            method: 'uploadFileWithRetry',
+            fileName: file.name,
+            retryCount,
+            maxRetries,
+            delay,
+            error: errorMessage
+          });
+          
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        // Max retries reached or non-retryable error
+        break;
+      }
+    }
+
+    // Return failed result
+    return {
+      result: { success: false, error: lastError },
+      retryCount
+    };
   }
 }
 

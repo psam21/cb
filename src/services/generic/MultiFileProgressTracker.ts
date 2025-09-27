@@ -168,7 +168,7 @@ export class MultiFileProgressTracker {
       .map(f => f.metadata!);
     const failedFiles = fileArray
       .filter(f => f.status === 'failed')
-      .map(f => ({ name: f.name, error: f.error || 'Unknown error' }));
+      .map(f => ({ name: f.name, error: f.error || 'Unknown error', retryCount: 0 }));
 
     const nextFileIndex = this.currentFileIndex + 1;
     const nextFile = nextFileIndex < fileArray.length ? fileArray[nextFileIndex] : null;
