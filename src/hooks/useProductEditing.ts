@@ -2,7 +2,13 @@ import { useCallback } from 'react';
 import { useNostrSigner } from './useNostrSigner';
 import { useMyShopStore } from '../stores/useMyShopStore';
 import { useAuthStore } from '../stores/useAuthStore';
-import { shopBusinessService, ShopProduct, ShopPublishingProgress } from '../services/business/ShopBusinessService';
+import { 
+  shopBusinessService, 
+  ShopProduct, 
+  ShopPublishingProgress,
+  updateProductWithAttachments,
+  CreateProductWithAttachmentsResult
+} from '../services/business/ShopBusinessService';
 import { ProductEventData } from '../services/nostr/NostrEventService';
 import { logger } from '../services/core/LoggingService';
 
@@ -143,6 +149,99 @@ export const useProductEditing = () => {
     cancelEditing();
   }, [editingProduct?.id, cancelEditing]);
 
+  const updateProductWithAttachmentsData = useCallback(async (
+    productId: string,
+    updatedData: Partial<ProductEventData>,
+    attachmentFiles: File[]
+  ): Promise<{ success: boolean; error?: string; result?: CreateProductWithAttachmentsResult }> => {
+    if (!signer || !isAvailable) {
+      const error = 'Nostr signer not available';
+      setUpdateError(error);
+      return { success: false, error };
+    }
+
+    if (!user?.pubkey) {
+      const error = 'User not authenticated';
+      setUpdateError(error);
+      return { success: false, error };
+    }
+
+    logger.info('Starting product update with multiple attachments', {
+      service: 'useProductEditing',
+      method: 'updateProductWithAttachmentsData',
+      productId,
+      attachmentCount: attachmentFiles.length,
+    });
+
+    setUpdating(true);
+    setUpdateError(null);
+
+    try {
+      const result = await updateProductWithAttachments(
+        productId,
+        updatedData,
+        attachmentFiles,
+        signer,
+        user.pubkey,
+        (progress: ShopPublishingProgress) => {
+          logger.info('Update with attachments progress', {
+            service: 'useProductEditing',
+            method: 'updateProductWithAttachmentsData',
+            step: progress.step,
+            progress: progress.progress,
+            message: progress.message,
+            attachmentProgress: progress.attachmentProgress,
+          });
+          
+          setUpdateProgress(progress);
+        }
+      );
+
+      if (result.success && result.product) {
+        // Update the product in the store
+        updateProduct(productId, result.product);
+        
+        logger.info('Product updated with attachments successfully', {
+          service: 'useProductEditing',
+          method: 'updateProductWithAttachmentsData',
+          productId,
+          newEventId: result.eventId,
+          publishedRelays: result.publishedRelays?.length || 0,
+          attachmentCount: result.attachmentResults?.successful.length || 0,
+        });
+
+        return { success: true, result };
+      } else {
+        const error = result.error || 'Update with attachments failed';
+        setUpdateError(error);
+        
+        logger.error('Product update with attachments failed', new Error(error), {
+          service: 'useProductEditing',
+          method: 'updateProductWithAttachmentsData',
+          productId,
+          error,
+        });
+
+        return { success: false, error, result };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setUpdateError(errorMessage);
+      
+      logger.error('Product update with attachments error', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'useProductEditing',
+        method: 'updateProductWithAttachmentsData',
+        productId,
+        error: errorMessage,
+      });
+
+      return { success: false, error: errorMessage };
+    } finally {
+      setUpdating(false);
+      setUpdateProgress(null);
+    }
+  }, [signer, isAvailable, user?.pubkey, setUpdating, setUpdateError, setUpdateProgress, updateProduct]);
+
   return {
     editingProduct,
     isEditing,
@@ -151,6 +250,12 @@ export const useProductEditing = () => {
     updateError,
     startEditing,
     updateProductData,
+    updateProductWithAttachmentsData, // NEW: Multiple attachments support
     cancelEdit,
+    // Enhanced state management for multi-attachment workflows
+    isMultiAttachmentSupported: true,
+    maxAttachments: 5, // From MEDIA_CONFIG
+    supportedFileTypes: ['image/*', 'video/*', 'audio/*'],
+    canEditAttachments: true,
   };
 };

@@ -4,8 +4,7 @@
  */
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { ShopProduct } from '@/services/business/ShopBusinessService';
-import { RelayPublishingProgress } from '@/services/generic/GenericRelayService';
+import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 
 export interface ShopState {
   // Products
@@ -15,7 +14,7 @@ export interface ShopState {
   
   // Publishing
   isPublishing: boolean;
-  publishingProgress: RelayPublishingProgress | null;
+  publishingProgress: ShopPublishingProgress | null;
   lastPublishingResult: {
     success: boolean;
     eventId?: string;
@@ -40,7 +39,7 @@ export interface ShopState {
   setProductsError: (error: string | null) => void;
   
   setPublishing: (publishing: boolean) => void;
-  setPublishingProgress: (progress: RelayPublishingProgress | null) => void;
+  setPublishingProgress: (progress: ShopPublishingProgress | null) => void;
   setLastPublishingResult: (result: {
     success: boolean;
     eventId?: string;

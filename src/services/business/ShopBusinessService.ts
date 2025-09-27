@@ -528,6 +528,224 @@ export class ShopBusinessService {
   }
 
   /**
+   * 🎯 NEW: Update a product with multiple attachments using Enhanced Sequential Upload
+   * This allows users to add, remove, or replace attachments when editing products
+   */
+  public async updateProductWithAttachments(
+    originalEventId: string,
+    updatedData: Partial<ProductEventData>,
+    attachmentFiles: File[],
+    signer: NostrSigner,
+    userPubkey: string,
+    onProgress?: (progress: ShopPublishingProgress) => void
+  ): Promise<CreateProductWithAttachmentsResult> {
+    try {
+      logger.info('Starting product update with multiple attachments', {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithAttachments',
+        originalEventId,
+        attachmentCount: attachmentFiles.length,
+        totalSize: attachmentFiles.reduce((sum, f) => sum + f.size, 0)
+      });
+
+      // Step 1: Get the original product
+      const originalProduct = productStore.getProduct(originalEventId);
+      if (!originalProduct) {
+        return {
+          success: false,
+          error: 'Original product not found',
+          attachmentResults: {
+            successful: [],
+            failed: attachmentFiles.map(file => ({ file, error: 'Original product not found' })),
+            partialSuccess: false
+          }
+        };
+      }
+
+      // Step 2: Validate attachments against business rules
+      const validationResult = await this.validateAttachments(attachmentFiles);
+      if (!validationResult.valid) {
+        return {
+          success: false,
+          error: `Attachment validation failed: ${validationResult.errors.join(', ')}`,
+          attachmentResults: {
+            successful: [],
+            failed: validationResult.invalidFiles.map(f => ({ file: f.file, error: f.error })),
+            partialSuccess: false
+          }
+        };
+      }
+
+      onProgress?.({
+        step: 'uploading',
+        progress: 5,
+        message: 'Starting attachment uploads...',
+        details: `Uploading ${attachmentFiles.length} files with Enhanced Sequential Upload`,
+        attachmentProgress: {
+          currentFile: 0,
+          totalFiles: attachmentFiles.length,
+          currentFileName: '',
+          uploadedFiles: [],
+          failedFiles: []
+        }
+      });
+
+      // Step 3: Upload new attachments using Enhanced Sequential Upload
+      const uploadResult = await this.uploadAttachmentsSequentially(
+        attachmentFiles, 
+        signer,
+        (progress) => {
+          // Map Sequential Upload progress to Shop Publishing progress
+          onProgress?.({
+            step: 'uploading',
+            progress: 5 + (progress.overallProgress * 0.6), // 5% to 65%
+            message: progress.nextAction,
+            details: `File ${progress.currentFileIndex + 1} of ${progress.totalFiles}`,
+            attachmentProgress: {
+              currentFile: progress.currentFileIndex + 1,
+              totalFiles: progress.totalFiles,
+              currentFileName: progress.currentFile.name,
+              uploadedFiles: progress.completedFiles.map(f => f.fileId),
+              failedFiles: progress.failedFiles.map(f => f.name)
+            }
+          });
+        }
+      );
+
+      // Step 4: Convert successful uploads to ProductAttachments
+      const newAttachments = await this.createProductAttachments(uploadResult.uploadedFiles, signer);
+
+      // Step 5: Merge with existing attachments (for now, replace all - can be enhanced later)
+      // TODO: In future, allow selective add/remove/replace of individual attachments
+      const allAttachments = newAttachments;
+
+      // Step 6: Update product data with new attachments
+      const mergedData = {
+        ...updatedData,
+        attachments: allAttachments,
+        // Set primary image from first image attachment for legacy support
+        imageUrl: allAttachments.find(a => a.type === 'image')?.url || originalProduct.imageUrl,
+        imageHash: allAttachments.find(a => a.type === 'image')?.hash || originalProduct.imageHash,
+      };
+
+      // Step 7: Create revision event
+      onProgress?.({
+        step: 'creating_event',
+        progress: 70,
+        message: 'Creating product revision...',
+        details: `Revision with ${allAttachments.length} attachments`,
+      });
+
+      const updatedEvent = await nostrEventService.createProductEvent(mergedData as ProductEventData, signer, originalProduct.dTag);
+
+      // Step 8: Publish to relays
+      onProgress?.({
+        step: 'publishing',
+        progress: 85,
+        message: 'Publishing revision to Nostr relays...',
+        details: 'Broadcasting to decentralized network',
+      });
+
+      const publishResult = await nostrEventService.publishEvent(updatedEvent, signer);
+
+      if (!publishResult.success) {
+        return {
+          success: false,
+          error: `Failed to publish revision: ${publishResult.error}`,
+          eventId: updatedEvent.id,
+          publishedRelays: publishResult.publishedRelays,
+          failedRelays: publishResult.failedRelays,
+          attachmentResults: {
+            successful: allAttachments,
+            failed: uploadResult.failedFiles.map(f => ({ file: f.file, error: f.error })),
+            partialSuccess: uploadResult.partialSuccess
+          }
+        };
+      }
+
+      // Step 9: Create updated product object
+      const updatedProduct: ShopProduct = {
+        id: updatedEvent.id,
+        dTag: originalProduct.dTag, // Keep same dTag for revisions
+        title: mergedData.title || originalProduct.title,
+        description: mergedData.description || originalProduct.description,
+        price: mergedData.price || originalProduct.price,
+        currency: mergedData.currency || originalProduct.currency,
+        
+        // NEW: Multiple attachments support
+        attachments: allAttachments,
+        
+        // LEGACY: Backward compatibility
+        imageUrl: mergedData.imageUrl,
+        imageHash: mergedData.imageHash,
+        
+        tags: mergedData.tags || originalProduct.tags,
+        category: mergedData.category || originalProduct.category,
+        condition: mergedData.condition || originalProduct.condition,
+        location: mergedData.location || originalProduct.location,
+        contact: mergedData.contact || originalProduct.contact,
+        author: userPubkey,
+        publishedAt: updatedEvent.created_at,
+        eventId: updatedEvent.id,
+        publishedRelays: publishResult.publishedRelays,
+        isDeleted: false, // Updated products are not deleted
+      };
+
+      // Update the product in the store
+      productStore.addProduct(updatedProduct);
+
+      onProgress?.({
+        step: 'complete',
+        progress: 100,
+        message: 'Product updated successfully!',
+        details: `Updated with ${allAttachments.length} attachments to ${publishResult.publishedRelays.length} relays`,
+      });
+
+      logger.info('Product with attachments updated successfully', {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithAttachments',
+        originalEventId,
+        newEventId: updatedEvent.id,
+        attachmentCount: allAttachments.length,
+        publishedRelays: publishResult.publishedRelays.length,
+      });
+
+      return {
+        success: true,
+        product: updatedProduct,
+        eventId: updatedEvent.id,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+        attachmentResults: {
+          successful: allAttachments,
+          failed: uploadResult.failedFiles.map(f => ({ file: f.file, error: f.error })),
+          partialSuccess: uploadResult.partialSuccess
+        }
+      };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error in updateProductWithAttachments';
+      logger.error('Product update with attachments failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithAttachments',
+        originalEventId,
+        attachmentCount: attachmentFiles.length,
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+        attachmentResults: {
+          successful: [],
+          failed: attachmentFiles.map(file => ({ file, error: errorMessage })),
+          partialSuccess: false
+        }
+      };
+    }
+  }
+
+  /**
    * Update an existing product by creating a revision event
    */
   public async updateProduct(
@@ -1753,6 +1971,16 @@ export const createProductWithAttachments = (
 
 export const getAttachmentRules = () =>
   shopBusinessService.getAttachmentRules();
+
+// NEW: Multiple attachments update support
+export const updateProductWithAttachments = (
+  originalEventId: string,
+  updatedData: Partial<ProductEventData>,
+  attachmentFiles: File[],
+  signer: NostrSigner,
+  userPubkey: string,
+  onProgress?: (progress: ShopPublishingProgress) => void
+) => shopBusinessService.updateProductWithAttachments(originalEventId, updatedData, attachmentFiles, signer, userPubkey, onProgress);
 
 export const parseProductFromEvent = (event: NostrEvent, publishedRelays: string[] = []) =>
   shopBusinessService.parseProductFromEvent(event, publishedRelays);

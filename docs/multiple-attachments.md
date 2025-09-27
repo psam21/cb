@@ -841,9 +841,11 @@ Can Blossom protocol handle batch auth natively?
 #### Phase 2: Enhanced Sequential Upload Services (3-4 days)
 1. Implement `GenericBlossomService.uploadSequentialWithConsent()` 
 2. Build `MultiFileProgressTracker` for real-time status updates
-3. Create `UserConsentDialog` for upfront approval and expectation setting
+3. Create `UserConsentDialog` component (auto-accept for development/testing)
 4. Add error handling and retry logic for individual file failures
 5. Integration tests for sequential upload workflows
+
+**Note**: The `UserConsentDialog` component is created in Phase 2 but uses auto-accept for development efficiency. The real UI integration with user interaction is completed in Phase 5.
 
 #### Phase 3: Business Logic Integration (2-3 days)
 1. Enhance `ShopBusinessService` with attachment business rules
@@ -857,11 +859,78 @@ Can Blossom protocol handle batch auth natively?
 3. Implement state management for multi-attachment workflows
 4. Hook integration tests
 
+#### Phase 4.5: Selective Management & Modularity (3-4 days)
+
+**Goal**: Transform "replace all" attachment management into modular, reusable system with selective operations for use across multiple projects and content types.
+
+**Key Features**:
+- **Selective Operations**: Add/remove/reorder individual attachments
+- **Generic Components**: Works for any content type (shop, events, resources, etc.)
+- **Modular Architecture**: Reusable across multiple projects
+- **Clean APIs**: Easy for other developers to integrate
+
+**Implementation Plan**:
+
+**Week 1: Generic Foundation**
+1. **Create Generic Interfaces** (`src/types/attachments.ts`)
+   - `GenericAttachment` interface
+   - `AttachmentOperation` interface  
+   - `SelectiveUpdateResult<T>` interface
+
+2. **Refactor useAttachmentManager** (`src/hooks/useAttachmentManager.ts`)
+   - Make generic with type parameter `<T extends GenericAttachment>`
+   - Add selective operations (add/remove/reorder/replace)
+   - Add operation tracking and validation
+
+3. **Create Generic UI Component** (`src/components/generic/AttachmentManager.tsx`)
+   - Drag-and-drop reordering
+   - Individual file selection/removal
+   - Progress indicators and error handling
+   - Generic props interface
+
+**Week 2: Selective Operations**
+4. **Update ShopBusinessService** (`src/services/business/ShopBusinessService.ts`)
+   - Add `updateProductWithSelectiveAttachments` method
+   - Support selective add/remove/reorder operations
+   - Merge existing attachments with new operations
+
+5. **Enhance Hooks** (All hook files)
+   - Add selective operation methods
+   - Update workflow management
+   - Maintain backward compatibility
+
+6. **Update Form Components** (Form files)
+   - Replace current attachment handling with generic components
+   - Add selective operation controls
+   - Update form validation
+
+**Week 3: Modularity & Documentation**
+7. **Create Generic Workflow** (`src/hooks/useGenericAttachmentWorkflow.ts`)
+   - Generic workflow for any content type
+   - Reusable across different projects
+
+8. **Documentation & Examples**
+   - API documentation for generic interfaces
+   - Usage examples for different content types
+   - Integration guide for other projects
+
+**File Changes Summary**:
+- **New Files (8)**: Generic interfaces, components, workflows, documentation
+- **Major Updates (6)**: Hooks, business services, form components
+- **Moderate Updates (2)**: Minor enhancements for selective operations
+
+**Benefits**:
+- **Modularity**: Truly reusable across projects
+- **Better UX**: Users can manage attachments individually
+- **Future-Proof**: Easy to extend and modify
+- **Clean Architecture**: Proper separation of concerns
+
 #### Phase 5: Form Components (3-4 days)
-1. Create `AttachmentManager` component with drag-and-drop
-2. Update `ProductCreationForm` and `ProductEditForm`
-3. Implement `MultiMediaProgressIndicator`
+1. Update `ProductCreationForm` and `ProductEditForm` with selective management
+2. Implement `MultiMediaProgressIndicator` with selective operations
+3. **Integrate real UI consent dialog** - Connect `UserConsentDialog` with actual user interaction (replacing auto-accept)
 4. Component unit tests and user interaction tests
+5. Test modularity across different content types
 
 #### Phase 6: Display Components (2-3 days)
 1. Create `MediaGallery` component with video/audio support
@@ -874,6 +943,24 @@ Can Blossom protocol handle batch auth natively?
 2. Performance testing with multiple large files
 3. Error scenario testing and recovery
 4. User acceptance testing
+
+### Phase 2 vs Phase 5: Consent Dialog Implementation Strategy
+
+**Phase 2 Approach**: Create `UserConsentDialog` component with auto-accept functionality
+- **Rationale**: Focus on core upload services and technical implementation
+- **Benefit**: Enables testing and development without UI complexity
+- **Status**: Component exists and is fully functional for development
+
+**Phase 5 Approach**: Integrate real UI interaction with `UserConsentDialog`
+- **Rationale**: Form components phase is the natural place for UI integration
+- **Benefit**: Proper separation of concerns - services vs. UI components
+- **Implementation**: Replace auto-accept with actual user interaction
+
+**Why This Split Makes Sense**:
+1. **Phase 2**: Proves the technical concept works (upload services)
+2. **Phase 5**: Polishes the user experience (form components)
+3. **Development efficiency**: Can test uploads without manual UI interaction
+4. **Architecture clarity**: Services layer vs. UI layer separation
 
 ### Success Criteria (Updated Based on Phase 0 Results)
 
