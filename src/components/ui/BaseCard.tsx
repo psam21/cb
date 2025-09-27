@@ -35,42 +35,20 @@ export interface BaseCardProps {
   data: BaseCardData;
   variant?: 'shop' | 'my-shop' | 'post' | 'event' | 'exhibition' | 'course' | 'meetup';
   children?: ReactNode;
-  className?: string;
-  imageClassName?: string;
-  contentClassName?: string;
   actionsClassName?: string;
-  onImageClick?: (data: BaseCardData) => void;
-  onTitleClick?: (data: BaseCardData) => void;
-  onTagClick?: (tag: string) => void;
-  onAuthorClick?: (data: BaseCardData) => void;
   onContact?: (data: BaseCardData) => void;
   onEdit?: (data: BaseCardData) => void;
   onDelete?: (data: BaseCardData) => void;
-  onLike?: (data: BaseCardData) => void;
-  onComment?: (data: BaseCardData) => void;
-  onShare?: (data: BaseCardData) => void;
-  onAttend?: (data: BaseCardData) => void;
 }
 
 export const BaseCard = ({
   data,
   variant = 'shop',
   children,
-  className = '',
-  imageClassName = '',
-  contentClassName = '',
   actionsClassName = '',
-  onImageClick,
-  onTitleClick,
-  onTagClick,
-  onAuthorClick,
   onContact,
   onEdit,
   onDelete,
-  onLike,
-  onComment,
-  onShare,
-  onAttend,
 }: BaseCardProps) => {
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString('en-US', {
@@ -106,33 +84,6 @@ export const BaseCard = ({
     }
   };
 
-  const getAuthorName = () => {
-    if (typeof data.author === 'string') {
-      return 'Anonymous';
-    }
-    return data.author?.name || 'Anonymous';
-  };
-
-  const getAuthorInitial = () => {
-    const name = getAuthorName();
-    return name.charAt(0).toUpperCase();
-  };
-
-  const handleImageClick = () => {
-    onImageClick?.(data);
-  };
-
-  const handleTitleClick = () => {
-    onTitleClick?.(data);
-  };
-
-  const handleTagClick = (tag: string) => {
-    onTagClick?.(tag);
-  };
-
-  const handleAuthorClick = () => {
-    onAuthorClick?.(data);
-  };
 
   const handleContact = () => {
     onContact?.(data);
@@ -146,29 +97,6 @@ export const BaseCard = ({
     onDelete?.(data);
   };
 
-  const handleLike = () => {
-    onLike?.(data);
-  };
-
-  const handleComment = () => {
-    onComment?.(data);
-  };
-
-  const handleShare = () => {
-    onShare?.(data);
-  };
-
-  const handleAttend = () => {
-    onAttend?.(data);
-  };
-
-  const handleNjumpClick = () => {
-    if (data.eventId) {
-      console.log('Njump click - eventId:', data.eventId);
-      console.log('Njump URL:', `https://njump.me/${data.eventId}`);
-      window.open(`https://njump.me/${data.eventId}`, '_blank');
-    }
-  };
 
   const imageUrl = data.image || data.imageUrl;
 
