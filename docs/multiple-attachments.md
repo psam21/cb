@@ -859,7 +859,7 @@ Can Blossom protocol handle batch auth natively?
 3. Implement state management for multi-attachment workflows
 4. Hook integration tests
 
-#### Phase 4.5: Selective Management & Modularity (3-4 days)
+#### Phase 4.5: Selective Management & Modularity (8-10 days)
 
 **Goal**: Transform "replace all" attachment management into modular, reusable system with selective operations for use across multiple projects and content types.
 
@@ -871,59 +871,139 @@ Can Blossom protocol handle batch auth natively?
 
 **Implementation Plan**:
 
-**Week 1: Generic Foundation**
-1. **Create Generic Interfaces** (`src/types/attachments.ts`)
+**Week 1: Core Services & Generic Foundation**
+1. **Phase 1 Updates - Core Services**
+   - **GenericMediaService** (`src/services/generic/GenericMediaService.ts`)
+     - Add methods for selective attachment operations
+     - Add attachment validation for selective operations
+     - Add metadata extraction for selective updates
+   
+   - **GenericBlossomService** (`src/services/generic/GenericBlossomService.ts`)
+     - Add selective upload/delete operations
+     - Add batch operations for selective management
+     - Add progress tracking for selective operations
+   
+   - **MediaBusinessService** (`src/services/business/MediaBusinessService.ts`) (NEW)
+     - Add attachment management logic
+     - Add selective operation business rules
+     - Add attachment lifecycle management
+
+2. **Create Generic Interfaces** (`src/types/attachments.ts`)
    - `GenericAttachment` interface
    - `AttachmentOperation` interface  
    - `SelectiveUpdateResult<T>` interface
+   - `AttachmentSelectionState` interface
 
-2. **Refactor useAttachmentManager** (`src/hooks/useAttachmentManager.ts`)
+**Week 2: Enhanced Sequential Upload & Progress Tracking**
+3. **Phase 2 Updates - Enhanced Sequential Upload**
+   - **MultiFileProgressTracker** (`src/services/generic/MultiFileProgressTracker.ts`)
+     - Track selective operations (add/remove/keep)
+     - Add operation-specific progress tracking
+     - Add selective operation analytics
+   
+   - **UserConsentDialog** (`src/components/generic/UserConsentDialog.tsx`)
+     - Handle selective consent (which files to keep/remove)
+     - Add operation preview and confirmation
+     - Add selective operation explanations
+
+4. **Refactor useAttachmentManager** (`src/hooks/useAttachmentManager.ts`)
    - Make generic with type parameter `<T extends GenericAttachment>`
    - Add selective operations (add/remove/reorder/replace)
    - Add operation tracking and validation
+   - Add selective state management
 
-3. **Create Generic UI Component** (`src/components/generic/AttachmentManager.tsx`)
+**Week 3: Business Logic & State Management**
+5. **Phase 3 Updates - Business Logic**
+   - **ShopBusinessService** (`src/services/business/ShopBusinessService.ts`)
+     - Complete rewrite of `updateProductWithAttachments`
+     - Add `updateProductWithSelectiveAttachments` method
+     - Add selective operation business rules
+     - Add attachment conflict resolution
+   
+   - **ProductStore** (`src/stores/useShopStore.ts`)
+     - Add selective attachment state management
+     - Add operation tracking in store
+     - Add selective attachment validation
+   
+   - **New Interfaces** (`src/types/attachments.ts`)
+     - `AttachmentOperation` interface
+     - `SelectiveUpdateResult<T>` interface
+     - `AttachmentSelectionState` interface
+
+6. **Create Generic UI Component** (`src/components/generic/AttachmentManager.tsx`)
    - Drag-and-drop reordering
    - Individual file selection/removal
    - Progress indicators and error handling
    - Generic props interface
+   - Checkbox selection for individual files
 
-**Week 2: Selective Operations**
-4. **Update ShopBusinessService** (`src/services/business/ShopBusinessService.ts`)
-   - Add `updateProductWithSelectiveAttachments` method
-   - Support selective add/remove/reorder operations
-   - Merge existing attachments with new operations
+**Week 4: Hook Architecture & Form Components**
+7. **Phase 4 Updates - Hook Architecture**
+   - **useAttachmentManager** (`src/hooks/useAttachmentManager.ts`)
+     - Add selective operations (add/remove/keep)
+     - Add operation tracking and validation
+     - Add selective state management
+   
+   - **useProductEditing** (`src/hooks/useProductEditing.ts`)
+     - New selective update methods
+     - Add selective operation workflows
+     - Add selective error handling
+   
+   - **useMultiAttachmentWorkflow** (`src/hooks/useMultiAttachmentWorkflow.ts`)
+     - Handle selective workflows
+     - Add selective operation progress tracking
+     - Add selective error recovery
+   
+   - **useSelectiveAttachmentManager** (`src/hooks/useSelectiveAttachmentManager.ts`) (NEW)
+     - Specialized hook for selective operations
+     - Operation batching and optimization
+     - Selective operation validation
 
-5. **Enhance Hooks** (All hook files)
-   - Add selective operation methods
-   - Update workflow management
-   - Maintain backward compatibility
+8. **Phase 5 Updates - Form Components**
+   - **ProductEditForm** (`src/components/shop/ProductEditForm.tsx`)
+     - Complete UI redesign for selective management
+     - Add checkboxes for individual file selection
+     - Add drag-drop for reordering
+     - Add selective operation controls
+   
+   - **ProductCreationForm** (`src/components/shop/ProductCreationForm.tsx`)
+     - Update for selective management
+     - Add selective operation preview
+     - Add selective validation
+   
+   - **AttachmentManager** (`src/components/shop/AttachmentManager.tsx`)
+     - Add checkboxes, drag-drop for selection
+     - Add selective operation indicators
+     - Add operation confirmation dialogs
+   
+   - **New Components**:
+     - `AttachmentSelector` (`src/components/shop/AttachmentSelector.tsx`)
+     - `SelectiveUploadDialog` (`src/components/shop/SelectiveUploadDialog.tsx`)
+     - `OperationPreview` (`src/components/shop/OperationPreview.tsx`)
 
-6. **Update Form Components** (Form files)
-   - Replace current attachment handling with generic components
-   - Add selective operation controls
-   - Update form validation
-
-**Week 3: Modularity & Documentation**
-7. **Create Generic Workflow** (`src/hooks/useGenericAttachmentWorkflow.ts`)
+**Week 5: Integration & Documentation**
+9. **Create Generic Workflow** (`src/hooks/useGenericAttachmentWorkflow.ts`)
    - Generic workflow for any content type
    - Reusable across different projects
+   - Selective operation support
 
-8. **Documentation & Examples**
-   - API documentation for generic interfaces
-   - Usage examples for different content types
-   - Integration guide for other projects
+10. **Documentation & Examples**
+    - API documentation for generic interfaces
+    - Usage examples for different content types
+    - Integration guide for other projects
+    - Selective management user guide
 
 **File Changes Summary**:
-- **New Files (8)**: Generic interfaces, components, workflows, documentation
-- **Major Updates (6)**: Hooks, business services, form components
-- **Moderate Updates (2)**: Minor enhancements for selective operations
+- **New Files (15)**: Generic interfaces, components, workflows, documentation, new services
+- **Major Updates (12)**: All core services, business services, hooks, form components
+- **Moderate Updates (6)**: Stores, progress tracking, validation
 
 **Benefits**:
 - **Modularity**: Truly reusable across projects
 - **Better UX**: Users can manage attachments individually
 - **Future-Proof**: Easy to extend and modify
 - **Clean Architecture**: Proper separation of concerns
+- **Complete Coverage**: All phases properly updated for selective management
 
 #### Phase 5: Form Components (3-4 days)
 1. Update `ProductCreationForm` and `ProductEditForm` with selective management

@@ -107,18 +107,18 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
 
     try {
       // Step 1: Add files to attachment manager
-      await attachmentManager.addFiles(files);
+      await attachmentManager.addAttachments(files);
       
       setWorkflowState(prev => ({
         ...prev,
         currentStep: 'validating',
         progress: 30,
         message: 'Validating files...',
-        canProceed: attachmentManager.managerState.attachments.length > 0,
+        canProceed: attachmentManager.state.attachments.length > 0,
       }));
 
       // Step 2: Upload files
-      if (attachmentManager.managerState.attachments.length > 0) {
+      if (attachmentManager.state.attachments.length > 0) {
         setWorkflowState(prev => ({
           ...prev,
           currentStep: 'uploading',
@@ -128,7 +128,7 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
         }));
 
         const uploadResult = await mediaUpload.uploadFiles(
-          attachmentManager.managerState.attachments.map(a => a.originalFile!).filter(Boolean),
+          attachmentManager.state.attachments.map(a => a.originalFile!).filter(Boolean),
           signer
         );
 
@@ -155,7 +155,7 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
 
         const createResult = await shopPublishing.publishProductWithAttachments(
           productData,
-          attachmentManager.managerState.attachments.map(a => a.originalFile!).filter(Boolean)
+          attachmentManager.state.attachments.map(a => a.originalFile!).filter(Boolean)
         );
 
         if (createResult.success) {
@@ -229,18 +229,18 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
 
     try {
       // Step 1: Add files to attachment manager
-      await attachmentManager.addFiles(files);
+      await attachmentManager.addAttachments(files);
       
       setWorkflowState(prev => ({
         ...prev,
         currentStep: 'validating',
         progress: 30,
         message: 'Validating files...',
-        canProceed: attachmentManager.managerState.attachments.length > 0,
+        canProceed: attachmentManager.state.attachments.length > 0,
       }));
 
       // Step 2: Upload files
-      if (attachmentManager.managerState.attachments.length > 0) {
+      if (attachmentManager.state.attachments.length > 0) {
         setWorkflowState(prev => ({
           ...prev,
           currentStep: 'uploading',
@@ -250,7 +250,7 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
         }));
 
         const uploadResult = await mediaUpload.uploadFiles(
-          attachmentManager.managerState.attachments.map(a => a.originalFile!).filter(Boolean),
+          attachmentManager.state.attachments.map(a => a.originalFile!).filter(Boolean),
           signer
         );
 
@@ -278,7 +278,7 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
         const updateResult = await productEditing.updateProductWithAttachmentsData(
           productId,
           productData,
-          attachmentManager.managerState.attachments.map(a => a.originalFile!).filter(Boolean)
+          attachmentManager.state.attachments.map(a => a.originalFile!).filter(Boolean)
         );
 
         if (updateResult.success) {
@@ -332,7 +332,7 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
     });
 
     // Reset all states
-    attachmentManager.clearAll();
+    attachmentManager.reset();
     mediaUpload.resetUpload();
     setCurrentProductData(null);
     setCurrentProductId(null);
@@ -351,10 +351,10 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
     });
 
     if (isCreateMode && currentProductData) {
-      const files = attachmentManager.managerState.attachments.map(a => a.originalFile!).filter(Boolean);
+      const files = attachmentManager.state.attachments.map(a => a.originalFile!).filter(Boolean);
       await startProductCreation(currentProductData, files, signer);
     } else if (!isCreateMode && currentProductId && currentProductData) {
-      const files = attachmentManager.managerState.attachments.map(a => a.originalFile!).filter(Boolean);
+      const files = attachmentManager.state.attachments.map(a => a.originalFile!).filter(Boolean);
       await startProductUpdate(currentProductId, currentProductData, files, signer);
     }
   }, [workflowState.currentStep, isCreateMode, currentProductData, currentProductId, attachmentManager, startProductCreation, startProductUpdate]);
@@ -403,7 +403,7 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
   // Computed properties
   const isWorkflowActive = workflowState.currentStep !== 'idle' && workflowState.currentStep !== 'complete';
   const hasErrors = workflowState.currentStep === 'error' || attachmentManager.hasErrors || mediaUpload.uploadState.error !== null;
-  const canAddMoreFiles = attachmentManager.canAddMoreFiles();
+  const canAddMoreFiles = attachmentManager.canAddMore();
 
   const getWorkflowSummary = useCallback(() => {
     return {

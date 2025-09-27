@@ -5,6 +5,7 @@
 
 import { logger } from '../core/LoggingService';
 import type { SequentialUploadProgress, BlossomFileMetadata } from './GenericBlossomService';
+import { AttachmentOperation, AttachmentOperationType } from '../../types/attachments';
 
 export interface FileProgressState {
   id: string;
@@ -16,6 +17,8 @@ export interface FileProgressState {
   startTime?: number;
   completedTime?: number;
   metadata?: BlossomFileMetadata;
+  operationType?: AttachmentOperationType;
+  operationId?: string;
 }
 
 export interface ProgressAnalytics {
@@ -354,6 +357,195 @@ export class MultiFileProgressTracker {
       service: 'MultiFileProgressTracker',
       method: 'destroy'
     });
+  }
+
+  // ============================================================================
+  // SELECTIVE OPERATIONS SUPPORT
+  // ============================================================================
+
+  /**
+   * Initialize files for selective operations
+   */
+  public initializeForSelectiveOperations(operations: AttachmentOperation[]): void {
+    logger.debug('Initializing for selective operations', {
+      service: 'MultiFileProgressTracker',
+      method: 'initializeForSelectiveOperations',
+      operationCount: operations.length
+    });
+
+    this.files.clear();
+    this.currentFileIndex = 0;
+    this.startTime = Date.now();
+
+    // Process operations to extract files
+    for (const operation of operations) {
+      if (operation.files && operation.files.length > 0) {
+        operation.files.forEach((file, index) => {
+          const id = `file-${operation.id}-${index}-${file.name}`;
+          this.files.set(id, {
+            id,
+            name: file.name,
+            size: file.size,
+            status: 'waiting',
+            progress: 0,
+            operationType: operation.type,
+            operationId: operation.id
+          });
+        });
+      }
+    }
+
+    logger.debug('Selective operations initialized', {
+      service: 'MultiFileProgressTracker',
+      method: 'initializeForSelectiveOperations',
+      fileCount: this.files.size
+    });
+  }
+
+  /**
+   * Update file status for selective operations
+   */
+  public updateFileStatusForOperation(
+    operationId: string,
+    fileIndex: number,
+    status: FileProgressState['status'],
+    progress: number = 0,
+    error?: string,
+    metadata?: BlossomFileMetadata
+  ): void {
+    const fileArray = Array.from(this.files.values());
+    const file = fileArray.find(f => f.operationId === operationId && fileArray.indexOf(f) === fileIndex);
+    
+    if (!file) {
+      logger.warn('File not found for selective operation progress update', {
+        service: 'MultiFileProgressTracker',
+        method: 'updateFileStatusForOperation',
+        operationId,
+        fileIndex,
+        totalFiles: this.files.size
+      });
+      return;
+    }
+
+    // Update file state
+    const previousStatus = file.status;
+    file.status = status;
+    file.progress = progress;
+    file.error = error;
+    file.metadata = metadata;
+
+    // Track timing
+    if (status === 'authenticating' && previousStatus === 'waiting') {
+      file.startTime = Date.now();
+    } else if ((status === 'completed' || status === 'failed') && !file.completedTime) {
+      file.completedTime = Date.now();
+    }
+
+    this.currentFileIndex = fileIndex;
+
+    // Generate progress update
+    const progressUpdate = this.generateProgressUpdate();
+    const analytics = this.generateAnalytics();
+
+    // Notify all callbacks
+    this.callbacks.forEach(callback => {
+      try {
+        callback(progressUpdate, analytics);
+      } catch (error) {
+        logger.error('Selective operation progress callback error', error instanceof Error ? error : new Error('Unknown callback error'), {
+          service: 'MultiFileProgressTracker',
+          method: 'updateFileStatusForOperation',
+          operationId,
+          fileIndex,
+          status
+        });
+      }
+    });
+
+    logger.debug('Selective operation file progress updated', {
+      service: 'MultiFileProgressTracker',
+      method: 'updateFileStatusForOperation',
+      operationId,
+      fileIndex,
+      fileName: file.name,
+      status,
+      progress,
+      overallProgress: analytics.overallProgress
+    });
+  }
+
+  /**
+   * Get progress for specific operation
+   */
+  public getOperationProgress(operationId: string): {
+    files: FileProgressState[];
+    completed: number;
+    failed: number;
+    total: number;
+    progress: number;
+  } {
+    const operationFiles = Array.from(this.files.values()).filter(f => f.operationId === operationId);
+    const completed = operationFiles.filter(f => f.status === 'completed').length;
+    const failed = operationFiles.filter(f => f.status === 'failed').length;
+    const total = operationFiles.length;
+    const progress = total > 0 ? Math.round(((completed + failed) / total) * 100) : 0;
+
+    return {
+      files: operationFiles,
+      completed,
+      failed,
+      total,
+      progress
+    };
+  }
+
+  /**
+   * Get analytics for selective operations
+   */
+  public getSelectiveOperationsAnalytics(): {
+    totalOperations: number;
+    completedOperations: number;
+    failedOperations: number;
+    totalFiles: number;
+    completedFiles: number;
+    failedFiles: number;
+    overallProgress: number;
+  } {
+    const fileArray = Array.from(this.files.values());
+    const operationIds = new Set(fileArray.map(f => f.operationId).filter(Boolean));
+    
+    let completedOperations = 0;
+    let failedOperations = 0;
+    
+    for (const operationId of operationIds) {
+      const operationFiles = fileArray.filter(f => f.operationId === operationId);
+      const hasCompleted = operationFiles.some(f => f.status === 'completed');
+      const hasFailed = operationFiles.some(f => f.status === 'failed');
+      const allCompleted = operationFiles.every(f => f.status === 'completed' || f.status === 'failed');
+      
+      if (allCompleted) {
+        if (hasCompleted && !hasFailed) {
+          completedOperations++;
+        } else if (hasFailed) {
+          failedOperations++;
+        }
+      }
+    }
+
+    const completedFiles = fileArray.filter(f => f.status === 'completed').length;
+    const failedFiles = fileArray.filter(f => f.status === 'failed').length;
+    const totalFiles = fileArray.length;
+    const overallProgress = totalFiles > 0 ? Math.round(((completedFiles + failedFiles) / totalFiles) * 100) : 0;
+
+    return {
+      totalOperations: operationIds.size,
+      completedOperations,
+      failedOperations,
+      totalFiles,
+      completedFiles,
+      failedFiles,
+      overallProgress
+    };
   }
 }
 

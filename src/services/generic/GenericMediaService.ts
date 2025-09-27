@@ -15,6 +15,15 @@ import {
   formatFileSize,
   type FileValidationResult
 } from '../../config/media';
+import { 
+  GenericAttachment, 
+  AttachmentOperation, 
+  AttachmentValidationResult,
+  AttachmentOperationType,
+  AttachmentMetadata,
+  createGenericAttachment,
+  createAttachmentOperation
+} from '../../types/attachments';
 
 export interface MediaMetadata {
   hash: string;
@@ -485,6 +494,385 @@ export class GenericMediaService {
       maxFileSizeFormatted: formatFileSize(MEDIA_CONFIG.maxFileSize),
       maxTotalSizeFormatted: formatFileSize(MEDIA_CONFIG.maxTotalSize)
     };
+  }
+
+  // ============================================================================
+  // SELECTIVE ATTACHMENT OPERATIONS
+  // ============================================================================
+
+  /**
+   * Validate files for selective operations
+   */
+  public async validateFilesForSelectiveOperations(
+    files: File[],
+    existingAttachments: GenericAttachment[] = []
+  ): Promise<AttachmentValidationResult> {
+    try {
+      logger.debug('Validating files for selective operations', {
+        service: 'GenericMediaService',
+        method: 'validateFilesForSelectiveOperations',
+        fileCount: files.length,
+        existingAttachmentCount: existingAttachments.length
+      });
+
+      const errors: string[] = [];
+      const warnings: string[] = [];
+      const validAttachments: GenericAttachment[] = [];
+      const invalidAttachments: { file: File; error: string }[] = [];
+
+      // Check total attachment limit
+      const totalAttachments = existingAttachments.length + files.length;
+      if (totalAttachments > MEDIA_CONFIG.maxAttachments) {
+        errors.push(`Total attachments would exceed limit of ${MEDIA_CONFIG.maxAttachments}. Current: ${existingAttachments.length}, Adding: ${files.length}`);
+      }
+
+      // Check total size limit
+      const existingSize = existingAttachments.reduce((sum, att) => sum + att.size, 0);
+      const newSize = files.reduce((sum, file) => sum + file.size, 0);
+      const totalSize = existingSize + newSize;
+
+      if (totalSize > MEDIA_CONFIG.maxTotalSize) {
+        errors.push(`Total size would exceed limit of ${formatFileSize(MEDIA_CONFIG.maxTotalSize)}. Current: ${formatFileSize(existingSize)}, Adding: ${formatFileSize(newSize)}`);
+      }
+
+      // Validate individual files
+      for (const file of files) {
+        try {
+          const validation = await this.validateSingleFile(file);
+          if (validation.valid) {
+            const attachment = await this.createGenericAttachmentFromFile(file);
+            validAttachments.push(attachment);
+          } else {
+            invalidAttachments.push({ file, error: validation.error || 'Validation failed' });
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+          invalidAttachments.push({ file, error: errorMessage });
+        }
+      }
+
+      // Estimate upload time (rough calculation)
+      const estimatedUploadTime = Math.ceil(validAttachments.length * 3.5); // 3.5 seconds per file
+
+      const result: AttachmentValidationResult = {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+        validAttachments,
+        invalidAttachments,
+        totalSize,
+        estimatedUploadTime
+      };
+
+      logger.info('File validation for selective operations completed', {
+        service: 'GenericMediaService',
+        method: 'validateFilesForSelectiveOperations',
+        validCount: validAttachments.length,
+        invalidCount: invalidAttachments.length,
+        totalSize: formatFileSize(totalSize),
+        estimatedTime: estimatedUploadTime
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+      logger.error('File validation for selective operations failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'GenericMediaService',
+        method: 'validateFilesForSelectiveOperations',
+        error: errorMessage
+      });
+
+      return {
+        valid: false,
+        errors: [errorMessage],
+        warnings: [],
+        validAttachments: [],
+        invalidAttachments: files.map(file => ({ file, error: errorMessage })),
+        totalSize: files.reduce((sum, f) => sum + f.size, 0),
+        estimatedUploadTime: 0
+      };
+    }
+  }
+
+  /**
+   * Create generic attachment from file
+   */
+  public async createGenericAttachmentFromFile(file: File): Promise<GenericAttachment> {
+    try {
+      logger.debug('Creating generic attachment from file', {
+        service: 'GenericMediaService',
+        method: 'createGenericAttachmentFromFile',
+        fileName: file.name,
+        fileSize: file.size
+      });
+
+      // Generate hash
+      const hash = await this.generateFileHash(file);
+      
+      // Determine type
+      const type = getMediaTypeFromMime(file.type) || getMediaTypeFromExtension(file.name);
+      if (!type) {
+        throw new AppError(
+          `Unable to determine media type for file: ${file.name}`,
+          ErrorCode.UNSUPPORTED_FILE_TYPE,
+          HttpStatus.BAD_REQUEST,
+          ErrorCategory.VALIDATION,
+          ErrorSeverity.MEDIUM
+        );
+      }
+
+      // Extract metadata
+      const metadata = await this.extractAttachmentMetadata(file, type);
+
+      const attachment = createGenericAttachment(
+        file,
+        type as GenericAttachment['type'],
+        undefined, // URL will be set after upload
+        hash,
+        metadata
+      );
+
+      logger.debug('Generic attachment created successfully', {
+        service: 'GenericMediaService',
+        method: 'createGenericAttachmentFromFile',
+        attachmentId: attachment.id,
+        type: attachment.type,
+        size: attachment.size
+      });
+
+      return attachment;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error creating attachment';
+      logger.error('Failed to create generic attachment from file', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'GenericMediaService',
+        method: 'createGenericAttachmentFromFile',
+        fileName: file.name,
+        error: errorMessage
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Extract attachment metadata for generic attachments
+   */
+  private async extractAttachmentMetadata(file: File, type: string): Promise<AttachmentMetadata> {
+    const metadata: AttachmentMetadata = {};
+
+    try {
+      if (type === 'image') {
+        const imageDimensions = await this.extractImageDimensions(file);
+        metadata.width = imageDimensions.width;
+        metadata.height = imageDimensions.height;
+        metadata.aspectRatio = imageDimensions.width / imageDimensions.height;
+      } else if (type === 'video') {
+        const videoDimensions = await this.extractVideoDimensions(file);
+        const duration = await this.extractMediaDuration(file);
+        metadata.duration = duration;
+        metadata.width = videoDimensions.width;
+        metadata.height = videoDimensions.height;
+      } else if (type === 'audio') {
+        const duration = await this.extractMediaDuration(file);
+        metadata.duration = duration;
+      }
+    } catch (error) {
+      logger.warn('Failed to extract metadata for attachment', {
+        service: 'GenericMediaService',
+        method: 'extractAttachmentMetadata',
+        fileName: file.name,
+        type,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      // Continue without metadata - not critical
+    }
+
+    return metadata;
+  }
+
+  /**
+   * Create attachment operation
+   */
+  public createAttachmentOperation(
+    type: AttachmentOperationType,
+    attachmentId?: string,
+    files?: File[],
+    fromIndex?: number,
+    toIndex?: number
+  ): AttachmentOperation {
+    return createAttachmentOperation(type, attachmentId, files, fromIndex, toIndex);
+  }
+
+  /**
+   * Validate attachment operation
+   */
+  public validateAttachmentOperation(
+    operation: AttachmentOperation,
+    existingAttachments: GenericAttachment[] = []
+  ): { valid: boolean; error?: string } {
+    try {
+      switch (operation.type) {
+        case 'add':
+          if (!operation.files || operation.files.length === 0) {
+            return { valid: false, error: 'Add operation requires files' };
+          }
+          break;
+        
+        case 'remove':
+        case 'replace':
+          if (!operation.attachmentId) {
+            return { valid: false, error: `${operation.type} operation requires attachmentId` };
+          }
+          const attachment = existingAttachments.find(att => att.id === operation.attachmentId);
+          if (!attachment) {
+            return { valid: false, error: 'Attachment not found' };
+          }
+          break;
+        
+        case 'reorder':
+          if (operation.fromIndex === undefined || operation.toIndex === undefined) {
+            return { valid: false, error: 'Reorder operation requires fromIndex and toIndex' };
+          }
+          if (operation.fromIndex < 0 || operation.fromIndex >= existingAttachments.length) {
+            return { valid: false, error: 'Invalid fromIndex' };
+          }
+          if (operation.toIndex < 0 || operation.toIndex >= existingAttachments.length) {
+            return { valid: false, error: 'Invalid toIndex' };
+          }
+          break;
+        
+        case 'update':
+          if (!operation.attachmentId) {
+            return { valid: false, error: 'Update operation requires attachmentId' };
+          }
+          break;
+        
+        default:
+          return { valid: false, error: 'Unknown operation type' };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { 
+        valid: false, 
+        error: error instanceof Error ? error.message : 'Unknown validation error' 
+      };
+    }
+  }
+
+  /**
+   * Process attachment operations
+   */
+  public async processAttachmentOperations(
+    operations: AttachmentOperation[],
+    existingAttachments: GenericAttachment[] = []
+  ): Promise<{
+    success: boolean;
+    processedAttachments: GenericAttachment[];
+    errors: string[];
+  }> {
+    try {
+      logger.info('Processing attachment operations', {
+        service: 'GenericMediaService',
+        method: 'processAttachmentOperations',
+        operationCount: operations.length,
+        existingAttachmentCount: existingAttachments.length
+      });
+
+      const processedAttachments = [...existingAttachments];
+      const errors: string[] = [];
+
+      for (const operation of operations) {
+        try {
+          const validation = this.validateAttachmentOperation(operation, processedAttachments);
+          if (!validation.valid) {
+            errors.push(`Operation ${operation.id}: ${validation.error}`);
+            continue;
+          }
+
+          switch (operation.type) {
+            case 'add':
+              if (operation.files) {
+                for (const file of operation.files) {
+                  const attachment = await this.createGenericAttachmentFromFile(file);
+                  processedAttachments.push(attachment);
+                }
+              }
+              break;
+            
+            case 'remove':
+              if (operation.attachmentId) {
+                const index = processedAttachments.findIndex(att => att.id === operation.attachmentId);
+                if (index !== -1) {
+                  processedAttachments.splice(index, 1);
+                }
+              }
+              break;
+            
+            case 'replace':
+              if (operation.attachmentId && operation.files && operation.files.length > 0) {
+                const index = processedAttachments.findIndex(att => att.id === operation.attachmentId);
+                if (index !== -1) {
+                  const newAttachment = await this.createGenericAttachmentFromFile(operation.files[0]);
+                  processedAttachments[index] = newAttachment;
+                }
+              }
+              break;
+            
+            case 'reorder':
+              if (operation.fromIndex !== undefined && operation.toIndex !== undefined) {
+                const [movedAttachment] = processedAttachments.splice(operation.fromIndex, 1);
+                processedAttachments.splice(operation.toIndex, 0, movedAttachment);
+              }
+              break;
+            
+            case 'update':
+              if (operation.attachmentId && operation.metadata) {
+                const index = processedAttachments.findIndex(att => att.id === operation.attachmentId);
+                if (index !== -1) {
+                  processedAttachments[index] = {
+                    ...processedAttachments[index],
+                    metadata: {
+                      ...processedAttachments[index].metadata,
+                      ...operation.metadata
+                    },
+                    updatedAt: Date.now()
+                  };
+                }
+              }
+              break;
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown operation error';
+          errors.push(`Operation ${operation.id}: ${errorMessage}`);
+        }
+      }
+
+      logger.info('Attachment operations processed', {
+        service: 'GenericMediaService',
+        method: 'processAttachmentOperations',
+        processedCount: processedAttachments.length,
+        errorCount: errors.length
+      });
+
+      return {
+        success: errors.length === 0,
+        processedAttachments,
+        errors
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown processing error';
+      logger.error('Failed to process attachment operations', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'GenericMediaService',
+        method: 'processAttachmentOperations',
+        error: errorMessage
+      });
+
+      return {
+        success: false,
+        processedAttachments: existingAttachments,
+        errors: [errorMessage]
+      };
+    }
   }
 }
 

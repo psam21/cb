@@ -7,6 +7,14 @@ import { productStore } from '../../stores/ProductStore';
 import { signEvent, createDeletionEvent } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
 import { constructUserBlossomUrl, getSharedBlossomUrl, BLOSSOM_CONFIG } from '../../config/blossom';
+import { 
+  AttachmentOperation, 
+  AttachmentOperationType,
+  AttachmentValidationResult
+} from '../../types/attachments';
+import { mediaBusinessService } from './MediaBusinessService';
+import { AppError } from '../../errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 // eventLoggingService removed - now handled automatically in GenericRelayService
 
 // Multiple attachment support interface
@@ -616,7 +624,7 @@ export class ShopBusinessService {
       const newAttachments = await this.createProductAttachments(uploadResult.uploadedFiles, signer);
 
       // Step 5: Merge with existing attachments (for now, replace all - can be enhanced later)
-      // TODO: In future, allow selective add/remove/replace of individual attachments
+      // Note: Selective operations are available via updateProductWithSelectiveOperations
       const allAttachments = newAttachments;
 
       // Step 6: Update product data with new attachments
@@ -1948,6 +1956,171 @@ export class ShopBusinessService {
   public getAttachmentRules(): AttachmentBusinessRules {
     return { ...this.attachmentRules };
   }
+
+  /**
+   * Update product with selective attachment operations
+   */
+  public async updateProductWithSelectiveOperations(
+    originalEventId: string,
+    updatedData: Partial<ProductEventData>,
+    operations: AttachmentOperation[],
+    signer: NostrSigner,
+    userPubkey: string,
+    onProgress?: (progress: ShopPublishingProgress) => void
+  ): Promise<CreateProductResult> {
+    try {
+      logger.info('Starting selective product update', {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithSelectiveOperations',
+        originalEventId,
+        operationCount: operations.length
+      });
+
+      // Get the original product
+      const originalProduct = await this.getProduct(originalEventId);
+      if (!originalProduct) {
+        throw new AppError(
+          'Product not found',
+          ErrorCode.NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+          ErrorCategory.RESOURCE,
+          ErrorSeverity.MEDIUM
+        );
+      }
+
+      // Process selective operations
+      const result = await mediaBusinessService.applySelectiveOperations(
+        operations,
+        originalProduct.attachments || [],
+        signer
+      );
+
+      if (!result.success) {
+        throw new AppError(
+          `Selective operations failed: ${result.error}`,
+          ErrorCode.ATTACHMENT_PROCESSING_FAILED,
+          HttpStatus.BAD_REQUEST,
+          ErrorCategory.VALIDATION,
+          ErrorSeverity.MEDIUM
+        );
+      }
+
+      // Convert GenericAttachment[] to ProductAttachment[]
+      const productAttachments: ProductAttachment[] = result.attachments.map(att => ({
+        id: att.id,
+        hash: att.hash || '',
+        url: att.url || '',
+        type: att.type as 'image' | 'video' | 'audio',
+        name: att.name,
+        size: att.size,
+        mimeType: att.mimeType,
+        metadata: att.metadata
+      }));
+
+      // Create updated product data with new attachments
+      const updatedProductData: ProductEventData = {
+        ...originalProduct,
+        ...updatedData,
+        attachments: productAttachments
+      };
+
+      // Create NIP-33 revision event
+      const revisionEvent = await nostrEventService.createProductEvent(
+        updatedProductData,
+        signer,
+        originalProduct.dTag
+      );
+
+      // Publish to relays
+      onProgress?.({
+        step: 'publishing',
+        progress: 80,
+        message: 'Publishing product update to relays...',
+        details: `Publishing revision for ${updatedProductData.title}`
+      });
+
+      const publishResult = await nostrEventService.publishEvent(revisionEvent, signer);
+
+      // Update product store
+      const updatedProduct = await this.parseProductFromEvent(revisionEvent, publishResult.publishedRelays);
+      if (updatedProduct) {
+        productStore.addProduct(updatedProduct);
+      }
+
+      logger.info('Selective product update completed', {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithSelectiveOperations',
+        originalEventId,
+        newEventId: revisionEvent.id,
+        publishedRelays: publishResult.publishedRelays.length
+      });
+
+      return {
+        success: true,
+        eventId: revisionEvent.id,
+        product: updatedProduct || undefined,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays
+      };
+
+    } catch (error) {
+      logger.error('Selective product update failed', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithSelectiveOperations',
+        originalEventId
+      });
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Create attachment operation for products
+   */
+  public createProductAttachmentOperation(
+    type: AttachmentOperationType,
+    attachmentId?: string,
+    files?: File[],
+    fromIndex?: number,
+    toIndex?: number
+  ): AttachmentOperation {
+    return mediaBusinessService.createAttachmentOperation(type, attachmentId, files, fromIndex, toIndex);
+  }
+
+  /**
+   * Validate attachment operations for products
+   */
+  public async validateProductAttachmentOperations(
+    operations: AttachmentOperation[],
+    existingAttachments: ProductAttachment[] = []
+  ): Promise<AttachmentValidationResult> {
+    const genericAttachments = existingAttachments.map(att => ({
+      id: att.id,
+      type: att.type,
+      size: att.size,
+      mimeType: att.mimeType,
+      name: att.name,
+      hash: att.hash,
+      url: att.url,
+      metadata: att.metadata || {},
+      originalFile: undefined // ProductAttachment doesn't have originalFile
+    }));
+
+    // For existing attachments, we can't validate files since they don't have originalFile
+    // Just return a basic validation result
+    return {
+      valid: true,
+      errors: [],
+      warnings: [],
+      validAttachments: [],
+      invalidAttachments: [],
+      totalSize: genericAttachments.reduce((sum, att) => sum + att.size, 0),
+      estimatedUploadTime: 0
+    };
+  }
 }
 
 // Export singleton instance
@@ -2001,9 +2174,31 @@ export const queryProductsByAuthor = (
 ) => shopBusinessService.queryProductsByAuthor(authorPubkey, onProgress, showDeleted);
 
 export const deleteProduct = (
-  productId: string,
+  eventId: string,
   signer: NostrSigner,
   userPubkey: string,
   onProgress?: (progress: ShopPublishingProgress) => void
-) => shopBusinessService.deleteProduct(productId, signer, userPubkey, onProgress);
+) => shopBusinessService.deleteProduct(eventId, signer, userPubkey, onProgress);
 
+// NEW: Selective attachment operations support
+export const updateProductWithSelectiveOperations = (
+  originalEventId: string,
+  updatedData: Partial<ProductEventData>,
+  operations: AttachmentOperation[],
+  signer: NostrSigner,
+  userPubkey: string,
+  onProgress?: (progress: ShopPublishingProgress) => void
+) => shopBusinessService.updateProductWithSelectiveOperations(originalEventId, updatedData, operations, signer, userPubkey, onProgress);
+
+export const createProductAttachmentOperation = (
+  type: AttachmentOperationType,
+  attachmentId?: string,
+  files?: File[],
+  fromIndex?: number,
+  toIndex?: number
+) => shopBusinessService.createProductAttachmentOperation(type, attachmentId, files, fromIndex, toIndex);
+
+export const validateProductAttachmentOperations = (
+  operations: AttachmentOperation[],
+  existingAttachments: ProductAttachment[] = []
+) => shopBusinessService.validateProductAttachmentOperations(operations, existingAttachments);

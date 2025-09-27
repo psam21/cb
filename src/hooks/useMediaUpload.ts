@@ -9,9 +9,11 @@ import {
   blossomService,
   type SequentialUploadResult,
   type SequentialUploadProgress,
-  type BlossomFileMetadata
+  type BlossomFileMetadata,
+  type BatchUploadConsent
 } from '../services/generic/GenericBlossomService';
 import { NostrSigner } from '../types/nostr';
+import { useConsentDialog } from './useConsentDialog';
 
 export interface MediaUploadState {
   isUploading: boolean;
@@ -36,6 +38,15 @@ export interface UseMediaUploadReturn {
   hasUploadedFiles: boolean;
   hasFailedFiles: boolean;
   isComplete: boolean;
+  
+  // Consent Dialog
+  consentDialog: {
+    isOpen: boolean;
+    consent: BatchUploadConsent | null;
+    acceptConsent: () => void;
+    cancelConsent: () => void;
+    closeDialog: () => void;
+  };
 }
 
 const initialState: MediaUploadState = {
@@ -53,6 +64,7 @@ const initialState: MediaUploadState = {
 export const useMediaUpload = (): UseMediaUploadReturn => {
   const [uploadState, setUploadState] = useState<MediaUploadState>(initialState);
   const currentFilesRef = useRef<File[]>([]);
+  const consentDialog = useConsentDialog();
 
   /**
    * Upload multiple files using Enhanced Sequential Upload
@@ -99,6 +111,27 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
     }));
 
     try {
+      // Show consent dialog first
+      const userAccepted = await consentDialog.showConsentDialog(files);
+      if (!userAccepted) {
+        logger.info('User cancelled upload during consent phase', {
+          hook: 'useMediaUpload',
+          method: 'uploadFiles',
+          fileCount: files.length
+        });
+
+        return {
+          success: false,
+          uploadedFiles: [],
+          failedFiles: [],
+          partialSuccess: false,
+          userCancelled: true,
+          totalFiles: files.length,
+          successCount: 0,
+          failureCount: 0
+        };
+      }
+
       const result = await blossomService.uploadSequentialWithConsent(
         files,
         signer,
@@ -251,6 +284,13 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
     hasUploadedFiles,
     hasFailedFiles,
     isComplete,
+    consentDialog: {
+      isOpen: consentDialog.isOpen,
+      consent: consentDialog.consent,
+      acceptConsent: consentDialog.acceptConsent,
+      cancelConsent: consentDialog.cancelConsent,
+      closeDialog: consentDialog.closeDialog,
+    },
   };
 };
 

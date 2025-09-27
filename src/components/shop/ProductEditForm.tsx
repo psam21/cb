@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
 import { filterVisibleTags } from '@/utils/tagFilter';
+import { AttachmentManager } from '@/components/generic/AttachmentManager';
+import { GenericAttachment } from '@/types/attachments';
 
 interface ProductEditFormProps {
   product: ShopProduct;
-  onSave: (productId: string, updatedData: Partial<ProductEventData>, imageFile: File | null) => Promise<{ success: boolean; error?: string }>;
+  onSave: (productId: string, updatedData: Partial<ProductEventData>, attachmentFiles: File[]) => Promise<{ success: boolean; error?: string }>;
   onCancel: () => void;
   isUpdating: boolean;
   updateProgress?: ShopPublishingProgress | null;
@@ -34,8 +35,7 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
     contact: product.contact,
     tags: filterVisibleTags(product.tags), // Filter out hidden tags for editing
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(product.imageUrl || null);
+  const [attachments, setAttachments] = useState<GenericAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -45,7 +45,24 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
       productId: product.id,
       title: product.title,
     });
-  }, [product.id, product.title]);
+
+    // Convert existing product attachments to GenericAttachment format
+    if (product.attachments && product.attachments.length > 0) {
+      const genericAttachments: GenericAttachment[] = product.attachments.map(att => ({
+        id: att.id,
+        type: att.type,
+        name: att.name,
+        size: att.size,
+        mimeType: att.mimeType,
+        url: att.url,
+        hash: att.hash,
+        metadata: att.metadata || {},
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }));
+      setAttachments(genericAttachments);
+    }
+  }, [product.id, product.title, product.attachments]);
 
   const handleInputChange = (field: keyof ProductEventData, value: string | number | string[]) => {
     setFormData(prev => ({
@@ -62,26 +79,31 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      logger.info('New image selected for product edit', {
-        service: 'ProductEditForm',
-        method: 'handleImageChange',
-        productId: product.id,
-        fileName: file.name,
-        fileSize: file.size,
-      });
-      
-      setImageFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleAttachmentsChange = (newAttachments: GenericAttachment[]) => {
+    logger.debug('Attachments changed in edit form', {
+      service: 'ProductEditForm',
+      method: 'handleAttachmentsChange',
+      productId: product.id,
+      attachmentCount: newAttachments.length,
+    });
+
+    setAttachments(newAttachments);
+    
+    // Clear any attachment-related errors
+    if (errors.attachments) {
+      setErrors(prev => ({ ...prev, attachments: '' }));
     }
+  };
+
+  const handleAttachmentError = (error: string) => {
+    logger.warn('Attachment error in edit form', {
+      service: 'ProductEditForm',
+      method: 'handleAttachmentError',
+      productId: product.id,
+      error,
+    });
+
+    setErrors(prev => ({ ...prev, attachments: error }));
   };
 
   const validateForm = (): boolean => {
@@ -141,10 +163,15 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
       method: 'handleSubmit',
       productId: product.id,
       title: formData.title,
-      hasImage: !!imageFile,
+      attachmentCount: attachments.length,
     });
 
-    const result = await onSave(product.id, formData, imageFile);
+    // Convert GenericAttachment[] to File[] for the hook
+    const attachmentFiles = attachments
+      .filter(att => att.originalFile)
+      .map(att => att.originalFile!);
+
+    const result = await onSave(product.id, formData, attachmentFiles);
     
     if (!result.success) {
       logger.error('Product edit failed', new Error(result.error || 'Unknown error'), {
@@ -175,40 +202,30 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Image Upload */}
+            {/* Media Attachments */}
             <div>
               <label className="block text-sm font-medium text-accent-700 mb-2">
-                Product Image
+                Product Media (Images, Videos, Audio)
               </label>
-              <div className="flex items-center space-x-4">
-                <div className="w-24 h-24 bg-primary-100 rounded-lg flex items-center justify-center overflow-hidden">
-                  {imagePreview ? (
-                    <Image
-                      src={imagePreview}
-                      alt="Product preview"
-                      width={96}
-                      height={96}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <svg className="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent-50 file:text-accent-700 hover:file:bg-accent-100"
-                    disabled={isUpdating}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {imageFile ? `Selected: ${imageFile.name}` : 'Keep existing image or upload a new one'}
-                  </p>
-                </div>
-              </div>
+              <AttachmentManager
+                initialAttachments={attachments}
+                onAttachmentsChange={handleAttachmentsChange}
+                onError={handleAttachmentError}
+                config={{
+                  maxAttachments: 5,
+                  maxFileSize: 100 * 1024 * 1024, // 100MB
+                  maxTotalSize: 500 * 1024 * 1024, // 500MB
+                  supportedTypes: ['image/*', 'video/*', 'audio/*']
+                }}
+                showPreview={true}
+                showMetadata={true}
+                showOperations={true}
+                allowDragDrop={true}
+                allowSelection={true}
+                allowReorder={true}
+                className="border border-gray-300 rounded-md p-4"
+              />
+              {errors.attachments && <p className="mt-1 text-sm text-red-600">{errors.attachments}</p>}
             </div>
 
             {/* Title */}

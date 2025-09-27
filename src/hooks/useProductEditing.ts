@@ -42,7 +42,7 @@ export const useProductEditing = () => {
   const updateProductData = useCallback(async (
     productId: string,
     updatedData: Partial<ProductEventData>,
-    imageFile: File | null
+    attachmentFiles: File[]
   ): Promise<{ success: boolean; error?: string }> => {
     if (!signer || !isAvailable) {
       const error = 'Nostr signer not available';
@@ -69,17 +69,17 @@ export const useProductEditing = () => {
       method: 'updateProductData',
       productId,
       title: updatedData.title,
-      hasImage: !!imageFile,
+      attachmentCount: attachmentFiles.length,
     });
 
     setUpdating(true);
     setUpdateError(null);
 
     try {
-      const result = await shopBusinessService.updateProduct(
+      const result = await shopBusinessService.updateProductWithAttachments(
         productId,
         updatedData,
-        imageFile,
+        attachmentFiles,
         signer,
         user.pubkey, // Pass pubkey to avoid extra signer prompt
         (progress: ShopPublishingProgress) => {

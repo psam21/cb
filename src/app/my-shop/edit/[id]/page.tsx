@@ -108,15 +108,15 @@ export default function ProductEditPage() {
     );
   }
 
-  const handleSaveProduct = async (productId: string, updatedData: Partial<ProductEventData>, imageFile: File | null) => {
+  const handleSaveProduct = async (productId: string, updatedData: Partial<ProductEventData>, attachmentFiles: File[]) => {
     logger.info('Saving product updates from edit page', {
       service: 'ProductEditPage',
       method: 'handleSaveProduct',
       productId,
-      hasImage: !!imageFile,
+      attachmentCount: attachmentFiles.length,
     });
 
-    const result = await updateProductData(productId, updatedData, imageFile);
+    const result = await updateProductData(productId, updatedData, attachmentFiles);
     
     if (result.success) {
       logger.info('Product updated successfully, redirecting to my-shop', {

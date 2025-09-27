@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useShopPublishing } from '@/hooks/useShopPublishing';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
+import { AttachmentManager } from '@/components/generic/AttachmentManager';
+import { GenericAttachment } from '@/types/attachments';
 
 interface ProductCreationFormProps {
   onProductCreated?: (productId: string) => void;
@@ -13,7 +15,7 @@ interface ProductCreationFormProps {
 }
 
 export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreationFormProps) => {
-  const { publishProduct, isPublishing, progress, lastResult, canPublish, resetPublishing } = useShopPublishing();
+  const { publishProductWithAttachments, isPublishing, progress, lastResult, canPublish, resetPublishing } = useShopPublishing();
   const [formData, setFormData] = useState<ProductEventData>({
     title: '',
     description: '',
@@ -25,10 +27,9 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
     location: '',
     contact: '',
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [attachments, setAttachments] = useState<GenericAttachment[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (field: keyof ProductEventData, value: string | number) => {
     logger.debug('Form input changed', {
@@ -46,26 +47,29 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
     }
   };
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      logger.info('Image file selected', {
-        service: 'ProductCreationForm',
-        method: 'handleImageChange',
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-      });
+  const handleAttachmentsChange = (newAttachments: GenericAttachment[]) => {
+    logger.debug('Attachments changed', {
+      service: 'ProductCreationForm',
+      method: 'handleAttachmentsChange',
+      attachmentCount: newAttachments.length,
+    });
 
-      // Validate file
-      if (file.size > 100 * 1024 * 1024) { // 100MB
-        setErrors(prev => ({ ...prev, image: 'File size must be less than 100MB' }));
-        return;
-      }
-
-      setImageFile(file);
-      setErrors(prev => ({ ...prev, image: '' }));
+    setAttachments(newAttachments);
+    
+    // Clear any attachment-related errors
+    if (errors.attachments) {
+      setErrors(prev => ({ ...prev, attachments: '' }));
     }
+  };
+
+  const handleAttachmentError = (error: string) => {
+    logger.warn('Attachment error', {
+      service: 'ProductCreationForm',
+      method: 'handleAttachmentError',
+      error,
+    });
+
+    setErrors(prev => ({ ...prev, attachments: error }));
   };
 
   const handleAddTag = () => {
@@ -133,7 +137,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
       service: 'ProductCreationForm',
       method: 'handleSubmit',
       title: formData.title,
-      hasImage: !!imageFile,
+      attachmentCount: attachments.length,
     });
 
     if (!validateForm()) {
@@ -150,7 +154,12 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
       return;
     }
 
-    const result = await publishProduct(formData, imageFile);
+    // Convert GenericAttachment[] to File[] for the hook
+    const attachmentFiles = attachments
+      .filter(att => att.originalFile)
+      .map(att => att.originalFile!);
+
+    const result = await publishProductWithAttachments(formData, attachmentFiles);
     
     if (result.success && result.product) {
       logger.info('Product created successfully', {
@@ -174,7 +183,7 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
         location: '',
         contact: '',
       });
-      setImageFile(null);
+      setAttachments([]);
       setTagInput('');
       setErrors({});
       
@@ -411,25 +420,30 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
           )}
         </div>
 
-        {/* Image Upload */}
+        {/* Media Attachments */}
         <div>
-          <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
-            Product Image
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Product Media (Images, Videos, Audio)
           </label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            id="image"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <AttachmentManager
+            initialAttachments={attachments}
+            onAttachmentsChange={handleAttachmentsChange}
+            onError={handleAttachmentError}
+            config={{
+              maxAttachments: 5,
+              maxFileSize: 100 * 1024 * 1024, // 100MB
+              maxTotalSize: 500 * 1024 * 1024, // 500MB
+              supportedTypes: ['image/*', 'video/*', 'audio/*']
+            }}
+            showPreview={true}
+            showMetadata={true}
+            showOperations={true}
+            allowDragDrop={true}
+            allowSelection={true}
+            allowReorder={true}
+            className="border border-gray-300 rounded-md p-4"
           />
-          {imageFile && (
-            <p className="mt-1 text-sm text-gray-600">
-              Selected: {imageFile.name} ({(imageFile.size / 1024 / 1024).toFixed(2)} MB)
-            </p>
-          )}
-          {errors.image && <p className="mt-1 text-sm text-red-600">{errors.image}</p>}
+          {errors.attachments && <p className="mt-1 text-sm text-red-600">{errors.attachments}</p>}
         </div>
 
         {/* Progress Indicator */}
