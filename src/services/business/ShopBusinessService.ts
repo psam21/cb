@@ -401,7 +401,9 @@ export class ShopBusinessService {
       // Step 3: Convert successful uploads to ProductAttachments
       const attachments = await this.createProductAttachments(uploadResult.uploadedFiles, signer);
 
-      // Step 4: Update product data for backward compatibility
+      // Step 4: Update product data with attachments
+      productData.attachments = attachments;
+      
       // Set primary image from first image attachment for legacy support
       const primaryImage = attachments.find(a => a.type === 'image');
       if (primaryImage) {
@@ -1660,16 +1662,32 @@ export class ShopBusinessService {
   }
 
   /**
-   * Parse attachments from Nostr event (backward compatibility)
+   * Parse attachments from Nostr event (supports both legacy and new formats)
    */
   private async parseAttachmentsFromEvent(event: NostrEvent, productData: Partial<ProductEventData>): Promise<ProductAttachment[]> {
     try {
       const attachments: ProductAttachment[] = [];
 
-      // TODO: In future versions, parse multiple attachments from event tags
-      // For now, handle backward compatibility with single image
+      // NEW: Use the enhanced parsing from NostrEventService
+      if (productData.attachments && productData.attachments.length > 0) {
+        // Construct URLs for each attachment
+        for (const attachment of productData.attachments) {
+          const url = this.constructAttachmentUrl(event.pubkey, attachment.hash);
+          attachments.push({
+            ...attachment,
+            url
+          });
+        }
 
-      if (productData.imageHash) {
+        logger.debug('Parsed multiple attachments from event', {
+          service: 'ShopBusinessService',
+          method: 'parseAttachmentsFromEvent',
+          eventId: event.id,
+          attachmentCount: attachments.length
+        });
+      }
+      // LEGACY: Fallback to single image for backward compatibility
+      else if (productData.imageHash) {
         const attachment: ProductAttachment = {
           id: `legacy-${productData.imageHash}`, // Legacy attachment ID
           hash: productData.imageHash,

@@ -13,6 +13,8 @@ export interface ProductEventData {
   imageUrl?: string;
   imageHash?: string;
   imageFile?: File;
+  // NEW: Multiple attachments support
+  attachments?: import('../business/ShopBusinessService').ProductAttachment[];
   tags: string[];
   category: string;
   condition: 'new' | 'used' | 'refurbished';
@@ -70,9 +72,10 @@ export class NostrEventService {
         language: 'en',
         region: productData.location,
         permissions: 'public',
-        file_id: productData.imageHash,
+        // For backward compatibility, use primary image if available
+        file_id: productData.imageHash || (productData.attachments?.find(a => a.type === 'image')?.hash),
         file_type: 'image',
-        file_size: productData.imageFile?.size || 0,
+        file_size: productData.imageFile?.size || (productData.attachments?.find(a => a.type === 'image')?.size) || 0,
       };
 
       // Create event using GenericEventService
@@ -92,6 +95,8 @@ export class NostrEventService {
           ...productData.tags.map(tag => ['t', tag]),
           // Only add culture-bridge-shop tag if not already present
           ...(productData.tags.includes('culture-bridge-shop') ? [] : [['t', 'culture-bridge-shop']]),
+          // NEW: Multiple attachment tags
+          ...this.createAttachmentTags(productData.attachments || []),
         ],
       });
 
@@ -289,12 +294,16 @@ export class NostrEventService {
         productData.description = content.content;
       }
 
+      // NEW: Extract multiple attachments from event tags
+      productData.attachments = this.extractAttachmentsFromEvent(event);
+
       logger.info('Product data extracted successfully', {
         service: 'NostrEventService',
         method: 'extractProductData',
         eventId: event.id,
         title: productData.title,
         category: productData.category,
+        attachmentCount: productData.attachments?.length || 0,
       });
 
       return productData;
@@ -308,6 +317,135 @@ export class NostrEventService {
       });
       return {};
     }
+  }
+
+  /**
+   * Extract multiple attachments from event tags
+   */
+  private extractAttachmentsFromEvent(event: NIP23Event): import('../business/ShopBusinessService').ProductAttachment[] {
+    const attachments: import('../business/ShopBusinessService').ProductAttachment[] = [];
+    
+    // Group tags by attachment ID to reconstruct attachments
+    const attachmentMap = new Map<string, {
+      id: string;
+      hash?: string;
+      type?: 'image' | 'video' | 'audio';
+      size?: number;
+      name?: string;
+      mimeType?: string;
+    }>();
+    
+    for (const tag of event.tags) {
+      if (tag[0] === 'attachment_id' && tag[1]) {
+        const attachmentId = tag[1];
+        if (!attachmentMap.has(attachmentId)) {
+          attachmentMap.set(attachmentId, { id: attachmentId });
+        }
+      }
+    }
+    
+    // Extract data for each attachment
+    for (const tag of event.tags) {
+      if (tag[0] === 'attachment_id' && tag[1]) {
+        const attachmentId = tag[1];
+        const attachment = attachmentMap.get(attachmentId);
+        
+        // Find the next tags that belong to this attachment
+        const attachmentIndex = event.tags.findIndex(t => t[0] === 'attachment_id' && t[1] === attachmentId);
+        
+        // Look for the corresponding f, file_type, file_size, file_name, mime_type tags
+        for (let i = attachmentIndex + 1; i < event.tags.length; i++) {
+          const nextTag = event.tags[i];
+          
+          // Stop if we hit another attachment_id
+          if (nextTag[0] === 'attachment_id') break;
+          
+          if (attachment) {
+            switch (nextTag[0]) {
+              case 'f':
+                attachment.hash = nextTag[1];
+                break;
+              case 'file_type':
+                attachment.type = nextTag[1] as 'image' | 'video' | 'audio';
+                break;
+              case 'file_size':
+                attachment.size = parseInt(nextTag[1]) || 0;
+                break;
+              case 'file_name':
+                attachment.name = nextTag[1];
+                break;
+              case 'mime_type':
+                attachment.mimeType = nextTag[1];
+                break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Convert to ProductAttachment objects
+    for (const [, data] of attachmentMap) {
+      if (data.hash && data.type && data.mimeType) {
+        attachments.push({
+          id: data.id,
+          hash: data.hash,
+          url: '', // Will be constructed by business layer
+          type: data.type,
+          name: data.name || 'unknown',
+          size: data.size || 0,
+          mimeType: data.mimeType,
+        });
+      }
+    }
+    
+    // Fallback: If no attachments found but we have legacy imageHash, create one
+    if (attachments.length === 0) {
+      const legacyImageHash = event.tags.find(tag => tag[0] === 'f')?.[1];
+      if (legacyImageHash) {
+        attachments.push({
+          id: `legacy-${legacyImageHash}`,
+          hash: legacyImageHash,
+          url: '', // Will be constructed by business layer
+          type: 'image',
+          name: 'legacy-image',
+          size: 0,
+          mimeType: 'image/jpeg',
+        });
+      }
+    }
+    
+    return attachments;
+  }
+
+  /**
+   * Create attachment tags for multiple attachments
+   */
+  private createAttachmentTags(attachments: import('../business/ShopBusinessService').ProductAttachment[]): string[][] {
+    const tags: string[][] = [];
+    
+    for (const attachment of attachments) {
+      // Add file hash tag
+      tags.push(['f', attachment.hash]);
+      
+      // Add file type tag
+      tags.push(['file_type', attachment.type]);
+      
+      // Add file size tag
+      tags.push(['file_size', attachment.size.toString()]);
+      
+      // Add file name tag (if available)
+      if (attachment.name && attachment.name !== 'legacy-image') {
+        tags.push(['file_name', attachment.name]);
+      }
+      
+      // Add MIME type tag
+      tags.push(['mime_type', attachment.mimeType]);
+      
+      // Add attachment ID for reference
+      tags.push(['attachment_id', attachment.id]);
+    }
+    
+    return tags;
   }
 
   /**
