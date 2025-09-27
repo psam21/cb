@@ -7,6 +7,7 @@ const footerLinks = {
     { name: 'Why Nostr?', href: '/nostr' },
     { name: 'Get Involved', href: '/get-involved' },
     { name: 'Support', href: '/support' },
+    { name: 'User Activity', href: '/user-event-log' },
     { name: 'Downloads', href: '/downloads' },
     { name: 'About Us', href: '/about' },
   ],
