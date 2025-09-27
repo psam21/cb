@@ -68,25 +68,9 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     ...config,
     showPreview,
     showMetadata
-  });
+  }, onAttachmentsChange);
 
-  // Watch for attachment changes and notify parent
-  useEffect(() => {
-    // Skip the initial render to avoid overriding state with empty array
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      return;
-    }
-    
-    logger.debug('Attachment state changed, notifying parent', {
-      component: 'AttachmentManager',
-      method: 'useEffect',
-      attachmentCount: attachmentManager.state.attachments.length,
-      attachmentIds: attachmentManager.state.attachments.map(a => a.id)
-    });
-    
-    onAttachmentsChange?.(attachmentManager.state.attachments);
-  }, [attachmentManager.state.attachments, onAttachmentsChange]);
+  // Note: onAttachmentsChange is now handled directly by the useAttachmentManager hook
 
   // Handle file input change
   const handleFileInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,14 +85,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
     try {
       await attachmentManager.addAttachments(files);
-      // Immediately notify parent after adding files
-      logger.debug('Immediately notifying parent after file input', {
-        component: 'AttachmentManager',
-        method: 'handleFileInputChange',
-        attachmentCount: attachmentManager.state.attachments.length,
-        attachmentIds: attachmentManager.state.attachments.map(a => a.id)
-      });
-      onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
       logger.error('Failed to add files', error instanceof Error ? error : new Error(errorMessage), {
@@ -175,14 +151,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
     try {
       await attachmentManager.addAttachments(files);
-      // Immediately notify parent after adding files
-      logger.debug('Immediately notifying parent after drag drop', {
-        component: 'AttachmentManager',
-        method: 'handleDrop',
-        attachmentCount: attachmentManager.state.attachments.length,
-        attachmentIds: attachmentManager.state.attachments.map(a => a.id)
-      });
-      onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
       logger.error('Failed to add dropped files', error instanceof Error ? error : new Error(errorMessage), {

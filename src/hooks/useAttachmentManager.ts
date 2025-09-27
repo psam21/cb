@@ -48,7 +48,8 @@ const createInitialState = <T extends GenericAttachment>(config: AttachmentManag
  * Works with any content type that extends GenericAttachment
  */
 export const useAttachmentManager = <T extends GenericAttachment = GenericAttachment>(
-  initialConfig: Partial<AttachmentManagerConfig> = {}
+  initialConfig: Partial<AttachmentManagerConfig> = {},
+  onAttachmentsChange?: (attachments: T[]) => void
 ): UseAttachmentManagerReturn<T> => {
   const config = useMemo(() => ({ ...DEFAULT_ATTACHMENT_CONFIG, ...initialConfig }), [initialConfig]);
   const [managerState, setManagerState] = useState<AttachmentManagerState<T>>(() => createInitialState<T>(config));
@@ -110,6 +111,9 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
         isProcessing: false,
         progress: 100
       }));
+
+      // Notify parent component of attachment changes
+      onAttachmentsChange?.(result.attachments as T[]);
 
       logger.info('Files added to attachment manager successfully', {
         hook: 'useAttachmentManager',
