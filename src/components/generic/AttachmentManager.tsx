@@ -70,6 +70,17 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     showMetadata
   }, onAttachmentsChange, initialAttachments);
 
+  // Debug logging for initial attachments
+  useEffect(() => {
+    logger.debug('AttachmentManager initialized with initialAttachments', {
+      component: 'AttachmentManager',
+      method: 'useEffect',
+      initialAttachmentCount: initialAttachments.length,
+      initialAttachments: initialAttachments,
+      currentAttachments: attachmentManager.state.attachments.length
+    });
+  }, [initialAttachments, attachmentManager.state.attachments.length]);
+
   // Note: onAttachmentsChange is now handled directly by the useAttachmentManager hook
 
   // Handle file input change

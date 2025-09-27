@@ -44,10 +44,19 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
       method: 'useEffect',
       productId: product.id,
       title: product.title,
+      attachmentCount: product.attachments?.length || 0,
+      attachments: product.attachments
     });
 
     // Convert existing product attachments to GenericAttachment format
     if (product.attachments && product.attachments.length > 0) {
+      logger.info('Converting product attachments to GenericAttachment format', {
+        service: 'ProductEditForm',
+        method: 'useEffect',
+        productId: product.id,
+        originalAttachments: product.attachments
+      });
+
       const genericAttachments: GenericAttachment[] = product.attachments.map(att => ({
         id: att.id,
         type: att.type,
@@ -60,7 +69,23 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
         createdAt: Date.now(),
         updatedAt: Date.now()
       }));
+      
+      logger.info('Converted attachments to GenericAttachment format', {
+        service: 'ProductEditForm',
+        method: 'useEffect',
+        productId: product.id,
+        genericAttachments: genericAttachments
+      });
+      
       setAttachments(genericAttachments);
+    } else {
+      logger.warn('No attachments found in product', {
+        service: 'ProductEditForm',
+        method: 'useEffect',
+        productId: product.id,
+        hasAttachments: !!product.attachments,
+        attachmentLength: product.attachments?.length || 0
+      });
     }
   }, [product.id, product.title, product.attachments]);
 
