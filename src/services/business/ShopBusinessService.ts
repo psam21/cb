@@ -5,6 +5,7 @@ import { nostrEventService, ProductEventData } from '../nostr/NostrEventService'
 import { productStore } from '../../stores/ProductStore';
 import { signEvent, createDeletionEvent } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
+import { constructUserBlossomUrl, getSharedBlossomUrl, BLOSSOM_CONFIG } from '../../config/blossom';
 // eventLoggingService removed - now handled automatically in GenericRelayService
 
 export interface ShopProduct {
@@ -639,6 +640,7 @@ export class ShopBusinessService {
 
   /**
    * Construct user-specific Blossom URL following Nostr decentralization ethos
+   * Uses centralized configuration from blossom.ts
    */
   private constructUserBlossomUrl(userPubkey: string, imageHash: string): string {
     try {
@@ -646,8 +648,12 @@ export class ShopBusinessService {
       const { profileService } = require('../business/ProfileBusinessService');
       const userNpub = profileService.pubkeyToNpub(userPubkey);
       
-      // Return user's personal Blossom server URL
-      return `https://${userNpub}.blossom.band/${imageHash}`;
+      // Use configuration-based URL construction
+      if (BLOSSOM_CONFIG.preferUserOwned) {
+        return constructUserBlossomUrl(userNpub, imageHash);
+      } else {
+        return getSharedBlossomUrl(imageHash);
+      }
     } catch (error) {
       logger.warn('Failed to construct user-specific Blossom URL, falling back to shared server', {
         service: 'ShopBusinessService',
@@ -655,8 +661,8 @@ export class ShopBusinessService {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
       
-      // Fallback to shared server if npub conversion fails
-      return `https://blossom.nostr.build/${imageHash}`;
+      // Fallback to configured shared server
+      return getSharedBlossomUrl(imageHash);
     }
   }
 

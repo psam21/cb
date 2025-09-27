@@ -2,6 +2,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// Import Blossom configuration for dynamic domain configuration
+// Note: Using require with .js extension for Next.js compatibility
+const { getAllBlossomDomains } = require('./src/config/blossom');
+
 /** @type {import('next').NextConfig} */
 const baseConfig = {
   // experimental options removed to fix Next.js config warning
@@ -17,24 +21,16 @@ const baseConfig = {
         hostname: 'via.placeholder.com',
         pathname: '**',
       },
-      {
+      // Dynamic Blossom domains from configuration
+      ...getAllBlossomDomains().map(hostname => ({
         protocol: 'https',
-        hostname: '*.blossom.band',
+        hostname,
         pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.blosstr.com',
-        pathname: '**',
-      },
+      })),
+      // Legacy image hosts
       {
         protocol: 'https',
         hostname: 'image.nostr.build',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'blossom.nostr.build',
         pathname: '**',
       },
     ],

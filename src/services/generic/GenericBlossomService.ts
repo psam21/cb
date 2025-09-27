@@ -1,6 +1,7 @@
 import { logger } from '../core/LoggingService';
 import { NostrSigner, NostrEvent } from '../../types/nostr';
 import { BlossomClient } from 'blossom-client-sdk';
+import { SHARED_BLOSSOM_SERVERS, BLOSSOM_CONFIG } from '../../config/blossom';
 
 export interface BlossomFileMetadata {
   fileId: string;
@@ -24,11 +25,12 @@ export interface BlossomServer {
 
 export class GenericBlossomService {
   private static instance: GenericBlossomService;
-  private readonly servers: BlossomServer[] = [
-    { url: 'https://blossom.nostr.build', name: 'Nostr.build Blossom', reliability: 'high' },
-    { url: 'https://blosstr.com', name: 'Blosstr', reliability: 'high' },
-  ];
-  private readonly maxFileSize = 100 * 1024 * 1024; // 100MB
+  private readonly servers: BlossomServer[] = SHARED_BLOSSOM_SERVERS.map(config => ({
+    url: config.url,
+    name: config.name,
+    reliability: config.reliability
+  }));
+  private readonly maxFileSize = BLOSSOM_CONFIG.maxFileSize;
   private readonly maxRetries = 3;
 
   private constructor() {}
