@@ -11,6 +11,7 @@ import {
   CreateProductWithAttachmentsResult
 } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
+import { useConsentDialog } from './useConsentDialog';
 
 export const useShopPublishing = () => {
   const { isAvailable, getSigner } = useNostrSigner();
@@ -23,6 +24,7 @@ export const useShopPublishing = () => {
     setLastPublishingResult,
     addProduct,
   } = useShopStore();
+  const consentDialog = useConsentDialog();
 
   const publishProduct = useCallback(async (
     productData: ProductEventData,
@@ -368,5 +370,7 @@ export const useShopPublishing = () => {
     isMultiAttachmentSupported: true,
     maxAttachments: 5, // From MEDIA_CONFIG
     supportedFileTypes: ['image/*', 'video/*', 'audio/*'],
+    // Consent dialog for file uploads
+    consentDialog,
   };
 };

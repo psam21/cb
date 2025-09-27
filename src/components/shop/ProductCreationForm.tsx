@@ -7,6 +7,7 @@ import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
+import { UserConsentDialog } from '@/components/generic/UserConsentDialog';
 import { GenericAttachment } from '@/types/attachments';
 
 interface ProductCreationFormProps {
@@ -15,7 +16,7 @@ interface ProductCreationFormProps {
 }
 
 export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreationFormProps) => {
-  const { publishProductWithAttachments, isPublishing, progress, lastResult, canPublish, resetPublishing } = useShopPublishing();
+  const { publishProductWithAttachments, isPublishing, progress, lastResult, canPublish, resetPublishing, consentDialog } = useShopPublishing();
   const [formData, setFormData] = useState<ProductEventData>({
     title: '',
     description: '',
@@ -514,6 +515,25 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
           </button>
         </div>
       </form>
+
+      {/* User Consent Dialog */}
+      <UserConsentDialog
+        isOpen={consentDialog.isOpen}
+        onClose={consentDialog.closeDialog}
+        onConfirm={(accepted) => {
+          if (accepted) {
+            consentDialog.acceptConsent();
+          } else {
+            consentDialog.cancelConsent();
+          }
+        }}
+        files={consentDialog.consent?.files?.map(f => new File([], f.name, { type: f.type })) || []}
+        title="File Upload Consent"
+        description="Please review the files before uploading. Each file will require a separate signing prompt."
+        showDetails={true}
+        estimatedTime={consentDialog.consent?.estimatedTime || 0}
+        totalSize={consentDialog.consent?.totalSize || 0}
+      />
     </div>
   );
 };
