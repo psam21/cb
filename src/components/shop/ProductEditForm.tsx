@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
@@ -182,9 +183,11 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
               <div className="flex items-center space-x-4">
                 <div className="w-24 h-24 bg-primary-100 rounded-lg flex items-center justify-center overflow-hidden">
                   {imagePreview ? (
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Product preview"
+                      width={96}
+                      height={96}
                       className="w-full h-full object-cover"
                     />
                   ) : (

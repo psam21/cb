@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/useAuthStore';
 
@@ -86,9 +87,11 @@ export default function AuthButton() {
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
                 {user.profile.picture ? (
-                  <img
+                  <Image
                     src={user.profile.picture}
                     alt="Profile"
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (

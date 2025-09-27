@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { logger } from '@/services/core/LoggingService';
 
@@ -81,9 +82,11 @@ export const ProductDeleteDialog: React.FC<ProductDeleteDialogProps> = ({
               <div className="flex items-center space-x-3">
                 <div className="w-16 h-16 bg-primary-100 rounded-lg flex items-center justify-center overflow-hidden">
                   {product.imageUrl ? (
-                    <img
+                    <Image
                       src={product.imageUrl}
                       alt={product.title}
+                      width={64}
+                      height={64}
                       className="w-full h-full object-cover"
                     />
                   ) : (

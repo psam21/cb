@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 import { logger } from '@/services/core/LoggingService';
 import { filterVisibleTags } from '@/utils/tagFilter';
@@ -63,9 +64,11 @@ export const MyShopProductCard: React.FC<MyShopProductCardProps> = ({
       {/* Product Image */}
       <div className="relative aspect-[4/3] bg-primary-50">
         {product.imageUrl ? (
-          <img
+          <Image
             src={product.imageUrl}
             alt={product.title}
+            width={400}
+            height={300}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               logger.warn('Product image failed to load', {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -321,9 +322,11 @@ export default function ProfilePage() {
                 <h3 className="text-lg font-serif font-bold text-accent-800 mb-4">Profile Picture</h3>
                 <div className="text-center">
                   {profile?.picture ? (
-                    <img
+                    <Image
                       src={profile.picture}
                       alt="Profile"
+                      width={96}
+                      height={96}
                       className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-2 border-accent-200"
                     />
                   ) : (
