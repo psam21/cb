@@ -144,7 +144,7 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
         progress: 0
       }));
     }
-  }, [managerState.attachments]);
+  }, [managerState.attachments, onAttachmentsChange]);
 
   /**
    * Remove an attachment by ID
