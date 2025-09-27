@@ -325,6 +325,15 @@ export class NostrEventService {
   private extractAttachmentsFromEvent(event: NIP23Event): import('../business/ShopBusinessService').ProductAttachment[] {
     const attachments: import('../business/ShopBusinessService').ProductAttachment[] = [];
     
+    // Debug: Log all event tags to see what we're working with
+    logger.debug('Extracting attachments from event tags', {
+      service: 'NostrEventService',
+      method: 'extractAttachmentsFromEvent',
+      eventId: event.id,
+      totalTags: event.tags.length,
+      allTags: event.tags
+    });
+    
     // Group tags by attachment ID to reconstruct attachments
     const attachmentMap = new Map<string, {
       id: string;
@@ -398,6 +407,14 @@ export class NostrEventService {
       }
     }
     
+    logger.debug('Found attachments from new format', {
+      service: 'NostrEventService',
+      method: 'extractAttachmentsFromEvent',
+      eventId: event.id,
+      attachmentCount: attachments.length,
+      attachments: attachments
+    });
+    
     // Fallback: If no attachments found but we have legacy imageHash, create one
     if (attachments.length === 0) {
       const legacyImageHash = event.tags.find(tag => tag[0] === 'f')?.[1];
@@ -411,8 +428,24 @@ export class NostrEventService {
           size: 0,
           mimeType: 'image/jpeg',
         });
+        
+        logger.debug('Found legacy image attachment', {
+          service: 'NostrEventService',
+          method: 'extractAttachmentsFromEvent',
+          eventId: event.id,
+          legacyImageHash: legacyImageHash.substring(0, 8) + '...',
+          attachmentCount: attachments.length
+        });
       }
     }
+    
+    logger.debug('Final attachments extracted', {
+      service: 'NostrEventService',
+      method: 'extractAttachmentsFromEvent',
+      eventId: event.id,
+      finalAttachmentCount: attachments.length,
+      finalAttachments: attachments
+    });
     
     return attachments;
   }
