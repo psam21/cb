@@ -20,7 +20,6 @@
   "dependencies": {
     "@tailwindcss/typography": "^0.5.10",
     "@vercel/analytics": "^1.5.0",
-    "@vercel/kv": "^3.0.0",
     "blossom-client-sdk": "^4.1.0",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.1",
@@ -32,6 +31,7 @@
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-intersection-observer": "^9.5.3",
+    "redis": "^5.8.2",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

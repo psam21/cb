@@ -1,8 +1,8 @@
 /**
- * Vercel KV service for user event logging
+ * Redis service for user event logging
  * Handles storage and retrieval of Nostr event publishing analytics
  */
-import { kv } from '@vercel/kv';
+import { createClient, RedisClientType } from 'redis';
 import { logger } from './LoggingService';
 import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus } from '../../errors/ErrorTypes';
@@ -34,8 +34,64 @@ export interface PaginatedEventResponse {
 
 export class KVService {
   private static instance: KVService;
+  private redis: RedisClientType | null = null;
 
-  private constructor() {}
+  private constructor() {
+    this.initializeRedis();
+  }
+
+  private async initializeRedis() {
+    try {
+      if (!process.env.REDIS_URL) {
+        logger.warn('REDIS_URL not configured - KV service will not be available', {
+          service: 'KVService',
+          method: 'initializeRedis',
+        });
+        return;
+      }
+
+      this.redis = createClient({ url: process.env.REDIS_URL });
+      
+      this.redis.on('error', (err) => {
+        logger.error('Redis client error', err, {
+          service: 'KVService',
+          method: 'initializeRedis',
+        });
+      });
+
+      await this.redis.connect();
+      
+      logger.info('Redis client connected successfully', {
+        service: 'KVService',
+        method: 'initializeRedis',
+      });
+    } catch (error) {
+      logger.error('Failed to initialize Redis client', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'KVService',
+        method: 'initializeRedis',
+      });
+    }
+  }
+
+  private async ensureConnected(): Promise<boolean> {
+    if (!this.redis) {
+      return false;
+    }
+    
+    if (!this.redis.isReady) {
+      try {
+        await this.redis.connect();
+      } catch (error) {
+        logger.error('Failed to reconnect to Redis', error instanceof Error ? error : new Error('Unknown error'), {
+          service: 'KVService',
+          method: 'ensureConnected',
+        });
+        return false;
+      }
+    }
+    
+    return true;
+  }
 
   public static getInstance(): KVService {
     if (!KVService.instance) {
@@ -49,6 +105,10 @@ export class KVService {
    */
   public async logEvent(eventData: UserEventData): Promise<void> {
     try {
+      if (!(await this.ensureConnected())) {
+        throw new Error('Redis connection not available');
+      }
+
       logger.info('Storing event analytics data', {
         service: 'KVService',
         method: 'logEvent',
@@ -61,11 +121,11 @@ export class KVService {
       const eventKey = `user_events:${eventData.npub}:${eventData.processedTimestamp}:${eventData.eventId}`;
       
       // Store event data
-      await kv.set(eventKey, eventData);
+      await this.redis!.set(eventKey, JSON.stringify(eventData));
 
       // Update user's event index for pagination
       const indexKey = `user_events_index:${eventData.npub}`;
-      await kv.zadd(indexKey, { score: eventData.processedTimestamp, member: eventKey });
+      await this.redis!.zAdd(indexKey, { score: eventData.processedTimestamp, value: eventKey });
 
       logger.info('Event analytics data stored successfully', {
         service: 'KVService',
@@ -103,6 +163,10 @@ export class KVService {
     endDate?: number
   ): Promise<PaginatedEventResponse> {
     try {
+      if (!(await this.ensureConnected())) {
+        throw new Error('Redis connection not available');
+      }
+
       logger.info('Retrieving user events', {
         service: 'KVService',
         method: 'getUserEvents',
@@ -117,7 +181,7 @@ export class KVService {
       const indexKey = `user_events_index:${npub}`;
       
       // Get total count first
-      const totalCount = await kv.zcard(indexKey);
+      const totalCount = await this.redis!.zCard(indexKey);
       
       if (totalCount === 0) {
         return {
@@ -136,8 +200,8 @@ export class KVService {
       const totalPages = Math.ceil(totalCount / limit);
 
       // Get event keys in reverse chronological order (newest first)
-      const eventKeys = await kv.zrange(indexKey, offset, offset + limit - 1, {
-        rev: true, // Reverse order for newest first
+      const eventKeys = await this.redis!.zRange(indexKey, offset, offset + limit - 1, {
+        REV: true, // Reverse order for newest first
       });
 
       // Fetch event data
@@ -145,8 +209,10 @@ export class KVService {
       
       for (const eventKey of eventKeys) {
         try {
-          const eventData = await kv.get<UserEventData>(eventKey as string);
-          if (eventData) {
+          const eventDataStr = await this.redis!.get(eventKey);
+          if (eventDataStr) {
+            const eventData: UserEventData = JSON.parse(eventDataStr);
+            
             // Apply filters if provided
             if (eventKind !== undefined && eventData.eventKind !== eventKind) {
               continue;
@@ -222,8 +288,12 @@ export class KVService {
     totalFailedRelays: number;
   }> {
     try {
+      if (!(await this.ensureConnected())) {
+        throw new Error('Redis connection not available');
+      }
+
       const indexKey = `user_events_index:${npub}`;
-      const eventKeys = await kv.zrange(indexKey, 0, -1);
+      const eventKeys = await this.redis!.zRange(indexKey, 0, -1);
       
       if (eventKeys.length === 0) {
         return {
@@ -247,8 +317,10 @@ export class KVService {
 
       for (const eventKey of eventKeys) {
         try {
-          const eventData = await kv.get<UserEventData>(eventKey as string);
-          if (eventData) {
+          const eventDataStr = await this.redis!.get(eventKey);
+          if (eventDataStr) {
+            const eventData: UserEventData = JSON.parse(eventDataStr);
+            
             // Count event kinds
             stats.eventKinds[eventData.eventKind] = (stats.eventKinds[eventData.eventKind] || 0) + 1;
             
