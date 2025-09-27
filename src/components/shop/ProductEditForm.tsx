@@ -31,7 +31,7 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
     condition: product.condition,
     location: product.location,
     contact: product.contact,
-    tags: product.tags,
+    tags: filterVisibleTags(product.tags), // Filter out hidden tags for editing
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product.imageUrl || null);
