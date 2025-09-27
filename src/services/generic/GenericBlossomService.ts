@@ -17,6 +17,45 @@ export interface BlossomUploadResult {
   error?: string;
 }
 
+// Enhanced Sequential Upload Interfaces
+export interface SequentialUploadResult {
+  success: boolean;
+  uploadedFiles: BlossomFileMetadata[];
+  failedFiles: { file: File; error: string }[];
+  partialSuccess: boolean;
+  userCancelled: boolean;
+  totalFiles: number;
+  successCount: number;
+  failureCount: number;
+}
+
+export interface SequentialUploadProgress {
+  currentFileIndex: number;
+  totalFiles: number;
+  currentFile: {
+    name: string;
+    size: number;
+    status: 'waiting' | 'authenticating' | 'uploading' | 'completed' | 'failed';
+    progress: number; // 0-100
+    error?: string;
+  };
+  completedFiles: BlossomFileMetadata[];
+  failedFiles: { name: string; error: string }[];
+  overallProgress: number; // 0-100
+  nextAction: string; // e.g., "Please approve image2.jpg in your signer"
+  estimatedTimeRemaining?: number; // seconds
+}
+
+export interface BatchUploadConsent {
+  fileCount: number;
+  totalSize: number;
+  estimatedTime: number; // seconds
+  requiredApprovals: number;
+  userAccepted: boolean;
+  timestamp: number;
+  files: { name: string; size: number; type: string }[];
+}
+
 export interface BlossomServer {
   url: string;
   name: string;
@@ -391,6 +430,308 @@ export class GenericBlossomService {
       return [];
     }
   }
+
+  /**
+   * 🎯 KEY INNOVATION: Enhanced Sequential Upload with Superior UX
+   * Transforms multiple prompts from surprise annoyance to expected workflow
+   */
+  public async uploadSequentialWithConsent(
+    files: File[],
+    signer: NostrSigner,
+    onProgress?: (progress: SequentialUploadProgress) => void
+  ): Promise<SequentialUploadResult> {
+    try {
+      logger.info('Starting Enhanced Sequential Upload with user consent', {
+        service: 'GenericBlossomService',
+        method: 'uploadSequentialWithConsent',
+        fileCount: files.length,
+        totalSize: files.reduce((sum, f) => sum + f.size, 0)
+      });
+
+      // Step 1: Get informed user consent
+      const consent = await this.getUserBatchConsent(files);
+      if (!consent.userAccepted) {
+        logger.info('User cancelled batch upload during consent phase', {
+          service: 'GenericBlossomService',
+          method: 'uploadSequentialWithConsent',
+          fileCount: files.length
+        });
+
+        return {
+          success: false,
+          uploadedFiles: [],
+          failedFiles: [],
+          partialSuccess: false,
+          userCancelled: true,
+          totalFiles: files.length,
+          successCount: 0,
+          failureCount: 0
+        };
+      }
+
+      // Step 2: Upload files sequentially with progress feedback
+      const result = await this.uploadFilesSequentially(files, signer, onProgress);
+
+      logger.info('Enhanced Sequential Upload completed', {
+        service: 'GenericBlossomService',
+        method: 'uploadSequentialWithConsent',
+        result: {
+          success: result.success,
+          totalFiles: result.totalFiles,
+          successCount: result.successCount,
+          failureCount: result.failureCount,
+          partialSuccess: result.partialSuccess
+        }
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown sequential upload error';
+      logger.error('Enhanced Sequential Upload failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'GenericBlossomService',
+        method: 'uploadSequentialWithConsent',
+        fileCount: files.length,
+        error: errorMessage
+      });
+
+      return {
+        success: false,
+        uploadedFiles: [],
+        failedFiles: files.map(file => ({ file, error: errorMessage })),
+        partialSuccess: false,
+        userCancelled: false,
+        totalFiles: files.length,
+        successCount: 0,
+        failureCount: files.length
+      };
+    }
+  }
+
+  /**
+   * Get informed user consent before starting multi-file upload
+   * This is where we transform the UX from "surprise popups" to "expected workflow"
+   */
+  private async getUserBatchConsent(files: File[]): Promise<BatchUploadConsent> {
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    
+    // Estimate time: ~2-5 seconds per file (auth + upload)
+    const estimatedTimePerFile = 3.5; // seconds
+    const estimatedTime = Math.ceil(files.length * estimatedTimePerFile);
+
+    const consent: BatchUploadConsent = {
+      fileCount: files.length,
+      totalSize,
+      estimatedTime,
+      requiredApprovals: files.length, // Each file needs signer approval
+      userAccepted: false, // Will be set by UI component
+      timestamp: Date.now(),
+      files: files.map(file => ({
+        name: file.name,
+        size: file.size,
+        type: file.type
+      }))
+    };
+
+    logger.info('Batch upload consent requested', {
+      service: 'GenericBlossomService',
+      method: 'getUserBatchConsent',
+      fileCount: consent.fileCount,
+      totalSize: consent.totalSize,
+      estimatedTime: consent.estimatedTime,
+      requiredApprovals: consent.requiredApprovals
+    });
+
+    // NOTE: In a real implementation, this would trigger a consent dialog
+    // For now, we'll auto-accept for development/testing
+    // TODO: Replace with actual user consent dialog in Phase 5
+    consent.userAccepted = true;
+
+    return consent;
+  }
+
+  /**
+   * Upload files one by one with clear progress feedback
+   * Each signer prompt is expected and contextualized
+   */
+  private async uploadFilesSequentially(
+    files: File[],
+    signer: NostrSigner,
+    onProgress?: (progress: SequentialUploadProgress) => void
+  ): Promise<SequentialUploadResult> {
+    const uploadedFiles: BlossomFileMetadata[] = [];
+    const failedFiles: { file: File; error: string }[] = [];
+    const startTime = Date.now();
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const currentFileIndex = i;
+      
+      try {
+        // Update progress: Starting file authentication
+        if (onProgress) {
+          onProgress({
+            currentFileIndex,
+            totalFiles: files.length,
+            currentFile: {
+              name: file.name,
+              size: file.size,
+              status: 'authenticating',
+              progress: 0
+            },
+            completedFiles: uploadedFiles,
+            failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+            overallProgress: Math.round((i / files.length) * 100),
+            nextAction: `Please approve "${file.name}" in your signer`,
+            estimatedTimeRemaining: this.calculateEstimatedTime(i, files.length, startTime)
+          });
+        }
+
+        logger.info('Starting sequential file upload', {
+          service: 'GenericBlossomService',
+          method: 'uploadFilesSequentially',
+          fileIndex: i + 1,
+          totalFiles: files.length,
+          fileName: file.name,
+          fileSize: file.size
+        });
+
+        // Update progress: Uploading
+        if (onProgress) {
+          onProgress({
+            currentFileIndex,
+            totalFiles: files.length,
+            currentFile: {
+              name: file.name,
+              size: file.size,
+              status: 'uploading',
+              progress: 50
+            },
+            completedFiles: uploadedFiles,
+            failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+            overallProgress: Math.round(((i + 0.5) / files.length) * 100),
+            nextAction: `Uploading "${file.name}"...`,
+            estimatedTimeRemaining: this.calculateEstimatedTime(i, files.length, startTime)
+          });
+        }
+
+        // Actual file upload using existing single-file method
+        const uploadResult = await this.uploadFile(file, signer);
+
+        if (uploadResult.success && uploadResult.metadata) {
+          uploadedFiles.push(uploadResult.metadata);
+          
+          // Update progress: Completed
+          if (onProgress) {
+            onProgress({
+              currentFileIndex,
+              totalFiles: files.length,
+              currentFile: {
+                name: file.name,
+                size: file.size,
+                status: 'completed',
+                progress: 100
+              },
+              completedFiles: uploadedFiles,
+              failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+              overallProgress: Math.round(((i + 1) / files.length) * 100),
+              nextAction: i < files.length - 1 ? `Next: "${files[i + 1].name}"` : 'Upload complete!',
+              estimatedTimeRemaining: this.calculateEstimatedTime(i + 1, files.length, startTime)
+            });
+          }
+
+          logger.info('Sequential file upload successful', {
+            service: 'GenericBlossomService',
+            method: 'uploadFilesSequentially',
+            fileIndex: i + 1,
+            fileName: file.name,
+            hash: uploadResult.metadata.hash
+          });
+
+        } else {
+          const error = uploadResult.error || 'Unknown upload error';
+          failedFiles.push({ file, error });
+          
+          // Update progress: Failed
+          if (onProgress) {
+            onProgress({
+              currentFileIndex,
+              totalFiles: files.length,
+              currentFile: {
+                name: file.name,
+                size: file.size,
+                status: 'failed',
+                progress: 0,
+                error
+              },
+              completedFiles: uploadedFiles,
+              failedFiles: failedFiles.map(f => ({ name: f.file.name, error: f.error })),
+              overallProgress: Math.round(((i + 1) / files.length) * 100),
+              nextAction: i < files.length - 1 ? `Next: "${files[i + 1].name}"` : 'Upload complete with errors',
+              estimatedTimeRemaining: this.calculateEstimatedTime(i + 1, files.length, startTime)
+            });
+          }
+
+          logger.warn('Sequential file upload failed', {
+            service: 'GenericBlossomService',
+            method: 'uploadFilesSequentially',
+            fileIndex: i + 1,
+            fileName: file.name,
+            error
+          });
+        }
+
+        // Small delay between files to avoid overwhelming the signer
+        if (i < files.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown file upload error';
+        failedFiles.push({ file, error: errorMessage });
+        
+        logger.error('Sequential file upload exception', error instanceof Error ? error : new Error(errorMessage), {
+          service: 'GenericBlossomService',
+          method: 'uploadFilesSequentially',
+          fileIndex: i + 1,
+          fileName: file.name,
+          error: errorMessage
+        });
+
+        // Continue with next file even if this one failed
+      }
+    }
+
+    const successCount = uploadedFiles.length;
+    const failureCount = failedFiles.length;
+    const success = successCount > 0 && failureCount === 0;
+    const partialSuccess = successCount > 0 && failureCount > 0;
+
+    return {
+      success,
+      uploadedFiles,
+      failedFiles,
+      partialSuccess,
+      userCancelled: false,
+      totalFiles: files.length,
+      successCount,
+      failureCount
+    };
+  }
+
+  /**
+   * Calculate estimated time remaining for sequential upload
+   */
+  private calculateEstimatedTime(currentIndex: number, totalFiles: number, startTime: number): number {
+    if (currentIndex === 0) {
+      return totalFiles * 3.5; // Initial estimate: 3.5 seconds per file
+    }
+
+    const elapsedTime = (Date.now() - startTime) / 1000; // seconds
+    const avgTimePerFile = elapsedTime / currentIndex;
+    const remainingFiles = totalFiles - currentIndex;
+    
+    return Math.ceil(remainingFiles * avgTimePerFile);
+  }
 }
 
 // Export singleton instance
@@ -408,6 +749,12 @@ export const validateFile = (file: File) =>
 
 export const downloadFile = (hash: string) =>
   blossomService.downloadFile(hash);
+
+export const uploadSequentialWithConsent = (
+  files: File[], 
+  signer: NostrSigner, 
+  onProgress?: (progress: SequentialUploadProgress) => void
+) => blossomService.uploadSequentialWithConsent(files, signer, onProgress);
 
 export const listUserFiles = (pubkey: string) =>
   blossomService.listUserFiles(pubkey);
