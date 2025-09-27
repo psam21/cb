@@ -53,6 +53,8 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
       method: 'handleAttachmentsChange',
       attachmentCount: newAttachments.length,
       attachmentIds: newAttachments.map(a => a.id),
+      hasOriginalFiles: newAttachments.filter(a => a.originalFile).length,
+      originalFileNames: newAttachments.filter(a => a.originalFile).map(a => a.originalFile!.name)
     });
 
     setAttachments(newAttachments);

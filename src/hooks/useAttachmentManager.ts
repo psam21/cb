@@ -113,6 +113,13 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
       }));
 
       // Notify parent component of attachment changes
+      logger.debug('Calling onAttachmentsChange callback', {
+        hook: 'useAttachmentManager',
+        method: 'addAttachments',
+        attachmentCount: result.attachments.length,
+        attachmentIds: result.attachments.map(a => a.id),
+        hasCallback: !!onAttachmentsChange
+      });
       onAttachmentsChange?.(result.attachments as T[]);
 
       logger.info('Files added to attachment manager successfully', {
