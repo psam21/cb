@@ -1,12 +1,28 @@
 import { logger } from '../core/LoggingService';
 import { NostrSigner, NostrEvent } from '../../types/nostr';
-import { blossomService, BlossomFileMetadata } from '../generic/GenericBlossomService';
+import { blossomService, BlossomFileMetadata, uploadSequentialWithConsent, type SequentialUploadResult, type SequentialUploadProgress } from '../generic/GenericBlossomService';
+import { validateBatchFiles, type MediaValidationResult } from '../generic/GenericMediaService';
 import { nostrEventService, ProductEventData } from '../nostr/NostrEventService';
 import { productStore } from '../../stores/ProductStore';
 import { signEvent, createDeletionEvent } from '../generic/GenericEventService';
 import { publishEvent, queryEvents } from '../generic/GenericRelayService';
 import { constructUserBlossomUrl, getSharedBlossomUrl, BLOSSOM_CONFIG } from '../../config/blossom';
 // eventLoggingService removed - now handled automatically in GenericRelayService
+
+// Multiple attachment support interface
+export interface ProductAttachment {
+  id: string; // unique identifier for this attachment
+  hash: string; // Blossom file hash
+  url: string; // Full URL to the file
+  type: 'image' | 'video' | 'audio';
+  name: string; // Original filename
+  size: number; // File size in bytes
+  mimeType: string;
+  metadata?: {
+    dimensions?: { width: number; height: number };
+    duration?: number; // for video/audio in seconds
+  };
+}
 
 export interface ShopProduct {
   id: string;
@@ -15,8 +31,14 @@ export interface ShopProduct {
   description: string;
   price: number;
   currency: string;
+  
+  // Multiple attachments support (NEW)
+  attachments: ProductAttachment[];
+  
+  // Legacy single image support (DEPRECATED - for backward compatibility)
   imageUrl?: string;
   imageHash?: string;
+  
   tags: string[];
   category: string;
   condition: 'new' | 'used' | 'refurbished';
@@ -44,10 +66,42 @@ export interface ShopPublishingProgress {
   progress: number;
   message: string;
   details?: string;
+  // Enhanced for multiple attachments
+  attachmentProgress?: {
+    currentFile: number;
+    totalFiles: number;
+    currentFileName: string;
+    uploadedFiles: string[];
+    failedFiles: string[];
+  };
+}
+
+// New interfaces for multiple attachment support
+export interface CreateProductWithAttachmentsResult extends CreateProductResult {
+  attachmentResults?: {
+    successful: ProductAttachment[];
+    failed: { file: File; error: string }[];
+    partialSuccess: boolean;
+  };
+}
+
+export interface AttachmentBusinessRules {
+  maxAttachments: number;
+  maxTotalSize: number; // bytes
+  allowedTypes: ('image' | 'video' | 'audio')[];
+  requireAtLeastOneImage: boolean;
 }
 
 export class ShopBusinessService {
   private static instance: ShopBusinessService;
+
+  // Business rules for attachments
+  private readonly attachmentRules: AttachmentBusinessRules = {
+    maxAttachments: 5,
+    maxTotalSize: 500 * 1024 * 1024, // 500MB
+    allowedTypes: ['image', 'video', 'audio'],
+    requireAtLeastOneImage: true // Business rule: products should have at least one image
+  };
 
   private constructor() {}
 
@@ -179,6 +233,20 @@ export class ShopBusinessService {
         throw new Error('Created event missing required d tag');
       }
 
+      // Create backward-compatible attachments from single image
+      const attachments: ProductAttachment[] = [];
+      if (productData.imageHash && productData.imageUrl) {
+        attachments.push({
+          id: `legacy-${productData.imageHash}`,
+          hash: productData.imageHash,
+          url: productData.imageUrl,
+          type: 'image',
+          name: imageFile?.name || 'legacy-image',
+          size: imageFile?.size || 0,
+          mimeType: imageFile?.type || 'image/jpeg',
+        });
+      }
+
       const product: ShopProduct = {
         id: event.id,
         dTag, // NIP-33 d tag identifier
@@ -186,8 +254,14 @@ export class ShopBusinessService {
         description: productData.description,
         price: productData.price,
         currency: productData.currency,
+        
+        // NEW: Multiple attachments support
+        attachments,
+        
+        // LEGACY: Backward compatibility
         imageUrl: productData.imageUrl,
         imageHash: productData.imageHash,
+        
         tags: productData.tags,
         category: productData.category,
         condition: productData.condition,
@@ -238,6 +312,215 @@ export class ShopBusinessService {
       return {
         success: false,
         error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * 🎯 NEW: Create a product with multiple attachments using Enhanced Sequential Upload
+   * This is the main method for the multiple attachments feature
+   */
+  public async createProductWithAttachments(
+    productData: ProductEventData,
+    attachmentFiles: File[],
+    signer: NostrSigner,
+    onProgress?: (progress: ShopPublishingProgress) => void
+  ): Promise<CreateProductWithAttachmentsResult> {
+    try {
+      logger.info('Starting product creation with multiple attachments', {
+        service: 'ShopBusinessService',
+        method: 'createProductWithAttachments',
+        title: productData.title,
+        attachmentCount: attachmentFiles.length,
+        totalSize: attachmentFiles.reduce((sum, f) => sum + f.size, 0)
+      });
+
+      // Step 1: Validate attachments against business rules
+      const validationResult = await this.validateAttachments(attachmentFiles);
+      if (!validationResult.valid) {
+        return {
+          success: false,
+          error: `Attachment validation failed: ${validationResult.errors.join(', ')}`,
+          attachmentResults: {
+            successful: [],
+            failed: validationResult.invalidFiles.map(f => ({ file: f.file, error: f.error })),
+            partialSuccess: false
+          }
+        };
+      }
+
+      onProgress?.({
+        step: 'uploading',
+        progress: 5,
+        message: 'Starting attachment uploads...',
+        details: `Uploading ${attachmentFiles.length} files with Enhanced Sequential Upload`,
+        attachmentProgress: {
+          currentFile: 0,
+          totalFiles: attachmentFiles.length,
+          currentFileName: '',
+          uploadedFiles: [],
+          failedFiles: []
+        }
+      });
+
+      // Step 2: Upload attachments using Enhanced Sequential Upload
+      const uploadResult = await this.uploadAttachmentsSequentially(
+        attachmentFiles, 
+        signer,
+        (progress) => {
+          // Map Sequential Upload progress to Shop Publishing progress
+          onProgress?.({
+            step: 'uploading',
+            progress: 5 + (progress.overallProgress * 0.6), // 5% to 65%
+            message: progress.nextAction,
+            details: `File ${progress.currentFileIndex + 1} of ${progress.totalFiles}`,
+            attachmentProgress: {
+              currentFile: progress.currentFileIndex + 1,
+              totalFiles: progress.totalFiles,
+              currentFileName: progress.currentFile.name,
+              uploadedFiles: progress.completedFiles.map(f => f.fileId),
+              failedFiles: progress.failedFiles.map(f => f.name)
+            }
+          });
+        }
+      );
+
+      // Check if we have at least some successful uploads
+      if (uploadResult.successCount === 0) {
+        return {
+          success: false,
+          error: 'All attachment uploads failed',
+          attachmentResults: {
+            successful: [],
+            failed: uploadResult.failedFiles.map(f => ({ file: f.file, error: f.error })),
+            partialSuccess: false
+          }
+        };
+      }
+
+      // Step 3: Convert successful uploads to ProductAttachments
+      const attachments = await this.createProductAttachments(uploadResult.uploadedFiles, signer);
+
+      // Step 4: Update product data for backward compatibility
+      // Set primary image from first image attachment for legacy support
+      const primaryImage = attachments.find(a => a.type === 'image');
+      if (primaryImage) {
+        productData.imageUrl = primaryImage.url;
+        productData.imageHash = primaryImage.hash;
+      }
+
+      // Step 5: Create and publish Nostr event
+      onProgress?.({
+        step: 'creating_event',
+        progress: 70,
+        message: 'Creating product event...',
+        details: `Event with ${attachments.length} attachments`,
+      });
+
+      const event = await nostrEventService.createProductEvent(productData, signer);
+
+      // Step 6: Publish to relays
+      onProgress?.({
+        step: 'publishing',
+        progress: 85,
+        message: 'Publishing to Nostr relays...',
+        details: 'Broadcasting to decentralized network',
+      });
+
+      const publishResult = await nostrEventService.publishEvent(event, signer);
+
+      if (!publishResult.success) {
+        return {
+          success: false,
+          error: `Failed to publish to any relay: ${publishResult.error}`,
+          eventId: event.id,
+          publishedRelays: publishResult.publishedRelays,
+          failedRelays: publishResult.failedRelays,
+          attachmentResults: {
+            successful: attachments,
+            failed: uploadResult.failedFiles.map(f => ({ file: f.file, error: f.error })),
+            partialSuccess: uploadResult.partialSuccess
+          }
+        };
+      }
+
+      // Step 7: Create product object
+      const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
+      if (!dTag) {
+        throw new Error('Created event missing required d tag');
+      }
+
+      const product: ShopProduct = {
+        id: event.id,
+        dTag,
+        title: productData.title,
+        description: productData.description,
+        price: productData.price,
+        currency: productData.currency,
+        attachments, // NEW: Multiple attachments
+        imageUrl: productData.imageUrl, // Backward compatibility
+        imageHash: productData.imageHash, // Backward compatibility
+        tags: productData.tags,
+        category: productData.category,
+        condition: productData.condition,
+        location: productData.location,
+        contact: productData.contact,
+        publishedAt: event.created_at,
+        eventId: event.id,
+        publishedRelays: publishResult.publishedRelays,
+        author: event.pubkey,
+        isDeleted: false,
+      };
+
+      // Store the product in the local store
+      productStore.addProduct(product);
+
+      onProgress?.({
+        step: 'complete',
+        progress: 100,
+        message: 'Product created successfully!',
+        details: `Published with ${attachments.length} attachments to ${publishResult.publishedRelays.length} relays`,
+      });
+
+      logger.info('Product with attachments created successfully', {
+        service: 'ShopBusinessService',
+        method: 'createProductWithAttachments',
+        eventId: event.id,
+        attachmentCount: attachments.length,
+        publishedRelays: publishResult.publishedRelays.length,
+      });
+
+      return {
+        success: true,
+        product,
+        eventId: event.id,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+        attachmentResults: {
+          successful: attachments,
+          failed: uploadResult.failedFiles.map(f => ({ file: f.file, error: f.error })),
+          partialSuccess: uploadResult.partialSuccess
+        }
+      };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error in createProductWithAttachments';
+      logger.error('Product creation with attachments failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'createProductWithAttachments',
+        title: productData.title,
+        attachmentCount: attachmentFiles.length,
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+        attachmentResults: {
+          successful: [],
+          failed: attachmentFiles.map(file => ({ file, error: errorMessage })),
+          partialSuccess: false
+        }
       };
     }
   }
@@ -386,6 +669,20 @@ export class ShopBusinessService {
         };
       }
 
+      // Create backward-compatible attachments for updated product
+      const attachments: ProductAttachment[] = [];
+      if (mergedData.imageHash && mergedData.imageUrl) {
+        attachments.push({
+          id: `legacy-${mergedData.imageHash}`,
+          hash: mergedData.imageHash,
+          url: mergedData.imageUrl,
+          type: 'image',
+          name: imageFile?.name || originalProduct.attachments[0]?.name || 'legacy-image',
+          size: imageFile?.size || originalProduct.attachments[0]?.size || 0,
+          mimeType: imageFile?.type || originalProduct.attachments[0]?.mimeType || 'image/jpeg',
+        });
+      }
+
       // Create updated product object
       const updatedProduct: ShopProduct = {
         id: updatedEvent.id,
@@ -394,8 +691,14 @@ export class ShopBusinessService {
         description: mergedData.description,
         price: mergedData.price,
         currency: mergedData.currency,
+        
+        // NEW: Multiple attachments support
+        attachments,
+        
+        // LEGACY: Backward compatibility
         imageUrl: mergedData.imageUrl,
         imageHash: mergedData.imageHash,
+        
         tags: mergedData.tags,
         category: mergedData.category,
         condition: mergedData.condition,
@@ -503,7 +806,7 @@ export class ShopBusinessService {
         for (const event of queryResult.events) {
           // Get relay information for this event
           const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
-          const product = this.parseProductFromEvent(event, eventRelays);
+          const product = await this.parseProductFromEvent(event, eventRelays);
           if (product) {
             // Filter deleted products unless explicitly requested
             if (showDeleted || !product.isDeleted) {
@@ -549,7 +852,7 @@ export class ShopBusinessService {
   /**
    * Parse product from Nostr event
    */
-  public parseProductFromEvent(event: NostrEvent, publishedRelays: string[] = []): ShopProduct | null {
+  public async parseProductFromEvent(event: NostrEvent, publishedRelays: string[] = []): Promise<ShopProduct | null> {
     try {
       logger.info('Parsing product from event', {
         service: 'ShopBusinessService',
@@ -596,6 +899,9 @@ export class ShopBusinessService {
       // Check if this is a deleted product (title starts with [DELETED])
       const isDeleted = productData.title.startsWith('[DELETED]');
 
+      // Parse attachments from event (NEW - Phase 3)
+      const attachments = await this.parseAttachmentsFromEvent(event, productData);
+
       const product: ShopProduct = {
         id: event.id,
         dTag, // NIP-33 d tag identifier
@@ -603,8 +909,14 @@ export class ShopBusinessService {
         description: content.content,
         price: productData.price || 0,
         currency: productData.currency || 'USD',
+        
+        // NEW: Multiple attachments support
+        attachments,
+        
+        // LEGACY: Backward compatibility - single image
         imageUrl: productData.imageHash ? this.constructUserBlossomUrl(event.pubkey, productData.imageHash) : undefined,
         imageHash: productData.imageHash,
+        
         tags: productData.tags || [],
         category: productData.category || 'general',
         condition: productData.condition || 'new',
@@ -898,7 +1210,7 @@ export class ShopBusinessService {
         for (const event of queryResult.events) {
           // Get relay information for this event
           const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
-          const product = this.parseProductFromEvent(event, eventRelays);
+          const product = await this.parseProductFromEvent(event, eventRelays);
           if (product) {
             // Filter deleted products unless explicitly requested
             if (showDeleted || !product.isDeleted) {
@@ -920,7 +1232,7 @@ export class ShopBusinessService {
         // Add products to local store for caching
         for (const event of queryResult.events) {
           const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
-          const product = this.parseProductFromEvent(event, eventRelays);
+          const product = await this.parseProductFromEvent(event, eventRelays);
           if (product) {
             productStore.addProduct(product); // Cache all products, even deleted ones
           }
@@ -1088,6 +1400,318 @@ export class ShopBusinessService {
       };
     }
   }
+
+  /**
+   * Validate attachments against business rules
+   */
+  private async validateAttachments(files: File[]): Promise<MediaValidationResult> {
+    try {
+      logger.debug('Validating attachments against business rules', {
+        service: 'ShopBusinessService',
+        method: 'validateAttachments',
+        fileCount: files.length,
+        businessRules: this.attachmentRules
+      });
+
+      // Use GenericMediaService for technical validation
+      const mediaValidation = await validateBatchFiles(files);
+      
+      // Add business-specific validation
+      const errors: string[] = [...mediaValidation.errors];
+      
+      // Business rule: Check attachment count
+      if (files.length > this.attachmentRules.maxAttachments) {
+        errors.push(`Too many attachments: ${files.length}. Maximum allowed: ${this.attachmentRules.maxAttachments}`);
+      }
+
+      // Business rule: Check total size
+      const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+      if (totalSize > this.attachmentRules.maxTotalSize) {
+        errors.push(`Total size too large: ${(totalSize / 1024 / 1024).toFixed(2)}MB. Maximum allowed: ${(this.attachmentRules.maxTotalSize / 1024 / 1024).toFixed(2)}MB`);
+      }
+
+      // Business rule: Require at least one image
+      if (this.attachmentRules.requireAtLeastOneImage) {
+        const hasImage = files.some(f => f.type.startsWith('image/'));
+        if (!hasImage) {
+          errors.push('At least one image attachment is required for products');
+        }
+      }
+
+      // Business rule: Check allowed types
+      const invalidTypes = files.filter(f => {
+        const type = f.type.split('/')[0] as 'image' | 'video' | 'audio';
+        return !this.attachmentRules.allowedTypes.includes(type);
+      });
+      
+      if (invalidTypes.length > 0) {
+        errors.push(`Unsupported file types: ${invalidTypes.map(f => f.name).join(', ')}. Allowed types: ${this.attachmentRules.allowedTypes.join(', ')}`);
+      }
+
+      const isValid = errors.length === 0 && mediaValidation.valid;
+
+      logger.info('Attachment validation completed', {
+        service: 'ShopBusinessService',
+        method: 'validateAttachments',
+        valid: isValid,
+        errorCount: errors.length,
+        validFileCount: mediaValidation.validFiles?.length || 0
+      });
+
+      return {
+        ...mediaValidation,
+        valid: isValid,
+        errors
+      };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+      logger.error('Attachment validation failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'validateAttachments',
+        fileCount: files.length,
+        error: errorMessage
+      });
+
+      return {
+        valid: false,
+        validFiles: [],
+        invalidFiles: files.map(file => ({ file, error: errorMessage })),
+        totalSize: files.reduce((sum, f) => sum + f.size, 0),
+        errors: [errorMessage],
+        summary: { images: 0, videos: 0, audio: 0, total: 0 }
+      };
+    }
+  }
+
+  /**
+   * Upload attachments using Enhanced Sequential Upload from Phase 2
+   */
+  private async uploadAttachmentsSequentially(
+    files: File[],
+    signer: NostrSigner,
+    onProgress?: (progress: SequentialUploadProgress) => void
+  ): Promise<SequentialUploadResult> {
+    try {
+      logger.info('Starting sequential attachment upload', {
+        service: 'ShopBusinessService',
+        method: 'uploadAttachmentsSequentially',
+        fileCount: files.length,
+        totalSize: files.reduce((sum, f) => sum + f.size, 0)
+      });
+
+      // Use the Enhanced Sequential Upload from Phase 2
+      const result = await uploadSequentialWithConsent(files, signer, onProgress);
+
+      logger.info('Sequential attachment upload completed', {
+        service: 'ShopBusinessService',
+        method: 'uploadAttachmentsSequentially',
+        success: result.success,
+        uploadedCount: result.successCount,
+        failedCount: result.failureCount,
+        partialSuccess: result.partialSuccess
+      });
+
+      return result;
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown upload error';
+      logger.error('Sequential attachment upload failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'uploadAttachmentsSequentially',
+        fileCount: files.length,
+        error: errorMessage
+      });
+
+      return {
+        success: false,
+        uploadedFiles: [],
+        failedFiles: files.map(file => ({ file, error: errorMessage })),
+        partialSuccess: false,
+        userCancelled: false,
+        totalFiles: files.length,
+        successCount: 0,
+        failureCount: files.length
+      };
+    }
+  }
+
+  /**
+   * Convert Blossom file metadata to ProductAttachment objects
+   */
+  private async createProductAttachments(
+    blossomFiles: BlossomFileMetadata[],
+    signer: NostrSigner
+  ): Promise<ProductAttachment[]> {
+    try {
+      logger.debug('Creating product attachments from Blossom metadata', {
+        service: 'ShopBusinessService',
+        method: 'createProductAttachments',
+        fileCount: blossomFiles.length
+      });
+
+      const attachments: ProductAttachment[] = [];
+
+      for (const blossomFile of blossomFiles) {
+        try {
+          // Determine media type from file type
+          const type = this.getMediaTypeFromFileType(blossomFile.fileType);
+          
+          // Construct user-specific Blossom URL
+          const userPubkey = await signer.getPublicKey();
+          const url = this.constructAttachmentUrl(userPubkey, blossomFile.hash);
+
+          const attachment: ProductAttachment = {
+            id: blossomFile.fileId,
+            hash: blossomFile.hash,
+            url,
+            type,
+            name: blossomFile.fileId, // Blossom doesn't preserve original filename
+            size: blossomFile.fileSize,
+            mimeType: blossomFile.fileType,
+            // Note: metadata extraction would require the original file
+            // For now, we'll leave this undefined and extract it in Phase 5 if needed
+          };
+
+          attachments.push(attachment);
+
+          logger.debug('Created product attachment', {
+            service: 'ShopBusinessService',
+            method: 'createProductAttachments',
+            attachmentId: attachment.id,
+            type: attachment.type,
+            hash: attachment.hash.substring(0, 8) + '...'
+          });
+
+        } catch (error) {
+          logger.warn('Failed to create attachment for Blossom file', {
+            service: 'ShopBusinessService',
+            method: 'createProductAttachments',
+            fileId: blossomFile.fileId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+          // Continue with other files - don't fail the entire batch
+        }
+      }
+
+      logger.info('Product attachments created successfully', {
+        service: 'ShopBusinessService',
+        method: 'createProductAttachments',
+        inputCount: blossomFiles.length,
+        outputCount: attachments.length
+      });
+
+      return attachments;
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error creating attachments';
+      logger.error('Failed to create product attachments', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'createProductAttachments',
+        fileCount: blossomFiles.length,
+        error: errorMessage
+      });
+
+      // Return empty array rather than throwing - let the caller handle it
+      return [];
+    }
+  }
+
+  /**
+   * Construct attachment URL using user-specific Blossom configuration
+   */
+  private constructAttachmentUrl(userPubkey: string, imageHash: string): string {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { profileService } = require('./ProfileBusinessService');
+      const userNpub = profileService.pubkeyToNpub(userPubkey);
+      
+      if (BLOSSOM_CONFIG.preferUserOwned) {
+        return constructUserBlossomUrl(userNpub, imageHash);
+      } else {
+        return getSharedBlossomUrl(imageHash);
+      }
+    } catch (error) {
+      logger.warn('Failed to construct user-specific attachment URL, falling back to shared server', {
+        service: 'ShopBusinessService',
+        method: 'constructAttachmentUrl',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return getSharedBlossomUrl(imageHash);
+    }
+  }
+
+  /**
+   * Determine media type from MIME type
+   */
+  private getMediaTypeFromFileType(mimeType: string): 'image' | 'video' | 'audio' {
+    const type = mimeType.split('/')[0];
+    switch (type) {
+      case 'image':
+        return 'image';
+      case 'video':
+        return 'video';
+      case 'audio':
+        return 'audio';
+      default:
+        // Default to image for unknown types (backward compatibility)
+        return 'image';
+    }
+  }
+
+  /**
+   * Parse attachments from Nostr event (backward compatibility)
+   */
+  private async parseAttachmentsFromEvent(event: NostrEvent, productData: Partial<ProductEventData>): Promise<ProductAttachment[]> {
+    try {
+      const attachments: ProductAttachment[] = [];
+
+      // TODO: In future versions, parse multiple attachments from event tags
+      // For now, handle backward compatibility with single image
+
+      if (productData.imageHash) {
+        const attachment: ProductAttachment = {
+          id: `legacy-${productData.imageHash}`, // Legacy attachment ID
+          hash: productData.imageHash,
+          url: this.constructUserBlossomUrl(event.pubkey, productData.imageHash),
+          type: 'image', // Assume legacy attachments are images
+          name: 'legacy-image', // Legacy doesn't preserve filename
+          size: 0, // Legacy doesn't have size info
+          mimeType: 'image/jpeg', // Assume JPEG for legacy
+          // No metadata for legacy attachments
+        };
+
+        attachments.push(attachment);
+
+        logger.debug('Parsed legacy image as attachment', {
+          service: 'ShopBusinessService',
+          method: 'parseAttachmentsFromEvent',
+          eventId: event.id,
+          imageHash: productData.imageHash.substring(0, 8) + '...'
+        });
+      }
+
+      return attachments;
+
+    } catch (error) {
+      logger.warn('Failed to parse attachments from event', {
+        service: 'ShopBusinessService',
+        method: 'parseAttachmentsFromEvent',
+        eventId: event.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // Return empty array on error - don't fail the entire product parsing
+      return [];
+    }
+  }
+
+  /**
+   * Get business rules for attachments (for UI display)
+   */
+  public getAttachmentRules(): AttachmentBusinessRules {
+    return { ...this.attachmentRules };
+  }
 }
 
 // Export singleton instance
@@ -1100,6 +1724,17 @@ export const createProduct = (
   signer: NostrSigner,
   onProgress?: (progress: ShopPublishingProgress) => void
 ) => shopBusinessService.createProduct(productData, imageFile, signer, onProgress);
+
+// NEW: Multiple attachments support
+export const createProductWithAttachments = (
+  productData: ProductEventData,
+  attachmentFiles: File[],
+  signer: NostrSigner,
+  onProgress?: (progress: ShopPublishingProgress) => void
+) => shopBusinessService.createProductWithAttachments(productData, attachmentFiles, signer, onProgress);
+
+export const getAttachmentRules = () =>
+  shopBusinessService.getAttachmentRules();
 
 export const parseProductFromEvent = (event: NostrEvent, publishedRelays: string[] = []) =>
   shopBusinessService.parseProductFromEvent(event, publishedRelays);
