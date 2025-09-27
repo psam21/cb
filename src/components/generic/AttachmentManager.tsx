@@ -78,6 +78,13 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
       return;
     }
     
+    logger.debug('Attachment state changed, notifying parent', {
+      component: 'AttachmentManager',
+      method: 'useEffect',
+      attachmentCount: attachmentManager.state.attachments.length,
+      attachmentIds: attachmentManager.state.attachments.map(a => a.id)
+    });
+    
     onAttachmentsChange?.(attachmentManager.state.attachments);
   }, [attachmentManager.state.attachments, onAttachmentsChange]);
 
@@ -95,6 +102,12 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     try {
       await attachmentManager.addAttachments(files);
       // Immediately notify parent after adding files
+      logger.debug('Immediately notifying parent after file input', {
+        component: 'AttachmentManager',
+        method: 'handleFileInputChange',
+        attachmentCount: attachmentManager.state.attachments.length,
+        attachmentIds: attachmentManager.state.attachments.map(a => a.id)
+      });
       onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
@@ -163,6 +176,12 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
     try {
       await attachmentManager.addAttachments(files);
       // Immediately notify parent after adding files
+      logger.debug('Immediately notifying parent after drag drop', {
+        component: 'AttachmentManager',
+        method: 'handleDrop',
+        attachmentCount: attachmentManager.state.attachments.length,
+        attachmentIds: attachmentManager.state.attachments.map(a => a.id)
+      });
       onAttachmentsChange?.(attachmentManager.state.attachments);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add files';
