@@ -42,7 +42,8 @@ export const useProductEditing = () => {
   const updateProductData = useCallback(async (
     productId: string,
     updatedData: Partial<ProductEventData>,
-    attachmentFiles: File[]
+    attachmentFiles: File[],
+    selectiveOps?: { removedAttachments: string[]; keptAttachments: string[] }
   ): Promise<{ success: boolean; error?: string }> => {
     if (!signer || !isAvailable) {
       const error = 'Nostr signer not available';
@@ -92,7 +93,8 @@ export const useProductEditing = () => {
           });
           
           setUpdateProgress(progress);
-        }
+        },
+        selectiveOps
       );
 
       if (result.success && result.product) {

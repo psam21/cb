@@ -344,7 +344,7 @@ export class ShopBusinessService {
       });
 
       // Step 1: Validate attachments against business rules
-      const validationResult = await this.validateAttachments(attachmentFiles);
+      const validationResult = await this.validateAttachments(attachmentFiles, 0);
       if (!validationResult.valid) {
         return {
           success: false,
@@ -545,7 +545,8 @@ export class ShopBusinessService {
     attachmentFiles: File[],
     signer: NostrSigner,
     userPubkey: string,
-    onProgress?: (progress: ShopPublishingProgress) => void
+    onProgress?: (progress: ShopPublishingProgress) => void,
+    selectiveOps?: { removedAttachments: string[]; keptAttachments: string[] }
   ): Promise<CreateProductWithAttachmentsResult> {
     try {
       logger.info('Starting product update with multiple attachments', {
@@ -553,7 +554,14 @@ export class ShopBusinessService {
         method: 'updateProductWithAttachments',
         originalEventId,
         attachmentCount: attachmentFiles.length,
-        totalSize: attachmentFiles.reduce((sum, f) => sum + f.size, 0)
+        totalSize: attachmentFiles.reduce((sum, f) => sum + f.size, 0),
+        hasSelectiveOps: !!selectiveOps,
+        selectiveOps: selectiveOps ? {
+          removedCount: selectiveOps.removedAttachments.length,
+          keptCount: selectiveOps.keptAttachments.length,
+          removedIds: selectiveOps.removedAttachments,
+          keptIds: selectiveOps.keptAttachments
+        } : null
       });
 
       // Step 1: Get the original product
@@ -570,62 +578,139 @@ export class ShopBusinessService {
         };
       }
 
-      // Step 2: Validate attachments against business rules
-      const validationResult = await this.validateAttachments(attachmentFiles);
-      if (!validationResult.valid) {
-        return {
-          success: false,
-          error: `Attachment validation failed: ${validationResult.errors.join(', ')}`,
-          attachmentResults: {
-            successful: [],
-            failed: validationResult.invalidFiles.map(f => ({ file: f.file, error: f.error })),
-            partialSuccess: false
-          }
-        };
-      }
-
-      onProgress?.({
-        step: 'uploading',
-        progress: 5,
-        message: 'Starting attachment uploads...',
-        details: `Uploading ${attachmentFiles.length} files with Enhanced Sequential Upload`,
-        attachmentProgress: {
-          currentFile: 0,
-          totalFiles: attachmentFiles.length,
-          currentFileName: '',
-          uploadedFiles: [],
-          failedFiles: []
+      // Track original state for comparison
+      logger.info('Original product state before update', {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithAttachments',
+        originalEventId,
+        originalState: {
+          title: originalProduct.title,
+          description: originalProduct.description,
+          price: originalProduct.price,
+          currency: originalProduct.currency,
+          category: originalProduct.category,
+          condition: originalProduct.condition,
+          location: originalProduct.location,
+          contact: originalProduct.contact,
+          attachmentCount: originalProduct.attachments?.length || 0,
+          attachments: originalProduct.attachments?.map(att => ({ 
+            id: att.id, 
+            name: att.name, 
+            type: att.type,
+            hash: att.hash 
+          })) || []
         }
       });
 
-      // Step 3: Upload new attachments using Enhanced Sequential Upload
-      const uploadResult = await this.uploadAttachmentsSequentially(
-        attachmentFiles, 
-        signer,
-        (progress) => {
-          // Map Sequential Upload progress to Shop Publishing progress
-          onProgress?.({
-            step: 'uploading',
-            progress: 5 + (progress.overallProgress * 0.6), // 5% to 65%
-            message: progress.nextAction,
-            details: `File ${progress.currentFileIndex + 1} of ${progress.totalFiles}`,
-            attachmentProgress: {
-              currentFile: progress.currentFileIndex + 1,
-              totalFiles: progress.totalFiles,
-              currentFileName: progress.currentFile.name,
-              uploadedFiles: progress.completedFiles.map(f => f.fileId),
-              failedFiles: progress.failedFiles.map(f => f.name)
+      // Step 2: Validate attachments against business rules (only if new files provided)
+      if (attachmentFiles.length > 0) {
+        const existingAttachmentCount = originalProduct.attachments?.length || 0;
+        const validationResult = await this.validateAttachments(attachmentFiles, existingAttachmentCount);
+        if (!validationResult.valid) {
+          return {
+            success: false,
+            error: `Attachment validation failed: ${validationResult.errors.join(', ')}`,
+            attachmentResults: {
+              successful: [],
+              failed: validationResult.invalidFiles.map(f => ({ file: f.file, error: f.error })),
+              partialSuccess: false
             }
-          });
+          };
         }
-      );
+      }
 
-      // Step 4: Convert successful uploads to ProductAttachments
-      const newAttachments = await this.createProductAttachments(uploadResult.uploadedFiles, signer);
+      // Step 3: Handle new attachments if provided
+      let newAttachments: ProductAttachment[] = [];
+      let uploadResult: SequentialUploadResult = {
+        success: true,
+        uploadedFiles: [],
+        failedFiles: [],
+        partialSuccess: false,
+        userCancelled: false,
+        totalFiles: 0,
+        successCount: 0,
+        failureCount: 0
+      };
+      
+      if (attachmentFiles.length > 0) {
+        onProgress?.({
+          step: 'uploading',
+          progress: 5,
+          message: 'Starting attachment uploads...',
+          details: `Uploading ${attachmentFiles.length} files with Enhanced Sequential Upload`,
+          attachmentProgress: {
+            currentFile: 0,
+            totalFiles: attachmentFiles.length,
+            currentFileName: '',
+            uploadedFiles: [],
+            failedFiles: []
+          }
+        });
 
-      // Step 5: Merge with existing attachments (for now, replace all - can be enhanced later)
-      // Note: Selective operations are available via updateProductWithSelectiveOperations
-      const allAttachments = newAttachments;
+        // Upload new attachments using Enhanced Sequential Upload
+        uploadResult = await this.uploadAttachmentsSequentially(
+          attachmentFiles, 
+          signer,
+          (progress) => {
+            // Map Sequential Upload progress to Shop Publishing progress
+            onProgress?.({
+              step: 'uploading',
+              progress: 5 + (progress.overallProgress * 0.6), // 5% to 65%
+              message: progress.nextAction,
+              details: `File ${progress.currentFileIndex + 1} of ${progress.totalFiles}`,
+              attachmentProgress: {
+                currentFile: progress.currentFileIndex + 1,
+                totalFiles: progress.totalFiles,
+                currentFileName: progress.currentFile.name,
+                uploadedFiles: progress.completedFiles.map(f => f.fileId),
+                failedFiles: progress.failedFiles.map(f => f.name)
+              }
+            });
+          }
+        );
+
+        // Check if we have at least some successful uploads
+        if (uploadResult.successCount === 0) {
+          return {
+            success: false,
+            error: 'All attachment uploads failed',
+            attachmentResults: {
+              successful: [],
+              failed: uploadResult.failedFiles.map(f => ({ file: f.file, error: f.error })),
+              partialSuccess: false
+            }
+          };
+        }
+
+        // Convert successful uploads to ProductAttachments
+        newAttachments = await this.createProductAttachments(uploadResult.uploadedFiles, signer);
+      }
+
+      // Step 4: Merge with existing attachments using selective operations
+      let allAttachments: ProductAttachment[] = [];
+      
+      if (selectiveOps) {
+        // Selective management: user explicitly chose what to keep/remove
+        const keptAttachments = (originalProduct.attachments || []).filter(att => 
+          selectiveOps.keptAttachments.includes(att.id)
+        );
+        allAttachments = [...keptAttachments, ...newAttachments];
+        
+        logger.info('Selective attachment merge', {
+          service: 'ShopBusinessService',
+          method: 'updateProductWithAttachments',
+          originalCount: originalProduct.attachments?.length || 0,
+          keptCount: keptAttachments.length,
+          removedCount: selectiveOps.removedAttachments.length,
+          newCount: newAttachments.length,
+          finalCount: allAttachments.length
+        });
+      } else {
+        // Legacy behavior: keep all existing and add new ones
+        allAttachments = newAttachments.length > 0 
+          ? [...(originalProduct.attachments || []), ...newAttachments]
+          : originalProduct.attachments || [];
+      }
 
       // Step 6: Update product data with new attachments
       const mergedData = {
@@ -635,6 +720,79 @@ export class ShopBusinessService {
         imageUrl: allAttachments.find(a => a.type === 'image')?.url || originalProduct.imageUrl,
         imageHash: allAttachments.find(a => a.type === 'image')?.hash || originalProduct.imageHash,
       };
+
+      // Check if there are actually any changes to avoid unnecessary updates
+      const hasContentChanges = Object.keys(updatedData).some(key => {
+        const originalValue = originalProduct[key as keyof ShopProduct];
+        const newValue = mergedData[key as keyof typeof mergedData];
+        return originalValue !== newValue;
+      });
+
+      const hasAttachmentChanges = newAttachments.length > 0 || (selectiveOps && selectiveOps.removedAttachments.length > 0);
+
+      if (!hasContentChanges && !hasAttachmentChanges) {
+        logger.info('No changes detected, skipping update', {
+          service: 'ShopBusinessService',
+          method: 'updateProductWithAttachments',
+          originalEventId,
+          reason: 'No content or attachment changes detected'
+        });
+
+        return {
+          success: true,
+          product: originalProduct,
+          eventId: originalEventId,
+          attachmentResults: {
+            successful: [],
+            failed: [],
+            partialSuccess: false
+          }
+        };
+      }
+
+      // Track final state after merge
+      logger.info('Final merged state after attachment processing', {
+        service: 'ShopBusinessService',
+        method: 'updateProductWithAttachments',
+        originalEventId,
+        finalState: {
+          title: mergedData.title || originalProduct.title,
+          description: mergedData.description || originalProduct.description,
+          price: mergedData.price || originalProduct.price,
+          currency: mergedData.currency || originalProduct.currency,
+          category: mergedData.category || originalProduct.category,
+          condition: mergedData.condition || originalProduct.condition,
+          location: mergedData.location || originalProduct.location,
+          contact: mergedData.contact || originalProduct.contact,
+          attachmentCount: allAttachments.length,
+          attachments: allAttachments.map(att => ({ 
+            id: att.id, 
+            name: att.name, 
+            type: att.type,
+            hash: att.hash,
+            isNew: newAttachments.some(newAtt => newAtt.id === att.id)
+          }))
+        },
+        changes: {
+          contentChanges: {
+            title: { before: originalProduct.title, after: mergedData.title, changed: originalProduct.title !== mergedData.title },
+            description: { before: originalProduct.description, after: mergedData.description, changed: originalProduct.description !== mergedData.description },
+            price: { before: originalProduct.price, after: mergedData.price, changed: originalProduct.price !== mergedData.price },
+            currency: { before: originalProduct.currency, after: mergedData.currency, changed: originalProduct.currency !== mergedData.currency },
+            category: { before: originalProduct.category, after: mergedData.category, changed: originalProduct.category !== mergedData.category },
+            condition: { before: originalProduct.condition, after: mergedData.condition, changed: originalProduct.condition !== mergedData.condition },
+            location: { before: originalProduct.location, after: mergedData.location, changed: originalProduct.location !== mergedData.location },
+            contact: { before: originalProduct.contact, after: mergedData.contact, changed: originalProduct.contact !== mergedData.contact }
+          },
+          attachmentChanges: {
+            originalCount: originalProduct.attachments?.length || 0,
+            finalCount: allAttachments.length,
+            newCount: newAttachments.length,
+            removedCount: selectiveOps?.removedAttachments.length || 0,
+            keptCount: selectiveOps ? (originalProduct.attachments?.length || 0) - (selectiveOps.removedAttachments.length || 0) : (originalProduct.attachments?.length || 0)
+          }
+        }
+      });
 
       // Step 7: Create revision event
       onProgress?.({
@@ -1642,12 +1800,14 @@ export class ShopBusinessService {
   /**
    * Validate attachments against business rules
    */
-  private async validateAttachments(files: File[]): Promise<MediaValidationResult> {
+  private async validateAttachments(files: File[], existingAttachmentCount: number = 0): Promise<MediaValidationResult> {
     try {
       logger.debug('Validating attachments against business rules', {
         service: 'ShopBusinessService',
         method: 'validateAttachments',
         fileCount: files.length,
+        existingAttachmentCount: existingAttachmentCount,
+        totalAttachmentCount: files.length + existingAttachmentCount,
         businessRules: this.attachmentRules
       });
 
@@ -1668,10 +1828,18 @@ export class ShopBusinessService {
         errors.push(`Total size too large: ${(totalSize / 1024 / 1024).toFixed(2)}MB. Maximum allowed: ${(this.attachmentRules.maxTotalSize / 1024 / 1024).toFixed(2)}MB`);
       }
 
-      // Business rule: Require at least one image
+      // Business rule: Require at least one image (holistic check)
       if (this.attachmentRules.requireAtLeastOneImage) {
-        const hasImage = files.some(f => f.type.startsWith('image/'));
-        if (!hasImage) {
+        const totalAttachmentCount = files.length + existingAttachmentCount;
+        const hasNewImage = files.some(f => f.type.startsWith('image/'));
+        
+        // If we have new files, check if any are images
+        // If we have no new files but existing attachments, assume they meet requirements
+        // If we have no files at all (new or existing), then we need at least one image
+        if (totalAttachmentCount === 0) {
+          errors.push('At least one image attachment is required for products');
+        } else if (files.length > 0 && !hasNewImage && existingAttachmentCount === 0) {
+          // Only fail if we're adding new files but none are images AND there are no existing attachments
           errors.push('At least one image attachment is required for products');
         }
       }

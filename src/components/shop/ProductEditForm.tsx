@@ -7,9 +7,14 @@ import { filterVisibleTags } from '@/utils/tagFilter';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { GenericAttachment } from '@/types/attachments';
 
+interface SelectiveAttachmentOperations {
+  removedAttachments: string[];
+  keptAttachments: string[];
+}
+
 interface ProductEditFormProps {
   product: ShopProduct;
-  onSave: (productId: string, updatedData: Partial<ProductEventData>, attachmentFiles: File[]) => Promise<{ success: boolean; error?: string }>;
+  onSave: (productId: string, updatedData: Partial<ProductEventData>, attachmentFiles: File[], selectiveOps?: SelectiveAttachmentOperations) => Promise<{ success: boolean; error?: string }>;
   onCancel: () => void;
   isUpdating: boolean;
   updateProgress?: ShopPublishingProgress | null;
@@ -50,17 +55,44 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    logger.info('Product edit form opened', {
+    // Track initial form state on load
+    logger.info('Product edit form initialized with comprehensive initial state', {
       service: 'ProductEditForm',
       method: 'useEffect',
       productId: product.id,
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      currency: product.currency,
-      category: product.category,
+      initialFormData: {
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        currency: product.currency,
+        category: product.category,
+        condition: product.condition,
+        location: product.location,
+        contact: product.contact
+      },
+      initialAttachments: product.attachments?.map(att => ({ 
+        id: att.id, 
+        name: att.name, 
+        type: att.type,
+        hash: att.hash,
+        size: att.size,
+        mimeType: att.mimeType
+      })) || [],
       attachmentCount: product.attachments?.length || 0,
-      attachments: product.attachments
+      fullProductData: {
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        currency: product.currency,
+        category: product.category,
+        condition: product.condition,
+        location: product.location,
+        contact: product.contact,
+        tags: product.tags,
+        publishedAt: product.publishedAt,
+        author: product.author
+      }
     });
 
     // Convert existing product attachments to GenericAttachment format
@@ -206,12 +238,89 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
       attachmentCount: attachments.length,
     });
 
-    // Convert GenericAttachment[] to File[] for the hook
-    const attachmentFiles = attachments
+    // Separate new files from existing attachments
+    const newFiles = attachments
       .filter(att => att.originalFile)
       .map(att => att.originalFile!);
+    
+    const existingAttachments = attachments.filter(att => !att.originalFile);
+    const originalAttachments = product.attachments || [];
+    
+    // Determine which existing attachments were removed
+    const removedAttachments = originalAttachments.filter(original => 
+      !existingAttachments.some(current => current.id === original.id)
+    );
+    
+    // Determine which existing attachments were kept
+    const keptAttachments = existingAttachments.filter(current => 
+      originalAttachments.some(original => original.id === current.id)
+    );
 
-    const result = await onSave(product.id, formData, attachmentFiles);
+    // Track content field changes
+    const contentChanges = {
+      title: { before: product.title, after: formData.title, changed: product.title !== formData.title },
+      description: { before: product.description, after: formData.description, changed: product.description !== formData.description },
+      price: { before: product.price, after: formData.price, changed: product.price !== formData.price },
+      currency: { before: product.currency, after: formData.currency, changed: product.currency !== formData.currency },
+      category: { before: product.category, after: formData.category, changed: product.category !== formData.category },
+      condition: { before: product.condition, after: formData.condition, changed: product.condition !== formData.condition },
+      location: { before: product.location, after: formData.location, changed: product.location !== formData.location },
+      contact: { before: product.contact, after: formData.contact, changed: product.contact !== formData.contact }
+    };
+
+    const hasContentChanges = Object.values(contentChanges).some(change => change.changed);
+    const hasAttachmentChanges = newFiles.length > 0 || removedAttachments.length > 0;
+    const hasAnyChanges = hasContentChanges || hasAttachmentChanges;
+
+    // Early return if no changes detected
+    if (!hasAnyChanges) {
+      logger.info('No changes detected in edit form, showing user message', {
+        service: 'ProductEditForm',
+        method: 'handleSubmit',
+        productId: product.id,
+        reason: 'User clicked save but made no changes'
+      });
+
+      // Show a user-friendly message instead of proceeding
+      setErrors({ general: 'No changes detected. Please make some changes before saving.' });
+      return;
+    }
+
+    logger.info('Product edit form comprehensive change tracking', {
+      service: 'ProductEditForm',
+      method: 'handleSubmit',
+      productId: product.id,
+      
+      // Content field changes
+      contentChanges: contentChanges,
+      hasContentChanges: hasContentChanges,
+      
+      // Attachment tracking
+      attachmentTracking: {
+        originalAttachments: originalAttachments.map(att => ({ id: att.id, name: att.name, type: att.type })),
+        currentAttachments: attachments.map(att => ({ id: att.id, name: att.name, type: att.type, isNew: !!att.originalFile })),
+        newFiles: newFiles.map(f => ({ name: f.name, type: f.type, size: f.size })),
+        removedAttachments: removedAttachments.map(att => ({ id: att.id, name: att.name, type: att.type })),
+        keptAttachments: keptAttachments.map(att => ({ id: att.id, name: att.name, type: att.type }))
+      },
+      
+      // Summary counts
+      summary: {
+        totalAttachments: attachments.length,
+        newFiles: newFiles.length,
+        existingAttachments: existingAttachments.length,
+        originalAttachments: originalAttachments.length,
+        removedAttachments: removedAttachments.length,
+        keptAttachments: keptAttachments.length,
+        hasAttachmentChanges: newFiles.length > 0 || removedAttachments.length > 0,
+        hasAnyChanges: hasContentChanges || newFiles.length > 0 || removedAttachments.length > 0
+      }
+    });
+
+    const result = await onSave(product.id, formData, newFiles, {
+      removedAttachments: removedAttachments.map(att => att.id),
+      keptAttachments: keptAttachments.map(att => att.id)
+    });
     
     if (!result.success) {
       logger.error('Product edit failed', new Error(result.error || 'Unknown error'), {
@@ -458,6 +567,13 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
             </div>
 
             {/* Action Buttons */}
+            {/* General Error Display */}
+            {errors.general && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
+
             <div className="flex justify-end space-x-3 pt-6 border-t">
               <button
                 type="button"

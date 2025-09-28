@@ -108,15 +108,19 @@ export default function ProductEditPage() {
     );
   }
 
-  const handleSaveProduct = async (productId: string, updatedData: Partial<ProductEventData>, attachmentFiles: File[]) => {
+  const handleSaveProduct = async (productId: string, updatedData: Partial<ProductEventData>, attachmentFiles: File[], selectiveOps?: { removedAttachments: string[]; keptAttachments: string[] }) => {
     logger.info('Saving product updates from edit page', {
       service: 'ProductEditPage',
       method: 'handleSaveProduct',
       productId,
       attachmentCount: attachmentFiles.length,
+      selectiveOps: selectiveOps ? {
+        removedCount: selectiveOps.removedAttachments.length,
+        keptCount: selectiveOps.keptAttachments.length
+      } : null
     });
 
-    const result = await updateProductData(productId, updatedData, attachmentFiles);
+    const result = await updateProductData(productId, updatedData, attachmentFiles, selectiveOps);
     
     if (result.success) {
       logger.info('Product updated successfully, redirecting to my-shop', {
