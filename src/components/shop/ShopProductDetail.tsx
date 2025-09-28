@@ -64,6 +64,11 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
     return items;
   }, [detail.customFields.category, detail.customFields.condition, detail.location]);
 
+  const supplementalMeta = useMemo(() => {
+    const hiddenLabels = new Set(['Price', 'Category', 'Condition', 'Location']);
+    return (detail.meta ?? []).filter(meta => !hiddenLabels.has(meta.label));
+  }, [detail.meta]);
+
   const reportAction = detail.actions.find(action => action.id === 'report');
 
   const handleReport = () => {
@@ -95,15 +100,58 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
       <ContentDetailLayout
         media={<ContentMediaGallery items={detail.media} />}
         main={
-          <ContentDetailInfo
-            title={detail.title}
-            price={priceLabel}
-            summary={detail.summary}
-            description={detail.description}
-            metadata={metadata}
-            tags={detail.tags}
-            metaBadges={detail.meta}
-          />
+          <div className="space-y-6">
+            <section
+              aria-labelledby="shop-product-key-details"
+              className="space-y-5 rounded-2xl bg-white/80 p-6 shadow-sm ring-1 ring-primary-100"
+            >
+              <div>
+                <h2
+                  id="shop-product-key-details"
+                  className="text-sm font-semibold uppercase tracking-wide text-gray-500"
+                >
+                  Key details
+                </h2>
+                {priceLabel ? (
+                  <p className="mt-3 text-3xl font-semibold text-primary-900">{priceLabel}</p>
+                ) : (
+                  <p className="mt-3 text-base text-gray-600">Price available on request</p>
+                )}
+              </div>
+
+              {metadata.length > 0 && (
+                <dl className="grid grid-cols-1 gap-4 rounded-2xl bg-white/70 p-4 shadow-inner ring-1 ring-primary-100 md:grid-cols-2">
+                  {metadata.map(item => (
+                    <div key={item.label}>
+                      <dt className="text-xs uppercase tracking-wide text-gray-500">{item.label}</dt>
+                      <dd className="mt-1 text-base font-medium text-primary-900">{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+
+              {supplementalMeta.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {supplementalMeta.map(meta => (
+                    <span
+                      key={`${meta.label}-${meta.value}`}
+                      className="rounded-full border border-primary-100 bg-white px-3 py-1 text-xs font-medium text-primary-700"
+                      title={meta.tooltip}
+                    >
+                      {meta.label}: {meta.value}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <ContentDetailInfo
+              title="About this product"
+              summary={detail.summary}
+              description={detail.description}
+              tags={detail.tags}
+            />
+          </div>
         }
         sidebar={
           <div className="space-y-6">
