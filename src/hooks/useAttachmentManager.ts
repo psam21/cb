@@ -208,15 +208,26 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
       );
 
       if (result.success) {
+        const newAttachments = result.attachments as T[];
         setManagerState(prev => ({
           ...prev,
-          attachments: result.attachments as T[],
+          attachments: newAttachments,
           operations: [...prev.operations, operation],
           selection: {
             ...prev.selection,
             selectedIds: new Set([...prev.selection.selectedIds].filter(id => id !== attachmentId))
           }
         }));
+
+        // Notify parent component of attachment changes
+        logger.debug('Calling onAttachmentsChange callback after removal', {
+          hook: 'useAttachmentManager',
+          method: 'removeAttachment',
+          attachmentCount: newAttachments.length,
+          attachmentIds: newAttachments.map(a => a.id),
+          hasCallback: !!onAttachmentsChange
+        });
+        onAttachmentsChange?.(newAttachments);
       } else {
         throw new Error(result.error || 'Failed to remove attachment');
       }
@@ -273,13 +284,24 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
         throw new Error(result.error || 'Failed to replace attachment');
       }
 
+      const newAttachments = result.attachments as T[];
       setManagerState(prev => ({
         ...prev,
-        attachments: result.attachments as T[],
+        attachments: newAttachments,
         operations: [...prev.operations, operation],
         isProcessing: false,
         progress: 100
       }));
+
+      // Notify parent component of attachment changes
+      logger.debug('Calling onAttachmentsChange callback after replacement', {
+        hook: 'useAttachmentManager',
+        method: 'replaceAttachment',
+        attachmentCount: newAttachments.length,
+        attachmentIds: newAttachments.map(a => a.id),
+        hasCallback: !!onAttachmentsChange
+      });
+      onAttachmentsChange?.(newAttachments);
 
       logger.info('Attachment replaced successfully', {
         hook: 'useAttachmentManager',
