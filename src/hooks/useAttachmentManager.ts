@@ -3,7 +3,7 @@
  * Provides a comprehensive interface for attachment management workflows across any content type
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { logger } from '../services/core/LoggingService';
 import { 
   GenericAttachment, 
@@ -63,6 +63,24 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
     
     return createInitialState<T>(config, initialAttachments);
   });
+
+  // Update attachments when initialAttachments changes
+  useEffect(() => {
+    if (initialAttachments.length > 0 && managerState.attachments.length === 0) {
+      logger.info('useAttachmentManager updating with new initialAttachments', {
+        hook: 'useAttachmentManager',
+        method: 'useEffect',
+        initialAttachmentCount: initialAttachments.length,
+        currentAttachmentCount: managerState.attachments.length,
+        initialAttachments: initialAttachments
+      });
+      
+      setManagerState(prev => ({
+        ...prev,
+        attachments: initialAttachments
+      }));
+    }
+  }, [initialAttachments, managerState.attachments.length]);
 
   // ============================================================================
   // CORE OPERATIONS
