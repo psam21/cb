@@ -251,7 +251,7 @@ export const useShopPublishing = () => {
       setPublishing(false);
       setPublishingProgress(null);
     }
-  }, [isAvailable, getSigner, setPublishing, setPublishingProgress, setLastPublishingResult, addProduct]);
+  }, [isAvailable, getSigner, setPublishing, setPublishingProgress, setLastPublishingResult, addProduct, consentDialog]);
 
   const updateProductWithAttachmentsData = useCallback(async (
     originalEventId: string,
@@ -301,6 +301,27 @@ export const useShopPublishing = () => {
       originalEventId,
       attachmentCount: attachmentFiles.length,
     });
+
+    if (attachmentFiles.length > 0) {
+      const userAccepted = await consentDialog.showConsentDialog(attachmentFiles);
+      if (!userAccepted) {
+        logger.info('User cancelled update during consent phase', {
+          service: 'useShopPublishing',
+          method: 'updateProductWithAttachmentsData',
+          attachmentCount: attachmentFiles.length
+        });
+
+        return {
+          success: false,
+          error: 'User cancelled upload',
+          attachmentResults: {
+            successful: [],
+            failed: attachmentFiles.map(file => ({ file, error: 'User cancelled' })),
+            partialSuccess: false
+          }
+        };
+      }
+    }
 
     setPublishing(true);
     setPublishingProgress(null);
@@ -377,7 +398,7 @@ export const useShopPublishing = () => {
       setPublishing(false);
       setPublishingProgress(null);
     }
-  }, [isAvailable, getSigner, setPublishing, setPublishingProgress, setLastPublishingResult, addProduct]);
+  }, [isAvailable, getSigner, setPublishing, setPublishingProgress, setLastPublishingResult, addProduct, consentDialog]);
 
   return {
     publishProduct,

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useCallback, useRef, DragEvent, useEffect } from 'react';
+import Image from 'next/image';
 import { logger } from '../../services/core/LoggingService';
 import { 
   GenericAttachment, 
@@ -60,7 +61,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
-  const hasInitialized = useRef(false);
 
   // Initialize attachment manager
   const attachmentManager = useAttachmentManager<T>({
@@ -187,19 +187,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
   }, [allowSelection, attachmentManager, onSelectionChange]);
 
   // Handle reorder
-  const handleReorder = useCallback((fromIndex: number, toIndex: number) => {
-    if (!allowReorder) return;
-
-    logger.debug('Reordering attachments', {
-      component: 'AttachmentManager',
-      method: 'handleReorder',
-      fromIndex,
-      toIndex
-    });
-
-    attachmentManager.reorderAttachments(fromIndex, toIndex);
-  }, [allowReorder, attachmentManager]);
-
   // Handle remove
   const handleRemove = useCallback((attachmentId: string) => {
     logger.debug('Removing attachment', {
@@ -235,11 +222,10 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
   }, [attachmentManager, onError]);
 
   // Default attachment renderer
-  const defaultRenderAttachment = useCallback((attachment: T, index: number) => (
+  const defaultRenderAttachment = useCallback((attachment: T) => (
     <AttachmentItem
       key={attachment.id}
       attachment={attachment}
-      index={index}
       isSelected={attachmentManager.state.selection.selectedIds.has(attachment.id)}
       showPreview={showPreview}
       showMetadata={showMetadata}
@@ -331,7 +317,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
       {attachmentManager.state.attachments.length > 0 ? (
         <div className="mt-4 space-y-2">
           {attachmentManager.state.attachments.map((attachment, index) => 
-            renderAttachment ? renderAttachment(attachment, index) : defaultRenderAttachment(attachment, index)
+            renderAttachment ? renderAttachment(attachment, index) : defaultRenderAttachment(attachment)
           )}
         </div>
       ) : (
@@ -414,7 +400,6 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 // Individual attachment item component
 interface AttachmentItemProps<T extends GenericAttachment> {
   attachment: T;
-  index: number;
   isSelected: boolean;
   showPreview: boolean;
   showMetadata: boolean;
@@ -427,7 +412,6 @@ interface AttachmentItemProps<T extends GenericAttachment> {
 
 const AttachmentItem = <T extends GenericAttachment>({
   attachment,
-  index,
   isSelected,
   showPreview,
   showMetadata,
@@ -475,12 +459,14 @@ const AttachmentItem = <T extends GenericAttachment>({
 
       {/* Preview */}
       {showPreview && attachment.url && (
-        <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="relative flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
           {attachment.type === 'image' ? (
-            <img
+            <Image
               src={attachment.url}
               alt={attachment.name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="48px"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

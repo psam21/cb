@@ -8,9 +8,7 @@ import { logger } from '../services/core/LoggingService';
 import { 
   GenericAttachment, 
   AttachmentOperation, 
-  AttachmentOperationType,
   AttachmentValidationResult,
-  AttachmentSelectionState,
   AttachmentManagerState,
   GenericAttachmentManager,
   AttachmentManagerConfig,
@@ -245,7 +243,7 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
         error: errorMessage
       }));
     }
-  }, [managerState.attachments]);
+  }, [managerState.attachments, onAttachmentsChange]);
 
   /**
    * Replace an attachment with a new file
@@ -326,7 +324,7 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
         progress: 0
       }));
     }
-  }, [managerState.attachments]);
+  }, [managerState.attachments, onAttachmentsChange]);
 
   /**
    * Reorder attachments
@@ -421,7 +419,7 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
         selectedIds: new Set(prev.attachments.map(att => att.id))
       }
     }));
-  }, [managerState.attachments]);
+  }, []);
 
   /**
    * Deselect all attachments
@@ -661,30 +659,6 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
   // ============================================================================
 
   /**
-   * Validate current attachments
-   */
-  const validateAttachments = useCallback(async (): Promise<AttachmentValidationResult> => {
-    if (!managerState.attachments.length) {
-      return {
-        valid: true,
-        errors: [],
-        warnings: [],
-        validAttachments: [],
-        invalidAttachments: [],
-        totalSize: 0,
-        estimatedUploadTime: 0
-      };
-    }
-
-    // Convert attachments back to files for validation
-    const files = managerState.attachments
-      .filter(a => a.originalFile)
-      .map(a => a.originalFile!);
-
-    return await validateFiles(files);
-  }, [managerState.attachments]);
-
-  /**
    * Validate files without adding them
    */
   const validateFiles = useCallback(async (files: File[]): Promise<AttachmentValidationResult> => {
@@ -756,6 +730,30 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
       };
     }
   }, [managerState.attachments]);
+
+  /**
+   * Validate current attachments
+   */
+  const validateAttachments = useCallback(async (): Promise<AttachmentValidationResult> => {
+    if (!managerState.attachments.length) {
+      return {
+        valid: true,
+        errors: [],
+        warnings: [],
+        validAttachments: [],
+        invalidAttachments: [],
+        totalSize: 0,
+        estimatedUploadTime: 0
+      };
+    }
+
+    // Convert attachments back to files for validation
+    const files = managerState.attachments
+      .filter(a => a.originalFile)
+      .map(a => a.originalFile!);
+
+    return await validateFiles(files);
+  }, [managerState.attachments, validateFiles]);
 
   // ============================================================================
   // PROCESSING

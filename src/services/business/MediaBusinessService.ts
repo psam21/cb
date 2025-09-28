@@ -206,8 +206,7 @@ export class MediaBusinessService {
    */
   public async processAttachmentOperations(
     operations: AttachmentOperation[],
-    existingAttachments: GenericAttachment[] = [],
-    signer?: NostrSigner
+    existingAttachments: GenericAttachment[] = []
   ): Promise<SelectiveUpdateResult<GenericAttachment[]>> {
     try {
       logger.info('Processing attachment operations with business logic', {
@@ -641,9 +640,8 @@ export const validateAttachmentOperation = (
 
 export const processAttachmentOperations = (
   operations: AttachmentOperation[],
-  existingAttachments: GenericAttachment[] = [],
-  signer?: NostrSigner
-) => mediaBusinessService.processAttachmentOperations(operations, existingAttachments, signer);
+  existingAttachments: GenericAttachment[] = []
+) => mediaBusinessService.processAttachmentOperations(operations, existingAttachments);
 
 export const createAttachmentOperation = (
   type: AttachmentOperationType,

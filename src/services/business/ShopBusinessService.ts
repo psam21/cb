@@ -1552,6 +1552,97 @@ export class ShopBusinessService {
   }
 
   /**
+   * Fetch a single product by event ID
+   * Attempts to return cached product first, then queries relays if needed
+   */
+  public async fetchProductById(eventId: string): Promise<ShopProduct | null> {
+    try {
+      if (!eventId) {
+        throw new Error('Product event ID is required');
+      }
+
+      logger.info('Fetching product by event ID', {
+        service: 'ShopBusinessService',
+        method: 'fetchProductById',
+        eventId,
+      });
+
+      // Check local cache first
+      const cachedProduct = productStore.getProduct(eventId);
+      if (cachedProduct) {
+        logger.info('Product found in local store', {
+          service: 'ShopBusinessService',
+          method: 'fetchProductById',
+          eventId,
+        });
+        return cachedProduct;
+      }
+
+      // Query relays for the specific event
+      const filters = [
+        {
+          ids: [eventId],
+        },
+      ];
+
+      const queryResult = await queryEvents(filters, progress => {
+        logger.debug('Relay query progress for fetchProductById', {
+          service: 'ShopBusinessService',
+          method: 'fetchProductById',
+          eventId,
+          step: progress.step,
+          message: progress.message,
+          progressValue: progress.progress,
+        });
+      });
+
+      if (!queryResult.success || queryResult.events.length === 0) {
+        logger.warn('Product not found on relays', {
+          service: 'ShopBusinessService',
+          method: 'fetchProductById',
+          eventId,
+          error: queryResult.error,
+        });
+        return null;
+      }
+
+      const event = queryResult.events[0];
+      const relaysForEvent = queryResult.eventRelayMap?.get(event.id) || [];
+      const product = await this.parseProductFromEvent(event, relaysForEvent);
+
+      if (!product) {
+        logger.warn('Parsed product is null after relay fetch', {
+          service: 'ShopBusinessService',
+          method: 'fetchProductById',
+          eventId,
+        });
+        return null;
+      }
+
+      // Cache the product for subsequent lookups
+      productStore.addProduct(product);
+
+      logger.info('Product fetched from relays successfully', {
+        service: 'ShopBusinessService',
+        method: 'fetchProductById',
+        eventId,
+        publishedRelays: product.publishedRelays.length,
+      });
+
+      return product;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to fetch product by ID', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ShopBusinessService',
+        method: 'fetchProductById',
+        eventId,
+        error: errorMessage,
+      });
+      return null;
+    }
+  }
+
+  /**
    * Query products by specific author from Nostr relays with proper soft delete handling
    */
   public async queryProductsByAuthor(
@@ -2344,6 +2435,9 @@ export const getProduct = (eventId: string) =>
 
 export const listProducts = () =>
   shopBusinessService.listProducts();
+
+export const fetchProductById = (eventId: string) =>
+  shopBusinessService.fetchProductById(eventId);
 
 export const queryProductsByAuthor = (
   authorPubkey: string,

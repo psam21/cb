@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, MouseEvent, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import { filterVisibleTags } from '@/utils/tagFilter';
 
@@ -39,6 +39,7 @@ export interface BaseCardProps {
   onContact?: (data: BaseCardData) => void;
   onEdit?: (data: BaseCardData) => void;
   onDelete?: (data: BaseCardData) => void;
+  onSelect?: (data: BaseCardData) => void;
 }
 
 export const BaseCard = ({
@@ -49,6 +50,7 @@ export const BaseCard = ({
   onContact,
   onEdit,
   onDelete,
+  onSelect,
 }: BaseCardProps) => {
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString('en-US', {
@@ -85,23 +87,48 @@ export const BaseCard = ({
   };
 
 
-  const handleContact = () => {
+  const handleContact = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     onContact?.(data);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     onEdit?.(data);
   };
 
-  const handleDelete = () => {
+  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     onDelete?.(data);
+  };
+
+  const handleSelect = () => {
+    onSelect?.(data);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!onSelect) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelect(data);
+    }
   };
 
 
   const imageUrl = data.image || data.imageUrl;
 
   return (
-    <div className="card overflow-hidden hover:shadow-xl transition-all duration-300 group">
+    <div
+      className={`card overflow-hidden transition-all duration-300 group ${
+        onSelect
+          ? 'cursor-pointer hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-white'
+          : 'hover:shadow-xl'
+      }`}
+      onClick={handleSelect}
+      onKeyDown={handleKeyDown}
+      tabIndex={onSelect ? 0 : undefined}
+      role={onSelect ? 'link' : undefined}
+    >
       {/* Image */}
       <div className="relative aspect-[4/3] bg-primary-50">
         {imageUrl ? (

@@ -134,7 +134,21 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
         attachmentLength: product.attachments?.length || 0
       });
     }
-  }, [product.id, product.title, product.attachments]);
+  }, [
+    product.id,
+    product.title,
+    product.attachments,
+    product.description,
+    product.price,
+    product.currency,
+    product.category,
+    product.condition,
+    product.location,
+    product.contact,
+    product.tags,
+    product.publishedAt,
+    product.author
+  ]);
 
   const handleInputChange = (field: keyof ProductEventData, value: string | number | string[]) => {
     setFormData(prev => ({

@@ -3,15 +3,12 @@
  * Provides reusable workflows for any content type with multiple attachments
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { logger } from '../services/core/LoggingService';
 import { 
   GenericAttachment, 
-  AttachmentOperation, 
-  AttachmentOperationType,
   SelectiveUpdateResult,
-  AttachmentManagerConfig,
-  DEFAULT_ATTACHMENT_CONFIG
+  AttachmentManagerConfig
 } from '../types/attachments';
 import { useSelectiveAttachmentManager } from './useSelectiveAttachmentManager';
 import { mediaBusinessService } from '../services/business/MediaBusinessService';
@@ -115,6 +112,10 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
   // Initialize attachment manager
   const attachmentManager = useSelectiveAttachmentManager<T>(config.attachmentConfig);
 
+  const nextStepRef = useRef<(() => Promise<void>) | null>(null);
+  const executeStepRef = useRef<((step: WorkflowStep) => Promise<void>) | null>(null);
+  const executeWorkflowRef = useRef<(() => Promise<SelectiveUpdateResult<T[]>>) | null>(null);
+
   // ============================================================================
   // WORKFLOW CONTROL
   // ============================================================================
@@ -144,7 +145,7 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
 
     // Start first step
     if (workflowState.steps.length > 0) {
-      await nextStep();
+      await nextStepRef.current?.();
     }
   }, [config.workflowName, attachmentManager, workflowState.steps.length]);
 
@@ -181,7 +182,7 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
 
     // Continue with current step
     if (workflowState.currentStep) {
-      await nextStep();
+      await nextStepRef.current?.();
     }
   }, [workflowState.currentStep]);
 
@@ -253,34 +254,54 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
       }));
 
       // Execute final workflow
-      const result = await executeWorkflow();
-      config.onWorkflowComplete?.(result);
+      const workflowRunner = executeWorkflowRef.current;
+      if (workflowRunner) {
+        const result = await workflowRunner();
+        config.onWorkflowComplete?.(result);
+      } else {
+        logger.warn('Workflow runner not available when attempting to finalize workflow', {
+          hook: 'useGenericAttachmentWorkflow',
+          method: 'nextStep'
+        });
+      }
 
       return;
     }
 
-    const nextStep = workflowState.steps[nextStepIndex];
+    const stepToRun = workflowState.steps[nextStepIndex];
     
     logger.debug('Moving to next step', {
       hook: 'useGenericAttachmentWorkflow',
       method: 'nextStep',
       currentStep: workflowState.currentStep,
-      nextStep: nextStep.id
+      nextStep: stepToRun.id
     });
 
     setWorkflowState(prev => ({
       ...prev,
-      currentStep: nextStep.id,
+      currentStep: stepToRun.id,
       steps: prev.steps.map(step => 
-        step.id === nextStep.id 
+        step.id === stepToRun.id 
           ? { ...step, status: 'in_progress' as const, startTime: Date.now() }
           : step
       )
     }));
 
     // Execute step logic
-    await executeStep(nextStep);
+    const stepRunner = executeStepRef.current;
+    if (!stepRunner) {
+      logger.warn('Step runner not available when attempting to execute step', {
+        hook: 'useGenericAttachmentWorkflow',
+        method: 'nextStep',
+        requestedStep: stepToRun.id
+      });
+      return;
+    }
+
+    await stepRunner(stepToRun);
   }, [workflowState.currentStep, workflowState.steps, config]);
+
+  nextStepRef.current = nextStep;
 
   /**
    * Move to previous step
@@ -335,7 +356,17 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
     }));
 
     // Execute step logic
-    await executeStep(step);
+    const stepRunner = executeStepRef.current;
+    if (!stepRunner) {
+      logger.warn('Step runner not available when attempting to go to step', {
+        hook: 'useGenericAttachmentWorkflow',
+        method: 'goToStep',
+        stepId
+      });
+      return;
+    }
+
+    await stepRunner(step);
   }, [workflowState.steps]);
 
   /**
@@ -401,7 +432,10 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
       config.onStepComplete?.(step);
       
       // Move to next step
-      await nextStep();
+      const advance = nextStepRef.current;
+      if (advance) {
+        await advance();
+      }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown step error';
@@ -428,6 +462,8 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
       config.onWorkflowError?.(errorMessage, step);
     }
   }, [config]);
+
+  executeStepRef.current = executeStep;
 
   // ============================================================================
   // WORKFLOW EXECUTION
@@ -504,6 +540,8 @@ export const useGenericAttachmentWorkflow = <T extends GenericAttachment = Gener
       };
     }
   }, [config.workflowName, attachmentManager]);
+
+  executeWorkflowRef.current = executeWorkflow;
 
   // ============================================================================
   // UTILITIES

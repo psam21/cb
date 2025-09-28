@@ -3,7 +3,7 @@
  * Handles user consent for file uploads and selective operations
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { logger } from '../../services/core/LoggingService';
 import { formatFileSize } from '../../config/media';
 import { AttachmentOperation, AttachmentOperationType } from '../../types/attachments';

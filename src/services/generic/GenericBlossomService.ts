@@ -884,7 +884,8 @@ export class GenericBlossomService {
       logger.info('Deleting file from Blossom', {
         service: 'GenericBlossomService',
         method: 'deleteFile',
-        fileId
+        fileId,
+        hasSigner: Boolean(signer)
       });
 
       // Note: Blossom doesn't have a direct delete API

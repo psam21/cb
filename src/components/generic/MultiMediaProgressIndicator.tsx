@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { ShopPublishingProgress } from '@/services/business/ShopBusinessService';
-import { MultiFileProgressTracker, ProgressAnalytics, FileProgressState } from '@/services/generic/MultiFileProgressTracker';
+import { MultiFileProgressTracker, ProgressAnalytics } from '@/services/generic/MultiFileProgressTracker';
 import { logger } from '@/services/core/LoggingService';
 
 interface MultiMediaProgressIndicatorProps {

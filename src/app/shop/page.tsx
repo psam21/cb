@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
 import { ProductCreationForm } from '@/components/shop/ProductCreationForm';
@@ -12,6 +13,7 @@ import { filterLatestRevisions } from '@/utils/revisionFilter';
 export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const router = useRouter();
 
   // Filter products to show only latest revisions
   const filteredProducts = useMemo(() => {
@@ -159,6 +161,11 @@ export default function ShopPage() {
                   // Convert BaseCardData back to ShopProduct for the handler
                   const product = filteredProducts.find(p => p.id === data.id);
                   if (product) handleContact(product);
+                }}
+                onSelect={(data) => {
+                  const targetId = data.eventId || data.id;
+                  if (!targetId) return;
+                  router.push(`/shop/${targetId}`);
                 }}
               />
             )}

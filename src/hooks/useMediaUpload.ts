@@ -207,7 +207,7 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         failureCount: files.length
       };
     }
-  }, []);
+  }, [consentDialog]);
 
   /**
    * Reset upload state

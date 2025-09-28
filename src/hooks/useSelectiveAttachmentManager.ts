@@ -8,7 +8,6 @@ import { logger } from '../services/core/LoggingService';
 import { 
   GenericAttachment, 
   AttachmentOperation, 
-  AttachmentOperationType,
   AttachmentSelectionState,
   SelectiveUpdateResult,
   AttachmentManagerConfig,
