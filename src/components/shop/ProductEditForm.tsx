@@ -236,6 +236,7 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
       productId: product.id,
       title: formData.title,
       attachmentCount: attachments.length,
+      currentAttachments: attachments.map(att => ({ id: att.id, name: att.name, type: att.type }))
     });
 
     // Separate new files from existing attachments
@@ -255,6 +256,18 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
     const keptAttachments = existingAttachments.filter(current => 
       originalAttachments.some(original => original.id === current.id)
     );
+
+    logger.info('Attachment state analysis in form submit', {
+      service: 'ProductEditForm',
+      method: 'handleSubmit',
+      productId: product.id,
+      formAttachments: attachments.map(att => ({ id: att.id, name: att.name, hasOriginalFile: !!att.originalFile })),
+      newFiles: newFiles.map(f => ({ name: f.name, type: f.type, size: f.size })),
+      existingAttachments: existingAttachments.map(att => ({ id: att.id, name: att.name })),
+      originalAttachments: originalAttachments.map(att => ({ id: att.id, name: att.name })),
+      removedAttachments: removedAttachments.map(att => ({ id: att.id, name: att.name })),
+      keptAttachments: keptAttachments.map(att => ({ id: att.id, name: att.name }))
+    });
 
     // Track content field changes
     const contentChanges = {
