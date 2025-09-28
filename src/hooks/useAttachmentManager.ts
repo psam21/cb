@@ -27,8 +27,8 @@ export interface UseAttachmentManagerReturn<T extends GenericAttachment = Generi
   updateConfig: (config: Partial<AttachmentManagerConfig>) => void;
 }
 
-const createInitialState = <T extends GenericAttachment>(config: AttachmentManagerConfig): AttachmentManagerState<T> => ({
-  attachments: [],
+const createInitialState = <T extends GenericAttachment>(config: AttachmentManagerConfig, initialAttachments: T[] = []): AttachmentManagerState<T> => ({
+  attachments: initialAttachments,
   operations: [],
   selection: {
     selectedIds: new Set(),
@@ -54,17 +54,14 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
 ): UseAttachmentManagerReturn<T> => {
   const config = useMemo(() => ({ ...DEFAULT_ATTACHMENT_CONFIG, ...initialConfig }), [initialConfig]);
   const [managerState, setManagerState] = useState<AttachmentManagerState<T>>(() => {
-    logger.debug('useAttachmentManager initializing with initialAttachments', {
+    logger.info('useAttachmentManager initializing with initialAttachments', {
       hook: 'useAttachmentManager',
       method: 'useState',
       initialAttachmentCount: initialAttachments.length,
       initialAttachments: initialAttachments
     });
     
-    return {
-      ...createInitialState<T>(config),
-      attachments: initialAttachments
-    };
+    return createInitialState<T>(config, initialAttachments);
   });
 
   // ============================================================================
@@ -871,7 +868,7 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
       method: 'reset'
     });
 
-    setManagerState(createInitialState<T>(config));
+    setManagerState(createInitialState<T>(config, []));
   }, [config]);
 
   /**

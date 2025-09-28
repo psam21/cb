@@ -72,7 +72,7 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
 
   // Debug logging for initial attachments
   useEffect(() => {
-    logger.debug('AttachmentManager initialized with initialAttachments', {
+    logger.info('AttachmentManager initialized with initialAttachments', {
       component: 'AttachmentManager',
       method: 'useEffect',
       initialAttachmentCount: initialAttachments.length,
