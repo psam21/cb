@@ -318,6 +318,16 @@ export const AttachmentManager = <T extends GenericAttachment = GenericAttachmen
       )}
 
       {/* Attachments list or empty state */}
+      {(() => {
+        logger.info('AttachmentManager render decision', {
+          component: 'AttachmentManager',
+          method: 'render',
+          attachmentCount: attachmentManager.state.attachments.length,
+          attachments: attachmentManager.state.attachments,
+          willShowAttachments: attachmentManager.state.attachments.length > 0
+        });
+        return null;
+      })()}
       {attachmentManager.state.attachments.length > 0 ? (
         <div className="mt-4 space-y-2">
           {attachmentManager.state.attachments.map((attachment, index) => 

@@ -232,6 +232,15 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
               <label className="block text-sm font-medium text-accent-700 mb-2">
                 Product Media (Images, Videos, Audio)
               </label>
+              {(() => {
+                logger.info('ProductEditForm rendering AttachmentManager', {
+                  service: 'ProductEditForm',
+                  method: 'render',
+                  attachmentCount: attachments.length,
+                  attachments: attachments
+                });
+                return null;
+              })()}
               <AttachmentManager
                 initialAttachments={attachments}
                 onAttachmentsChange={handleAttachmentsChange}
