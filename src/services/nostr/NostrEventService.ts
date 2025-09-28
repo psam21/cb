@@ -311,7 +311,25 @@ export class NostrEventService {
       // Parse content for description
       const content = this.parseEventContent(event);
       if (content) {
-        productData.description = content.content;
+        // Extract only the original description, not the markdown with embedded media
+        let description = content.content;
+        
+        // Remove the "## Media" section and everything after it
+        const mediaSectionIndex = description.indexOf('\n## Media');
+        if (mediaSectionIndex !== -1) {
+          description = description.substring(0, mediaSectionIndex).trim();
+        }
+        
+        productData.description = description;
+        
+        logger.info('Description extracted from content', {
+          service: 'NostrEventService',
+          method: 'extractProductData',
+          eventId: event.id,
+          originalContentLength: content.content.length,
+          extractedDescriptionLength: description.length,
+          hasMediaSection: mediaSectionIndex !== -1
+        });
       }
 
       // NEW: Extract multiple attachments from event tags
@@ -322,8 +340,16 @@ export class NostrEventService {
         method: 'extractProductData',
         eventId: event.id,
         title: productData.title,
+        description: productData.description,
+        price: productData.price,
+        currency: productData.currency,
         category: productData.category,
+        condition: productData.condition,
+        location: productData.location,
+        contact: productData.contact,
+        tags: productData.tags,
         attachmentCount: productData.attachments?.length || 0,
+        extractedData: productData
       });
 
       return productData;

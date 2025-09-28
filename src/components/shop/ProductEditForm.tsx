@@ -24,16 +24,27 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
   updateProgress,
   isPage = false
 }) => {
-  const [formData, setFormData] = useState<Partial<ProductEventData>>({
-    title: product.title,
-    description: product.description,
-    price: product.price,
-    currency: product.currency,
-    category: product.category,
-    condition: product.condition,
-    location: product.location,
-    contact: product.contact,
-    tags: filterVisibleTags(product.tags), // Filter out hidden tags for editing
+  const [formData, setFormData] = useState<Partial<ProductEventData>>(() => {
+    const initialFormData = {
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      currency: product.currency,
+      category: product.category,
+      condition: product.condition,
+      location: product.location,
+      contact: product.contact,
+      tags: filterVisibleTags(product.tags), // Filter out hidden tags for editing
+    };
+    
+    logger.info('ProductEditForm initializing form data', {
+      service: 'ProductEditForm',
+      method: 'useState',
+      productId: product.id,
+      formData: initialFormData
+    });
+    
+    return initialFormData;
   });
   const [attachments, setAttachments] = useState<GenericAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -44,6 +55,10 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
       method: 'useEffect',
       productId: product.id,
       title: product.title,
+      description: product.description,
+      price: product.price,
+      currency: product.currency,
+      category: product.category,
       attachmentCount: product.attachments?.length || 0,
       attachments: product.attachments
     });

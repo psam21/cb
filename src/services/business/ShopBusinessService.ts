@@ -1134,7 +1134,7 @@ export class ShopBusinessService {
         id: event.id,
         dTag, // NIP-33 d tag identifier
         title: productData.title,
-        description: content.content,
+        description: productData.description || content.content, // Use extracted description, fallback to full content
         price: productData.price || 0,
         currency: productData.currency || 'USD',
         
@@ -1162,7 +1162,17 @@ export class ShopBusinessService {
         method: 'parseProductFromEvent',
         productId: product.id,
         title: product.title,
+        description: product.description,
+        price: product.price,
+        currency: product.currency,
         category: product.category,
+        condition: product.condition,
+        location: product.location,
+        contact: product.contact,
+        tags: product.tags,
+        attachmentCount: product.attachments?.length || 0,
+        isDeleted: product.isDeleted,
+        parsedProduct: product
       });
 
       return product;

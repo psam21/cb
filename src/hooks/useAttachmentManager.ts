@@ -66,6 +66,14 @@ export const useAttachmentManager = <T extends GenericAttachment = GenericAttach
 
   // Update attachments when initialAttachments changes
   useEffect(() => {
+    logger.info('useAttachmentManager useEffect triggered', {
+      hook: 'useAttachmentManager',
+      method: 'useEffect',
+      initialAttachmentCount: initialAttachments.length,
+      currentAttachmentCount: managerState.attachments.length,
+      shouldUpdate: initialAttachments.length > 0 && managerState.attachments.length === 0
+    });
+    
     if (initialAttachments.length > 0 && managerState.attachments.length === 0) {
       logger.info('useAttachmentManager updating with new initialAttachments', {
         hook: 'useAttachmentManager',
