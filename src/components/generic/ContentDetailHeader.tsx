@@ -66,7 +66,7 @@ export function ContentDetailHeader({
 
   return (
     <header className={`space-y-4 ${className}`}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex flex-col gap-2">
           {breadcrumbs && breadcrumbs.length > 0 && (
             <nav aria-label="Breadcrumb" className="text-xs text-gray-500">
@@ -89,43 +89,39 @@ export function ContentDetailHeader({
           {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
         </div>
 
-        <div className="flex flex-col items-stretch gap-3 sm:items-end">
+        <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-white px-4 py-2 text-sm font-medium text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-accent-400"
+            className="btn-outline-sm inline-flex items-center gap-2"
             aria-label={backLabel}
           >
             <ArrowLeft className="h-4 w-4" />
             <span>{backLabel}</span>
           </button>
 
-          {actions.length > 0 && (
-            <div className="flex flex-wrap justify-end gap-2">
-              {actions.map(action => {
-                const variantClasses = {
-                  primary: 'btn-primary-sm',
-                  secondary: 'btn-outline-sm',
-                  ghost: 'btn-ghost-sm',
-                } as const;
+          {actions.map(action => {
+            const variantClasses = {
+              primary: 'btn-primary-sm',
+              secondary: 'btn-outline-sm',
+              ghost: 'btn-ghost-sm',
+            } as const;
 
-                const className = variantClasses[action.type ?? 'secondary'] ?? 'btn-outline-sm';
+            const className = variantClasses[action.type ?? 'secondary'] ?? 'btn-outline-sm';
 
-                return (
-                  <button
-                    key={action.id}
-                    type="button"
-                    onClick={() => handleAction(action)}
-                    className={className}
-                    aria-label={action.ariaLabel ?? action.label}
-                    disabled={action.disabled}
-                  >
-                    {action.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+            return (
+              <button
+                key={action.id}
+                type="button"
+                onClick={() => handleAction(action)}
+                className={className}
+                aria-label={action.ariaLabel ?? action.label}
+                disabled={action.disabled}
+              >
+                {action.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </header>

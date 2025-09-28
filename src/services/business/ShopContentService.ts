@@ -124,6 +124,22 @@ function tryGetNpub(pubkey: string): string | undefined {
   }
 }
 
+async function tryGetAuthorDisplayName(pubkey: string): Promise<string | undefined> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { profileService } = require('./ProfileBusinessService');
+    const profile = await profileService.getUserProfile(pubkey);
+    return profile?.display_name || undefined;
+  } catch (error) {
+    logger.warn('Failed to fetch author display name', {
+      service: 'ShopContentService',
+      method: 'tryGetAuthorDisplayName',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return undefined;
+  }
+}
+
 class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
   private static instance: ShopContentService;
 
@@ -152,6 +168,7 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
     const meta = buildMeta(product, formattedPrice);
 
     const npub = product.author ? tryGetNpub(product.author) : undefined;
+    const displayName = product.author ? await tryGetAuthorDisplayName(product.author) : undefined;
 
     const contactHref = product.contact
       ? product.contact.startsWith('npub')
@@ -160,10 +177,6 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
           ? product.contact
           : undefined
       : undefined;
-
-    const reportHref = `mailto:support@culturebridge.org?subject=${encodeURIComponent(
-      `Report product: ${product.title}`
-    )}`;
 
     const description = product.description || 'Description coming soon.';
     const summary = description.length > 160 ? `${description.slice(0, 157)}…` : description;
@@ -189,14 +202,8 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
         : []),
       {
         id: 'share',
-        label: 'Share Product',
+        label: 'Share',
         type: 'secondary' as const,
-      },
-      {
-        id: 'report',
-        label: 'Report Product',
-        type: 'ghost' as const,
-        href: reportHref,
       },
     ];
 
@@ -214,6 +221,7 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
         author: {
           pubkey: product.author,
           npub,
+          displayName,
         },
         tags: product.tags,
         media,
