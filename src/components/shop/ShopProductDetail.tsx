@@ -87,11 +87,14 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
     return (detail.meta ?? []).filter(meta => !hiddenLabels.has(meta.label));
   }, [detail.meta]);
 
+  const tags = useMemo(() => {
+    return (detail.tags ?? []).filter(tag => tag.toLowerCase() !== 'culture-bridge-shop');
+  }, [detail.tags]);
+
   return (
     <div className="space-y-10">
       <ContentDetailHeader
         title={detail.title}
-        subtitle={detail.summary}
         actions={actions}
         backHref={backHref}
         backLabel="Back to products"
@@ -157,7 +160,7 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
             title="About this product"
             summary={detail.summary}
             description={detail.description}
-            tags={detail.tags}
+            tags={tags}
           />
         }
       />
