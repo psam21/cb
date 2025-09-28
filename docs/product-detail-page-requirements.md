@@ -3,6 +3,16 @@
 ## **Overview**
 Create a full-page product detail view that expands when users click on product cards in the `/shop` page, providing comprehensive product information and enhanced user experience.
 
+## **Implementation Snapshot — September 2025**
+
+- Consolidated header actions into a single row: **Back to products**, **Contact Seller**, and **Share** (with Web Share fallback and clipboard copy).
+- Introduced a "Key details" card that highlights price, category, condition, location, and supplemental badges while avoiding duplicated metadata.
+- Moved the product summary so it only appears in the **About this product** section, eliminating redundant text under the title.
+- Replaced the inline contact panel with the header action; contacting the seller now opens the configured nostr/mail link directly.
+- Removed the report action from the live experience (tracked as a future enhancement) and renamed the share action label from "Share Product" to "Share".
+- Pulls author display names from profile metadata when available, falling back to npub/abbreviated pubkey as needed.
+- Filters out reserved system tags such as `culture-bridge-shop` before rendering product tag chips.
+
 ## **User Journey**
 1. User browses products on `/shop` page
 2. User clicks on any product card
@@ -20,7 +30,9 @@ Create a full-page product detail view that expands when users click on product 
 - **URL Structure**: Clean, shareable URLs for individual products
 
 ### **FR-2: Product Information Display**
+
 - **Title**: Large, prominent product title
+- **Summary**: Shown within the About section to avoid duplication under the title
 - **Description**: Full product description with proper formatting
 - **Price**: Prominent price display with currency
 - **Category**: Product category badge
@@ -41,9 +53,10 @@ Create a full-page product detail view that expands when users click on product 
 - **Fullscreen**: Option to view media in fullscreen mode
 
 ### **FR-4: Interactive Features**
-- **Contact Seller**: Direct way to contact the seller
-- **Share Product**: Share product URL functionality
-- **Report Product**: Report inappropriate content option
+
+- **Contact Seller**: Header action opens the configured nostr/mail link for direct outreach
+- **Share**: Share product URL (Web Share API with clipboard fallback)
+- **Report Product**: Deferred; track for enhancement backlog
 - **Favorite/Bookmark**: Save product for later (future feature)
 
 ### **FR-5: Responsive Design**
@@ -85,31 +98,32 @@ Create a full-page product detail view that expands when users click on product 
 ## **UI/UX Requirements**
 
 ### **UI-1: Layout Structure**
-```
-┌─────────────────────────────────────────┐
-│ ← Back to Shop    [Share] [Contact]     │
-├─────────────────────────────────────────┤
-│                                         │
-│  [Media Gallery]    [Product Details]   │
-│                                         │
-│  [Image/Video]      Title: Product Name │
-│                     Price: $XX.XX       │
-│                     Category: Images    │
-│                     Condition: New      │
-│                     Location: City      │
-│                                         │
-│                     Description:        │
-│                     Full product desc   │
-│                     with formatting     │
-│                                         │
-│                     Tags: #tag1 #tag2   │
-│                                         │
-│                     Published: Date     │
-│                     Author: npub...     │
-└─────────────────────────────────────────┘
+
+```text
+┌────────────────────────────────────────────┐
+│ ← Back to products [Contact Seller] [Share] │
+├────────────────────────────────────────────┤
+│                                            │
+│  [Media Gallery]       [Key Details Card]  │
+│                                            │
+│  [Image/Video]         Key details header  │
+│                        • Price / currency  │
+│                        • Category • Condition │
+│                        • Location badge    │
+│                        • Supplemental info │
+│                                            │
+│                        About this product  │
+│                        Summary + rich copy │
+│                        Tags: user-facing   │
+│                                            │
+│                        Metadata sidebar    │
+│                        • Published / Updated │
+│                        • Author display    │
+└────────────────────────────────────────────┘
 ```
 
 ### **UI-2: Media Gallery**
+
 - **Grid Layout**: 2x2 or 3x3 thumbnail grid
 - **Main View**: Large display area for selected media
 - **Thumbnail Navigation**: Click thumbnails to change main view
@@ -117,26 +131,26 @@ Create a full-page product detail view that expands when users click on product 
 - **Loading States**: Skeleton loaders while media loads
 
 ### **UI-3: Mobile Layout**
-```
-┌─────────────────────────┐
-│ ← Back    [Share] [⋯]   │
-├─────────────────────────┤
-│                         │
-│    [Main Media View]    │
-│                         │
-├─────────────────────────┤
-│ [Thumb] [Thumb] [Thumb] │
-├─────────────────────────┤
-│ Title: Product Name     │
-│ Price: $XX.XX          │
-│ Category: Images       │
-│                         │
-│ Description:            │
-│ Full product desc...    │
-│                         │
-│ [Contact Seller]        │
-│ [Report Product]        │
-└─────────────────────────┘
+
+```text
+┌────────────────────────────┐
+│ ← Back    [Contact] [Share] │
+├────────────────────────────┤
+│                            │
+│    [Main Media View]       │
+│                            │
+├────────────────────────────┤
+│ [Thumb] [Thumb] [Thumb]    │
+├────────────────────────────┤
+│ Key details card (stacked) │
+│ • Price / condition        │
+│ • Category / location      │
+│ • Supplemental chips       │
+├────────────────────────────┤
+│ About this product         │
+│ Summary + description      │
+│ Tags (user-facing only)    │
+└────────────────────────────┘
 ```
 
 ### **UI-4: Visual Design**
@@ -166,7 +180,8 @@ Create a full-page product detail view that expands when users click on product 
 - **Error States**: Handle broken or missing media
 
 ### **CR-3: Metadata**
-- **Product Tags**: Display all product tags
+
+- **Product Tags**: Display user-facing product tags and hide reserved system tags (e.g., `#culture-bridge-shop`)
 - **Author Information**: Show product creator details
 - **Publication Info**: When and where product was published
 - **Relay Information**: Which relays have the product
@@ -257,7 +272,7 @@ Create a full-page product detail view that expands when users click on product 
 - `src/components/generic/ContentMediaGallery.tsx` - Generic media gallery (images, videos, audio)
 - `src/components/generic/ContentMediaViewer.tsx` - Generic media display area
 - `src/components/generic/ContentMediaModal.tsx` - Generic fullscreen media modal
-- `src/components/generic/ContentContactSection.tsx` - Generic contact section
+- `src/components/generic/ContentContactSection.tsx` - Generic contact section *(unused on the live shop detail page; contact flows through the header action as of Sept 2025)*
 - `src/components/generic/ContentMetaInfo.tsx` - Generic tags, author, published date
 - `src/components/generic/ContentNotFound.tsx` - Generic 404 error component
 - `src/components/generic/ContentDetailLayout.tsx` - Generic layout wrapper
