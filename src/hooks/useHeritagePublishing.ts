@@ -467,5 +467,6 @@ export const useHeritagePublishing = () => {
 
     // Utilities
     isSignerAvailable: isAvailable,
+    consentDialog,
   };
 };

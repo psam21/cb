@@ -14,6 +14,7 @@ import {
   getCountriesByRegion
 } from '@/config/countries';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
+import { UserConsentDialog } from '@/components/generic/UserConsentDialog';
 import { GenericAttachment } from '@/types/attachments';
 import { X, Loader2 } from 'lucide-react';
 import { useHeritagePublishing } from '@/hooks/useHeritagePublishing';
@@ -58,6 +59,7 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
     error: publishError,
     result,
     publishHeritage,
+    consentDialog,
   } = useHeritagePublishing();
 
   const [formData, setFormData] = useState<HeritageFormData>({
@@ -598,6 +600,22 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
           </div>
         )}
       </form>
+
+      {/* Consent Dialog */}
+      <UserConsentDialog
+        isOpen={consentDialog.isOpen}
+        onClose={consentDialog.closeDialog}
+        onConfirm={(accepted) => {
+          if (accepted) {
+            consentDialog.acceptConsent();
+          } else {
+            consentDialog.cancelConsent();
+          }
+        }}
+        files={consentDialog.consent?.files?.map(f => new File([], f.name, { type: f.type })) || []}
+        estimatedTime={consentDialog.consent?.estimatedTime || 0}
+        totalSize={consentDialog.consent?.totalSize || 0}
+      />
     </div>
   );
 };
