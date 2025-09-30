@@ -8,11 +8,16 @@ import type {
   HeritageContributionData,
   HeritagePublishingResult,
   HeritagePublishingState,
+  HeritageNostrEvent,
   HERITAGE_SYSTEM_TAG,
   HERITAGE_CONTENT_TYPE,
 } from '@/types/heritage';
 import type { GenericAttachment } from '@/types/attachments';
 import { validateHeritageData } from '@/types/heritage';
+import { uploadSequentialWithConsent } from '@/services/generic/GenericBlossomService';
+import { publishEvent } from '@/services/generic/GenericRelayService';
+import { createNIP23Event } from '@/services/generic/GenericEventService';
+import { signEvent as genericSignEvent } from '@/services/generic/GenericEventService';
 
 /**
  * Publishing progress details
@@ -181,37 +186,93 @@ export const useHeritagePublishing = () => {
         }
       }
 
-      // Step 4: Upload media to Blossom
-      setProgress({
-        step: 'uploading',
-        progress: 30,
-        message: 'Uploading media...',
-        details: `Uploading ${data.attachments.length} file(s)`,
-      });
+      // Step 4: Upload media to Blossom (if attachments exist)
+      const uploadedMediaUrls: { type: 'image' | 'video' | 'audio'; url: string; hash: string; name: string }[] = [];
 
-      const mediaUrls: { type: 'image' | 'video' | 'audio'; url: string }[] = [];
-
-      // TODO: Implement actual media upload using MediaBusinessService
-      // For now, use placeholder URLs from attachments
-      for (let i = 0; i < data.attachments.length; i++) {
-        const attachment = data.attachments[i];
-        
+      if (data.attachments.length > 0) {
         setProgress({
           step: 'uploading',
-          progress: 30 + (40 * (i + 1) / data.attachments.length),
-          message: 'Uploading media...',
-          attachmentProgress: {
-            current: i + 1,
-            total: data.attachments.length,
-            currentFile: attachment.name,
-          },
+          progress: 30,
+          message: 'Starting media upload...',
+          details: `Uploading ${data.attachments.length} file(s)`,
         });
 
-        // Use existing URL or placeholder
-        if (attachment.url && (attachment.type === 'image' || attachment.type === 'video' || attachment.type === 'audio')) {
-          mediaUrls.push({
-            type: attachment.type,
-            url: attachment.url,
+        // Convert GenericAttachment to File objects
+        const filesToUpload: File[] = [];
+        for (const attachment of data.attachments) {
+          if (attachment.originalFile) {
+            filesToUpload.push(attachment.originalFile);
+          }
+        }
+
+        if (filesToUpload.length > 0) {
+          // Upload files using Blossom service
+          const uploadResult = await uploadSequentialWithConsent(
+            filesToUpload,
+            signer,
+            (uploadProgress) => {
+              // Map upload progress to heritage publishing progress
+              const progressPercent = 30 + (40 * uploadProgress.overallProgress);
+              setProgress({
+                step: 'uploading',
+                progress: progressPercent,
+                message: uploadProgress.nextAction,
+                details: `File ${uploadProgress.currentFileIndex + 1} of ${uploadProgress.totalFiles}`,
+                attachmentProgress: {
+                  current: uploadProgress.currentFileIndex + 1,
+                  total: uploadProgress.totalFiles,
+                  currentFile: uploadProgress.currentFile.name,
+                },
+              });
+            }
+          );
+
+          // Check for user cancellation
+          if (uploadResult.userCancelled) {
+            setState(prev => ({
+              ...prev,
+              isPublishing: false,
+              error: 'User cancelled upload',
+            }));
+            return {
+              success: false,
+              error: 'User cancelled upload',
+            };
+          }
+
+          // Check for upload failures
+          if (uploadResult.successCount === 0) {
+            setState(prev => ({
+              ...prev,
+              isPublishing: false,
+              error: 'All media uploads failed',
+            }));
+            return {
+              success: false,
+              error: 'All media uploads failed',
+            };
+          }
+
+          // Extract uploaded media URLs and map back to original attachments
+          for (let i = 0; i < uploadResult.uploadedFiles.length; i++) {
+            const uploadedFile = uploadResult.uploadedFiles[i];
+            const originalFile = filesToUpload[i];
+            const attachment = data.attachments.find(a => a.originalFile === originalFile);
+            
+            if (attachment && (attachment.type === 'image' || attachment.type === 'video' || attachment.type === 'audio')) {
+              uploadedMediaUrls.push({
+                type: attachment.type,
+                url: uploadedFile.url,
+                hash: uploadedFile.hash,
+                name: attachment.name,
+              });
+            }
+          }
+
+          logger.info('Media uploaded successfully', {
+            service: 'useHeritagePublishing',
+            uploadedCount: uploadResult.successCount,
+            failedCount: uploadResult.failureCount,
           });
         }
       }
@@ -260,9 +321,12 @@ export const useHeritagePublishing = () => {
         }
       });
 
-      // Add media URLs
-      mediaUrls.forEach(media => {
+      // Add media URLs with hash
+      uploadedMediaUrls.forEach(media => {
         tags.push([media.type, media.url]);
+        if (media.hash) {
+          tags.push(['imeta', `url ${media.url}`, `x ${media.hash}`]);
+        }
       });
 
       // Create event (without pubkey - signer will add it)
@@ -285,22 +349,45 @@ export const useHeritagePublishing = () => {
         details: 'Broadcasting event',
       });
 
-      // TODO: Implement actual relay publishing using NostrEventService
-      // For now, simulate success
-      const publishedRelays = ['wss://relay.example.com'];
+      // Publish event to Nostr relays
+      const publishResult = await publishEvent(
+        signedEvent,
+        signer,
+        (relayProgress) => {
+          setProgress({
+            step: 'publishing',
+            progress: 85 + (relayProgress.progress * 0.15), // 85% to 100%
+            message: relayProgress.message,
+            details: relayProgress.currentRelay || 'Broadcasting to network',
+          });
+        }
+      );
+
+      // Check if publishing succeeded
+      if (!publishResult.success || publishResult.publishedRelays.length === 0) {
+        setState(prev => ({
+          ...prev,
+          isPublishing: false,
+          error: publishResult.error || 'Failed to publish to any relay',
+        }));
+        return {
+          success: false,
+          error: publishResult.error || 'Failed to publish to any relay',
+        };
+      }
 
       setProgress({
         step: 'complete',
         progress: 100,
         message: 'Heritage contribution published!',
-        details: 'Successfully published to Nostr',
+        details: `Successfully published to ${publishResult.publishedRelays.length} relays`,
       });
 
       const result: HeritagePublishingResult = {
         success: true,
         eventId: signedEvent.id,
-        event: signedEvent as any, // TODO: Type properly
-        publishedToRelays: publishedRelays,
+        event: signedEvent as any as HeritageNostrEvent, // Type assertion for Kind 30023
+        publishedToRelays: publishResult.publishedRelays,
       };
 
       setState(prev => ({
@@ -313,7 +400,8 @@ export const useHeritagePublishing = () => {
       logger.info('Heritage contribution published successfully', {
         service: 'useHeritagePublishing',
         eventId: signedEvent.id,
-        relayCount: publishedRelays.length,
+        publishedRelays: publishResult.publishedRelays.length,
+        failedRelays: publishResult.failedRelays.length,
       });
 
       return result;
