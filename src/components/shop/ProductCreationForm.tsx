@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { logger } from '@/services/core/LoggingService';
 import { useShopPublishing } from '@/hooks/useShopPublishing';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
@@ -9,6 +10,15 @@ import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { UserConsentDialog } from '@/components/generic/UserConsentDialog';
 import { GenericAttachment } from '@/types/attachments';
+
+// Dynamic import for RichTextEditor (client-side only)
+const RichTextEditor = dynamic(
+  () => import('@/components/ui/RichTextEditor'),
+  { 
+    ssr: false,
+    loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg border border-gray-300" />
+  }
+);
 
 interface ProductCreationFormProps {
   onProductCreated?: (productId: string) => void;
@@ -259,18 +269,14 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
           <label htmlFor="description" className="block text-sm font-medium text-primary-800 mb-2">
             Description *
           </label>
-          <textarea
-            id="description"
+          <RichTextEditor
             value={formData.description}
-            onChange={(e) => handleInputChange('description', e.target.value)}
-            rows={4}
-            className={`w-full px-4 py-3 border rounded-default focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-              errors.description ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Describe your product"
+            onChange={(value) => handleInputChange('description', value)}
+            placeholder="Describe your product using rich formatting..."
             maxLength={2000}
+            minHeight={200}
+            error={errors.description}
           />
-          {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
         </div>
 
         {/* Price and Currency */}

@@ -1,4 +1,5 @@
 import '../styles/globals.css';
+import '../styles/tiptap.css';
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
