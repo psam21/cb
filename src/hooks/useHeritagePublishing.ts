@@ -167,7 +167,16 @@ export const useHeritagePublishing = () => {
 
         if (filesToUpload.length > 0) {
           // Show consent dialog BEFORE upload
+          console.log('[useHeritagePublishing] About to show consent dialog', {
+            fileCount: filesToUpload.length,
+            consentDialog: !!consentDialog,
+            showConsentDialog: !!consentDialog.showConsentDialog
+          });
+          
           const userAccepted = await consentDialog.showConsentDialog(filesToUpload);
+          
+          console.log('[useHeritagePublishing] Consent dialog result:', userAccepted);
+          
           if (!userAccepted) {
             logger.info('User cancelled heritage upload during consent phase', {
               service: 'useHeritagePublishing',

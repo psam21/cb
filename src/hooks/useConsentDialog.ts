@@ -55,6 +55,8 @@ export const useConsentDialog = (): UseConsentDialogReturn => {
       setConsent(consentData);
       setResolveConsent(() => resolve);
       setIsOpen(true);
+      
+      console.log('[useConsentDialog] State updated - isOpen should be true now');
     });
   }, []);
 
