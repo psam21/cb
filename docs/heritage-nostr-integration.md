@@ -44,7 +44,8 @@ Heritage contributions will use **Kind 30023** (parameterized replaceable long-f
     ["community", "Diné (Navajo)"],
     ["contributor-role", "practitioner"],
     ["knowledge-keeper", "Elder Mary Begay"],
-    ["t", "weaving"],
+    ["t", "culture-bridge-heritage-contribution"], // System tag (hidden from users)
+    ["t", "weaving"],                    // User tags (visible)
     ["t", "navajo"],
     ["t", "textile"],
     ["image", "https://blossom.server/abc123.jpg"],
@@ -86,6 +87,13 @@ Heritage contributions will use **Kind 30023** (parameterized replaceable long-f
 
 ## Tag Mapping
 
+### System Tags (Auto-added, Hidden from Users)
+- `["t", "culture-bridge-heritage-contribution"]` - System identifier tag
+  - Automatically added to all heritage events
+  - Used for querying/filtering heritage contributions
+  - Hidden from users in the UI (filtered in tagFilter.ts)
+  - Similar to `culture-bridge-shop` for shop products
+
 ### Heritage-Specific Tags
 - `["content-type", "heritage"]` - Always present, identifies as heritage
 - `["heritage-type", "craft|oral-tradition|ceremony|..."]` - Type of heritage
@@ -102,7 +110,7 @@ Heritage contributions will use **Kind 30023** (parameterized replaceable long-f
 - `["community", "..."]` - Community/group (optional)
 - `["region", "africa|asia|..."]` - Geographic region
 - `["country", "kenya|japan|..."]` - Country
-- `["t", "tag"]` - Searchable keywords
+- `["t", "tag"]` - User-added searchable keywords (visible)
 - `["image", "url"]` - Image attachments
 - `["video", "url"]` - Video attachments
 - `["audio", "url"]` - Audio attachments
@@ -119,7 +127,8 @@ Heritage contributions will use **Kind 30023** (parameterized replaceable long-f
 ```typescript
 const filter = {
   kinds: [30023],
-  "#content-type": ["heritage"]
+  "#t": ["culture-bridge-heritage-contribution"], // Primary filter using system tag
+  "#content-type": ["heritage"]  // Secondary verification
 };
 ```
 
@@ -128,7 +137,7 @@ const filter = {
 const filter = {
   kinds: [30023],
   authors: [userPubkey],
-  "#content-type": ["heritage"]
+  "#t": ["culture-bridge-heritage-contribution"]
 };
 ```
 
@@ -136,7 +145,7 @@ const filter = {
 ```typescript
 const filter = {
   kinds: [30023],
-  "#content-type": ["heritage"],
+  "#t": ["culture-bridge-heritage-contribution"],
   "#heritage-type": ["craft"]
 };
 ```
@@ -145,7 +154,7 @@ const filter = {
 ```typescript
 const filter = {
   kinds: [30023],
-  "#content-type": ["heritage"],
+  "#t": ["culture-bridge-heritage-contribution"],
   "#region": ["africa"],
   "#country": ["kenya"]
 };
@@ -155,7 +164,7 @@ const filter = {
 ```typescript
 const filter = {
   kinds: [30023],
-  // No content-type filter - gets both
+  "#t": ["culture-bridge-shop", "culture-bridge-heritage-contribution"] // Both system tags
 };
 ```
 
