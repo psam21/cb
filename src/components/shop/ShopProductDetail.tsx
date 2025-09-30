@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Heart, Bookmark } from 'lucide-react';
+import { Heart, Bookmark, Share2 } from 'lucide-react';
 import { ContentDetailHeader } from '@/components/generic/ContentDetailHeader';
 import { ContentDetailLayout } from '@/components/generic/ContentDetailLayout';
 import { ContentMediaGallery } from '@/components/generic/ContentMediaGallery';
@@ -42,22 +42,16 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
   }, [detail.customFields.price, detail.customFields.currency]);
 
   const actions = useMemo(() => {
-    const filtered = detail.actions.filter(action => action.id !== 'report' && action.id !== 'contact-seller');
-    return filtered.map(action => {
-      // Update share button label
-      if (action.id === 'share') {
-        return { ...action, label: 'Share Product' };
-      }
-      return action;
-    }).sort((a, b) => {
-      if (a.id === 'share') {
-        return 1;
-      }
-      if (b.id === 'share') {
-        return -1;
-      }
-      return 0;
-    });
+    const filtered = detail.actions.filter(action => 
+      action.id !== 'report' && 
+      action.id !== 'contact-seller' && 
+      action.id !== 'share'
+    );
+    return filtered;
+  }, [detail.actions]);
+
+  const shareAction = useMemo(() => {
+    return detail.actions.find(action => action.id === 'share');
   }, [detail.actions]);
 
   const contactAction = useMemo(() => {
@@ -131,6 +125,17 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
             >
               <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-primary-500 text-primary-500' : ''}`} />
             </button>
+            
+            {shareAction && (
+              <button
+                type="button"
+                onClick={shareAction.onClick}
+                className="btn-outline-sm inline-flex items-center justify-center"
+                aria-label="Share product"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+            )}
           </>
         }
       />
