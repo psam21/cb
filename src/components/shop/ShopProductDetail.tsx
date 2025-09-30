@@ -116,29 +116,27 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
           <button
             type="button"
             onClick={() => setIsLiked(!isLiked)}
-            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+            className={`inline-flex items-center justify-center rounded-lg border p-2 transition-all ${
               isLiked
                 ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
                 : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
             }`}
             aria-label={isLiked ? 'Unlike product' : 'Like product'}
           >
-            <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-            <span>{isLiked ? 'Liked' : 'Like'}</span>
+            <Heart className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
           </button>
           
           <button
             type="button"
             onClick={() => setIsBookmarked(!isBookmarked)}
-            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+            className={`inline-flex items-center justify-center rounded-lg border p-2 transition-all ${
               isBookmarked
                 ? 'border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100'
                 : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
             }`}
             aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark product'}
           >
-            <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-primary-500 text-primary-500' : ''}`} />
-            <span>{isBookmarked ? 'Saved' : 'Save'}</span>
+            <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-primary-500 text-primary-500' : ''}`} />
           </button>
         </div>
       </div>
