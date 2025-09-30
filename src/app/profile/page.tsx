@@ -1,11 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
+
+// Dynamic import for RichTextEditor (client-only for Vercel compatibility)
+const RichTextEditor = dynamic(
+  () => import('@/components/ui/RichTextEditor'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-48 bg-gray-100 rounded-lg border border-accent-300" />
+    )
+  }
+);
+
+// Dynamic import for MarkdownRenderer
+const MarkdownRenderer = dynamic(
+  () => import('@/components/ui/MarkdownRenderer').then(mod => ({ default: mod.MarkdownRenderer })),
+  { ssr: false }
+);
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -221,18 +239,21 @@ export default function ProfilePage() {
                       About
                     </label>
                     {isEditing ? (
-                      <textarea
+                      <RichTextEditor
                         value={editForm.about || ''}
-                        onChange={(e) => handleInputChange('about', e.target.value)}
-                        className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
-                        placeholder="Tell us about yourself"
-                        rows={4}
+                        onChange={(value) => handleInputChange('about', value)}
+                        placeholder="Tell us about yourself using rich formatting..."
                         maxLength={1000}
+                        minHeight={150}
                       />
                     ) : (
-                      <p className="text-primary-600 whitespace-pre-wrap">
-                        {profile?.about || 'No description provided'}
-                      </p>
+                      <div className="text-primary-600">
+                        {profile?.about ? (
+                          <MarkdownRenderer content={profile.about} />
+                        ) : (
+                          <p className="text-gray-500 italic">No description provided</p>
+                        )}
+                      </div>
                     )}
                   </div>
 
