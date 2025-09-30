@@ -139,7 +139,7 @@ export function ContentMediaModal({
             </button>
           )}
 
-          <ContentMediaViewer item={item} className="max-h-[80vh]" controls autoPlay />
+          <ContentMediaViewer item={item} className="max-h-[80vh]" controls autoPlay fillContainer />
 
           {onNext && (
             <button

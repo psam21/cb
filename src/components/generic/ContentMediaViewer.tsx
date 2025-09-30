@@ -9,6 +9,7 @@ interface ContentMediaViewerProps {
   className?: string;
   autoPlay?: boolean;
   controls?: boolean;
+  fillContainer?: boolean; // When true, respects natural aspect ratio instead of forcing 4:3
 }
 
 const MEDIA_PLACEHOLDER = '/favicon.svg';
@@ -18,6 +19,7 @@ export function ContentMediaViewer({
   className = '',
   autoPlay = false,
   controls = true,
+  fillContainer = false,
 }: ContentMediaViewerProps) {
   const mediaType = item?.type ?? 'image';
   const [isLoading, setIsLoading] = useState<boolean>(!!item);
@@ -99,7 +101,7 @@ export function ContentMediaViewer({
               src={item.source.url || MEDIA_PLACEHOLDER}
               alt={item.title || 'Media asset'}
               fill
-              className="object-cover"
+              className={fillContainer ? "object-contain" : "object-cover"}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               onLoadingComplete={() => setIsLoading(false)}
               onError={() => {
@@ -112,7 +114,12 @@ export function ContentMediaViewer({
           </div>
         );
     }
-  }, [item, mediaType, autoPlay, controls, hasError, isLoading]);
+  }, [item, mediaType, autoPlay, controls, hasError, isLoading, fillContainer]);
 
-  return <div className={`relative aspect-[4/3] w-full max-w-3xl ${className}`}>{mediaContent}</div>;
+  // Use natural aspect ratio when fillContainer is true (modal view), otherwise force 4:3 (gallery view)
+  const containerClass = fillContainer 
+    ? `relative w-full ${className}` 
+    : `relative aspect-[4/3] w-full max-w-3xl ${className}`;
+
+  return <div className={containerClass}>{mediaContent}</div>;
 }
