@@ -9,15 +9,10 @@ import type {
   HeritagePublishingResult,
   HeritagePublishingState,
   HeritageNostrEvent,
-  HERITAGE_SYSTEM_TAG,
-  HERITAGE_CONTENT_TYPE,
 } from '@/types/heritage';
-import type { GenericAttachment } from '@/types/attachments';
 import { validateHeritageData } from '@/types/heritage';
 import { uploadSequentialWithConsent } from '@/services/generic/GenericBlossomService';
 import { publishEvent } from '@/services/generic/GenericRelayService';
-import { createNIP23Event } from '@/services/generic/GenericEventService';
-import { signEvent as genericSignEvent } from '@/services/generic/GenericEventService';
 
 /**
  * Publishing progress details
@@ -407,7 +402,7 @@ export const useHeritagePublishing = () => {
       const result: HeritagePublishingResult = {
         success: true,
         eventId: signedEvent.id,
-        event: signedEvent as any as HeritageNostrEvent, // Type assertion for Kind 30023
+        event: signedEvent as HeritageNostrEvent, // Type assertion - we created Kind 30023
         publishedToRelays: publishResult.publishedRelays,
       };
 

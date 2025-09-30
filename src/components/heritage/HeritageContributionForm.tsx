@@ -11,7 +11,6 @@ import {
 } from '@/config/heritage';
 import { 
   REGIONS,
-  COUNTRIES,
   getCountriesByRegion
 } from '@/config/countries';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
@@ -59,7 +58,6 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
     error: publishError,
     result,
     publishHeritage,
-    resetPublishing,
   } = useHeritagePublishing();
 
   const [formData, setFormData] = useState<HeritageFormData>({
