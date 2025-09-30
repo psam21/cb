@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import type { ContentAction, ContentBreadcrumb } from '@/types/content-detail';
+import { ReactNode } from 'react';
 
 interface ContentDetailHeaderProps {
   title: string;
@@ -12,6 +13,7 @@ interface ContentDetailHeaderProps {
   backHref?: string;
   backLabel?: string;
   actions?: ContentAction[];
+  customButtons?: ReactNode;
   className?: string;
 }
 
@@ -22,6 +24,7 @@ export function ContentDetailHeader({
   backHref,
   backLabel = 'Back',
   actions = [],
+  customButtons,
   className = '',
 }: ContentDetailHeaderProps) {
   const router = useRouter();
@@ -122,6 +125,8 @@ export function ContentDetailHeader({
               </button>
             );
           })}
+          
+          {customButtons}
         </div>
       </div>
     </header>

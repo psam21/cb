@@ -103,43 +103,37 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
 
   return (
     <div className="space-y-10">
-      <div className="space-y-4">
-        <ContentDetailHeader
-          title={detail.title}
-          actions={actions}
-          backHref={backHref}
-          backLabel="Back to products"
-        />
-        
-        {/* Like and Bookmark buttons */}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setIsLiked(!isLiked)}
-            className={`inline-flex items-center justify-center rounded-lg border p-2 transition-all ${
-              isLiked
-                ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-            aria-label={isLiked ? 'Unlike product' : 'Like product'}
-          >
-            <Heart className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setIsBookmarked(!isBookmarked)}
-            className={`inline-flex items-center justify-center rounded-lg border p-2 transition-all ${
-              isBookmarked
-                ? 'border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-            aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark product'}
-          >
-            <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-primary-500 text-primary-500' : ''}`} />
-          </button>
-        </div>
-      </div>
+      <ContentDetailHeader
+        title={detail.title}
+        actions={actions}
+        backHref={backHref}
+        backLabel="Back to products"
+        customButtons={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsLiked(!isLiked)}
+              className={`btn-outline-sm inline-flex items-center justify-center ${
+                isLiked ? '!border-red-300 !bg-red-50 !text-red-700 hover:!bg-red-100' : ''
+              }`}
+              aria-label={isLiked ? 'Unlike product' : 'Like product'}
+            >
+              <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setIsBookmarked(!isBookmarked)}
+              className={`btn-outline-sm inline-flex items-center justify-center ${
+                isBookmarked ? '!border-primary-300 !bg-primary-50 !text-primary-700 hover:!bg-primary-100' : ''
+              }`}
+              aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark product'}
+            >
+              <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-primary-500 text-primary-500' : ''}`} />
+            </button>
+          </>
+        }
+      />
 
       <ContentDetailLayout
         media={<ContentMediaGallery items={detail.media} />}
