@@ -15,7 +15,7 @@ This document outlines the design for a heritage contribution system that mirror
 | **Description** | **Description** | Rich Text | Detailed description (already has RichTextEditor) | Full story or explanation with formatting |
 | **Price** | **Time Period/Era** | Text/Select | When this tradition/artifact originates | "Pre-Colonial", "1800s", "Ancient", "Contemporary" |
 | **Currency** | **Heritage Type** | Select | Primary category of heritage | "Oral Tradition", "Craft", "Ceremony", "Music", "Language", "Art" |
-| **Category** | **Contribution Type** | Select | Specific type within heritage category | See detailed list below |
+| **Category** | **Category** | Select (Shared) | Universal category from shared config | From `src/config/categories.ts` - same list as shop |
 | **Condition** | **Source Type** | Select | How this knowledge was obtained | "Passed Down", "Elder Teaching", "Personal Experience", "Historical Record", "Community Archive" |
 | **Location** | **Region/Origin** | Text | Geographic/cultural origin | "Navajo Nation, Arizona", "Māori, Aotearoa" |
 | **Contact** | **Knowledge Keeper** | Text | Person/role to contact for more info | "Elder John Doe", "Tribal Cultural Office", "Community Leader" |
@@ -27,6 +27,7 @@ This document outlines the design for a heritage contribution system that mirror
 | Field Name | Type | Required | Description | Example Values |
 |------------|------|----------|-------------|----------------|
 | **Cultural Context** | Rich Text | Yes | Significance and cultural meaning (already exists) | Detailed cultural background with formatting |
+| **Heritage Type** | Select | Yes | Primary type of cultural contribution | "Oral Tradition", "Craft", "Ceremony", "Music", "Language", "Art", "Knowledge", "Performance" |
 | **Language** | Text/Select | No | Language of the tradition | "Navajo (Diné bizaad)", "Te Reo Māori", "English" |
 | **Community/Group** | Text | No | Specific community or tribal affiliation | "Hopi Tribe", "Ngāi Tahu", "Andean Communities" |
 | **Sacred/Sensitive** | Boolean | No | Indicates if content has restrictions | true/false |
@@ -37,9 +38,75 @@ This document outlines the design for a heritage contribution system that mirror
 
 ---
 
-## Contribution Type Categories
+## Shared Category System
 
-### Heritage Type → Contribution Type Mapping
+Both shop and heritage contributions use the same category dropdown sourced from `src/config/categories.ts`. This ensures consistency across the platform.
+
+### Category Configuration
+
+Categories are defined with:
+- **id**: Unique identifier
+- **name**: Display name
+- **description**: What the category includes
+- **applicableTo**: Array specifying if category applies to 'shop', 'heritage', or both
+
+### Universal Categories (Both Shop & Heritage)
+- Art & Crafts
+- Textiles & Clothing
+- Jewelry & Accessories
+- Pottery & Ceramics
+- Woodwork & Carving
+- Basketry & Weaving
+- Music & Instruments
+- Books & Literature
+- Tools & Implements
+- Home & Decor
+- Other
+
+### Shop-Only Categories
+- Digital Products
+- Food & Beverages
+- Wellness & Beauty
+
+### Heritage-Only Categories
+- Oral Traditions
+- Ceremonies & Rituals
+- Dance & Performance
+- Language & Writing
+- Traditional Knowledge
+- Architecture & Structures
+- Agriculture & Farming
+- Traditional Medicine
+- Navigation & Wayfinding
+- Games & Sports
+
+### Usage in Forms
+
+```typescript
+import { getShopCategories, getHeritageCategories } from '@/config/categories';
+
+// In shop forms
+const shopCategories = getShopCategories();
+
+// In heritage forms
+const heritageCategories = getHeritageCategories();
+
+// Render dropdown
+<select>
+  <option value="">Select a category</option>
+  {categories.map(cat => (
+    <option key={cat.id} value={cat.id}>
+      {cat.name}
+    </option>
+  ))}
+</select>
+```
+
+---
+
+## Heritage Type System
+
+**Heritage Type** is separate from Category and represents the primary cultural classification:
 
 ```javascript
 const contributionTypes = {
@@ -198,12 +265,14 @@ Contextualizes when the tradition originated:
 │ Title *                                     │
 │ [_____________________________________]     │
 │                                             │
+│ Category *                                  │
+│ [▼ Select category from shared list]       │
+│   (Art & Crafts, Textiles, Oral Traditions,│
+│    Dance & Performance, etc.)               │
+│                                             │
 │ Heritage Type *                             │
 │ [▼ Select heritage type]                    │
-│                                             │
-│ Contribution Type *                         │
-│ [▼ Select contribution type]                │
-│   (dynamically populated based on heritage) │
+│   (Oral Tradition, Craft, Ceremony, etc.)   │
 └─────────────────────────────────────────────┘
 ```
 
@@ -296,8 +365,8 @@ interface HeritageContribution {
   // Basic Information
   title: string;
   description: string; // Rich text markdown
+  category: string; // From shared categories config (category.id)
   heritageType: HeritageType;
-  contributionType: string; // Dynamic based on heritageType
   
   // Cultural Details
   culturalContext: string; // Rich text markdown
@@ -447,8 +516,8 @@ type ContributorRole =
 │ Heritage Details                                  │
 │ ─────────────────────────────────────────────     │
 │                                                   │
+│ Category:          Textiles & Clothing            │
 │ Heritage Type:     Traditional Craft              │
-│ Contribution Type: Weaving                        │
 │ Source:            Elder Teaching                 │
 │ Language:          Navajo (Diné bizaad)          │
 │ Community:         Diné (Navajo)                 │
