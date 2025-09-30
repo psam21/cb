@@ -285,6 +285,9 @@ export const useHeritagePublishing = () => {
         details: 'Preparing heritage contribution event',
       });
 
+      // Get user's public key
+      const pubkey = await signer.getPublicKey();
+
       // Generate unique d tag
       const dTag = `heritage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -329,13 +332,31 @@ export const useHeritagePublishing = () => {
         }
       });
 
-      // Create event (without pubkey - signer will add it)
+      // Create markdown content for NIP-23 format
+      let markdownContent = `# ${data.title}\n\n${data.description}`;
+      
+      // Add embedded media to markdown content
+      if (uploadedMediaUrls.length > 0) {
+        markdownContent += '\n\n## Media\n\n';
+        
+        for (const media of uploadedMediaUrls) {
+          if (media.type === 'image') {
+            markdownContent += `![${media.name}](${media.url})\n\n`;
+          } else if (media.type === 'video') {
+            markdownContent += `[📹 ${media.name}](${media.url})\n\n`;
+          } else if (media.type === 'audio') {
+            markdownContent += `[🎵 ${media.name}](${media.url})\n\n`;
+          }
+        }
+      }
+
+      // Create event (without id and sig - signer will add these)
       const unsignedEvent = {
         kind: 30023,
         created_at: Math.floor(Date.now() / 1000),
         tags,
-        content: JSON.stringify({ description: data.description }),
-        pubkey: '', // Will be filled by signer
+        content: markdownContent,
+        pubkey: pubkey,
       };
 
       // Sign event
