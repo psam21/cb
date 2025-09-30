@@ -574,10 +574,10 @@ type ContributorRole =
 - [ ] Add sort options (newest, oldest, most viewed)
 
 ### Phase 5: Nostr Integration
-- [ ] Create NIP-XX event kind for heritage contributions (suggest 30024)
-- [ ] Map fields to Nostr event tags
-- [ ] Implement publish to relays
-- [ ] Add event fetching and parsing
+- [ ] Use existing Kind 30023 (same as shop) with content-type tag differentiation
+- [ ] Map heritage fields to Nostr event tags
+- [ ] Implement publish to relays (reuse shop services)
+- [ ] Add event fetching and parsing (reuse shop patterns)
 
 **Note:** Phase 6 (Access Control, Elder Approval, Permissions) is planned for future versions.
 
@@ -727,14 +727,15 @@ const initialValues = {
 
 ### Revision System (Nostr Implementation)
 
-Heritage contributions use Nostr's replaceable events (kind 30024) with `d` tag for revisions:
+Heritage contributions use Nostr's replaceable events (kind 30023) with `d` tag for revisions:
 
 ```javascript
 // Original contribution
 {
-  "kind": 30024,
+  "kind": 30023,
   "tags": [
     ["d", "contribution-unique-id-123"],  // Same d tag for all revisions
+    ["content-type", "heritage"],  // Differentiates from shop products
     ["title", "Navajo Weaving Technique"],
     // ... other tags
   ],
@@ -746,9 +747,10 @@ Heritage contributions use Nostr's replaceable events (kind 30024) with `d` tag 
 
 // Updated contribution (replaces original)
 {
-  "kind": 30024,
+  "kind": 30023,
   "tags": [
     ["d", "contribution-unique-id-123"],  // Same d tag
+    ["content-type", "heritage"],
     ["title", "Navajo Two-Grey Hills Weaving Technique"],  // Updated title
     // ... other tags (updated)
   ],
@@ -1030,11 +1032,11 @@ export function MyHeritageCard({
 - [ ] Add sort options (newest, oldest, most viewed)
 
 ### Phase 8: Nostr Integration
-- [ ] Create NIP-XX event kind for heritage contributions (suggest 30024)
-- [ ] Map fields to Nostr event tags
-- [ ] Implement publish to relays
-- [ ] Add event fetching and parsing
-- [ ] Implement replaceable events for edits
+- [ ] Use existing Kind 30023 (same as shop) with content-type tag differentiation
+- [ ] Map heritage fields to Nostr event tags
+- [ ] Implement publish to relays (reuse shop services)
+- [ ] Add event fetching and parsing (reuse shop patterns)
+- [ ] Implement replaceable events for edits (automatic with 30023)
 - [ ] Implement deletion events (kind 5)
 
 **Note:** Phase 9 (Access Control, Elder Approval, Permissions) is planned for future versions.
@@ -1045,16 +1047,18 @@ export function MyHeritageCard({
 
 ```javascript
 {
-  "kind": 30024, // Heritage Contribution (proposed)
+  "kind": 30023, // Parameterized replaceable long-form content (same as shop)
   "tags": [
     ["d", "unique-identifier"],
+    ["content-type", "heritage"], // Differentiates from shop products
     ["title", "Navajo Two-Grey Hills Weaving Technique"],
     ["category", "textiles"],  // Category ID from shared categories
     ["heritage-type", "Craft"],
     ["contribution-type", "Weaving"],
     ["time-period", "Living Tradition"],
     ["source-type", "Elder Teaching"],
-    ["region", "Navajo Nation, New Mexico"],
+    ["region", "africa"], // Region ID from regions config
+    ["country", "kenya"], // Country ID from countries config
     ["language", "Navajo (Diné bizaad)"],
     ["community", "Diné (Navajo)"],
     ["contributor-role", "Practitioner"],
