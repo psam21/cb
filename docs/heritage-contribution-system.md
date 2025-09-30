@@ -661,6 +661,475 @@ type ContributorRole =
 
 ---
 
+## My Contributions Page
+
+Similar to the "My Shop" page, users need a dedicated space to manage their heritage contributions.
+
+### Page Layout
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ My Heritage Contributions                                     │
+│                                                                │
+│ [+ Create New Contribution]                    [🔍 Search...] │
+│                                                                │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ 📊 Your Contributions: 12 Total                          │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐         │
+│ │[Image]   │ │[Image]   │ │[Image]   │ │[Image]   │         │
+│ │          │ │          │ │          │ │          │         │
+│ │Weaving   │ │Origin    │ │Dance     │ │Song      │         │
+│ │Technique │ │Story     │ │Tradition │ │Lullaby   │         │
+│ │          │ │          │ │          │ │          │         │
+│ │📍 Navajo │ │📍 Andean │ │📍 Māori  │ │📍 Celtic │         │
+│ │🕐 Living │ │🕐 Ancient│ │🕐 Pre-Col│ │🕐 Revival│         │
+│ │          │ │          │ │          │ │          │         │
+│ │[Edit]    │ │[Edit]    │ │[Edit]    │ │[Edit]    │         │
+│ │[Delete]  │ │[Delete]  │ │[Delete]  │ │[Delete]  │         │
+│ └──────────┘ └──────────┘ └──────────┘ └──────────┘         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Features
+
+1. **View All Your Contributions**
+   - Grid display of contributions created by the logged-in user
+   - Filter and search your own contributions
+   - Sort by date, heritage type, or region
+
+2. **Quick Actions Per Card**
+   - **Edit** - Navigate to edit form
+   - **Delete** - Remove contribution with confirmation
+   - **View** - Navigate to public detail page
+   - **Duplicate** - Create a new contribution based on existing
+
+3. **Contribution Statistics**
+   - Total contributions count
+   - Views/engagement metrics
+   - Pending approvals (if elder approval required)
+
+4. **Empty State**
+   ```
+   ┌────────────────────────────────────────┐
+   │                                        │
+   │         🏛️ No Contributions Yet        │
+   │                                        │
+   │   Start preserving and sharing your    │
+   │   cultural heritage with the community │
+   │                                        │
+   │      [Create Your First Contribution]  │
+   │                                        │
+   └────────────────────────────────────────┘
+   ```
+
+### Route Structure
+```
+/my-heritage              # Main "My Contributions" page
+/my-heritage/create       # Create new contribution (or /heritage/create)
+/my-heritage/edit/[id]    # Edit existing contribution
+```
+
+---
+
+## Edit Workflow
+
+### Edit Form Design
+
+The edit form mirrors the create form but with pre-populated values and additional considerations:
+
+#### Pre-population Logic
+```typescript
+// Load existing contribution
+const existingContribution = await fetchContribution(contributionId);
+
+// Pre-fill form fields
+const initialValues = {
+  title: existingContribution.title,
+  description: existingContribution.description,
+  category: existingContribution.category,
+  heritageType: existingContribution.heritageType,
+  culturalContext: existingContribution.culturalContext,
+  language: existingContribution.language,
+  communityGroup: existingContribution.communityGroup,
+  regionOrigin: existingContribution.regionOrigin,
+  timePeriod: existingContribution.timePeriod,
+  sourceType: existingContribution.sourceType,
+  contributorRole: existingContribution.contributorRole,
+  media: existingContribution.media,
+  sharingPermission: existingContribution.sharingPermission,
+  isTraditionalKnowledge: existingContribution.isTraditionalKnowledge,
+  isSacredSensitive: existingContribution.isSacredSensitive,
+  requiresElderApproval: existingContribution.requiresElderApproval,
+  knowledgeKeeper: existingContribution.knowledgeKeeper,
+  tags: existingContribution.tags,
+};
+```
+
+#### Edit Form Header
+```
+┌──────────────────────────────────────────────────┐
+│ [← Cancel]              Edit Contribution         │
+│                                                   │
+│ Editing: "Navajo Two-Grey Hills Weaving"         │
+│ Last updated: September 25, 2025                 │
+└──────────────────────────────────────────────────┘
+```
+
+#### Edit Form Features
+
+1. **All Fields Editable** (Same as create form)
+   - Pre-filled with existing values
+   - Validation on submit
+   - Character limits enforced
+
+2. **Media Management**
+   - Show existing media with thumbnails
+   - Option to remove existing media
+   - Upload new media (up to 5 total)
+   - Reorder media items
+   - Mark primary image
+
+3. **Approval Re-triggering**
+   - If contribution required elder approval initially
+   - Significant edits may re-trigger approval workflow
+   - Show warning: "Changes to sacred/sensitive content may require re-approval"
+
+4. **Action Buttons**
+   ```
+   ┌──────────────────────────────────────────┐
+   │                                          │
+   │  [Cancel]  [Save as New]  [Update]      │
+   │                                          │
+   └──────────────────────────────────────────┘
+   ```
+   - **Cancel** - Discard changes, return to previous page
+   - **Save as New** - Create duplicate with modifications
+   - **Update** - Save changes to existing contribution
+
+### Revision System (Nostr Implementation)
+
+Heritage contributions use Nostr's replaceable events (kind 30024) with `d` tag for revisions:
+
+```javascript
+// Original contribution
+{
+  "kind": 30024,
+  "tags": [
+    ["d", "contribution-unique-id-123"],  // Same d tag for all revisions
+    ["title", "Navajo Weaving Technique"],
+    // ... other tags
+  ],
+  "content": "...",
+  "created_at": 1693000000,
+  "pubkey": "...",
+  "sig": "..."
+}
+
+// Updated contribution (replaces original)
+{
+  "kind": 30024,
+  "tags": [
+    ["d", "contribution-unique-id-123"],  // Same d tag
+    ["title", "Navajo Two-Grey Hills Weaving Technique"],  // Updated title
+    // ... other tags (updated)
+  ],
+  "content": "...",  // Updated content
+  "created_at": 1695000000,  // Newer timestamp
+  "pubkey": "...",
+  "sig": "..."
+}
+```
+
+**Revision Logic:**
+- Nostr automatically keeps only the latest event with the same `d` tag
+- Older versions are replaced by newer ones
+- History is not preserved on-chain (could be preserved locally if needed)
+- Latest event = current state of contribution
+
+### Permission Checks
+
+Before allowing edit:
+```typescript
+const canEdit = (contribution: HeritageContribution, currentUserPubkey: string): boolean => {
+  // Only the original creator can edit
+  if (contribution.pubkey !== currentUserPubkey) {
+    return false;
+  }
+  
+  // Check if contribution is locked (e.g., under review)
+  if (contribution.approvalStatus === 'pending') {
+    return false; // Or show "Pending approval - cannot edit"
+  }
+  
+  return true;
+};
+```
+
+### Edit Navigation
+
+#### From Contribution Card (My Contributions page)
+```tsx
+<button 
+  onClick={() => router.push(`/my-heritage/edit/${contribution.id}`)}
+  className="btn-outline-sm"
+>
+  Edit
+</button>
+```
+
+#### From Detail Page (if user is owner)
+```tsx
+{isOwner && (
+  <button 
+    onClick={() => router.push(`/my-heritage/edit/${contribution.id}`)}
+    className="btn-primary-sm"
+  >
+    Edit Contribution
+  </button>
+)}
+```
+
+---
+
+## Delete Workflow
+
+### Delete Confirmation Modal
+
+```
+┌─────────────────────────────────────────────┐
+│  ⚠️  Delete Heritage Contribution?          │
+│                                             │
+│  Are you sure you want to delete:          │
+│                                             │
+│  "Navajo Two-Grey Hills Weaving Technique" │
+│                                             │
+│  This action cannot be undone.             │
+│                                             │
+│  This cultural knowledge will be removed   │
+│  from all relays and will no longer be     │
+│  accessible to the community.              │
+│                                             │
+│          [Cancel]    [Delete]              │
+└─────────────────────────────────────────────┘
+```
+
+### Delete Implementation (Nostr)
+
+Nostr deletion uses kind 5 (deletion event):
+
+```javascript
+// Deletion event
+{
+  "kind": 5,
+  "tags": [
+    ["e", "contribution-event-id"],  // Event ID to delete
+    ["k", "30024"]                   // Kind of event being deleted
+  ],
+  "content": "Contribution removed by author",
+  "created_at": 1695100000,
+  "pubkey": "...",
+  "sig": "..."
+}
+```
+
+### Delete Logic
+```typescript
+const deleteContribution = async (contributionId: string): Promise<void> => {
+  // 1. Confirm user is owner
+  if (contribution.pubkey !== currentUserPubkey) {
+    throw new Error('Only the creator can delete this contribution');
+  }
+  
+  // 2. Show confirmation dialog
+  const confirmed = await confirmDelete();
+  if (!confirmed) return;
+  
+  // 3. Create deletion event (kind 5)
+  const deletionEvent = await createDeletionEvent(contributionId);
+  
+  // 4. Publish to relays
+  await publishToRelays(deletionEvent);
+  
+  // 5. Update local state/cache
+  removeFromLocalCache(contributionId);
+  
+  // 6. Navigate back to My Contributions
+  router.push('/my-heritage');
+  
+  // 7. Show success message
+  toast.success('Contribution deleted successfully');
+};
+```
+
+---
+
+## Component Structure Updates
+
+### New Components Needed
+
+```
+src/
+  components/
+    heritage/
+      HeritageContributionForm.tsx      # Create form (already planned)
+      HeritageEditForm.tsx               # Edit form with pre-population
+      HeritageCard.tsx                   # Card for public browse (already planned)
+      MyHeritageCard.tsx                 # Card for "My Contributions" with edit/delete
+      HeritageDeleteModal.tsx            # Confirmation modal for deletion
+      
+  app/
+    my-heritage/
+      page.tsx                           # My Contributions list page
+      edit/
+        [id]/
+          page.tsx                       # Edit contribution page
+          
+  hooks/
+    useMyHeritageContributions.ts        # Fetch user's own contributions
+    useHeritageEdit.ts                   # Edit logic and state management
+    useHeritageDeletion.ts               # Delete logic with confirmation
+```
+
+### MyHeritageCard Component
+
+```tsx
+interface MyHeritageCardProps {
+  contribution: HeritageContribution;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+  onView: (id: string) => void;
+}
+
+export function MyHeritageCard({ 
+  contribution, 
+  onEdit, 
+  onDelete, 
+  onView 
+}: MyHeritageCardProps) {
+  return (
+    <div className="heritage-card">
+      {/* Image */}
+      <div className="card-image">
+        {contribution.media[0] && (
+          <img src={contribution.media[0].url} alt={contribution.title} />
+        )}
+      </div>
+      
+      {/* Content */}
+      <div className="card-content">
+        <h3>{contribution.title}</h3>
+        <p className="heritage-type">{contribution.heritageType}</p>
+        <p className="region">📍 {contribution.regionOrigin}</p>
+        <p className="time-period">🕐 {contribution.timePeriod}</p>
+        
+        {/* Permission indicator */}
+        <HeritagePermissionBadge permission={contribution.sharingPermission} />
+      </div>
+      
+      {/* Actions */}
+      <div className="card-actions">
+        <button onClick={() => onView(contribution.id)} className="btn-ghost-sm">
+          View
+        </button>
+        <button onClick={() => onEdit(contribution.id)} className="btn-outline-sm">
+          Edit
+        </button>
+        <button onClick={() => onDelete(contribution.id)} className="btn-outline-sm text-red-600">
+          Delete
+        </button>
+      </div>
+      
+      {/* Approval status (if applicable) */}
+      {contribution.requiresElderApproval && (
+        <div className="approval-badge">
+          {contribution.approvalStatus === 'pending' && '⏳ Pending Approval'}
+          {contribution.approvalStatus === 'approved' && '✅ Approved'}
+          {contribution.approvalStatus === 'rejected' && '❌ Needs Revision'}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## Implementation Plan Updates
+
+### Phase 1: Data Structure & Types ✓
+- [x] Create TypeScript interfaces for `HeritageContribution`
+- [x] Define all enum types and constants
+- [x] Create contribution type mapping object
+- [x] Set up validation schemas
+
+### Phase 2: Form Components
+- [ ] Create `HeritageContributionForm.tsx` (creation)
+- [ ] Create `HeritageEditForm.tsx` (editing with pre-population)
+- [ ] Implement dynamic contribution type dropdown
+- [ ] Add permission checkboxes and radio buttons
+- [ ] Integrate RichTextEditor for description and cultural context
+- [ ] Add media upload with management (add/remove/reorder)
+- [ ] Implement form validation
+
+### Phase 3: My Contributions Page
+- [ ] Create `/my-heritage` page
+- [ ] Create `MyHeritageCard.tsx` component with edit/delete actions
+- [ ] Implement `useMyHeritageContributions` hook
+- [ ] Add filtering and search for user's contributions
+- [ ] Create empty state component
+- [ ] Add contribution statistics display
+
+### Phase 4: Edit Workflow
+- [ ] Create edit route `/my-heritage/edit/[id]`
+- [ ] Implement contribution fetch and pre-population
+- [ ] Add permission checks (only owner can edit)
+- [ ] Handle media updates (add/remove/reorder)
+- [ ] Implement Nostr replaceable event publishing
+- [ ] Add success/error handling
+
+### Phase 5: Delete Workflow
+- [ ] Create `HeritageDeleteModal.tsx` component
+- [ ] Implement delete confirmation flow
+- [ ] Create Nostr kind 5 deletion event
+- [ ] Handle relay publishing of deletion
+- [ ] Update local state/cache
+- [ ] Add success messaging
+
+### Phase 6: Display Components
+- [ ] Create `HeritageDetailPage.tsx` based on product detail
+- [ ] Create `HeritageCard.tsx` component for public grid display
+- [ ] Add permission badges and indicators
+- [ ] Implement cultural sensitivity warnings
+- [ ] Add MarkdownRenderer for text fields
+- [ ] Add "Edit" button on detail page (if owner)
+
+### Phase 7: Browse & Filter
+- [ ] Create `HeritageExplore.tsx` page
+- [ ] Implement filter by heritage type, time period, region
+- [ ] Add access level filtering
+- [ ] Create search functionality
+- [ ] Add sort options (newest, oldest, most viewed)
+
+### Phase 8: Nostr Integration
+- [ ] Create NIP-XX event kind for heritage contributions (suggest 30024)
+- [ ] Map fields to Nostr event tags
+- [ ] Implement publish to relays
+- [ ] Add event fetching and parsing
+- [ ] Handle permissions and access control
+- [ ] Implement replaceable events for edits
+- [ ] Implement deletion events (kind 5)
+
+### Phase 9: Access Control
+- [ ] Implement community verification
+- [ ] Add elder approval workflow (if needed)
+- [ ] Create permission checking middleware
+- [ ] Add restricted content blur/warning
+- [ ] Implement request access feature
+
+---
+
 ## Nostr Event Structure (Proposed)
 
 ```javascript
@@ -705,12 +1174,14 @@ type ContributorRole =
 src/
   components/
     heritage/
-      HeritageContributionForm.tsx      # Main contribution form
-      HeritageEditForm.tsx               # Edit existing contribution
-      HeritageCard.tsx                   # Card component for grid
+      HeritageContributionForm.tsx      # Main contribution form (create)
+      HeritageEditForm.tsx               # Edit existing contribution with pre-population
+      HeritageCard.tsx                   # Card component for public browse
+      MyHeritageCard.tsx                 # Card for My Contributions with edit/delete
       HeritageDetailInfo.tsx             # Detail page info section
       HeritagePermissionBadge.tsx        # Permission level indicator
       HeritageCulturalWarning.tsx        # Sensitivity warning component
+      HeritageDeleteModal.tsx            # Confirmation modal for deletion
       
   app/
     heritage/
@@ -719,9 +1190,11 @@ src/
         page.tsx                         # Detail page
       create/
         page.tsx                         # Create new contribution
+    my-heritage/
+      page.tsx                           # My Contributions list page
       edit/
         [id]/
-          page.tsx                       # Edit contribution
+          page.tsx                       # Edit contribution page
           
   types/
     heritage.ts                          # TypeScript interfaces
@@ -735,19 +1208,25 @@ src/
     heritageTypes.ts                     # Contribution type mappings
     
   hooks/
-    useHeritageContributions.ts          # Data fetching hook
+    useHeritageContributions.ts          # Data fetching hook (public)
+    useMyHeritageContributions.ts        # Fetch user's own contributions
     useHeritageFilters.ts                # Filter logic hook
+    useHeritageEdit.ts                   # Edit logic and state management
+    useHeritageDeletion.ts               # Delete logic with confirmation
 ```
 
 ---
 
 ## Next Steps
 
-1. **Review & Refine** - Review this document and provide feedback
+1. **Review & Refine** - Review updated document with edit/delete workflows
 2. **Finalize Field Names** - Confirm final naming for all fields
 3. **Design Approval** - Get community input on structure
 4. **Begin Implementation** - Start with data structures and types
-5. **Iterative Development** - Build and test incrementally
+5. **Build My Contributions** - Implement user's contribution management page
+6. **Build Edit Workflow** - Implement edit form and revision system
+7. **Build Delete Workflow** - Implement deletion with confirmations
+8. **Iterative Development** - Build and test incrementally
 
 ---
 
@@ -763,9 +1242,15 @@ src/
 8. **Access Control**: How should community verification work?
 9. **Elder Approval**: What's the workflow for elder review?
 10. **Search/Discovery**: What filters and sorting options are most important?
+11. **Edit Workflow**: Should edits to approved content require re-approval?
+12. **Delete Permissions**: Should there be restrictions on deleting contributions (e.g., if referenced by others)?
+13. **My Contributions**: What statistics/metrics should be shown on the management page?
+14. **Revision History**: Should we maintain a local history of edits (beyond Nostr's replacement)?
 
 ---
 
-*Document Version: 1.0*  
+*Document Version: 2.0*  
 *Created: September 30, 2025*  
-*Status: Draft - Awaiting Review*
+*Updated: September 30, 2025*  
+*Status: Draft - Awaiting Review*  
+*Changes: Added My Contributions page, Edit Workflow, Delete Workflow, and Revision System*
