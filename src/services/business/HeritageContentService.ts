@@ -589,6 +589,87 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
   }
 }
 
+export async function deleteHeritageContribution(
+  eventId: string,
+  signer: unknown,
+  userPubkey: string,
+  title: string
+): Promise<{ success: boolean; error?: string; publishedRelays?: string[] }> {
+  try {
+    logger.info('Starting heritage contribution deletion', {
+      service: 'HeritageContentService',
+      method: 'deleteHeritageContribution',
+      eventId,
+      userPubkey: userPubkey.substring(0, 8) + '...',
+    });
+
+    // Import deletion functions
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { createDeletionEvent, signEvent, publishEvent } = require('../nostr/NostrEventService');
+
+    // Create NIP-09 Kind 5 deletion event
+    const deletionResult = createDeletionEvent(
+      [eventId],
+      userPubkey,
+      {
+        reason: `Heritage contribution "${title}" deleted by author`,
+        additionalTags: [
+          ['t', 'culture-bridge-heritage'],
+        ],
+      }
+    );
+
+    if (!deletionResult.success || !deletionResult.event) {
+      return {
+        success: false,
+        error: `Failed to create deletion event: ${deletionResult.error}`,
+      };
+    }
+
+    // Sign the deletion event
+    const signingResult = await signEvent(deletionResult.event, signer);
+    if (!signingResult.success || !signingResult.signedEvent) {
+      return {
+        success: false,
+        error: `Failed to sign deletion event: ${signingResult.error}`,
+      };
+    }
+
+    // Publish the deletion event
+    const publishResult = await publishEvent(signingResult.signedEvent, signer);
+
+    if (!publishResult.success) {
+      return {
+        success: false,
+        error: `Failed to publish deletion: ${publishResult.error}`,
+        publishedRelays: publishResult.publishedRelays,
+      };
+    }
+
+    logger.info('Heritage contribution deleted successfully', {
+      service: 'HeritageContentService',
+      method: 'deleteHeritageContribution',
+      eventId,
+      publishedRelays: publishResult.publishedRelays.length,
+    });
+
+    return {
+      success: true,
+      publishedRelays: publishResult.publishedRelays,
+    };
+  } catch (error) {
+    logger.error('Error deleting heritage contribution', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'HeritageContentService',
+      method: 'deleteHeritageContribution',
+      eventId,
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete heritage contribution',
+    };
+  }
+}
+
 // Create singleton instance
 const heritageContentService = HeritageContentService.getInstance();
 

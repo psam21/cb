@@ -2,18 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchHeritageByAuthor } from '@/services/business/HeritageContentService';
+import { fetchHeritageByAuthor, deleteHeritageContribution } from '@/services/business/HeritageContentService';
 import { MyContributionCard } from '@/components/heritage/MyContributionCard';
+import { DeleteConfirmationModal } from '@/components/heritage/DeleteConfirmationModal';
 import type { HeritageCardData } from '@/components/heritage/HeritageCard';
 import { logger } from '@/services/core/LoggingService';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useNostrSigner } from '@/hooks/useNostrSigner';
 
 export default function MyContributionsPage() {
   const [contributions, setContributions] = useState<HeritageCardData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [contributionToDelete, setContributionToDelete] = useState<HeritageCardData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const { user } = useAuthStore();
+  const { getSigner } = useNostrSigner();
 
   useEffect(() => {
     const loadContributions = async () => {
@@ -77,13 +83,73 @@ export default function MyContributionsPage() {
   };
 
   const handleDelete = (contribution: HeritageCardData) => {
-    logger.info('Delete contribution', {
+    logger.info('Opening delete confirmation', {
       service: 'MyContributionsPage',
       method: 'handleDelete',
       contributionId: contribution.id,
     });
-    // TODO: Implement delete modal/confirmation
-    alert(`Delete functionality coming soon for: ${contribution.title}`);
+    setContributionToDelete(contribution);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!contributionToDelete || !user?.pubkey) return;
+
+    setIsDeleting(true);
+    try {
+      logger.info('Deleting contribution', {
+        service: 'MyContributionsPage',
+        method: 'handleDeleteConfirm',
+        contributionId: contributionToDelete.id,
+      });
+
+      const signer = await getSigner();
+      if (!signer) {
+        throw new Error('No Nostr signer available');
+      }
+
+      // Find the full contribution to get eventId
+      const fullContributions = await fetchHeritageByAuthor(user.pubkey);
+      const fullContribution = fullContributions.find(c => c.dTag === contributionToDelete.dTag);
+      
+      if (!fullContribution) {
+        throw new Error('Contribution not found');
+      }
+
+      const result = await deleteHeritageContribution(
+        fullContribution.eventId,
+        signer,
+        user.pubkey,
+        contributionToDelete.title
+      );
+
+      if (result.success) {
+        logger.info('Contribution deleted successfully', {
+          service: 'MyContributionsPage',
+          method: 'handleDeleteConfirm',
+          contributionId: contributionToDelete.id,
+          publishedRelays: result.publishedRelays?.length,
+        });
+
+        // Remove from local state
+        setContributions(prev => prev.filter(c => c.id !== contributionToDelete.id));
+        
+        // Close modal
+        setDeleteModalOpen(false);
+        setContributionToDelete(null);
+      } else {
+        throw new Error(result.error || 'Failed to delete contribution');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete contribution';
+      logger.error('Error deleting contribution', err instanceof Error ? err : new Error(errorMsg), {
+        service: 'MyContributionsPage',
+        method: 'handleDeleteConfirm',
+      });
+      alert(`Error: ${errorMsg}`);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (!user) {
@@ -200,6 +266,19 @@ export default function MyContributionsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setContributionToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title={contributionToDelete?.title || ''}
+        message="This will publish a deletion event to Nostr relays. This action cannot be undone."
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
