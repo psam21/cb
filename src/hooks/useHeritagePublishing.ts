@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useNostrSigner } from './useNostrSigner';
-import { useConsentDialog } from './useConsentDialog';
 import type {
   HeritageContributionData,
   HeritagePublishingResult,
@@ -35,7 +34,6 @@ export interface HeritagePublishingProgress {
  */
 export const useHeritagePublishing = () => {
   const { isAvailable, getSigner } = useNostrSigner();
-  const consentDialog = useConsentDialog();
 
   const [state, setState] = useState<HeritagePublishingState>({
     isPublishing: false,
@@ -153,35 +151,7 @@ export const useHeritagePublishing = () => {
         };
       }
 
-      // Step 3: Get user consent for media uploads (if attachments exist)
-      if (data.attachments.length > 0) {
-        const attachmentFiles = data.attachments
-          .map(att => att.originalFile)
-          .filter((file): file is File => file !== undefined);
-
-        if (attachmentFiles.length > 0) {
-          const userAccepted = await consentDialog.showConsentDialog(attachmentFiles);
-          if (!userAccepted) {
-            logger.info('User cancelled heritage upload during consent phase', {
-              service: 'useHeritagePublishing',
-              attachmentCount: attachmentFiles.length,
-            });
-
-            setState(prev => ({
-              ...prev,
-              isPublishing: false,
-              currentStep: 'idle',
-            }));
-
-            return {
-              success: false,
-              error: 'User cancelled upload',
-            };
-          }
-        }
-      }
-
-      // Step 4: Upload media to Blossom (if attachments exist)
+      // Step 3: Upload media to Blossom (if attachments exist)
       const uploadedMediaUrls: { type: 'image' | 'video' | 'audio'; url: string; hash: string; name: string }[] = [];
 
       if (data.attachments.length > 0) {
@@ -441,7 +411,7 @@ export const useHeritagePublishing = () => {
         error: errorMessage,
       };
     }
-  }, [isAvailable, getSigner, consentDialog, setProgress]);
+  }, [isAvailable, getSigner, setProgress]);
 
   /**
    * Reset publishing state
