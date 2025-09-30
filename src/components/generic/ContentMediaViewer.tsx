@@ -25,6 +25,13 @@ export function ContentMediaViewer({
   const [isLoading, setIsLoading] = useState<boolean>(!!item);
   const [hasError, setHasError] = useState(false);
 
+  // Calculate dynamic aspect ratio from image dimensions
+  const aspectRatio = useMemo(() => {
+    if (!item?.source.dimensions) return null;
+    const { width, height } = item.source.dimensions;
+    return width / height;
+  }, [item?.source.dimensions]);
+
   useEffect(() => {
     setIsLoading(!!item);
     setHasError(false);
@@ -116,10 +123,26 @@ export function ContentMediaViewer({
     }
   }, [item, mediaType, autoPlay, controls, hasError, isLoading, fillContainer]);
 
-  // Use natural aspect ratio when fillContainer is true (modal view), otherwise force 4:3 (gallery view)
-  const containerClass = fillContainer 
-    ? `relative w-full ${className}` 
-    : `relative aspect-[4/3] w-full max-w-3xl ${className}`;
+  // Use dynamic aspect ratio from image metadata when available, otherwise use defaults
+  const containerClass = useMemo(() => {
+    if (fillContainer) {
+      return `relative w-full ${className}`;
+    }
+    
+    // Use actual image aspect ratio if available
+    if (aspectRatio) {
+      return `relative w-full max-w-3xl ${className}`;
+    }
+    
+    // Fallback to 4:3 for backwards compatibility
+    return `relative aspect-[4/3] w-full max-w-3xl ${className}`;
+  }, [fillContainer, aspectRatio, className]);
 
-  return <div className={containerClass}>{mediaContent}</div>;
+  // Apply dynamic aspect ratio to container if metadata exists and not in fillContainer mode
+  const containerStyle = useMemo(() => {
+    if (fillContainer || !aspectRatio) return undefined;
+    return { aspectRatio: aspectRatio.toString() };
+  }, [fillContainer, aspectRatio]);
+
+  return <div className={containerClass} style={containerStyle}>{mediaContent}</div>;
 }

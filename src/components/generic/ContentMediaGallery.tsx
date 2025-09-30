@@ -99,7 +99,7 @@ export function ContentMediaGallery({
         onTouchEnd={handleTouchEnd}
         onTouchCancel={resetTouch}
       >
-        <ContentMediaViewer item={activeItem} className="w-full max-h-[70vh]" fillContainer />
+        <ContentMediaViewer item={activeItem} className="w-full" />
 
         {enableModal && (
           <button
