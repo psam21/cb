@@ -1,7 +1,7 @@
 # Project Rules and Memories Summary
 
 ## Overview
-This document consolidates the established rules, preferences, and memories for the CBC3 project based on user interactions and project patterns.
+This document consolidates the established rules, preferences, and memories for the CultureBridge project based on user interactions and project patterns.
 
 ## Development Workflow Rules
 
@@ -42,7 +42,7 @@ This document consolidates the established rules, preferences, and memories for 
 ### Testing Approach
 - **All testing is manual end-to-end UI-based testing** - no unit or integration tests
 - **Wait for user confirmation** before proceeding with testing
-- **Test on production server** at `cbc3.vercel.com` instead of localhost
+- **Test on production server** at `https://culturebridge.vercel.app` instead of localhost
 - **Check with user** after completing each item to test and confirm it works before marking complete
 
 ## Project-Specific Conventions

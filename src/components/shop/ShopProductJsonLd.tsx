@@ -12,7 +12,7 @@ const getSiteUrl = () => {
   if (fromEnv) {
     return fromEnv.replace(/\/$/, '');
   }
-  return 'https://culturebridge.org';
+  return 'https://culturebridge.vercel.app';
 };
 
 export function ShopProductJsonLd({ detail }: ShopProductJsonLdProps) {

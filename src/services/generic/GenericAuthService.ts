@@ -1,6 +1,6 @@
 /**
  * Generic authentication service for Nostr signer management
- * Handles all authentication operations following cbc3 patterns
+ * Handles all authentication operations following CultureBridge patterns
  */
 import { logger } from '../core/LoggingService';
 import { AppError } from '../../errors/AppError';

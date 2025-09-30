@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     title: 'Culture Bridge - Heritage Preservation Network',
     description: 'Preserve Heritage, Empower Communities',
     type: 'website',
-    url: 'https://culturebridge.org',
+    url: 'https://culturebridge.vercel.app',
   },
   twitter: {
     card: 'summary_large_image',

@@ -1,6 +1,6 @@
 /**
  * Generic Nostr relay service for centralized relay operations
- * Handles all relay publishing and querying operations following cbc3 patterns
+ * Handles all relay publishing and querying operations following CultureBridge patterns
  */
 import { logger } from '../core/LoggingService';
 import { AppError } from '../../errors/AppError';
