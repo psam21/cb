@@ -209,6 +209,7 @@ export default function MyShopPage() {
               <BaseCard
                 data={item}
                 variant="my-shop"
+                onSelect={(data) => router.push(`/shop/${data.id}`)}
                 onEdit={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
                   const product = filteredProducts.find(p => p.id === data.id);
