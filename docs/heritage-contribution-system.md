@@ -584,29 +584,32 @@ type ContributorRole =
 ---
 
 ## My Contributions Page
+## My Contributions Page
 
-Users can manage both shop products and heritage contributions in a unified "My Contributions" page (similar to the existing "My Shop" page).
+Users can manage their heritage contributions in a dedicated "My Contributions" page (separate from the "My Shop" page).
+
+**Important:** This page is for **heritage contributions only**. Shop products are managed via the existing `/my-shop` page. While both use the same Nostr infrastructure (Kind 30023), they remain separate features in the UI.
 
 ### Page Layout
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ My Contributions                                              │
+│ My Heritage Contributions                                     │
 │                                                                │
-│ [Shop Products] [Heritage] [All]        [+ Create] [🔍...]    │
+│ [+ Create New]                                [🔍 Search...]  │
 │                                                                │
 │ ┌──────────────────────────────────────────────────────────┐ │
-│ │ 📊 Your Contributions: 12 Heritage, 8 Shop (20 Total)    │ │
+│ │ 📊 Your Heritage Contributions: 12 Total                 │ │
 │ └──────────────────────────────────────────────────────────┘ │
 │                                                                │
 │ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐         │
 │ │[Image]   │ │[Image]   │ │[Image]   │ │[Image]   │         │
-│ │🏺        │ │🛍️        │ │🎵        │ │🛍️        │         │
-│ │Weaving   │ │Pottery   │ │Dance     │ │Textiles  │         │
-│ │Technique │ │For Sale  │ │Tradition │ │For Sale  │         │
-│ │Heritage  │ │Shop      │ │Heritage  │ │Shop      │         │
-│ │📍 Navajo │ │� $150   │ │📍 Māori  │ │� $75    │         │
-│ │🕐 Living │ │          │ │🕐 Pre-Col│ │          │         │
+│ │🏺        │ │🎵        │ │📖        │ │🎨        │         │
+│ │Weaving   │ │Dance     │ │Origin    │ │Pottery   │         │
+│ │Technique │ │Tradition │ │Story     │ │Craft     │         │
+│ │          │ │          │ │          │ │          │         │
+│ │📍 Navajo │ │📍 Māori  │ │📍 Andean │ │📍 Pueblo │         │
+│ │🕐 Living │ │🕐 Pre-Col│ │🕐 Ancient│ │🕐 Living │         │
 │ │[Edit]    │ │[Edit]    │ │[Edit]    │ │[Edit]    │         │
 │ │[Delete]  │ │[Delete]  │ │[Delete]  │ │[Delete]  │         │
 │ └──────────┘ └──────────┘ └──────────┘ └──────────┘         │
@@ -615,17 +618,21 @@ Users can manage both shop products and heritage contributions in a unified "My 
 
 ### Features
 
-1. **Unified View of All Contributions**
-   - Shows both heritage contributions and shop products
-   - Filter by type: Heritage only, Shop only, or All
-   - Grid display with type badges
-   - Differentiated by content-type in Nostr events
+1. **View Heritage Contributions Only**
+   - Grid display of heritage contributions created by the logged-in user
+   - Filter and search heritage contributions
+   - Sort by date, heritage type, region, or time period
 
 2. **Quick Actions Per Card**
    - **Edit** - Navigate to edit form
    - **Delete** - Remove contribution with confirmation
    - **View** - Navigate to public detail page
    - **Duplicate** - Create a new contribution based on existing
+
+3. **Contribution Statistics**
+   - Total heritage contributions count
+   - Views/engagement metrics
+   - Pending approvals (if elder approval required)
 
 3. **Contribution Statistics**
    - Total contributions count (by type and combined)
@@ -648,12 +655,17 @@ Users can manage both shop products and heritage contributions in a unified "My 
 
 ### Route Structure
 ```
-/contribute               # Main contribution page with heritage form integrated
-/my-contributions         # View all user's contributions (shop + heritage)
-/my-contributions/edit/[id]  # Edit existing contribution (shop or heritage)
+/my-shop                  # Existing shop products page (unchanged)
+/contribute               # Heritage contribution form (create new heritage)
+/my-contributions         # Heritage contributions management (heritage only)
+/my-contributions/edit/[id]  # Edit existing heritage contribution
 ```
 
-**Note:** Heritage contributions are created via the main `/contribute` page. There is no separate `/heritage` or `/heritage/create` route - the heritage form is integrated directly into the contribute page flow.
+**Note:** 
+- Heritage form is integrated into `/contribute` page (no separate `/heritage` route)
+- `/my-shop` remains unchanged for shop products
+- `/my-contributions` is for heritage only (NOT shop products)
+- Both shop and heritage use Kind 30023, differentiated by `content-type` tag
 
 ---
 
@@ -901,6 +913,8 @@ src/
       
   app/
     contribute/
+    my-shop/
+      page.tsx                           # Existing shop products page (unchanged)
       page.tsx                           # Main contribute page (has heritage form)
     my-contributions/
       page.tsx                           # Unified list (shop + heritage)
@@ -909,7 +923,7 @@ src/
           page.tsx                       # Edit contribution page (detects type)
           
   hooks/
-    useMyContributions.ts                # Fetch user's contributions (both types)
+    useMyHeritageContributions.ts                # Fetch user's contributions (both types)
     useHeritageEdit.ts                   # Edit logic for heritage
     useHeritageDeletion.ts               # Delete logic with confirmation
 ```
@@ -1007,24 +1021,23 @@ export function ContributionCard({
 - [ ] Implement form validation
 
 ### Phase 3: My Contributions Page
-- [ ] Update existing `/my-shop` to `/my-contributions` (unified view)
-- [ ] Add content-type filtering (Shop, Heritage, All tabs)
-- [ ] Update contribution cards to show type badges
-- [ ] Implement `useMyContributions` hook (fetches both types via content-type tag)
-- [ ] Add filtering and search for user's contributions
+- [ ] Create `/my-contributions` page (heritage only, separate from `/my-shop`)
+- [ ] Create heritage contribution cards component
+- [ ] Implement `useMyHeritageContributions` hook (fetches via content-type=heritage tag)
+- [ ] Add filtering and search for heritage contributions
 - [ ] Create empty state component
-- [ ] Add contribution statistics display (separate counts per type)
+- [ ] Add contribution statistics display (heritage count only)
 
 ### Phase 4: Edit Workflow
-- [ ] Create edit route `/my-contributions/edit/[id]` (detects content-type)
-- [ ] Implement contribution fetch and pre-population
+- [ ] Create edit route `/my-contributions/edit/[id]` (heritage only)
+- [ ] Implement heritage contribution fetch and pre-population
 - [ ] Add permission checks (only owner can edit)
 - [ ] Handle media updates (add/remove/reorder)
 - [ ] Implement Nostr replaceable event publishing (Kind 30023)
 - [ ] Add success/error handling
 
 ### Phase 5: Delete Workflow
-- [ ] Create unified delete modal (works for both shop and heritage)
+- [ ] Create heritage delete modal component
 - [ ] Implement delete confirmation flow
 - [ ] Create Nostr kind 5 deletion event
 - [ ] Handle relay publishing of deletion
@@ -1117,16 +1130,18 @@ src/
       
   app/
     contribute/
+    my-shop/
+      page.tsx                           # Existing shop products page (unchanged)
       page.tsx                           # Main contribute page (has heritage form)
     heritage/
       page.tsx                           # Browse/explore heritage contributions
       [id]/
         page.tsx                         # Heritage detail page
     my-contributions/
-      page.tsx                           # Unified list page (shop + heritage)
+      page.tsx                           # Heritage contributions list (heritage only)
       edit/
         [id]/
-          page.tsx                       # Edit page (detects content-type)
+          page.tsx                       # Edit heritage contribution
           
   types/
     heritage.ts                          # TypeScript interfaces for heritage
@@ -1141,7 +1156,7 @@ src/
     
   hooks/
     useHeritageContributions.ts          # Fetch public heritage contributions
-    useMyContributions.ts                # Fetch user's contributions (shop + heritage)
+    useMyHeritageContributions.ts                # Fetch user's contributions (shop + heritage)
     useHeritageFilters.ts                # Filter logic hook
     useHeritageEdit.ts                   # Edit logic and state management
     useHeritageDeletion.ts               # Delete logic with confirmation
@@ -1150,8 +1165,10 @@ src/
 
 **Notes:** 
 - No separate `/heritage/create` route - creation happens via `/contribute`
-- `/my-contributions` replaces `/my-shop` and shows both shop and heritage
-- Edit route detects content-type tag to show appropriate form fields
+- `/my-shop` remains unchanged for shop products (not affected by heritage)
+- `/my-contributions` is for heritage only (completely separate from `/my-shop`)
+- Both shop and heritage use Kind 30023, differentiated by `content-type` tag
+- Code reuse: services, hooks, and patterns shared between shop and heritage
 
 ---
 

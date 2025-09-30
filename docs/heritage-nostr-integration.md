@@ -259,12 +259,13 @@ const filter = {
 
 ✅ **User Experience**
 - Consistent contribution workflow
-- Unified browsing experience possible
+- Separate but familiar interfaces (/my-shop vs /my-contributions)
 - Familiar edit/delete patterns
+- Clear separation of shop products and heritage content
 
 ✅ **Flexibility**
 - Easy to add new content types
-- Can mix/separate content as needed
+- Logically separate in UI, technically unified in Nostr
 - Future-proof for new features
 
 ✅ **Nostr Compatibility**
