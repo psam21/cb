@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useNostrSigner } from './useNostrSigner';
+import { useConsentDialog } from './useConsentDialog';
 import type {
   HeritageContributionData,
   HeritagePublishingResult,
@@ -34,6 +35,7 @@ export interface HeritagePublishingProgress {
  */
 export const useHeritagePublishing = () => {
   const { isAvailable, getSigner } = useNostrSigner();
+  const consentDialog = useConsentDialog();
 
   const [state, setState] = useState<HeritagePublishingState>({
     isPublishing: false,
@@ -155,13 +157,6 @@ export const useHeritagePublishing = () => {
       const uploadedMediaUrls: { type: 'image' | 'video' | 'audio'; url: string; hash: string; name: string }[] = [];
 
       if (data.attachments.length > 0) {
-        setProgress({
-          step: 'uploading',
-          progress: 30,
-          message: 'Starting media upload...',
-          details: `Uploading ${data.attachments.length} file(s)`,
-        });
-
         // Convert GenericAttachment to File objects
         const filesToUpload: File[] = [];
         for (const attachment of data.attachments) {
@@ -171,6 +166,34 @@ export const useHeritagePublishing = () => {
         }
 
         if (filesToUpload.length > 0) {
+          // Show consent dialog BEFORE upload
+          const userAccepted = await consentDialog.showConsentDialog(filesToUpload);
+          if (!userAccepted) {
+            logger.info('User cancelled heritage upload during consent phase', {
+              service: 'useHeritagePublishing',
+              attachmentCount: filesToUpload.length,
+            });
+
+            setState(prev => ({
+              ...prev,
+              isPublishing: false,
+              currentStep: 'idle',
+            }));
+
+            return {
+              success: false,
+              error: 'User cancelled upload',
+            };
+          }
+
+          // User accepted - now proceed with upload
+          setProgress({
+            step: 'uploading',
+            progress: 30,
+            message: 'Starting media upload...',
+            details: `Uploading ${filesToUpload.length} file(s)`,
+          });
+
           // Upload files using Blossom service
           const uploadResult = await uploadSequentialWithConsent(
             filesToUpload,
@@ -192,7 +215,7 @@ export const useHeritagePublishing = () => {
             }
           );
 
-          // Check for user cancellation
+          // Check for user cancellation (shouldn't happen since we already got consent, but check anyway)
           if (uploadResult.userCancelled) {
             setState(prev => ({
               ...prev,
@@ -411,7 +434,7 @@ export const useHeritagePublishing = () => {
         error: errorMessage,
       };
     }
-  }, [isAvailable, getSigner, setProgress]);
+  }, [isAvailable, getSigner, consentDialog, setProgress]);
 
   /**
    * Reset publishing state
