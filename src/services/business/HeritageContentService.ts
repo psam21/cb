@@ -465,6 +465,130 @@ export async function fetchAllHeritage(): Promise<HeritageContribution[]> {
   }
 }
 
+export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageContribution[]> {
+  try {
+    logger.info('Fetching heritage contributions by author', {
+      service: 'HeritageContentService',
+      method: 'fetchHeritageByAuthor',
+      pubkey,
+    });
+
+    // Query relays for heritage events by this author
+    const filters = [
+      {
+        kinds: [30023],
+        authors: [pubkey],
+        '#content-type': ['heritage'],
+      }
+    ];
+
+    const queryResult = await queryEvents(filters);
+
+    if (!queryResult.events || queryResult.events.length === 0) {
+      logger.info('No heritage contributions found for author', {
+        service: 'HeritageContentService',
+        method: 'fetchHeritageByAuthor',
+        pubkey,
+      });
+      return [];
+    }
+
+    logger.info('Found heritage contributions for author', {
+      service: 'HeritageContentService',
+      method: 'fetchHeritageByAuthor',
+      pubkey,
+      count: queryResult.events.length,
+    });
+
+    // Group events by dTag and get latest for each
+    const eventsByDTag = new Map<string, HeritageNostrEvent>();
+    
+    (queryResult.events as HeritageNostrEvent[]).forEach(event => {
+      const dTag = event.tags.find(t => t[0] === 'd')?.[1];
+      if (!dTag) return;
+      
+      const existing = eventsByDTag.get(dTag);
+      if (!existing || event.created_at > existing.created_at) {
+        eventsByDTag.set(dTag, event);
+      }
+    });
+
+    // Convert events to HeritageContribution objects
+    const contributions: HeritageContribution[] = [];
+    
+    for (const event of eventsByDTag.values()) {
+      const dTag = event.tags.find(t => t[0] === 'd')?.[1] || '';
+      const title = event.tags.find(t => t[0] === 'title')?.[1] || '';
+      const category = event.tags.find(t => t[0] === 'category')?.[1] || '';
+      const heritageType = event.tags.find(t => t[0] === 'heritage-type')?.[1] || '';
+      const timePeriod = event.tags.find(t => t[0] === 'time-period')?.[1] || '';
+      const sourceType = event.tags.find(t => t[0] === 'source-type')?.[1] || '';
+      const regionOrigin = event.tags.find(t => t[0] === 'region')?.[1] || '';
+      const country = event.tags.find(t => t[0] === 'country')?.[1];
+      const language = event.tags.find(t => t[0] === 'language')?.[1];
+      const communityGroup = event.tags.find(t => t[0] === 'community')?.[1];
+      const contributorRole = event.tags.find(t => t[0] === 'contributor-role')?.[1];
+      const knowledgeKeeper = event.tags.find(t => t[0] === 'knowledge-keeper')?.[1];
+      const tags = event.tags.filter(t => t[0] === 't').map(t => t[1]);
+
+      // Extract media
+      const mediaUrls: string[] = [];
+      const mediaHashes: string[] = [];
+      
+      (event.tags as string[][]).forEach(tag => {
+        if (tag[0] === 'image' && tag[1]) {
+          mediaUrls.push(tag[1]);
+          const imetaTag = (event.tags as string[][]).find(t => t[0] === 'imeta' && t[1] && t[1].includes(tag[1]));
+          if (imetaTag) {
+            const imetaStr = imetaTag.slice(1).join(' ');
+            const hashMatch = imetaStr.match(/x\s+(\S+)/);
+            if (hashMatch && hashMatch[1]) {
+              mediaHashes.push(hashMatch[1]);
+            }
+          }
+        }
+      });
+
+      contributions.push({
+        id: dTag,
+        dTag,
+        eventId: event.id || '',
+        pubkey: event.pubkey,
+        title,
+        description: event.content,
+        category,
+        heritageType,
+        language,
+        communityGroup,
+        regionOrigin,
+        country,
+        timePeriod,
+        sourceType,
+        contributorRole,
+        knowledgeKeeper,
+        media: createMediaItems(mediaUrls, mediaHashes),
+        tags,
+        createdAt: event.created_at,
+        publishedAt: event.created_at,
+        publishedRelays: [],
+        isDeleted: false,
+      });
+    }
+
+    // Sort by created_at descending (newest first)
+    contributions.sort((a, b) => b.createdAt - a.createdAt);
+
+    return contributions;
+  } catch (error) {
+    logger.error('Error fetching heritage contributions by author', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'HeritageContentService',
+      method: 'fetchHeritageByAuthor',
+      pubkey,
+    });
+    return [];
+  }
+}
+
 // Create singleton instance
 const heritageContentService = HeritageContentService.getInstance();
 
