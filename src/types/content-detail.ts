@@ -1,6 +1,6 @@
 import type { ContentMediaItem } from './content-media';
 
-export type ContentType = 'shop' | 'contribute' | 'courses' | 'exhibitions' | 'downloads' | 'generic';
+export type ContentType = 'shop' | 'heritage' | 'contribute' | 'courses' | 'exhibitions' | 'downloads' | 'generic';
 
 export interface ContentAuthor {
   pubkey: string;
