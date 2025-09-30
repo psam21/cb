@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ContentMeta } from '@/types/content-detail';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export interface InfoItem {
   label: string;
@@ -52,7 +53,7 @@ export function ContentDetailInfo({
       )}
 
       <article className="prose prose-primary max-w-none text-base leading-relaxed text-gray-700">
-        <p className="whitespace-pre-line">{description}</p>
+        <MarkdownRenderer content={description} />
       </article>
 
       {tags.length > 0 && (

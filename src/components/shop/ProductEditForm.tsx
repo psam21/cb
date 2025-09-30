@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
@@ -6,6 +7,15 @@ import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@
 import { filterVisibleTags } from '@/utils/tagFilter';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { GenericAttachment } from '@/types/attachments';
+
+// Dynamic import for RichTextEditor (client-side only)
+const RichTextEditor = dynamic(
+  () => import('@/components/ui/RichTextEditor'),
+  { 
+    ssr: false,
+    loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg border border-gray-300" />
+  }
+);
 
 interface SelectiveAttachmentOperations {
   removedAttachments: string[];
@@ -439,20 +449,14 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
               <label className="block text-sm font-medium text-accent-700 mb-2">
                 Description *
               </label>
-              <textarea
+              <RichTextEditor
                 value={formData.description || ''}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
-                  errors.description ? 'border-red-300' : 'border-accent-300'
-                }`}
-                placeholder="Describe your product"
-                rows={4}
+                onChange={(value) => handleInputChange('description', value)}
+                placeholder="Describe your product using rich formatting..."
                 maxLength={2000}
-                disabled={isUpdating}
+                minHeight={200}
+                error={errors.description}
               />
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-              )}
             </div>
 
             {/* Price and Currency */}
