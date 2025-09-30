@@ -7,6 +7,7 @@ import { useShopPublishing } from '@/hooks/useShopPublishing';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { ShopPublishingProgress } from '@/services/business/ShopBusinessService';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
+import { getShopCategories } from '@/config/categories';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { UserConsentDialog } from '@/components/generic/UserConsentDialog';
 import { GenericAttachment } from '@/types/attachments';
@@ -324,16 +325,21 @@ export const ProductCreationForm = ({ onProductCreated, onCancel }: ProductCreat
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
               Category *
             </label>
-            <input
-              type="text"
+            <select
               id="category"
               value={formData.category}
               onChange={(e) => handleInputChange('category', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.category ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="e.g., Electronics, Books, Clothing"
-            />
+            >
+              <option value="">Select a category</option>
+              {getShopCategories().map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
             {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
           </div>
           <div>

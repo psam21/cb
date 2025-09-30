@@ -4,6 +4,7 @@ import { ShopProduct, ShopPublishingProgress } from '@/services/business/ShopBus
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { logger } from '@/services/core/LoggingService';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrencyDisplay } from '@/config/currencies';
+import { getShopCategories } from '@/config/categories';
 import { filterVisibleTags } from '@/utils/tagFilter';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { GenericAttachment } from '@/types/attachments';
@@ -39,13 +40,33 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
   updateProgress,
   isPage = false
 }) => {
+  // Helper to validate category against current category list
+  const validateCategory = (category: string): string => {
+    const shopCategories = getShopCategories();
+    const validCategory = shopCategories.find(cat => cat.id === category);
+    
+    // If category is valid, return it; otherwise return first category as fallback
+    if (validCategory) {
+      return category;
+    }
+    
+    logger.info('Legacy category detected, using fallback', {
+      service: 'ProductEditForm',
+      method: 'validateCategory',
+      legacyCategory: category,
+      fallbackCategory: shopCategories[0]?.id || 'art'
+    });
+    
+    return shopCategories[0]?.id || 'art'; // Default to 'art' (Art & Crafts)
+  };
+
   const [formData, setFormData] = useState<Partial<ProductEventData>>(() => {
     const initialFormData = {
       title: product.title,
       description: product.description,
       price: product.price,
       currency: product.currency,
-      category: product.category,
+      category: validateCategory(product.category),
       condition: product.condition,
       location: product.location,
       contact: product.contact,
@@ -511,16 +532,21 @@ export const ProductEditForm: React.FC<ProductEditFormProps> = ({
                 <label className="block text-sm font-medium text-accent-700 mb-2">
                   Category *
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData.category || ''}
                   onChange={(e) => handleInputChange('category', e.target.value)}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
                     errors.category ? 'border-red-300' : 'border-accent-300'
                   }`}
-                  placeholder="e.g., Art, Crafts, Books"
                   disabled={isUpdating}
-                />
+                >
+                  <option value="">Select a category</option>
+                  {getShopCategories().map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
                 {errors.category && (
                   <p className="mt-1 text-sm text-red-600">{errors.category}</p>
                 )}
