@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import {
-  Upload,
   Mic,
   FileText,
   Image as ImageIcon,
@@ -12,19 +10,8 @@ import {
   CheckCircle,
   Shield,
   Heart,
-  X,
 } from 'lucide-react';
-
-// Dynamic import for RichTextEditor (client-only for Vercel compatibility)
-const RichTextEditor = dynamic(
-  () => import('@/components/ui/RichTextEditor'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="animate-pulse h-48 bg-primary-800 rounded-lg border border-primary-700" />
-    )
-  }
-);
+import { HeritageContributionForm } from '@/components/heritage/HeritageContributionForm';
 
 // Extracted from original page (trimmed for relocation). In a future refactor, move data to src/data.
 const contributionTypes = [
@@ -93,34 +80,6 @@ const uploadSteps = [
 
 export default function ContributeContent() {
   const [selectedType, setSelectedType] = useState<number | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    culturalContext: '',
-    permissions: 'community',
-    tags: [] as string[],
-    language: '',
-    region: '',
-  });
-  const [newTag, setNewTag] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-
-  const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData({ ...formData, tags: [...formData.tags, newTag.trim()] });
-      setNewTag('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tagToRemove) });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsUploading(true);
-    setTimeout(() => setIsUploading(false), 3000);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -220,152 +179,11 @@ export default function ContributeContent() {
         </div>
       </section>
 
-      {/* Upload Form */}
+      {/* Heritage Contribution Form */}
       {selectedType !== null && (
-        <section className="bg-gradient-to-br from-primary-900 to-primary-800 text-white py-20">
+        <section className="section-padding bg-gray-50">
           <div className="container-width">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="container-width"
-            >
-              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
-                Share Your {contributionTypes[selectedType].title}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="title" className="block text-sm font-medium mb-2">
-                      Title
-                    </label>
-                    <input
-                      id="title"
-                      className="w-full rounded-md bg-primary-800 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400 px-4 py-2"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="language" className="block text-sm font-medium mb-2">
-                      Language
-                    </label>
-                    <input
-                      id="language"
-                      className="w-full rounded-md bg-primary-800 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400 px-4 py-2"
-                      value={formData.language}
-                      onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="region" className="block text-sm font-medium mb-2">
-                      Region / Community
-                    </label>
-                    <input
-                      id="region"
-                      className="w-full rounded-md bg-primary-800 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400 px-4 py-2"
-                      value={formData.region}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="permissions" className="block text-sm font-medium mb-2">
-                      Sharing Preference
-                    </label>
-                    <select
-                      id="permissions"
-                      className="w-full rounded-md bg-primary-800 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400 px-4 py-2"
-                      value={formData.permissions}
-                      onChange={(e) => setFormData({ ...formData, permissions: e.target.value })}
-                    >
-                      <option value="community">Community (default)</option>
-                      <option value="restricted">Restricted (permission required)</option>
-                      <option value="public">Public (wide educational use)</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium mb-2">
-                    Description
-                  </label>
-                  <RichTextEditor
-                    value={formData.description}
-                    onChange={(value) => setFormData({ ...formData, description: value })}
-                    placeholder="Describe your cultural contribution using rich formatting..."
-                    maxLength={5000}
-                    minHeight={200}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="culturalContext" className="block text-sm font-medium mb-2">
-                    Cultural Context
-                  </label>
-                  <RichTextEditor
-                    value={formData.culturalContext}
-                    onChange={(value) => setFormData({ ...formData, culturalContext: value })}
-                    placeholder="Share the cultural significance, traditions, and meaning behind this contribution..."
-                    maxLength={5000}
-                    minHeight={200}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="newTag" className="block text-sm font-medium mb-2">
-                    Tags
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      id="newTag"
-                      className="flex-1 rounded-md bg-primary-800 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400 px-4 py-2"
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Add a tag (e.g., language, craft)"
-                      aria-describedby="tags-help"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddTag}
-                      className="px-4 py-2 rounded-md bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-colors duration-200"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  <p id="tags-help" className="text-xs text-primary-200 mb-2">
-                    Add descriptive tags to help others discover this contribution.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-3 py-1 bg-primary-700 text-primary-100 rounded-full text-xs flex items-center"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTag(tag)}
-                          className="ml-2 hover:text-accent-300"
-                          aria-label={`Remove tag ${tag}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={isUploading}
-                    className="btn-accent inline-flex items-center px-6 py-3"
-                  >
-                    {isUploading ? 'Uploading…' : 'Submit Contribution'}
-                    <Upload className="w-5 h-5 ml-2" />
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+            <HeritageContributionForm />
           </div>
         </section>
       )}
