@@ -7,7 +7,10 @@ import {
   HERITAGE_TYPES, 
   TIME_PERIODS, 
   SOURCE_TYPES, 
-  CONTRIBUTOR_ROLES 
+  CONTRIBUTOR_ROLES,
+  CONTINENTS,
+  COUNTRIES,
+  getCountriesByContinent
 } from '@/config/heritage';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { GenericAttachment } from '@/types/attachments';
@@ -29,7 +32,8 @@ interface HeritageFormData {
   heritageType: string;
   language: string;
   communityGroup: string;
-  regionOrigin: string;
+  continent: string;
+  country: string;
   timePeriod: string;
   sourceType: string;
   contributorRole: string;
@@ -50,7 +54,8 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
     heritageType: '',
     language: '',
     communityGroup: '',
-    regionOrigin: '',
+    continent: '',
+    country: '',
     timePeriod: '',
     sourceType: '',
     contributorRole: '',
@@ -105,7 +110,7 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6 max-w-4xl mx-auto">
+    <div className="bg-white rounded-lg shadow-sm border p-6">
       <div className="mb-8">
         <h2 className="text-3xl font-serif font-bold text-primary-800 mb-2">
           Contribute Heritage
@@ -246,23 +251,56 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
             </div>
           </div>
 
-          {/* Region/Origin */}
-          <div>
-            <label htmlFor="regionOrigin" className="block text-sm font-medium text-gray-700 mb-2">
-              Region/Origin <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="regionOrigin"
-              value={formData.regionOrigin}
-              onChange={(e) => handleInputChange('regionOrigin', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                errors.regionOrigin ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="e.g., Navajo Nation, Arizona; Māori, Aotearoa"
-              maxLength={150}
-            />
-            {errors.regionOrigin && <p className="mt-1 text-sm text-red-600">{errors.regionOrigin}</p>}
+          {/* Continent and Country */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="continent" className="block text-sm font-medium text-gray-700 mb-2">
+                Continent <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="continent"
+                value={formData.continent}
+                onChange={(e) => {
+                  handleInputChange('continent', e.target.value);
+                  // Reset country when continent changes
+                  handleInputChange('country', '');
+                }}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                  errors.continent ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Select continent</option>
+                {CONTINENTS.map((continent) => (
+                  <option key={continent.id} value={continent.id}>
+                    {continent.name}
+                  </option>
+                ))}
+              </select>
+              {errors.continent && <p className="mt-1 text-sm text-red-600">{errors.continent}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="country"
+                value={formData.country}
+                onChange={(e) => handleInputChange('country', e.target.value)}
+                disabled={!formData.continent}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                  errors.country ? 'border-red-500' : 'border-gray-300'
+                } ${!formData.continent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              >
+                <option value="">Select country</option>
+                {formData.continent && getCountriesByContinent(formData.continent).map((country) => (
+                  <option key={country.id} value={country.id}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+              {errors.country && <p className="mt-1 text-sm text-red-600">{errors.country}</p>}
+            </div>
           </div>
         </div>
 
@@ -319,26 +357,6 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
               {errors.sourceType && <p className="mt-1 text-sm text-red-600">{errors.sourceType}</p>}
             </div>
           </div>
-
-          {/* Contributor Role */}
-          <div>
-            <label htmlFor="contributorRole" className="block text-sm font-medium text-gray-700 mb-2">
-              Your Role/Relationship
-            </label>
-            <select
-              id="contributorRole"
-              value={formData.contributorRole}
-              onChange={(e) => handleInputChange('contributorRole', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select your relationship to this tradition</option>
-              {CONTRIBUTOR_ROLES.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Section 4: Media & Attachments */}
@@ -366,6 +384,26 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
         <div className="space-y-6">
           <div className="border-b border-gray-200 pb-2">
             <h3 className="text-xl font-serif font-bold text-primary-800">Contact & Attribution</h3>
+          </div>
+
+          {/* Contributor Role */}
+          <div>
+            <label htmlFor="contributorRole" className="block text-sm font-medium text-gray-700 mb-2">
+              Your Role
+            </label>
+            <select
+              id="contributorRole"
+              value={formData.contributorRole}
+              onChange={(e) => handleInputChange('contributorRole', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Select your role</option>
+              {CONTRIBUTOR_ROLES.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

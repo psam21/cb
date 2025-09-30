@@ -27,6 +27,91 @@ export interface ContributorRole {
   description: string;
 }
 
+export interface Continent {
+  id: string;
+  name: string;
+}
+
+export interface Country {
+  id: string;
+  name: string;
+  continent: string;
+}
+
+// Continents
+export const CONTINENTS: Continent[] = [
+  { id: 'africa', name: 'Africa' },
+  { id: 'asia', name: 'Asia' },
+  { id: 'europe', name: 'Europe' },
+  { id: 'north-america', name: 'North America' },
+  { id: 'south-america', name: 'South America' },
+  { id: 'oceania', name: 'Oceania' },
+  { id: 'antarctica', name: 'Antarctica' },
+];
+
+// Countries (organized by continent)
+export const COUNTRIES: Country[] = [
+  // Africa
+  { id: 'egypt', name: 'Egypt', continent: 'africa' },
+  { id: 'ethiopia', name: 'Ethiopia', continent: 'africa' },
+  { id: 'ghana', name: 'Ghana', continent: 'africa' },
+  { id: 'kenya', name: 'Kenya', continent: 'africa' },
+  { id: 'morocco', name: 'Morocco', continent: 'africa' },
+  { id: 'nigeria', name: 'Nigeria', continent: 'africa' },
+  { id: 'south-africa', name: 'South Africa', continent: 'africa' },
+  { id: 'tanzania', name: 'Tanzania', continent: 'africa' },
+  
+  // Asia
+  { id: 'china', name: 'China', continent: 'asia' },
+  { id: 'india', name: 'India', continent: 'asia' },
+  { id: 'indonesia', name: 'Indonesia', continent: 'asia' },
+  { id: 'japan', name: 'Japan', continent: 'asia' },
+  { id: 'korea', name: 'South Korea', continent: 'asia' },
+  { id: 'mongolia', name: 'Mongolia', continent: 'asia' },
+  { id: 'nepal', name: 'Nepal', continent: 'asia' },
+  { id: 'philippines', name: 'Philippines', continent: 'asia' },
+  { id: 'thailand', name: 'Thailand', continent: 'asia' },
+  { id: 'tibet', name: 'Tibet', continent: 'asia' },
+  { id: 'vietnam', name: 'Vietnam', continent: 'asia' },
+  
+  // Europe
+  { id: 'france', name: 'France', continent: 'europe' },
+  { id: 'germany', name: 'Germany', continent: 'europe' },
+  { id: 'greece', name: 'Greece', continent: 'europe' },
+  { id: 'ireland', name: 'Ireland', continent: 'europe' },
+  { id: 'italy', name: 'Italy', continent: 'europe' },
+  { id: 'norway', name: 'Norway', continent: 'europe' },
+  { id: 'poland', name: 'Poland', continent: 'europe' },
+  { id: 'russia', name: 'Russia', continent: 'europe' },
+  { id: 'spain', name: 'Spain', continent: 'europe' },
+  { id: 'sweden', name: 'Sweden', continent: 'europe' },
+  { id: 'uk', name: 'United Kingdom', continent: 'europe' },
+  
+  // North America
+  { id: 'canada', name: 'Canada', continent: 'north-america' },
+  { id: 'mexico', name: 'Mexico', continent: 'north-america' },
+  { id: 'usa', name: 'United States', continent: 'north-america' },
+  { id: 'guatemala', name: 'Guatemala', continent: 'north-america' },
+  { id: 'cuba', name: 'Cuba', continent: 'north-america' },
+  
+  // South America
+  { id: 'argentina', name: 'Argentina', continent: 'south-america' },
+  { id: 'bolivia', name: 'Bolivia', continent: 'south-america' },
+  { id: 'brazil', name: 'Brazil', continent: 'south-america' },
+  { id: 'chile', name: 'Chile', continent: 'south-america' },
+  { id: 'colombia', name: 'Colombia', continent: 'south-america' },
+  { id: 'ecuador', name: 'Ecuador', continent: 'south-america' },
+  { id: 'peru', name: 'Peru', continent: 'south-america' },
+  
+  // Oceania
+  { id: 'australia', name: 'Australia', continent: 'oceania' },
+  { id: 'fiji', name: 'Fiji', continent: 'oceania' },
+  { id: 'new-zealand', name: 'New Zealand (Aotearoa)', continent: 'oceania' },
+  { id: 'papua-new-guinea', name: 'Papua New Guinea', continent: 'oceania' },
+  { id: 'samoa', name: 'Samoa', continent: 'oceania' },
+  { id: 'tonga', name: 'Tonga', continent: 'oceania' },
+];
+
 // Heritage Types
 export const HERITAGE_TYPES: HeritageType[] = [
   {
@@ -228,4 +313,16 @@ export const getSourceTypeById = (id: string): SourceType | undefined => {
 
 export const getContributorRoleById = (id: string): ContributorRole | undefined => {
   return CONTRIBUTOR_ROLES.find(role => role.id === id);
+};
+
+export const getContinentById = (id: string): Continent | undefined => {
+  return CONTINENTS.find(continent => continent.id === id);
+};
+
+export const getCountryById = (id: string): Country | undefined => {
+  return COUNTRIES.find(country => country.id === id);
+};
+
+export const getCountriesByContinent = (continentId: string): Country[] => {
+  return COUNTRIES.filter(country => country.continent === continentId);
 };
