@@ -37,22 +37,26 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
   }, [detail.customFields.price, detail.customFields.currency]);
 
   const actions = useMemo(() => {
-    const filtered = detail.actions.filter(action => action.id !== 'report');
-    return filtered.sort((a, b) => {
+    const filtered = detail.actions.filter(action => action.id !== 'report' && action.id !== 'contact-seller');
+    return filtered.map(action => {
+      // Update share button label
+      if (action.id === 'share') {
+        return { ...action, label: 'Share Product' };
+      }
+      return action;
+    }).sort((a, b) => {
       if (a.id === 'share') {
         return 1;
       }
       if (b.id === 'share') {
         return -1;
       }
-      if (a.id === 'contact-seller') {
-        return -1;
-      }
-      if (b.id === 'contact-seller') {
-        return 1;
-      }
       return 0;
     });
+  }, [detail.actions]);
+
+  const contactAction = useMemo(() => {
+    return detail.actions.find(action => action.id === 'contact-seller');
   }, [detail.actions]);
 
   const metadata: InfoItem[] = useMemo(() => {
@@ -83,7 +87,7 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
   }, [detail.customFields.category, detail.customFields.condition, detail.location]);
 
   const supplementalMeta = useMemo(() => {
-    const hiddenLabels = new Set(['Price', 'Category', 'Condition', 'Location']);
+    const hiddenLabels = new Set(['Price', 'Category', 'Condition', 'Location', 'Relays']);
     return (detail.meta ?? []).filter(meta => !hiddenLabels.has(meta.label));
   }, [detail.meta]);
 
@@ -148,17 +152,29 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
           </section>
         }
         sidebar={
-          <ContentMetaInfo
-            publishedAt={detail.publishedAt}
-            updatedAt={detail.updatedAt}
-            author={detail.author}
-            relays={detail.relays}
-          />
+          <div className="space-y-4">
+            <ContentMetaInfo
+              publishedAt={detail.publishedAt}
+              updatedAt={detail.updatedAt}
+              author={detail.author}
+              relays={detail.relays}
+            />
+            {contactAction && (
+              <button
+                type="button"
+                onClick={contactAction.onClick}
+                className="btn-primary-sm w-full"
+                aria-label={contactAction.ariaLabel ?? contactAction.label}
+                disabled={contactAction.disabled}
+              >
+                {contactAction.label}
+              </button>
+            )}
+          </div>
         }
         footer={
           <ContentDetailInfo
             title="About this product"
-            summary={detail.summary}
             description={detail.description}
             tags={tags}
           />
