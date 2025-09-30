@@ -7,11 +7,13 @@ import {
   HERITAGE_TYPES, 
   TIME_PERIODS, 
   SOURCE_TYPES, 
-  CONTRIBUTOR_ROLES,
-  CONTINENTS,
-  COUNTRIES,
-  getCountriesByContinent
+  CONTRIBUTOR_ROLES
 } from '@/config/heritage';
+import { 
+  REGIONS,
+  COUNTRIES,
+  getCountriesByRegion
+} from '@/config/countries';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { GenericAttachment } from '@/types/attachments';
 import { X } from 'lucide-react';
@@ -32,7 +34,7 @@ interface HeritageFormData {
   heritageType: string;
   language: string;
   communityGroup: string;
-  continent: string;
+  region: string;
   country: string;
   timePeriod: string;
   sourceType: string;
@@ -54,7 +56,7 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
     heritageType: '',
     language: '',
     communityGroup: '',
-    continent: '',
+    region: '',
     country: '',
     timePeriod: '',
     sourceType: '',
@@ -251,32 +253,32 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
             </div>
           </div>
 
-          {/* Continent and Country */}
+          {/* Region and Country */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="continent" className="block text-sm font-medium text-gray-700 mb-2">
-                Continent <span className="text-red-500">*</span>
+              <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-2">
+                Region <span className="text-red-500">*</span>
               </label>
               <select
-                id="continent"
-                value={formData.continent}
+                id="region"
+                value={formData.region}
                 onChange={(e) => {
-                  handleInputChange('continent', e.target.value);
-                  // Reset country when continent changes
+                  handleInputChange('region', e.target.value);
+                  // Reset country when region changes
                   handleInputChange('country', '');
                 }}
                 className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                  errors.continent ? 'border-red-500' : 'border-gray-300'
+                  errors.region ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Select continent</option>
-                {CONTINENTS.map((continent) => (
-                  <option key={continent.id} value={continent.id}>
-                    {continent.name}
+                <option value="">Select Region</option>
+                {REGIONS.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.name}
                   </option>
                 ))}
               </select>
-              {errors.continent && <p className="mt-1 text-sm text-red-600">{errors.continent}</p>}
+              {errors.region && <p className="mt-1 text-sm text-red-600">{errors.region}</p>}
             </div>
 
             <div>
@@ -287,13 +289,13 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
                 id="country"
                 value={formData.country}
                 onChange={(e) => handleInputChange('country', e.target.value)}
-                disabled={!formData.continent}
+                disabled={!formData.region}
                 className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                   errors.country ? 'border-red-500' : 'border-gray-300'
-                } ${!formData.continent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                } ${!formData.region ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               >
-                <option value="">Select country</option>
-                {formData.continent && getCountriesByContinent(formData.continent).map((country) => (
+                <option value="">Select Country</option>
+                {formData.region && getCountriesByRegion(formData.region).map((country) => (
                   <option key={country.id} value={country.id}>
                     {country.name}
                   </option>
