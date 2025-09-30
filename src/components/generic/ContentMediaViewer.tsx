@@ -118,7 +118,7 @@ export function ContentMediaViewer({
 
   // Use natural aspect ratio when fillContainer is true (modal view), otherwise force 4:3 (gallery view)
   const containerClass = fillContainer 
-    ? `relative w-full ${className}` 
+    ? `relative w-full h-full ${className}` 
     : `relative aspect-[4/3] w-full max-w-3xl ${className}`;
 
   return <div className={containerClass}>{mediaContent}</div>;

@@ -127,7 +127,7 @@ export function ContentMediaModal({
           <X className="h-5 w-5" />
         </button>
 
-        <div className="relative flex items-center justify-center">
+        <div className="relative flex items-center justify-center min-h-[50vh] max-h-[80vh]">
           {onPrevious && (
             <button
               type="button"
@@ -139,7 +139,7 @@ export function ContentMediaModal({
             </button>
           )}
 
-          <ContentMediaViewer item={item} className="max-h-[80vh]" controls autoPlay fillContainer />
+          <ContentMediaViewer item={item} className="max-h-[80vh] h-[80vh]" controls autoPlay fillContainer />
 
           {onNext && (
             <button
