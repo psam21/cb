@@ -2,6 +2,7 @@
 
 import { useState, useMemo, ReactNode } from 'react';
 import { logger } from '@/services/core/LoggingService';
+import { getCategoryById } from '@/config/categories';
 
 export interface BaseGridData {
   id: string;
@@ -94,10 +95,22 @@ export const BaseGrid = ({
         const uniqueValues = Array.from(new Set(
           data.map(item => item[field.key]).filter(Boolean)
         ));
-        options[field.key] = uniqueValues.map(value => ({
-          value: value as string,
-          label: value as string,
-        }));
+        
+        options[field.key] = uniqueValues.map(value => {
+          const stringValue = value as string;
+          // For category field, map ID to display name
+          if (field.key === 'category') {
+            const category = getCategoryById(stringValue);
+            return {
+              value: stringValue,
+              label: category?.name || stringValue,
+            };
+          }
+          return {
+            value: stringValue,
+            label: stringValue,
+          };
+        }).sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically by label
       }
     });
     

@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Heart, Bookmark } from 'lucide-react';
 import { ContentDetailHeader } from '@/components/generic/ContentDetailHeader';
 import { ContentDetailLayout } from '@/components/generic/ContentDetailLayout';
 import { ContentMediaGallery } from '@/components/generic/ContentMediaGallery';
 import { ContentDetailInfo } from '@/components/generic/ContentDetailInfo';
 import { ContentMetaInfo } from '@/components/generic/ContentMetaInfo';
+import { getCategoryById } from '@/config/categories';
 import type { ShopContentDetail } from '@/types/shop-content';
 import type { InfoItem } from '@/components/generic/ContentDetailInfo';
 
@@ -29,6 +31,9 @@ const formatPrice = (price: number, currency: string): string => {
 };
 
 export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDetailProps) {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
   const priceLabel = useMemo(() => {
     if (typeof detail.customFields.price !== 'number' || !detail.customFields.currency) {
       return undefined;
@@ -63,9 +68,10 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
     const items: InfoItem[] = [];
 
     if (detail.customFields.category) {
+      const categoryName = getCategoryById(detail.customFields.category)?.name || detail.customFields.category;
       items.push({
         label: 'Category',
-        value: detail.customFields.category,
+        value: categoryName,
       });
     }
 
@@ -97,12 +103,45 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
 
   return (
     <div className="space-y-10">
-      <ContentDetailHeader
-        title={detail.title}
-        actions={actions}
-        backHref={backHref}
-        backLabel="Back to products"
-      />
+      <div className="space-y-4">
+        <ContentDetailHeader
+          title={detail.title}
+          actions={actions}
+          backHref={backHref}
+          backLabel="Back to products"
+        />
+        
+        {/* Like and Bookmark buttons */}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setIsLiked(!isLiked)}
+            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+              isLiked
+                ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+            aria-label={isLiked ? 'Unlike product' : 'Like product'}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+            <span>{isLiked ? 'Liked' : 'Like'}</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setIsBookmarked(!isBookmarked)}
+            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+              isBookmarked
+                ? 'border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100'
+                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+            aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark product'}
+          >
+            <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-primary-500 text-primary-500' : ''}`} />
+            <span>{isBookmarked ? 'Saved' : 'Save'}</span>
+          </button>
+        </div>
+      </div>
 
       <ContentDetailLayout
         media={<ContentMediaGallery items={detail.media} />}

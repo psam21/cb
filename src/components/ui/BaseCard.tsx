@@ -3,6 +3,7 @@
 import { ReactNode, MouseEvent, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import { filterVisibleTags } from '@/utils/tagFilter';
+import { getCategoryById } from '@/config/categories';
 
 export interface BaseCardData {
   id: string;
@@ -196,7 +197,7 @@ export const BaseCard = ({
           <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
             {data.category && (
               <span className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full font-medium">
-                {data.category}
+                {getCategoryById(data.category)?.name || data.category}
               </span>
             )}
             {data.location && (
