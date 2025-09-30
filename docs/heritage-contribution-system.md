@@ -26,15 +26,17 @@ This document outlines the design for a heritage contribution system that mirror
 
 | Field Name | Type | Required | Description | Example Values |
 |------------|------|----------|-------------|----------------|
-| **Cultural Context** | Rich Text | Yes | Significance and cultural meaning (already exists) | Detailed cultural background with formatting |
 | **Heritage Type** | Select | Yes | Primary type of cultural contribution | "Oral Tradition", "Craft", "Ceremony", "Music", "Language", "Art", "Knowledge", "Performance" |
 | **Language** | Text/Select | No | Language of the tradition | "Navajo (Diné bizaad)", "Te Reo Māori", "English" |
 | **Community/Group** | Text | No | Specific community or tribal affiliation | "Hopi Tribe", "Ngāi Tahu", "Andean Communities" |
-| **Sacred/Sensitive** | Boolean | No | Indicates if content has restrictions | true/false |
-| **Sharing Permissions** | Select | Yes | Who can view/use this content | "Public", "Community Only", "Educational Use", "Restricted" |
-| **Elder Approval** | Boolean | No | Requires elder/authority approval to share | true/false |
-| **Traditional Knowledge** | Boolean | No | Marks as traditional/indigenous knowledge | true/false |
 | **Contributor Role** | Select | No | Relationship to the tradition | "Practitioner", "Elder", "Student", "Historian", "Family Member" |
+
+**Note:** The following fields are planned for future versions:
+- Cultural Context (Rich Text) - Detailed cultural significance
+- Sharing Permissions - Access control levels
+- Elder Approval - Approval workflow
+- Traditional Knowledge flag
+- Sacred/Sensitive content markers
 
 ---
 
@@ -282,9 +284,6 @@ Contextualizes when the tradition originated:
 │ Description *                               │
 │ [Rich Text Editor - 5000 chars]            │
 │                                             │
-│ Cultural Context *                          │
-│ [Rich Text Editor - 5000 chars]            │
-│                                             │
 │ Language                                    │
 │ [_____________________________________]     │
 │                                             │
@@ -322,19 +321,9 @@ Contextualizes when the tradition originated:
 └─────────────────────────────────────────────┘
 ```
 
-### Section 5: Sharing & Permissions
+### Section 5: Contact & Attribution
 ```
 ┌─────────────────────────────────────────────┐
-│ Sharing Permissions *                       │
-│ ○ Public (Open Access)                      │
-│ ○ Community Only                            │
-│ ○ Educational Use                           │
-│ ○ Restricted                                │
-│                                             │
-│ ☑ This contains traditional knowledge       │
-│ ☑ This content is sacred/sensitive          │
-│ ☑ Requires elder approval before publishing │
-│                                             │
 │ Knowledge Keeper Contact                    │
 │ [_____________________________________]     │
 │ (Person to contact for more information)    │
@@ -369,7 +358,6 @@ interface HeritageContribution {
   heritageType: HeritageType;
   
   // Cultural Details
-  culturalContext: string; // Rich text markdown
   language?: string;
   communityGroup?: string;
   regionOrigin: string;
@@ -381,13 +369,6 @@ interface HeritageContribution {
   
   // Media
   media: ContentMediaItem[];
-  
-  // Permissions & Sensitivity
-  sharingPermission: SharingPermission;
-  isTraditionalKnowledge: boolean;
-  isSacredSensitive: boolean;
-  requiresElderApproval: boolean;
-  approvalStatus?: 'pending' | 'approved' | 'rejected';
   
   // Contact & Attribution
   knowledgeKeeper?: string;
@@ -438,13 +419,6 @@ type SourceType =
   | "Oral History Project"
   | "Revival/Restoration";
 
-type SharingPermission =
-  | "Public"
-  | "Community Only"
-  | "Educational Use"
-  | "Restricted"
-  | "Elder Approval Required";
-
 type ContributorRole =
   | "Practitioner"
   | "Elder"
@@ -454,6 +428,14 @@ type ContributorRole =
   | "Community Member"
   | "Researcher";
 ```
+
+**Note:** The following types/fields are planned for future versions:
+- `SharingPermission` type and `sharingPermission` field
+- `isTraditionalKnowledge` boolean flag
+- `isSacredSensitive` boolean flag
+- `requiresElderApproval` boolean flag
+- `approvalStatus` field
+- `culturalContext` rich text field
 
 ---
 
@@ -489,24 +471,11 @@ type ContributorRole =
 ### Description Section
 ```
 ┌──────────────────────────────────────────────────┐
-│ Description                                       │
+│ About this Contribution                           │
 │ ─────────────────────────────────────────────     │
 │                                                   │
 │ [Markdown rendered description with formatting]  │
 │                                                   │
-└──────────────────────────────────────────────────┘
-```
-
-### Cultural Context Section
-```
-┌──────────────────────────────────────────────────┐
-│ Cultural Context & Significance                   │
-│ ─────────────────────────────────────────────     │
-│                                                   │
-│ [Markdown rendered cultural context]              │
-│                                                   │
-│ ℹ️ Traditional Knowledge - Respect cultural       │
-│    protocols when referencing this content        │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -528,18 +497,13 @@ type ContributorRole =
 └──────────────────────────────────────────────────┘
 ```
 
-### Permissions Notice
+### Knowledge Keeper Contact
 ```
 ┌──────────────────────────────────────────────────┐
-│ 🛡️ Sharing & Usage Guidelines                     │
+│ � Knowledge Keeper                               │
 │ ─────────────────────────────────────────────     │
 │                                                   │
-│ • Access Level: Community Only                    │
-│ • Contains Traditional Knowledge                  │
-│ • Please respect cultural protocols               │
-│ • Contact knowledge keeper for permissions        │
-│                                                   │
-│ Knowledge Keeper: Elder Mary Begay                │
+│ Elder Mary Begay                                  │
 │ [Contact Knowledge Keeper]                        │
 └──────────────────────────────────────────────────┘
 ```
@@ -558,9 +522,7 @@ type ContributorRole =
 │ Heritage Type:  [All Types ▼]                     │
 │ Time Period:    [All Periods ▼]                   │
 │ Region:         [All Regions ▼]                   │
-│ Access Level:   [My Access ▼]                     │
 │                                                   │
-│ ☐ Traditional Knowledge Only                      │
 │ ☐ With Media Only                                 │
 └──────────────────────────────────────────────────┘
 ```
@@ -616,48 +578,8 @@ type ContributorRole =
 - [ ] Map fields to Nostr event tags
 - [ ] Implement publish to relays
 - [ ] Add event fetching and parsing
-- [ ] Handle permissions and access control
 
-### Phase 6: Access Control
-- [ ] Implement community verification
-- [ ] Add elder approval workflow
-- [ ] Create permission checking middleware
-- [ ] Add restricted content blur/warning
-- [ ] Implement request access feature
-
----
-
-## Cultural Sensitivity Considerations
-
-### 1. Sacred/Restricted Content
-- Clear visual indicators for sensitive content
-- Blur/hide restricted content by default
-- Require explicit access requests
-- Log all access to restricted content
-
-### 2. Elder Approval Workflow
-- Contributions marked for approval go to pending state
-- Notify designated elders/authorities
-- Allow review, modification requests, or rejection
-- Only publish after explicit approval
-
-### 3. Attribution & Respect
-- Always display knowledge keeper contact
-- Encourage proper attribution
-- Include cultural protocol warnings
-- Respect intellectual property of communities
-
-### 4. Language Preservation
-- Support native language input
-- Allow multiple language versions
-- Preserve original language alongside translations
-- Encourage use of traditional scripts
-
-### 5. Community Verification
-- Optional community affiliation verification
-- Trusted contributor badges
-- Elder/authority endorsements
-- Collaborative contribution editing
+**Note:** Phase 6 (Access Control, Elder Approval, Permissions) is planned for future versions.
 
 ---
 
@@ -750,7 +672,6 @@ const initialValues = {
   description: existingContribution.description,
   category: existingContribution.category,
   heritageType: existingContribution.heritageType,
-  culturalContext: existingContribution.culturalContext,
   language: existingContribution.language,
   communityGroup: existingContribution.communityGroup,
   regionOrigin: existingContribution.regionOrigin,
@@ -758,10 +679,6 @@ const initialValues = {
   sourceType: existingContribution.sourceType,
   contributorRole: existingContribution.contributorRole,
   media: existingContribution.media,
-  sharingPermission: existingContribution.sharingPermission,
-  isTraditionalKnowledge: existingContribution.isTraditionalKnowledge,
-  isSacredSensitive: existingContribution.isSacredSensitive,
-  requiresElderApproval: existingContribution.requiresElderApproval,
   knowledgeKeeper: existingContribution.knowledgeKeeper,
   tags: existingContribution.tags,
 };
@@ -1117,16 +1034,10 @@ export function MyHeritageCard({
 - [ ] Map fields to Nostr event tags
 - [ ] Implement publish to relays
 - [ ] Add event fetching and parsing
-- [ ] Handle permissions and access control
 - [ ] Implement replaceable events for edits
 - [ ] Implement deletion events (kind 5)
 
-### Phase 9: Access Control
-- [ ] Implement community verification
-- [ ] Add elder approval workflow (if needed)
-- [ ] Create permission checking middleware
-- [ ] Add restricted content blur/warning
-- [ ] Implement request access feature
+**Note:** Phase 9 (Access Control, Elder Approval, Permissions) is planned for future versions.
 
 ---
 
@@ -1138,6 +1049,7 @@ export function MyHeritageCard({
   "tags": [
     ["d", "unique-identifier"],
     ["title", "Navajo Two-Grey Hills Weaving Technique"],
+    ["category", "textiles"],  // Category ID from shared categories
     ["heritage-type", "Craft"],
     ["contribution-type", "Weaving"],
     ["time-period", "Living Tradition"],
@@ -1145,10 +1057,7 @@ export function MyHeritageCard({
     ["region", "Navajo Nation, New Mexico"],
     ["language", "Navajo (Diné bizaad)"],
     ["community", "Diné (Navajo)"],
-    ["permission", "Community Only"],
-    ["traditional-knowledge", "true"],
-    ["sacred-sensitive", "false"],
-    ["elder-approval", "false"],
+    ["contributor-role", "Practitioner"],
     ["knowledge-keeper", "Elder Mary Begay"],
     ["t", "weaving"],
     ["t", "navajo"],
@@ -1157,14 +1066,19 @@ export function MyHeritageCard({
     ["video", "https://..."]
   ],
   "content": JSON.stringify({
-    description: "Markdown description...",
-    culturalContext: "Markdown cultural context..."
+    description: "Markdown description..."
   }),
   "created_at": 1234567890,
   "pubkey": "...",
   "sig": "..."
 }
 ```
+
+**Note:** The following tags are planned for future versions:
+- `permission` - Access control level
+- `traditional-knowledge` - Traditional knowledge flag
+- `sacred-sensitive` - Sensitive content flag
+- `elder-approval` - Approval requirement flag
 
 ---
 
@@ -1233,24 +1147,24 @@ src/
 ## Questions for Review
 
 1. **Field Names**: Are the field names culturally appropriate and clear?
-2. **Permissions**: Is the permission system comprehensive enough?
-3. **Time Periods**: Should we add more specific time period options?
-4. **Contribution Types**: Are the contribution categories complete?
-5. **Source Types**: Do we need additional source type options?
-6. **Required Fields**: Which fields should be mandatory vs optional?
-7. **Media Types**: Any specific media requirements (e.g., 3D models)?
-8. **Access Control**: How should community verification work?
-9. **Elder Approval**: What's the workflow for elder review?
-10. **Search/Discovery**: What filters and sorting options are most important?
-11. **Edit Workflow**: Should edits to approved content require re-approval?
-12. **Delete Permissions**: Should there be restrictions on deleting contributions (e.g., if referenced by others)?
-13. **My Contributions**: What statistics/metrics should be shown on the management page?
-14. **Revision History**: Should we maintain a local history of edits (beyond Nostr's replacement)?
+2. **Time Periods**: Should we add more specific time period options?
+3. **Contribution Types**: Are the contribution categories complete?
+4. **Source Types**: Do we need additional source type options?
+5. **Required Fields**: Which fields should be mandatory vs optional?
+6. **Media Types**: Any specific media requirements (e.g., 3D models)?
+7. **Search/Discovery**: What filters and sorting options are most important?
+8. **Edit Workflow**: Should there be any restrictions on editing?
+9. **Delete Permissions**: Should there be restrictions on deleting contributions?
+10. **My Contributions**: What statistics/metrics should be shown on the management page?
+11. **Revision History**: Should we maintain a local history of edits (beyond Nostr's replacement)?
+12. **Future Features**: Are there other priority features to add after v1?
 
 ---
 
-*Document Version: 2.0*  
+*Document Version: 3.0 (Simplified for V1)*  
 *Created: September 30, 2025*  
 *Updated: September 30, 2025*  
-*Status: Draft - Awaiting Review*  
-*Changes: Added My Contributions page, Edit Workflow, Delete Workflow, and Revision System*
+*Status: Ready for V1 Implementation*  
+*Changes:*
+- *v2.0: Added My Contributions page, Edit Workflow, Delete Workflow, and Revision System*
+- *v3.0: Simplified for V1 - Removed Cultural Context, Elder Approval, Sharing Permissions, Traditional Knowledge fields (deferred to future versions)*
