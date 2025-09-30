@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import {
   Upload,
@@ -13,6 +14,17 @@ import {
   Heart,
   X,
 } from 'lucide-react';
+
+// Dynamic import for RichTextEditor (client-only for Vercel compatibility)
+const RichTextEditor = dynamic(
+  () => import('@/components/ui/RichTextEditor'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-48 bg-primary-800 rounded-lg border border-primary-700" />
+    )
+  }
+);
 
 // Extracted from original page (trimmed for relocation). In a future refactor, move data to src/data.
 const contributionTypes = [
@@ -279,26 +291,24 @@ export default function ContributeContent() {
                   <label htmlFor="description" className="block text-sm font-medium mb-2">
                     Description
                   </label>
-                  <textarea
-                    id="description"
-                    rows={4}
-                    className="w-full rounded-md bg-primary-800 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400 px-4 py-2"
+                  <RichTextEditor
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required
+                    onChange={(value) => setFormData({ ...formData, description: value })}
+                    placeholder="Describe your cultural contribution using rich formatting..."
+                    maxLength={5000}
+                    minHeight={200}
                   />
                 </div>
                 <div>
                   <label htmlFor="culturalContext" className="block text-sm font-medium mb-2">
                     Cultural Context
                   </label>
-                  <textarea
-                    id="culturalContext"
-                    rows={4}
-                    className="w-full rounded-md bg-primary-800 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-accent-400 px-4 py-2"
+                  <RichTextEditor
                     value={formData.culturalContext}
-                    onChange={(e) => setFormData({ ...formData, culturalContext: e.target.value })}
-                    required
+                    onChange={(value) => setFormData({ ...formData, culturalContext: value })}
+                    placeholder="Share the cultural significance, traditions, and meaning behind this contribution..."
+                    maxLength={5000}
+                    minHeight={200}
                   />
                 </div>
                 <div>
