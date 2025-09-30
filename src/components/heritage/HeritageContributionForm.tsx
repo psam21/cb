@@ -16,7 +16,9 @@ import {
 } from '@/config/countries';
 import { AttachmentManager } from '@/components/generic/AttachmentManager';
 import { GenericAttachment } from '@/types/attachments';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
+import { useHeritagePublishing } from '@/hooks/useHeritagePublishing';
+import type { HeritageContributionData } from '@/types/heritage';
 
 // Dynamic import for RichTextEditor (client-side only)
 const RichTextEditor = dynamic(
@@ -49,6 +51,17 @@ interface HeritageContributionFormProps {
 }
 
 export const HeritageContributionForm = ({ onContributionCreated, onCancel }: HeritageContributionFormProps) => {
+  // Initialize publishing hook
+  const {
+    isPublishing,
+    uploadProgress,
+    currentStep,
+    error: publishError,
+    result,
+    publishHeritage,
+    resetPublishing,
+  } = useHeritagePublishing();
+
   const [formData, setFormData] = useState<HeritageFormData>({
     title: '',
     description: '',
@@ -106,9 +119,54 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    // Form submission will be implemented later
-    console.log('Form data:', formData);
-    console.log('Attachments:', attachments);
+    // Map form data to HeritageContributionData
+    const heritageData: HeritageContributionData = {
+      title: formData.title,
+      description: formData.description,
+      category: formData.category,
+      heritageType: formData.heritageType,
+      language: formData.language,
+      community: formData.communityGroup,
+      region: formData.region,
+      country: formData.country,
+      timePeriod: formData.timePeriod,
+      sourceType: formData.sourceType,
+      contributorRole: formData.contributorRole,
+      knowledgeKeeperContact: formData.knowledgeKeeper,
+      tags: formData.tags,
+      attachments: attachments,
+    };
+    
+    // Publish to Nostr
+    const publishResult = await publishHeritage(heritageData);
+    
+    // Handle success
+    if (publishResult.success && publishResult.eventId) {
+      // Reset form on success
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        heritageType: '',
+        language: '',
+        communityGroup: '',
+        region: '',
+        country: '',
+        timePeriod: '',
+        sourceType: '',
+        contributorRole: '',
+        knowledgeKeeper: '',
+        tags: [],
+      });
+      setAttachments([]);
+      setTagInput('');
+      setErrors({});
+      
+      // Call the callback if provided
+      if (onContributionCreated) {
+        onContributionCreated(publishResult.eventId);
+      }
+    }
   };
 
   return (
@@ -123,6 +181,7 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        <fieldset disabled={isPublishing} className="space-y-8">
         {/* Section 1: Basic Information */}
         <div className="space-y-6">
           <div className="border-b border-gray-200 pb-2">
@@ -487,6 +546,7 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
             )}
           </div>
         </div>
+        </fieldset>
 
         {/* Form Actions */}
         <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
@@ -494,26 +554,51 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              disabled={isPublishing}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
           )}
           <button
             type="submit"
-            className="px-8 py-3 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors duration-200 font-medium"
+            disabled={isPublishing}
+            className="px-8 py-3 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            Submit Contribution
+            {isPublishing && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isPublishing ? 'Publishing...' : 'Submit Contribution'}
           </button>
         </div>
 
-        {/* Info Message */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> This is a preview of the contribution form. The submit functionality 
-            will be implemented in the next phase to publish your contribution to the Nostr network.
-          </p>
-        </div>
+        {/* Publishing Progress */}
+        {isPublishing && currentStep && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              <strong>Publishing:</strong> {currentStep}
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <span className="ml-2">({uploadProgress}%)</span>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {result?.success && result.eventId && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800">
+              <strong>Success!</strong> Your heritage contribution has been published successfully.
+            </p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {publishError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-800">
+              <strong>Error:</strong> {publishError}
+            </p>
+          </div>
+        )}
       </form>
     </div>
   );
