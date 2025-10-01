@@ -7,12 +7,11 @@ import { ContentDetailLayout } from '@/components/generic/ContentDetailLayout';
 import { ContentMediaGallery } from '@/components/generic/ContentMediaGallery';
 import { ContentDetailInfo } from '@/components/generic/ContentDetailInfo';
 import { ContentMetaInfo } from '@/components/generic/ContentMetaInfo';
-import type { ContentDetail } from '@/types/content-detail';
-import type { HeritageCustomFields } from '@/types/heritage-content';
+import type { HeritageContentDetail } from '@/types/heritage-content';
 import type { InfoItem } from '@/components/generic/ContentDetailInfo';
 
 interface HeritageDetailProps {
-  detail: ContentDetail<HeritageCustomFields>;
+  detail: HeritageContentDetail;
   backHref?: string;
 }
 
@@ -23,7 +22,8 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
   const actions = useMemo(() => {
     const filtered = detail.actions.filter(action => 
       action.id !== 'report' && 
-      action.id !== 'share'
+      action.id !== 'share' &&
+      action.id !== 'contact-author'
     );
     return filtered;
   }, [detail.actions]);
@@ -32,37 +32,15 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
     return detail.actions.find(action => action.id === 'share');
   }, [detail.actions]);
 
+  const contactAction = useMemo(() => {
+    return detail.actions.find(action => action.id === 'contact-author');
+  }, [detail.actions]);
+
+  // Key metadata - fields shown in the grid (exclude what's shown prominently)
   const keyMetadata: InfoItem[] = useMemo(() => {
     const items: InfoItem[] = [];
 
-    if (detail.customFields.heritageType) {
-      items.push({
-        label: 'Heritage Type',
-        value: detail.customFields.heritageType,
-      });
-    }
-
-    if (detail.customFields.category) {
-      items.push({
-        label: 'Category',
-        value: detail.customFields.category,
-      });
-    }
-
-    if (detail.customFields.timePeriod) {
-      items.push({
-        label: 'Time Period',
-        value: detail.customFields.timePeriod,
-      });
-    }
-
-    if (detail.customFields.regionOrigin) {
-      items.push({
-        label: 'Region of Origin',
-        value: detail.customFields.regionOrigin,
-      });
-    }
-
+    // Don't include heritage type, time period, category, region (shown prominently above)
     if (detail.customFields.country) {
       items.push({
         label: 'Country',
@@ -76,12 +54,6 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
         value: detail.customFields.sourceType,
       });
     }
-
-    return items;
-  }, [detail.customFields]);
-
-  const supplementalMeta = useMemo(() => {
-    const items: InfoItem[] = [];
 
     if (detail.customFields.language) {
       items.push({
@@ -111,22 +83,21 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
       });
     }
 
-    // Add any meta items from the detail
-    if (detail.meta) {
-      detail.meta.forEach(meta => {
-        // Avoid duplicating fields we're already showing
-        const existingLabels = new Set([...items.map(i => i.label), ...keyMetadata.map(i => i.label)]);
-        if (!existingLabels.has(meta.label)) {
-          items.push(meta);
-        }
-      });
-    }
-
     return items;
-  }, [detail.customFields, detail.meta, keyMetadata]);
+  }, [detail.customFields]);
+
+  // Supplemental metadata - badges for additional fields from detail.meta
+  const supplementalMeta = useMemo(() => {
+    const hiddenLabels = new Set([
+      'Heritage Type', 'Time Period', 'Category', 'Region of Origin',  // Shown prominently
+      'Country', 'Source Type', 'Language', 'Community', 'Contributor Role', 'Knowledge Keeper',  // In key metadata
+      'Relays'  // Shown in sidebar
+    ]);
+    return (detail.meta ?? []).filter(meta => !hiddenLabels.has(meta.label));
+  }, [detail.meta]);
 
   const tags = useMemo(() => {
-    return (detail.tags ?? []).filter(tag => tag.toLowerCase() !== 'culture-bridge-heritage');
+    return (detail.tags ?? []).filter(tag => tag.toLowerCase() !== 'culture-bridge-heritage-contribution');
   }, [detail.tags]);
 
   return (
@@ -188,6 +159,27 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
               >
                 Heritage Details
               </h2>
+              
+              {/* Prominent primary info */}
+              <div className="mt-3">
+                {detail.customFields.heritageType && (
+                  <p className="text-2xl font-semibold text-primary-900">
+                    {detail.customFields.heritageType}
+                    {detail.customFields.timePeriod && (
+                      <span className="text-lg text-gray-600"> • {detail.customFields.timePeriod}</span>
+                    )}
+                  </p>
+                )}
+                
+                {/* Secondary info */}
+                {(detail.customFields.category || detail.customFields.regionOrigin) && (
+                  <p className="mt-2 text-base text-gray-700">
+                    {[detail.customFields.category, detail.customFields.regionOrigin]
+                      .filter(Boolean)
+                      .join(' • ')}
+                  </p>
+                )}
+              </div>
             </div>
 
             {keyMetadata.length > 0 && (
@@ -200,6 +192,7 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
                 ))}
               </dl>
             )}
+```
 
             {supplementalMeta.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -207,6 +200,7 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
                   <span
                     key={`${meta.label}-${meta.value}`}
                     className="rounded-full border border-primary-100 bg-white px-3 py-1 text-xs font-medium text-primary-700"
+                    title={'tooltip' in meta ? (meta.tooltip as string | undefined) : undefined}
                   >
                     {meta.label}: {meta.value}
                   </span>
@@ -223,6 +217,17 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
               author={detail.author}
               relays={detail.relays}
             />
+            {contactAction && (
+              <button
+                type="button"
+                onClick={contactAction.onClick}
+                className="btn-primary-sm w-full"
+                aria-label={contactAction.ariaLabel ?? contactAction.label}
+                disabled={contactAction.disabled}
+              >
+                {contactAction.label}
+              </button>
+            )}
           </div>
         }
         footer={

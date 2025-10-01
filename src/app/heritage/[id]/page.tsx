@@ -4,6 +4,7 @@ import { contentDetailService } from '@/services/business/ContentDetailService';
 import '@/services/business/HeritageContentService';
 import type { HeritageCustomFields } from '@/types/heritage-content';
 import { HeritageDetail } from '@/components/heritage/HeritageDetail';
+import { HeritageJsonLd } from '@/components/heritage/HeritageJsonLd';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,7 @@ export default async function HeritagePage({ params }: HeritagePageProps) {
     <div className="min-h-screen bg-primary-50 py-10">
       <div className="container-width space-y-10">
         <HeritageDetail detail={detail} />
+        <HeritageJsonLd detail={detail} />
       </div>
     </div>
   );

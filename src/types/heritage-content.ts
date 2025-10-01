@@ -1,3 +1,5 @@
+import type { ContentDetail } from './content-detail';
+
 /**
  * Heritage-specific custom fields for content detail system
  */
@@ -13,3 +15,8 @@ export interface HeritageCustomFields extends Record<string, unknown> {
   contributorRole?: string;
   knowledgeKeeper?: string;
 }
+
+/**
+ * Heritage content detail type alias for consistency with shop pattern
+ */
+export type HeritageContentDetail = ContentDetail<HeritageCustomFields>;
