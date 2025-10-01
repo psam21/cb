@@ -316,13 +316,12 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 
 ## ⚖️ PRIORITY HIERARCHY (When in Doubt)
 
-1. **Functionality** > Architecture
-2. **Working code** > Pretty code  
-3. **User verification** > Your assumptions
-4. **SOA compliance** > Shortcuts
-5. **Code reuse** > Writing new code
-6. **Documentation** > Moving fast
-7. **Testing** > Shipping
+1. **SOA compliance** > Shortcuts (NON-NEGOTIABLE)
+2. **User verification** > Your assumptions
+3. **Code reuse** > Writing new code
+4. **Testing** > Shipping
+5. **Documentation** > Moving fast
+6. **Proper architecture** > Quick hacks
 
 ---
 
