@@ -543,9 +543,160 @@ The codebase lacks clear documentation explaining:
 
 ---
 
+## Issue 6: Shop URL Identifier Inconsistency
+
+### Problem Discovered
+During final testing, user discovered that **heritage and shop URLs use different identifier patterns**, causing shop URLs to break when products are edited.
+
+**Heritage URLs (Correct ✅):**
+```
+/heritage/heritage_1759260856983_7i247nywp
+└─ Uses dTag (stable across all edits)
+```
+
+**Shop URLs (Wrong ❌ - before fix):**
+```
+/shop/ec9b4fc8ed3ffa3df0d2b6d58e7e0b0dc88dbf5f63f788f2845e8c43a0b32a25
+└─ Uses event ID (changes with every edit)
+```
+
+### Root Cause
+
+**NIP-33 Specification:**
+- Parameterized replaceable events (kinds 30000-40000) use `dTag` as stable identifier
+- **dTag is constant** across all revisions (original + all edits)
+- **Event ID changes** with every edit (new content = new signature = new ID)
+
+**Implementation Issue:**
+- Shop was constructing view URLs with `data.eventId || data.id`
+- Event ID changes on every product edit
+- Bookmarks, shares, and external links break immediately after editing
+- Heritage correctly used `contribution.dTag` for stable URLs
+
+### Impact
+- ❌ Shop URLs break on every product edit
+- ❌ Bookmarks become invalid
+- ❌ Shared links return 404 after editing
+- ❌ Poor user experience
+- ❌ Violates NIP-33 best practices
+
+### Fix Applied ✅
+**Commit:** `cbe9616` - "fix(shop): use stable dTag for URLs instead of changing event ID"
+
+**Changes Made:**
+
+1. **Shop View URLs** (`src/app/shop/page.tsx` line 169):
+```typescript
+// Before: const targetId = data.eventId || data.id;
+// After:
+const targetId = data.dTag || data.id;  // NIP-33: Use stable dTag for URLs
+```
+
+2. **My-Shop View URLs** (`src/app/my-shop/page.tsx` line 212):
+```typescript
+// Before: onSelect={(data) => router.push(`/shop/${data.id}`)}
+// After:
+onSelect={(data) => {
+  const targetId = data.dTag || data.id;
+  if (!targetId) return;
+  router.push(`/shop/${targetId}`);
+}}
+```
+
+3. **Edit Navigation** (`src/app/my-shop/page.tsx` line 86):
+```typescript
+// Before: router.push(`/my-shop/edit/${product.id}`);
+// After: router.push(`/my-shop/edit/${product.dTag}`);
+```
+
+4. **Edit Page Lookup** (`src/app/my-shop/edit/[id]/page.tsx` line 38):
+```typescript
+// Before: const foundProduct = myProducts.find(p => p.id === productId);
+// After: const foundProduct = myProducts.find(p => p.dTag === productId || p.id === productId);
+// Supports dTag with event ID fallback for backward compatibility
+```
+
+5. **Relay Query Support** (`src/services/business/ShopBusinessService.ts` line 1558):
+```typescript
+// fetchProductById() - Added dTag query support
+// Before: const filters = [{ ids: [eventId] }];
+
+// After: Detect identifier type and query appropriately
+const isEventId = /^[a-f0-9]{64}$/i.test(eventId);
+
+const filters = isEventId
+  ? [{ ids: [eventId] }]  // Event ID query
+  : [{                     // dTag query (NIP-33)
+      kinds: [30023],
+      '#d': [eventId],
+      '#t': ['culture-bridge-shop']
+    }];
+```
+
+6. **Cache Lookup Enhancement** (same file):
+```typescript
+// Check cache for both event ID and dTag
+let cachedProduct = productStore.getProduct(eventId);
+
+if (!cachedProduct) {
+  const allProducts = Array.from(productStore['products'].values());
+  cachedProduct = allProducts.find((p: ShopProduct) => p.dTag === eventId) || null;
+}
+```
+
+### NIP-33 URL Pattern
+
+**How It Works:**
+```
+Create product:
+  dTag: "product_1234_abc"     ← STABLE (never changes)
+  Event ID: "a1b2c3d4..."      ← changes on edit
+  URL: /shop/product_1234_abc  ← STABLE
+
+Edit product (1st revision):
+  dTag: "product_1234_abc"     ← SAME
+  Event ID: "e5f6g7h8..."      ← NEW (different event)
+  URL: /shop/product_1234_abc  ← STILL SAME ✅
+
+Edit product (2nd revision):
+  dTag: "product_1234_abc"     ← SAME
+  Event ID: "i9j0k1l2..."      ← NEW AGAIN
+  URL: /shop/product_1234_abc  ← STILL SAME ✅
+```
+
+**Relay Query:**
+```typescript
+// Query by dTag (stable identifier)
+{
+  kinds: [30023],
+  '#d': ['product_1234_abc'],  // Query by dTag
+  '#t': ['culture-bridge-shop']
+}
+
+// Relay automatically:
+// 1. Finds all events with that dTag
+// 2. Returns only the newest one (highest created_at)
+// 3. Client always gets latest revision
+```
+
+### Result
+- ✅ Shop URLs now stable across all edits (like heritage)
+- ✅ Bookmarks and shares never break
+- ✅ Backward compatibility (old event ID URLs still work)
+- ✅ Both systems use same NIP-33 pattern
+- ✅ No redundant client-side grouping needed
+
+### Files Modified
+- `src/app/shop/page.tsx` - View URLs use dTag
+- `src/app/my-shop/page.tsx` - View and edit URLs use dTag
+- `src/app/my-shop/edit/[id]/page.tsx` - Lookup by dTag with fallback
+- `src/services/business/ShopBusinessService.ts` - Query by dTag support
+
+---
+
 ## Total Effort Estimate
 **Original Estimate:** 6.5 - 10.5 hours  
-**Actual Time:** ~3 hours (Phases 1-3 complete, Phase 4 in progress)
+**Actual Time:** ~4 hours (Phases 1-3 complete, URL fix complete, Phase 4 in progress)
 
 ---
 
@@ -611,10 +762,12 @@ The codebase lacks clear documentation explaining:
 - `src/utils/revisionFilter.ts` - Legacy utility (✅ simplified)
 
 ### Related Commits
+
 - `fc4caa9` - "refactor(heritage): align tag system with shop pattern" ✅
 - `a460a64` - "refactor: remove unused createRevisionEvent and orphaned revision filter" ✅
 - `79dfe5f` - "refactor(heritage): implement proper SOA service layers" ✅  
 - `0ad8acf` - "refactor(heritage): remove redundant dTag grouping" ✅
+- `cbe9616` - "fix(shop): use stable dTag for URLs instead of changing event ID" ✅
 - Pending: Final documentation updates
 - Pending: User testing verification
 
@@ -633,7 +786,8 @@ The heritage system had **critical architectural violations** that have been suc
 2. ✅ **SOA violations** - Fixed (commit 79dfe5f - proper service layers created)
 3. ✅ **Dead code** - Fixed (commit a460a64 - createRevisionEvent removed)
 4. ✅ **Pattern alignment** - Fixed (commit 0ad8acf - removed redundant grouping)
-5. ⏳ **Documentation** - In progress (this file updated, user testing pending)
+5. ✅ **URL stability** - Fixed (commit cbe9616 - shop uses dTag like heritage)
+6. ⏳ **Documentation** - In progress (this file updated, user testing pending)
 
 ### Final Status
 
