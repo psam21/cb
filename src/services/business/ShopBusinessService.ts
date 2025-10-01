@@ -1558,32 +1558,56 @@ export class ShopBusinessService {
   public async fetchProductById(eventId: string): Promise<ShopProduct | null> {
     try {
       if (!eventId) {
-        throw new Error('Product event ID is required');
+        throw new Error('Product event ID or dTag is required');
       }
 
-      logger.info('Fetching product by event ID', {
+      logger.info('Fetching product by ID', {
         service: 'ShopBusinessService',
         method: 'fetchProductById',
         eventId,
       });
 
-      // Check local cache first
-      const cachedProduct = productStore.getProduct(eventId);
+      // Check local cache first (try both eventId and dTag)
+      let cachedProduct = productStore.getProduct(eventId);
+      
+      // If not found by ID, it might be a dTag - check if we have a product with matching dTag
+      if (!cachedProduct) {
+        // Note: ProductStore uses Map with ID as key, so we need to iterate to find by dTag
+        // This is acceptable since cache is small and in-memory
+        const allProducts = Array.from(productStore['products'].values());
+        cachedProduct = allProducts.find((p: ShopProduct) => p.dTag === eventId) || null;
+      }
+      
       if (cachedProduct) {
         logger.info('Product found in local store', {
           service: 'ShopBusinessService',
           method: 'fetchProductById',
           eventId,
+          foundBy: cachedProduct.id === eventId ? 'eventId' : 'dTag',
         });
         return cachedProduct;
       }
 
-      // Query relays for the specific event
-      const filters = [
-        {
-          ids: [eventId],
-        },
-      ];
+      // Determine if this is an event ID (64 hex chars) or dTag
+      const isEventId = /^[a-f0-9]{64}$/i.test(eventId);
+      
+      // Query relays - use appropriate filter
+      const filters = isEventId
+        ? [{ ids: [eventId] }]
+        : [
+            {
+              kinds: [30023],
+              '#d': [eventId],
+              '#t': ['culture-bridge-shop'],
+            }
+          ];
+
+      logger.info('Querying relays for product', {
+        service: 'ShopBusinessService',
+        method: 'fetchProductById',
+        eventId,
+        filterType: isEventId ? 'by eventId' : 'by dTag (NIP-33)',
+      });
 
       const queryResult = await queryEvents(filters, progress => {
         logger.debug('Relay query progress for fetchProductById', {
@@ -1626,6 +1650,8 @@ export class ShopBusinessService {
         service: 'ShopBusinessService',
         method: 'fetchProductById',
         eventId,
+        productId: product.id,
+        dTag: product.dTag,
         publishedRelays: product.publishedRelays.length,
       });
 

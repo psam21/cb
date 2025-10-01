@@ -81,9 +81,11 @@ export default function MyShopPage() {
       service: 'MyShopPage',
       method: 'handleEditProduct',
       productId: product.id,
+      dTag: product.dTag,
       title: product.title,
     });
-    router.push(`/my-shop/edit/${product.id}`);
+    // Use dTag for stable edit URLs (NIP-33 pattern)
+    router.push(`/my-shop/edit/${product.dTag}`);
   };
 
   const handleDeleteProduct = (product: ShopProduct) => {
@@ -209,7 +211,12 @@ export default function MyShopPage() {
               <BaseCard
                 data={item}
                 variant="my-shop"
-                onSelect={(data) => router.push(`/shop/${data.id}`)}
+                onSelect={(data) => {
+                  // Use dTag for stable URLs across edits (NIP-33 pattern)
+                  const targetId = data.dTag || data.id;
+                  if (!targetId) return;
+                  router.push(`/shop/${targetId}`);
+                }}
                 onEdit={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
                   const product = filteredProducts.find(p => p.id === data.id);

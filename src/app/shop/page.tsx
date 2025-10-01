@@ -163,7 +163,8 @@ export default function ShopPage() {
                   if (product) handleContact(product);
                 }}
                 onSelect={(data) => {
-                  const targetId = data.eventId || data.id;
+                  // Use dTag for stable URLs across edits (NIP-33 pattern)
+                  const targetId = data.dTag || data.id;
                   if (!targetId) return;
                   router.push(`/shop/${targetId}`);
                 }}

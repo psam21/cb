@@ -35,13 +35,15 @@ export default function ProductEditPage() {
   // Find the product to edit
   useEffect(() => {
     if (productId && myProducts.length > 0) {
-      const foundProduct = myProducts.find(p => p.id === productId);
+      // Try to find by dTag first (NIP-33 stable identifier), fallback to event ID
+      const foundProduct = myProducts.find(p => p.dTag === productId || p.id === productId);
       if (foundProduct) {
         setProduct(foundProduct);
         logger.info('Product found for editing', {
           service: 'ProductEditPage',
           method: 'useEffect',
           productId,
+          dTag: foundProduct.dTag,
           title: foundProduct.title,
         });
       } else {
