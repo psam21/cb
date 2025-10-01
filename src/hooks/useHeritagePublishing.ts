@@ -8,11 +8,10 @@ import type {
   HeritageContributionData,
   HeritagePublishingResult,
   HeritagePublishingState,
-  HeritageNostrEvent,
 } from '@/types/heritage';
 import { validateHeritageData } from '@/types/heritage';
 import { uploadSequentialWithConsent } from '@/services/generic/GenericBlossomService';
-import { publishEvent } from '@/services/generic/GenericRelayService';
+import { createHeritageContribution } from '@/services/business/HeritageContentService';
 
 /**
  * Publishing progress details
@@ -157,7 +156,15 @@ export const useHeritagePublishing = () => {
       }
 
       // Step 3: Upload media to Blossom (if attachments exist)
-      const uploadedMediaUrls: { type: 'image' | 'video' | 'audio'; url: string; hash: string; name: string }[] = [];
+      const uploadedMediaUrls: { 
+        type: 'image' | 'video' | 'audio'; 
+        url: string; 
+        hash: string; 
+        name: string;
+        id: string;
+        size: number;
+        mimeType: string;
+      }[] = [];
 
       if (data.attachments.length > 0) {
         // Convert GenericAttachment to File objects
@@ -265,6 +272,9 @@ export const useHeritagePublishing = () => {
                 url: uploadedFile.url,
                 hash: uploadedFile.hash,
                 name: attachment.name,
+                id: attachment.id,
+                size: attachment.size,
+                mimeType: attachment.mimeType,
               });
             }
           }
@@ -277,128 +287,54 @@ export const useHeritagePublishing = () => {
         }
       }
 
-      // Step 5: Create Nostr event
+      // Step 5: Create and publish heritage contribution via service
       setProgress({
         step: 'creating',
         progress: 70,
-        message: 'Creating Nostr event...',
-        details: 'Preparing heritage contribution event',
+        message: 'Creating and publishing heritage contribution...',
+        details: 'Using proper service layers',
       });
 
-      // Get user's public key
-      const pubkey = await signer.getPublicKey();
+      // Map uploaded media to GenericAttachment format expected by service
+      const attachments = uploadedMediaUrls.map(media => ({
+        id: media.id,
+        url: media.url,
+        type: media.type,
+        hash: media.hash,
+        name: media.name,
+        size: media.size,
+        mimeType: media.mimeType,
+      }));
 
-      // Use existing dTag for updates, or generate new one for creation
-      const dTag = existingDTag || `heritage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+      // Create heritage contribution data with uploaded attachments
+      const heritageData: HeritageContributionData = {
+        ...data,
+        attachments,
+      };
+
+      // Use existing dTag for updates, or undefined for new creation (service generates)
       logger.info(existingDTag ? 'Updating existing heritage contribution' : 'Creating new heritage contribution', {
         service: 'useHeritagePublishing',
-        dTag,
+        dTag: existingDTag,
         isUpdate: !!existingDTag,
       });
 
-      // Build event tags
-      const tags: string[][] = [
-        ['d', dTag],
-        ['t', 'culture-bridge-heritage-contribution'], // Heritage identifier tag
-        ['title', data.title],
-        ['category', data.category],
-        ['heritage-type', data.heritageType],
-        ['time-period', data.timePeriod],
-        ['source-type', data.sourceType],
-        ['region', data.region],
-        ['country', data.country],
-        ['contributor-role', data.contributorRole],
-      ];
-
-      // Add optional fields
-      if (data.language) {
-        tags.push(['language', data.language]);
-      }
-      if (data.community) {
-        tags.push(['community', data.community]);
-      }
-      if (data.knowledgeKeeperContact) {
-        tags.push(['knowledge-keeper', data.knowledgeKeeperContact]);
-      }
-
-      // Add user tags
-      data.tags.forEach(tag => {
-        if (tag.trim()) {
-          tags.push(['t', tag.trim()]);
-        }
-      });
-
-      // Add media URLs with hash
-      uploadedMediaUrls.forEach(media => {
-        tags.push([media.type, media.url]);
-        if (media.hash) {
-          tags.push(['imeta', `url ${media.url}`, `x ${media.hash}`]);
-        }
-      });
-
-      // Create markdown content for NIP-23 format
-      let markdownContent = `# ${data.title}\n\n${data.description}`;
-      
-      // Add embedded media to markdown content
-      if (uploadedMediaUrls.length > 0) {
-        markdownContent += '\n\n## Media\n\n';
-        
-        for (const media of uploadedMediaUrls) {
-          if (media.type === 'image') {
-            markdownContent += `![${media.name}](${media.url})\n\n`;
-          } else if (media.type === 'video') {
-            markdownContent += `[📹 ${media.name}](${media.url})\n\n`;
-          } else if (media.type === 'audio') {
-            markdownContent += `[🎵 ${media.name}](${media.url})\n\n`;
-          }
-        }
-      }
-
-      // Create event (without id and sig - signer will add these)
-      const unsignedEvent = {
-        kind: 30023,
-        created_at: Math.floor(Date.now() / 1000),
-        tags,
-        content: markdownContent,
-        pubkey: pubkey,
-      };
-
-      // Sign event
-      const signedEvent = await signer.signEvent(unsignedEvent);
-
-      // Step 6: Publish to relays
-      setProgress({
-        step: 'publishing',
-        progress: 85,
-        message: 'Publishing to Nostr relays...',
-        details: 'Broadcasting event',
-      });
-
-      // Publish event to Nostr relays
-      const publishResult = await publishEvent(
-        signedEvent,
+      // Call business service to handle event creation and publishing
+      const serviceResult = await createHeritageContribution(
+        heritageData,
         signer,
-        (relayProgress) => {
-          setProgress({
-            step: 'publishing',
-            progress: 85 + (relayProgress.progress * 0.15), // 85% to 100%
-            message: relayProgress.message,
-            details: relayProgress.currentRelay || 'Broadcasting to network',
-          });
-        }
+        existingDTag
       );
 
-      // Check if publishing succeeded
-      if (!publishResult.success || publishResult.publishedRelays.length === 0) {
+      if (!serviceResult.success) {
         setState(prev => ({
           ...prev,
           isPublishing: false,
-          error: publishResult.error || 'Failed to publish to any relay',
+          error: serviceResult.error || 'Failed to create heritage contribution',
         }));
         return {
           success: false,
-          error: publishResult.error || 'Failed to publish to any relay',
+          error: serviceResult.error || 'Failed to create heritage contribution',
         };
       }
 
@@ -406,14 +342,14 @@ export const useHeritagePublishing = () => {
         step: 'complete',
         progress: 100,
         message: 'Heritage contribution published!',
-        details: `Successfully published to ${publishResult.publishedRelays.length} relays`,
+        details: `Successfully published to ${serviceResult.publishedRelays?.length || 0} relays`,
       });
 
       const result: HeritagePublishingResult = {
         success: true,
-        eventId: signedEvent.id,
-        event: signedEvent as HeritageNostrEvent, // Type assertion - we created Kind 30023
-        publishedToRelays: publishResult.publishedRelays,
+        eventId: serviceResult.eventId!,
+        event: undefined, // Event structure handled by service layer
+        publishedToRelays: serviceResult.publishedRelays || [],
       };
 
       setState(prev => ({
@@ -425,9 +361,9 @@ export const useHeritagePublishing = () => {
 
       logger.info('Heritage contribution published successfully', {
         service: 'useHeritagePublishing',
-        eventId: signedEvent.id,
-        publishedRelays: publishResult.publishedRelays.length,
-        failedRelays: publishResult.failedRelays.length,
+        eventId: serviceResult.eventId,
+        publishedRelays: serviceResult.publishedRelays?.length || 0,
+        failedRelays: serviceResult.failedRelays?.length || 0,
       });
 
       return result;

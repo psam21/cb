@@ -3,8 +3,10 @@ import type { ContentDetailResult, ContentMeta } from '@/types/content-detail';
 import type { HeritageCustomFields } from '../../types/heritage-content';
 import type { ContentMediaItem } from '@/types/content-media';
 import { logger } from '@/services/core/LoggingService';
-import type { HeritageNostrEvent } from '@/types/heritage';
+import type { HeritageNostrEvent, HeritageContributionData } from '@/types/heritage';
 import { queryEvents } from '../generic/GenericRelayService';
+import { nostrEventService } from '../nostr/NostrEventService';
+import type { NostrSigner } from '@/types/nostr';
 
 export interface HeritageContribution {
   id: string;
@@ -158,6 +160,170 @@ async function tryGetAuthorDisplayName(pubkey: string): Promise<string | undefin
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     return undefined;
+  }
+}
+
+export interface CreateHeritageResult {
+  success: boolean;
+  eventId?: string;
+  contribution?: HeritageContribution;
+  publishedRelays?: string[];
+  failedRelays?: string[];
+  error?: string;
+}
+
+/**
+ * Create a new heritage contribution with event creation and publishing
+ * Orchestrates: validation → event creation → publishing
+ */
+export async function createHeritageContribution(
+  heritageData: HeritageContributionData,
+  signer: NostrSigner,
+  existingDTag?: string
+): Promise<CreateHeritageResult> {
+  try {
+    logger.info('Starting heritage contribution creation', {
+      service: 'HeritageContentService',
+      method: 'createHeritageContribution',
+      title: heritageData.title,
+      isEdit: !!existingDTag,
+    });
+
+    // Map GenericAttachment to simplified format for event service
+    const mappedAttachments = heritageData.attachments
+      .filter(att => att.url) // Only include attachments with URLs
+      .map(att => ({
+        url: att.url!,
+        type: att.type,
+        hash: att.hash,
+        name: att.name,
+      }));
+
+    // Step 1: Create Nostr event using event service
+    logger.info('Creating heritage event', {
+      service: 'HeritageContentService',
+      method: 'createHeritageContribution',
+      title: heritageData.title,
+      dTag: existingDTag,
+    });
+
+    const event = await nostrEventService.createHeritageEvent(
+      {
+        ...heritageData,
+        attachments: mappedAttachments,
+      },
+      signer,
+      existingDTag
+    );
+
+    // Step 2: Publish to relays
+    logger.info('Publishing event to relays', {
+      service: 'HeritageContentService',
+      method: 'createHeritageContribution',
+      eventId: event.id,
+      title: heritageData.title,
+    });
+
+    const publishResult = await nostrEventService.publishEvent(
+      event,
+      signer,
+      (relay, status) => {
+        logger.info('Relay publishing status', {
+          service: 'HeritageContentService',
+          method: 'createHeritageContribution',
+          relay,
+          status,
+          eventId: event.id,
+        });
+      }
+    );
+
+    if (!publishResult.success) {
+      return {
+        success: false,
+        error: `Failed to publish to any relay: ${publishResult.error}`,
+        eventId: event.id,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+      };
+    }
+
+    // Step 3: Create contribution object from published event
+    const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
+    if (!dTag) {
+      throw new Error('Created event missing required d tag');
+    }
+
+    // Extract media URLs and hashes from event tags
+    const mediaUrls: string[] = [];
+    const mediaHashes: string[] = [];
+
+    event.tags.forEach(tag => {
+      if (tag[0] === 'image' || tag[0] === 'video' || tag[0] === 'audio') {
+        mediaUrls.push(tag[1]);
+      }
+      if (tag[0] === 'imeta') {
+        const urlPart = tag.find(part => part.startsWith('url '));
+        const hashPart = tag.find(part => part.startsWith('x '));
+        if (urlPart && hashPart) {
+          const hash = hashPart.replace('x ', '');
+          mediaHashes.push(hash);
+        }
+      }
+    });
+
+    const contribution: HeritageContribution = {
+      id: dTag,
+      dTag,
+      eventId: event.id,
+      pubkey: event.pubkey,
+      title: heritageData.title,
+      description: heritageData.description,
+      category: heritageData.category,
+      heritageType: heritageData.heritageType,
+      language: heritageData.language,
+      communityGroup: heritageData.community,
+      regionOrigin: heritageData.region,
+      country: heritageData.country,
+      timePeriod: heritageData.timePeriod,
+      sourceType: heritageData.sourceType,
+      contributorRole: heritageData.contributorRole,
+      knowledgeKeeper: heritageData.knowledgeKeeperContact,
+      media: createMediaItems(mediaUrls, mediaHashes),
+      tags: heritageData.tags,
+      createdAt: event.created_at,
+      publishedAt: event.created_at,
+      publishedRelays: publishResult.publishedRelays,
+      isDeleted: false,
+    };
+
+    logger.info('Heritage contribution created successfully', {
+      service: 'HeritageContentService',
+      method: 'createHeritageContribution',
+      eventId: event.id,
+      dTag,
+      title: heritageData.title,
+      publishedRelays: publishResult.publishedRelays.length,
+    });
+
+    return {
+      success: true,
+      eventId: event.id,
+      contribution,
+      publishedRelays: publishResult.publishedRelays,
+      failedRelays: publishResult.failedRelays,
+    };
+  } catch (error) {
+    logger.error('Failed to create heritage contribution', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'HeritageContentService',
+      method: 'createHeritageContribution',
+      title: heritageData.title,
+    });
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error creating heritage contribution',
+    };
   }
 }
 

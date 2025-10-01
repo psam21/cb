@@ -166,6 +166,163 @@ export class NostrEventService {
   }
 
   /**
+   * Create a heritage contribution event (Kind 30023)
+   * Uses GenericEventService.createNIP23Event with heritage-specific tags
+   */
+  public async createHeritageEvent(
+    heritageData: {
+      title: string;
+      category: string;
+      heritageType: string;
+      timePeriod: string;
+      sourceType: string;
+      region: string;
+      country: string;
+      contributorRole: string;
+      description: string;
+      language?: string;
+      community?: string;
+      knowledgeKeeperContact?: string;
+      tags: string[];
+      attachments: { url: string; type: string; hash?: string; name: string }[];
+    },
+    signer: NostrSigner,
+    dTag?: string
+  ): Promise<NIP23Event> {
+    try {
+      logger.info('Creating Kind 30023 heritage contribution event', {
+        service: 'NostrEventService',
+        method: 'createHeritageEvent',
+        title: heritageData.title,
+        heritageType: heritageData.heritageType,
+        dTag,
+        attachmentCount: heritageData.attachments?.length || 0,
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+      const pubkey = await signer.getPublicKey();
+
+      // Create markdown content with embedded media
+      let markdownContent = `# ${heritageData.title}\n\n${heritageData.description}`;
+      
+      // Add embedded media to markdown content
+      if (heritageData.attachments && heritageData.attachments.length > 0) {
+        markdownContent += '\n\n## Media\n\n';
+        
+        for (const attachment of heritageData.attachments) {
+          if (attachment.type === 'image') {
+            markdownContent += `![${attachment.name}](${attachment.url})\n\n`;
+          } else if (attachment.type === 'video') {
+            markdownContent += `[📹 ${attachment.name}](${attachment.url})\n\n`;
+          } else if (attachment.type === 'audio') {
+            markdownContent += `[🎵 ${attachment.name}](${attachment.url})\n\n`;
+          }
+        }
+      }
+      
+      // Create NIP-23 content
+      const nip23Content: NIP23Content = {
+        title: heritageData.title,
+        content: markdownContent,
+        summary: heritageData.description.substring(0, 200),
+        published_at: now,
+        tags: heritageData.tags,
+        language: heritageData.language || 'en',
+        region: heritageData.region,
+        permissions: 'community',
+      };
+
+      // Build heritage-specific tags
+      const heritageTags: string[][] = [
+        ['t', 'culture-bridge-heritage-contribution'], // Heritage identifier tag
+        ['title', heritageData.title],
+        ['category', heritageData.category],
+        ['heritage-type', heritageData.heritageType],
+        ['time-period', heritageData.timePeriod],
+        ['source-type', heritageData.sourceType],
+        ['region', heritageData.region],
+        ['country', heritageData.country],
+        ['contributor-role', heritageData.contributorRole],
+      ];
+
+      // Add optional fields
+      if (heritageData.language) {
+        heritageTags.push(['language', heritageData.language]);
+      }
+      if (heritageData.community) {
+        heritageTags.push(['community', heritageData.community]);
+      }
+      if (heritageData.knowledgeKeeperContact) {
+        heritageTags.push(['knowledge-keeper', heritageData.knowledgeKeeperContact]);
+      }
+
+      // Add user tags
+      heritageData.tags.forEach(tag => {
+        if (tag.trim()) {
+          heritageTags.push(['t', tag.trim()]);
+        }
+      });
+
+      // Add media tags with hashes
+      heritageData.attachments.forEach(media => {
+        heritageTags.push([media.type, media.url]);
+        if (media.hash) {
+          heritageTags.push(['imeta', `url ${media.url}`, `x ${media.hash}`]);
+        }
+      });
+
+      // Create event using GenericEventService
+      const eventResult = createNIP23Event(nip23Content, pubkey, {
+        dTag, // Pass custom d tag if provided
+        tags: heritageTags,
+      });
+
+      if (!eventResult.success || !eventResult.event) {
+        throw new AppError(
+          'Failed to create heritage event',
+          ErrorCode.NOSTR_ERROR,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          ErrorCategory.EXTERNAL_SERVICE,
+          ErrorSeverity.HIGH,
+          { error: eventResult.error }
+        );
+      }
+
+      // Sign the event
+      const signingResult = await genericSignEvent(eventResult.event, signer);
+
+      if (!signingResult.success || !signingResult.signedEvent) {
+        throw new AppError(
+          'Failed to sign heritage event',
+          ErrorCode.NOSTR_ERROR,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          ErrorCategory.EXTERNAL_SERVICE,
+          ErrorSeverity.HIGH,
+          { error: signingResult.error }
+        );
+      }
+
+      logger.info('Heritage event created and signed', {
+        service: 'NostrEventService',
+        method: 'createHeritageEvent',
+        eventId: signingResult.signedEvent.id,
+        title: heritageData.title,
+      });
+
+      return signingResult.signedEvent as NIP23Event;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to create heritage event', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'NostrEventService',
+        method: 'createHeritageEvent',
+        title: heritageData.title,
+        error: errorMessage,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Publish event to multiple relays
    */
   public async publishEvent(
