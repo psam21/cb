@@ -543,24 +543,13 @@ export async function fetchAllHeritage(): Promise<HeritageContribution[]> {
       count: queryResult.events.length,
     });
 
-    // Group events by dTag and get latest for each
-    const eventsByDTag = new Map<string, HeritageNostrEvent>();
-    
-    (queryResult.events as HeritageNostrEvent[]).forEach(event => {
-      const dTag = event.tags.find(t => t[0] === 'd')?.[1];
-      if (!dTag) return;
-      
-      const existing = eventsByDTag.get(dTag);
-      if (!existing || event.created_at > existing.created_at) {
-        eventsByDTag.set(dTag, event);
-      }
-    });
-
-    // Convert events to HeritageContribution objects
+    // NIP-33 parameterized replaceable events - relays return latest version automatically
+    // No client-side grouping needed
     const contributions: HeritageContribution[] = [];
     
-    for (const event of eventsByDTag.values()) {
-      const dTag = event.tags.find(t => t[0] === 'd')?.[1] || '';
+    for (const event of queryResult.events as HeritageNostrEvent[]) {
+      const dTag = event.tags.find(t => t[0] === 'd')?.[1];
+      if (!dTag) continue; // Skip events without dTag
       const title = event.tags.find(t => t[0] === 'title')?.[1] || '';
       const category = event.tags.find(t => t[0] === 'category')?.[1] || '';
       const heritageType = event.tags.find(t => t[0] === 'heritage-type')?.[1] || '';
@@ -666,24 +655,13 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
       count: queryResult.events.length,
     });
 
-    // Group events by dTag and get latest for each
-    const eventsByDTag = new Map<string, HeritageNostrEvent>();
-    
-    (queryResult.events as HeritageNostrEvent[]).forEach(event => {
-      const dTag = event.tags.find(t => t[0] === 'd')?.[1];
-      if (!dTag) return;
-      
-      const existing = eventsByDTag.get(dTag);
-      if (!existing || event.created_at > existing.created_at) {
-        eventsByDTag.set(dTag, event);
-      }
-    });
-
-    // Convert events to HeritageContribution objects
+    // NIP-33 parameterized replaceable events - relays return latest version automatically
+    // No client-side grouping needed
     const contributions: HeritageContribution[] = [];
     
-    for (const event of eventsByDTag.values()) {
-      const dTag = event.tags.find(t => t[0] === 'd')?.[1] || '';
+    for (const event of queryResult.events as HeritageNostrEvent[]) {
+      const dTag = event.tags.find(t => t[0] === 'd')?.[1];
+      if (!dTag) continue; // Skip events without dTag
       const title = event.tags.find(t => t[0] === 'title')?.[1] || '';
       const category = event.tags.find(t => t[0] === 'category')?.[1] || '';
       const heritageType = event.tags.find(t => t[0] === 'heritage-type')?.[1] || '';
