@@ -139,85 +139,6 @@ export class GenericEventService {
   }
 
   /**
-   * Create a revision event for existing content
-   */
-  public createRevisionEvent(
-    originalEvent: NIP23Event,
-    revisedContent: NIP23Content,
-    userPubkey: string,
-    revisionNumber: number = 1
-  ): EventCreationResult {
-    try {
-      logger.info('Creating revision event', {
-        service: 'GenericEventService',
-        method: 'createRevisionEvent',
-        originalEventId: originalEvent.id,
-        userPubkey: userPubkey.substring(0, 8) + '...',
-        revisionNumber,
-      });
-
-      // Extract the original d tag from the original event
-      const originalDTag = originalEvent.tags.find(tag => tag[0] === 'd')?.[1];
-      if (!originalDTag) {
-        throw new Error('Original event missing required d tag for parameterized replaceable event');
-      }
-
-      const now = Math.floor(Date.now() / 1000);
-
-      // Create revision event with SAME d tag to replace original
-      const revisionEvent: Omit<NIP23Event, 'id' | 'sig'> = {
-        kind: 30023, // Parameterized replaceable long-form content
-        pubkey: userPubkey,
-        created_at: now,
-        tags: [
-          ['d', originalDTag], // SAME d tag - this will replace the original event
-          ['title', revisedContent.title],
-          ['published_at', now.toString()],
-          ['lang', revisedContent.language || 'en'],
-          ['author', userPubkey],
-          ['region', revisedContent.region || 'global'],
-          // File tags if applicable
-          ...(revisedContent.file_id ? [
-            ['f', revisedContent.file_id],
-            ['type', revisedContent.file_type || ''],
-            ['size', (revisedContent.file_size || 0).toString()],
-          ] : []),
-          // Permissions tag
-          ['permissions', revisedContent.permissions || 'community'],
-          // Shop identifier tag
-          ['t', 'culture-bridge-shop'],
-        ],
-        content: JSON.stringify(revisedContent),
-      };
-
-      logger.info('Revision event created successfully', {
-        service: 'GenericEventService',
-        method: 'createRevisionEvent',
-        originalEventId: originalEvent.id,
-        revisionNumber,
-      });
-
-      return {
-        success: true,
-        event: revisionEvent,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Revision event creation failed';
-      logger.error('Error creating revision event', error instanceof Error ? error : new Error(errorMessage), {
-        service: 'GenericEventService',
-        method: 'createRevisionEvent',
-        originalEventId: originalEvent.id,
-        error: errorMessage,
-      });
-
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
-  }
-
-  /**
    * Sign a Nostr event using a signer
    */
   public async signEvent(
@@ -655,9 +576,6 @@ export const genericEventService = GenericEventService.getInstance();
 // Export convenience functions
 export const createNIP23Event = (content: NIP23Content, userPubkey: string, options?: EventCreationOptions) =>
   genericEventService.createNIP23Event(content, userPubkey, options);
-
-export const createRevisionEvent = (originalEvent: NIP23Event, revisedContent: NIP23Content, userPubkey: string, revisionNumber?: number) =>
-  genericEventService.createRevisionEvent(originalEvent, revisedContent, userPubkey, revisionNumber);
 
 export const createDeletionEvent = (eventIdsToDelete: string[], userPubkey: string, options?: DeletionEventOptions) =>
   genericEventService.createDeletionEvent(eventIdsToDelete, userPubkey, options);
