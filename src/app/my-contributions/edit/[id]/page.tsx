@@ -91,7 +91,7 @@ export default function HeritageEditPage() {
       id: media.id,
       type: media.type as 'image' | 'video' | 'audio',
       name: media.source.name || `Media ${index + 1}`,
-      size: 0, // Size not available from event
+      size: media.source.size || 0, // Use actual size from media source if available
       mimeType: media.source.mimeType || 'application/octet-stream',
       url: media.source.url,
       hash: media.source.hash,

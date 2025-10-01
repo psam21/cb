@@ -1,7 +1,7 @@
 import { contentDetailService, type ContentDetailProvider } from './ContentDetailService';
 import type { ContentDetailResult, ContentMeta } from '@/types/content-detail';
 import type { HeritageCustomFields } from '../../types/heritage-content';
-import type { ContentMediaItem } from '@/types/content-media';
+import type { ContentMediaItem, ContentMediaSource, ContentMediaType } from '@/types/content-media';
 import { logger } from '@/services/core/LoggingService';
 import type { HeritageNostrEvent, HeritageContributionData } from '@/types/heritage';
 import { queryEvents } from '../generic/GenericRelayService';
@@ -33,19 +33,101 @@ export interface HeritageContribution {
   isDeleted: boolean;
 }
 
-function createMediaItems(mediaUrls: string[], hashes: string[]): ContentMediaItem[] {
-  return mediaUrls.map((url, index) => ({
-    id: hashes[index] || `media-${index}`,
-    type: url.match(/\.(mp4|webm|mov)$/i) ? 'video' : 
-          url.match(/\.(mp3|wav|ogg)$/i) ? 'audio' : 'image',
-    source: {
-      url,
-      hash: hashes[index],
-      mimeType: url.match(/\.(mp4|webm|mov)$/i) ? 'video/mp4' : 
-                url.match(/\.(mp3|wav|ogg)$/i) ? 'audio/mpeg' : 'image/jpeg',
-      name: `Media ${index + 1}`,
-    },
-  }));
+/**
+ * Parse imeta tag to extract comprehensive media metadata
+ * NIP-94 format: ["imeta", "url <url>", "m <mime>", "x <hash>", "size <bytes>", "dim <WxH>", ...]
+ */
+function parseImetaTag(imetaTag: string[]): Partial<ContentMediaSource> | null {
+  if (!imetaTag || imetaTag[0] !== 'imeta') return null;
+  
+  const metadata: Partial<ContentMediaSource> = {};
+  
+  // Join all parts (excluding first element which is 'imeta')
+  const imetaStr = imetaTag.slice(1).join(' ');
+  
+  // Extract URL
+  const urlMatch = imetaStr.match(/url\s+(\S+)/);
+  if (urlMatch) metadata.url = urlMatch[1];
+  
+  // Extract mime type
+  const mimeMatch = imetaStr.match(/m\s+(\S+)/);
+  if (mimeMatch) metadata.mimeType = mimeMatch[1];
+  
+  // Extract hash
+  const hashMatch = imetaStr.match(/x\s+(\S+)/);
+  if (hashMatch) metadata.hash = hashMatch[1];
+  
+  // Extract size (in bytes)
+  const sizeMatch = imetaStr.match(/size\s+(\d+)/);
+  if (sizeMatch) metadata.size = parseInt(sizeMatch[1], 10);
+  
+  // Extract dimensions
+  const dimMatch = imetaStr.match(/dim\s+(\d+)x(\d+)/);
+  if (dimMatch) {
+    metadata.dimensions = {
+      width: parseInt(dimMatch[1], 10),
+      height: parseInt(dimMatch[2], 10),
+    };
+  }
+  
+  return metadata;
+}
+
+/**
+ * Create media items with full metadata from imeta tags
+ */
+function createMediaItemsFromImeta(event: { tags: string[][] }): ContentMediaItem[] {
+  const mediaItems: ContentMediaItem[] = [];
+  
+  // Find all image tags and their corresponding imeta tags
+  (event.tags as string[][]).forEach(tag => {
+    if (tag[0] === 'image' && tag[1]) {
+      const url = tag[1];
+      
+      // Find corresponding imeta tag
+      const imetaTag = (event.tags as string[][]).find(
+        t => t[0] === 'imeta' && t.some(part => part.includes(url))
+      );
+      
+      let metadata: Partial<ContentMediaSource> = {
+        url,
+        name: `Media ${mediaItems.length + 1}`,
+      };
+      
+      // If imeta tag exists, parse it for full metadata
+      if (imetaTag) {
+        const parsedMeta = parseImetaTag(imetaTag);
+        if (parsedMeta) {
+          metadata = { ...metadata, ...parsedMeta };
+        }
+      }
+      
+      // Infer mime type from URL if not provided
+      if (!metadata.mimeType) {
+        if (url.match(/\.(mp4|webm|mov)$/i)) {
+          metadata.mimeType = 'video/mp4';
+        } else if (url.match(/\.(mp3|wav|ogg)$/i)) {
+          metadata.mimeType = 'audio/mpeg';
+        } else {
+          metadata.mimeType = 'image/jpeg';
+        }
+      }
+      
+      // Determine media type
+      const type: ContentMediaType = 
+        metadata.mimeType?.startsWith('video/') ? 'video' :
+        metadata.mimeType?.startsWith('audio/') ? 'audio' :
+        'image';
+      
+      mediaItems.push({
+        id: metadata.hash || `media-${mediaItems.length}`,
+        type,
+        source: metadata as ContentMediaSource,
+      });
+    }
+  });
+  
+  return mediaItems;
 }
 
 function buildMeta(contribution: HeritageContribution): ContentMeta[] {
@@ -272,6 +354,9 @@ export async function createHeritageContribution(
       }
     });
 
+    // Parse media from imeta tags (includes full metadata: size, dimensions, mime type, hash)
+    const media = createMediaItemsFromImeta(event);
+
     const contribution: HeritageContribution = {
       id: dTag,
       dTag,
@@ -289,7 +374,7 @@ export async function createHeritageContribution(
       sourceType: heritageData.sourceType,
       contributorRole: heritageData.contributorRole,
       knowledgeKeeper: heritageData.knowledgeKeeperContact,
-      media: createMediaItems(mediaUrls, mediaHashes),
+      media,
       tags: heritageData.tags,
       createdAt: event.created_at,
       publishedAt: event.created_at,
@@ -373,24 +458,8 @@ export async function fetchHeritageById(id: string): Promise<HeritageContributio
     const knowledgeKeeper = latestEvent.tags.find(t => t[0] === 'knowledge-keeper')?.[1];
     const tags = latestEvent.tags.filter(t => t[0] === 't').map(t => t[1]);
 
-    // Extract media URLs and hashes from tags
-    const mediaUrls: string[] = [];
-    const mediaHashes: string[] = [];
-    
-    (latestEvent.tags as string[][]).forEach(tag => {
-      if (tag[0] === 'image' && tag[1]) {
-        mediaUrls.push(tag[1]);
-        // Try to find corresponding hash in imeta tags
-        const imetaTag = (latestEvent.tags as string[][]).find(t => t[0] === 'imeta' && t[1] && t[1].includes(tag[1]));
-        if (imetaTag) {
-          const imetaStr = imetaTag.slice(1).join(' ');
-          const hashMatch = imetaStr.match(/x\s+(\S+)/);
-          if (hashMatch && hashMatch[1]) {
-            mediaHashes.push(hashMatch[1]);
-          }
-        }
-      }
-    });
+    // Parse media from imeta tags (includes full metadata: size, dimensions, mime type, hash)
+    const media = createMediaItemsFromImeta(latestEvent);
 
     const contribution: HeritageContribution = {
       id: dTag,
@@ -409,7 +478,7 @@ export async function fetchHeritageById(id: string): Promise<HeritageContributio
       sourceType,
       contributorRole,
       knowledgeKeeper,
-      media: createMediaItems(mediaUrls, mediaHashes),
+      media,
       tags,
       createdAt: latestEvent.created_at,
       publishedAt: latestEvent.created_at,
@@ -563,23 +632,8 @@ export async function fetchAllHeritage(): Promise<HeritageContribution[]> {
       const knowledgeKeeper = event.tags.find(t => t[0] === 'knowledge-keeper')?.[1];
       const tags = event.tags.filter(t => t[0] === 't').map(t => t[1]);
 
-      // Extract media
-      const mediaUrls: string[] = [];
-      const mediaHashes: string[] = [];
-      
-      (event.tags as string[][]).forEach(tag => {
-        if (tag[0] === 'image' && tag[1]) {
-          mediaUrls.push(tag[1]);
-          const imetaTag = (event.tags as string[][]).find(t => t[0] === 'imeta' && t[1] && t[1].includes(tag[1]));
-          if (imetaTag) {
-            const imetaStr = imetaTag.slice(1).join(' ');
-            const hashMatch = imetaStr.match(/x\s+(\S+)/);
-            if (hashMatch && hashMatch[1]) {
-              mediaHashes.push(hashMatch[1]);
-            }
-          }
-        }
-      });
+      // Parse media from imeta tags (includes full metadata: size, dimensions, mime type, hash)
+      const media = createMediaItemsFromImeta(event);
 
       contributions.push({
         id: dTag,
@@ -598,7 +652,7 @@ export async function fetchAllHeritage(): Promise<HeritageContribution[]> {
         sourceType,
         contributorRole,
         knowledgeKeeper,
-        media: createMediaItems(mediaUrls, mediaHashes),
+        media,
         tags,
         createdAt: event.created_at,
         publishedAt: event.created_at,
@@ -675,23 +729,8 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
       const knowledgeKeeper = event.tags.find(t => t[0] === 'knowledge-keeper')?.[1];
       const tags = event.tags.filter(t => t[0] === 't').map(t => t[1]);
 
-      // Extract media
-      const mediaUrls: string[] = [];
-      const mediaHashes: string[] = [];
-      
-      (event.tags as string[][]).forEach(tag => {
-        if (tag[0] === 'image' && tag[1]) {
-          mediaUrls.push(tag[1]);
-          const imetaTag = (event.tags as string[][]).find(t => t[0] === 'imeta' && t[1] && t[1].includes(tag[1]));
-          if (imetaTag) {
-            const imetaStr = imetaTag.slice(1).join(' ');
-            const hashMatch = imetaStr.match(/x\s+(\S+)/);
-            if (hashMatch && hashMatch[1]) {
-              mediaHashes.push(hashMatch[1]);
-            }
-          }
-        }
-      });
+      // Parse media from imeta tags (includes full metadata: size, dimensions, mime type, hash)
+      const media = createMediaItemsFromImeta(event);
 
       contributions.push({
         id: dTag,
@@ -710,7 +749,7 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
         sourceType,
         contributorRole,
         knowledgeKeeper,
-        media: createMediaItems(mediaUrls, mediaHashes),
+        media,
         tags,
         createdAt: event.created_at,
         publishedAt: event.created_at,

@@ -184,7 +184,21 @@ export class NostrEventService {
       community?: string;
       knowledgeKeeperContact?: string;
       tags: string[];
-      attachments: { url: string; type: string; hash?: string; name: string }[];
+      attachments: Array<{
+        url: string;
+        type: string;
+        hash?: string;
+        name: string;
+        size?: number;
+        mimeType?: string;
+        metadata?: {
+          width?: number;
+          height?: number;
+          aspectRatio?: number;
+          duration?: number;
+          [key: string]: string | number | boolean | undefined;
+        };
+      }>;
     },
     signer: NostrSigner,
     dTag?: string
@@ -267,7 +281,25 @@ export class NostrEventService {
       heritageData.attachments.forEach(media => {
         heritageTags.push([media.type, media.url]);
         if (media.hash) {
-          heritageTags.push(['imeta', `url ${media.url}`, `x ${media.hash}`]);
+          // Build complete NIP-94 imeta tag with all available metadata
+          const imetaParts = [`url ${media.url}`, `x ${media.hash}`];
+          
+          // Add mime type if available
+          if (media.mimeType) {
+            imetaParts.push(`m ${media.mimeType}`);
+          }
+          
+          // Add size if available
+          if (media.size) {
+            imetaParts.push(`size ${media.size}`);
+          }
+          
+          // Add dimensions if available
+          if (media.metadata?.width && media.metadata?.height) {
+            imetaParts.push(`dim ${media.metadata.width}x${media.metadata.height}`);
+          }
+          
+          heritageTags.push(['imeta', ...imetaParts]);
         }
       });
 
