@@ -174,7 +174,7 @@ export async function fetchHeritageById(id: string): Promise<HeritageContributio
       {
         kinds: [30023],
         '#d': [id],
-        '#content-type': ['heritage'],
+        '#t': ['culture-bridge-heritage-contribution'],
       }
     ];
 
@@ -357,7 +357,7 @@ export async function fetchAllHeritage(): Promise<HeritageContribution[]> {
     const filters = [
       {
         kinds: [30023],
-        '#content-type': ['heritage'],
+        '#t': ['culture-bridge-heritage-contribution'],
       }
     ];
 
@@ -478,7 +478,7 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
       {
         kinds: [30023],
         authors: [pubkey],
-        '#content-type': ['heritage'],
+        '#t': ['culture-bridge-heritage-contribution'],
       }
     ];
 
@@ -614,7 +614,7 @@ export async function deleteHeritageContribution(
       {
         reason: `Heritage contribution "${title}" deleted by author`,
         additionalTags: [
-          ['t', 'culture-bridge-heritage'],
+          ['t', 'culture-bridge-heritage-contribution'], // Heritage identifier tag
         ],
       }
     );

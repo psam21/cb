@@ -300,8 +300,7 @@ export const useHeritagePublishing = () => {
       // Build event tags
       const tags: string[][] = [
         ['d', dTag],
-        ['content-type', 'heritage'],
-        ['t', 'culture-bridge-heritage-contribution'], // System tag
+        ['t', 'culture-bridge-heritage-contribution'], // Heritage identifier tag
         ['title', data.title],
         ['category', data.category],
         ['heritage-type', data.heritageType],
