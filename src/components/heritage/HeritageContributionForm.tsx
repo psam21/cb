@@ -48,9 +48,19 @@ interface HeritageFormData {
 interface HeritageContributionFormProps {
   onContributionCreated?: (contributionId: string) => void;
   onCancel?: () => void;
+  defaultValues?: Partial<HeritageFormData & { 
+    attachments: GenericAttachment[];
+    dTag?: string; // For updating existing contributions
+  }>;
+  isEditMode?: boolean;
 }
 
-export const HeritageContributionForm = ({ onContributionCreated, onCancel }: HeritageContributionFormProps) => {
+export const HeritageContributionForm = ({ 
+  onContributionCreated, 
+  onCancel,
+  defaultValues,
+  isEditMode = false,
+}: HeritageContributionFormProps) => {
   // Initialize publishing hook
   const {
     isPublishing,
@@ -63,21 +73,21 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
   } = useHeritagePublishing();
 
   const [formData, setFormData] = useState<HeritageFormData>({
-    title: '',
-    description: '',
-    category: '',
-    heritageType: '',
-    language: '',
-    communityGroup: '',
-    region: '',
-    country: '',
-    timePeriod: '',
-    sourceType: '',
-    contributorRole: '',
-    knowledgeKeeper: '',
-    tags: [],
+    title: defaultValues?.title || '',
+    description: defaultValues?.description || '',
+    category: defaultValues?.category || '',
+    heritageType: defaultValues?.heritageType || '',
+    language: defaultValues?.language || '',
+    communityGroup: defaultValues?.communityGroup || '',
+    region: defaultValues?.region || '',
+    country: defaultValues?.country || '',
+    timePeriod: defaultValues?.timePeriod || '',
+    sourceType: defaultValues?.sourceType || '',
+    contributorRole: defaultValues?.contributorRole || '',
+    knowledgeKeeper: defaultValues?.knowledgeKeeper || '',
+    tags: defaultValues?.tags || [],
   });
-  const [attachments, setAttachments] = useState<GenericAttachment[]>([]);
+  const [attachments, setAttachments] = useState<GenericAttachment[]>(defaultValues?.attachments || []);
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -137,8 +147,11 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
       attachments: attachments,
     };
     
-    // Publish to Nostr
-    const publishResult = await publishHeritage(heritageData);
+    // Publish to Nostr (pass dTag if editing)
+    const publishResult = await publishHeritage(
+      heritageData, 
+      defaultValues?.dTag // Pass existing dTag for updates
+    );
     
     // Handle success
     if (publishResult.success && publishResult.eventId) {
@@ -173,10 +186,13 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
     <div className="bg-white rounded-lg shadow-sm border p-6">
       <div className="mb-8">
         <h2 className="text-3xl font-serif font-bold text-primary-800 mb-2">
-          Contribute Heritage
+          {isEditMode ? 'Edit Heritage Contribution' : 'Contribute Heritage'}
         </h2>
         <p className="text-gray-600">
-          Share cultural knowledge, traditions, and stories to preserve them for future generations.
+          {isEditMode 
+            ? 'Update your cultural knowledge, traditions, and stories.'
+            : 'Share cultural knowledge, traditions, and stories to preserve them for future generations.'
+          }
         </p>
       </div>
 
@@ -566,7 +582,10 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
             className="px-8 py-3 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isPublishing && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isPublishing ? 'Publishing...' : 'Submit Contribution'}
+            {isPublishing 
+              ? (isEditMode ? 'Updating...' : 'Publishing...') 
+              : (isEditMode ? 'Update Contribution' : 'Submit Contribution')
+            }
           </button>
         </div>
 
@@ -586,7 +605,7 @@ export const HeritageContributionForm = ({ onContributionCreated, onCancel }: He
         {result?.success && result.eventId && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <p className="text-sm text-green-800">
-              <strong>Success!</strong> Your heritage contribution has been published successfully.
+              <strong>Success!</strong> Your heritage contribution has been {isEditMode ? 'updated' : 'published'} successfully.
             </p>
           </div>
         )}

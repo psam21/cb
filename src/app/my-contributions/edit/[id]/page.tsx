@@ -1,10 +1,12 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { fetchHeritageById } from '@/services/business/HeritageContentService';
 import type { HeritageContribution } from '@/services/business/HeritageContentService';
+import { HeritageContributionForm } from '@/components/heritage/HeritageContributionForm';
+import type { GenericAttachment } from '@/types/attachments';
 import { logger } from '@/services/core/LoggingService';
 
 export default function HeritageEditPage() {
@@ -80,6 +82,63 @@ export default function HeritageEditPage() {
     }
   }, [contributionId, isClient, user, router]);
 
+  // Convert HeritageContribution to form defaultValues (must be before early returns)
+  const formDefaultValues = useMemo(() => {
+    if (!contribution) return undefined;
+
+    // Convert media to GenericAttachment format
+    const attachments: GenericAttachment[] = contribution.media.map((media, index) => ({
+      id: media.id,
+      type: media.type as 'image' | 'video' | 'audio',
+      name: media.source.name || `Media ${index + 1}`,
+      size: 0, // Size not available from event
+      mimeType: media.source.mimeType || 'application/octet-stream',
+      url: media.source.url,
+      hash: media.source.hash,
+      createdAt: contribution.createdAt,
+    }));
+
+    return {
+      title: contribution.title,
+      description: contribution.description,
+      category: contribution.category,
+      heritageType: contribution.heritageType,
+      language: contribution.language || '',
+      communityGroup: contribution.communityGroup || '',
+      region: contribution.regionOrigin,
+      country: contribution.country || '',
+      timePeriod: contribution.timePeriod,
+      sourceType: contribution.sourceType,
+      contributorRole: contribution.contributorRole || '',
+      knowledgeKeeper: contribution.knowledgeKeeper || '',
+      tags: contribution.tags,
+      attachments,
+      dTag: contribution.dTag,
+    };
+  }, [contribution]);
+
+  const handleCancel = () => {
+    logger.info('Cancelling contribution edit', {
+      service: 'HeritageEditPage',
+      method: 'handleCancel',
+      contributionId,
+    });
+    router.push('/my-contributions');
+  };
+
+  const handleContributionUpdated = (updatedId: string) => {
+    logger.info('Contribution updated successfully', {
+      service: 'HeritageEditPage',
+      method: 'handleContributionUpdated',
+      contributionId: updatedId,
+    });
+    
+    // Redirect to my contributions page after update
+    setTimeout(() => {
+      router.push('/my-contributions');
+    }, 1500);
+  };
+
   // Redirect if not authenticated
   if (isClient && (!isAuthenticated || !user)) {
     logger.warn('User not authenticated, redirecting to signin', {
@@ -131,15 +190,6 @@ export default function HeritageEditPage() {
     );
   }
 
-  const handleCancel = () => {
-    logger.info('Cancelling contribution edit', {
-      service: 'HeritageEditPage',
-      method: 'handleCancel',
-      contributionId,
-    });
-    router.push('/my-contributions');
-  };
-
   return (
     <div className="min-h-screen bg-primary-50">
       {/* Header */}
@@ -165,61 +215,12 @@ export default function HeritageEditPage() {
 
       {/* Main Content */}
       <div className="container-width py-8">
-        <div className="bg-white rounded-2xl shadow-sm p-8">
-          <div className="text-center py-12">
-            <div className="text-primary-300 mb-4">
-              <svg
-                className="w-16 h-16 mx-auto"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-serif font-bold text-primary-800 mb-2">Edit Form Coming Soon</h3>
-            <p className="text-gray-600 mb-6 text-lg">
-              Heritage contribution editing functionality will be implemented in the next phase.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              For now, you can view your contribution details:
-            </p>
-            <div className="bg-primary-50 rounded-lg p-6 text-left max-w-2xl mx-auto mb-6">
-              <dl className="space-y-3">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-gray-500">Heritage Type</dt>
-                  <dd className="mt-1 text-base font-medium text-primary-900">{contribution.heritageType}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-gray-500">Category</dt>
-                  <dd className="mt-1 text-base font-medium text-primary-900">{contribution.category}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-gray-500">Time Period</dt>
-                  <dd className="mt-1 text-base font-medium text-primary-900">{contribution.timePeriod}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-gray-500">Region</dt>
-                  <dd className="mt-1 text-base font-medium text-primary-900">
-                    {contribution.regionOrigin}
-                    {contribution.country && `, ${contribution.country}`}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-            <button
-              onClick={handleCancel}
-              className="btn-primary-sm"
-            >
-              Back to My Contributions
-            </button>
-          </div>
-        </div>
+        <HeritageContributionForm
+          defaultValues={formDefaultValues}
+          isEditMode={true}
+          onContributionCreated={handleContributionUpdated}
+          onCancel={handleCancel}
+        />
       </div>
     </div>
   );

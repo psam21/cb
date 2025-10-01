@@ -62,9 +62,12 @@ export const useHeritagePublishing = () => {
 
   /**
    * Publish heritage contribution to Nostr
+   * @param data - Heritage contribution data
+   * @param existingDTag - Optional dTag for updating existing contributions
    */
   const publishHeritage = useCallback(async (
-    data: HeritageContributionData
+    data: HeritageContributionData,
+    existingDTag?: string
   ): Promise<HeritagePublishingResult> => {
     try {
       logger.info('Starting heritage contribution publishing', {
@@ -285,8 +288,14 @@ export const useHeritagePublishing = () => {
       // Get user's public key
       const pubkey = await signer.getPublicKey();
 
-      // Generate unique d tag
-      const dTag = `heritage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Use existing dTag for updates, or generate new one for creation
+      const dTag = existingDTag || `heritage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      logger.info(existingDTag ? 'Updating existing heritage contribution' : 'Creating new heritage contribution', {
+        service: 'useHeritagePublishing',
+        dTag,
+        isUpdate: !!existingDTag,
+      });
 
       // Build event tags
       const tags: string[][] = [
