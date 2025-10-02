@@ -857,6 +857,349 @@ export async function deleteHeritageContribution(
 const heritageContentService = HeritageContentService.getInstance();
 
 // Register with content detail service
+/**
+ * Update result interface (matching Shop pattern)
+ */
+export interface UpdateHeritageResult {
+  success: boolean;
+  eventId?: string;
+  contribution?: HeritageContribution;
+  publishedRelays?: string[];
+  failedRelays?: string[];
+  error?: string;
+}
+
+/**
+ * Update an existing heritage contribution with attachments
+ * Follows Shop's pattern: fetch original → upload new → merge with selective ops → publish
+ * 
+ * @param contributionId - The d-tag ID of the contribution to update
+ * @param updatedData - Partial heritage data with fields to update
+ * @param attachmentFiles - New File objects to upload (NOT existing attachments)
+ * @param signer - Nostr signer for signing events
+ * @param selectiveOps - Optional: Explicitly specify which attachments to keep/remove
+ */
+export async function updateHeritageWithAttachments(
+  contributionId: string,
+  updatedData: Partial<HeritageContributionData>,
+  attachmentFiles: File[],
+  signer: NostrSigner,
+  selectiveOps?: { removedAttachments: string[]; keptAttachments: string[] }
+): Promise<UpdateHeritageResult> {
+  try {
+    logger.info('Starting heritage contribution update with attachments', {
+      service: 'HeritageContentService',
+      method: 'updateHeritageWithAttachments',
+      contributionId,
+      newAttachmentCount: attachmentFiles.length,
+      hasSelectiveOps: !!selectiveOps,
+      selectiveOps: selectiveOps ? {
+        removedCount: selectiveOps.removedAttachments.length,
+        keptCount: selectiveOps.keptAttachments.length,
+      } : null,
+    });
+
+    // Step 1: Fetch the original contribution
+    const originalContribution = await fetchHeritageById(contributionId);
+    if (!originalContribution) {
+      return {
+        success: false,
+        error: `Original contribution not found: ${contributionId}`,
+      };
+    }
+
+    logger.info('Original contribution state before update', {
+      service: 'HeritageContentService',
+      method: 'updateHeritageWithAttachments',
+      contributionId,
+      originalState: {
+        title: originalContribution.title,
+        description: originalContribution.description,
+        mediaCount: originalContribution.media?.length || 0,
+        media: originalContribution.media?.map(m => ({
+          id: m.id,
+          type: m.type,
+          url: m.source?.url,
+          hash: m.source?.hash,
+        })) || [],
+      },
+    });
+
+    // Step 2: Upload new attachment files (if any)
+    let newAttachments: Array<{
+      url: string;
+      type: 'image' | 'video' | 'audio';
+      hash?: string;
+      name: string;
+      size?: number;
+      mimeType?: string;
+    }> = [];
+
+    if (attachmentFiles.length > 0) {
+      logger.info('Uploading new attachments', {
+        service: 'HeritageContentService',
+        method: 'updateHeritageWithAttachments',
+        fileCount: attachmentFiles.length,
+      });
+
+      // Import the upload service dynamically to avoid circular dependencies
+      const { uploadSequentialWithConsent } = await import('@/services/generic/GenericBlossomService');
+      
+      const uploadResult = await uploadSequentialWithConsent(
+        attachmentFiles,
+        signer,
+        (progress) => {
+          logger.info('Upload progress', {
+            service: 'HeritageContentService',
+            method: 'updateHeritageWithAttachments',
+            ...progress,
+          });
+        }
+      );
+
+      if (!uploadResult.success && !uploadResult.partialSuccess) {
+        return {
+          success: false,
+          error: `Failed to upload attachments: ${uploadResult.failedFiles.map(f => f.error).join(', ')}`,
+        };
+      }
+
+      // Map uploaded files to attachment format
+      newAttachments = uploadResult.uploadedFiles.map((uploaded) => {
+        const file = attachmentFiles.find(f => f.name === uploaded.fileId);
+        const fileType = uploaded.fileType || '';
+        
+        let attachmentType: 'image' | 'video' | 'audio' = 'image';
+        if (fileType.startsWith('video/')) attachmentType = 'video';
+        else if (fileType.startsWith('audio/')) attachmentType = 'audio';
+
+        return {
+          url: uploaded.url,
+          type: attachmentType,
+          hash: uploaded.hash,
+          name: file?.name || uploaded.fileId,
+          size: uploaded.fileSize,
+          mimeType: uploaded.fileType,
+        };
+      });
+
+      logger.info('New attachments uploaded', {
+        service: 'HeritageContentService',
+        method: 'updateHeritageWithAttachments',
+        uploadedCount: newAttachments.length,
+        failedCount: uploadResult.failedFiles.length,
+      });
+    }
+
+    // Step 3: Merge attachments using selective operations (following Shop's pattern)
+    let allAttachments: Array<{
+      url: string;
+      type: 'image' | 'video' | 'audio';
+      hash?: string;
+      name: string;
+      size?: number;
+      mimeType?: string;
+    }> = [];
+
+    // Convert existing media to attachment format
+    const existingAttachments = (originalContribution.media || []).map(media => ({
+      id: media.id,
+      url: media.source?.url || '',
+      type: media.type,
+      hash: media.source?.hash,
+      name: media.title || media.source?.url?.split('/').pop() || 'media',
+      size: media.source?.size,
+      mimeType: media.source?.mimeType,
+    }));
+
+    if (selectiveOps) {
+      // Selective mode: Keep only specified attachments + add new ones
+      const keptAttachments = existingAttachments.filter(att =>
+        selectiveOps.keptAttachments.includes(att.id)
+      );
+      allAttachments = [...keptAttachments, ...newAttachments];
+
+      logger.info('Selective attachment merge', {
+        service: 'HeritageContentService',
+        method: 'updateHeritageWithAttachments',
+        originalCount: existingAttachments.length,
+        keptCount: keptAttachments.length,
+        removedCount: selectiveOps.removedAttachments.length,
+        newCount: newAttachments.length,
+        finalCount: allAttachments.length,
+      });
+    } else {
+      // Legacy mode: Keep all existing + add new ones
+      allAttachments = newAttachments.length > 0
+        ? [...existingAttachments, ...newAttachments]
+        : existingAttachments;
+
+      logger.info('Legacy attachment merge (keep all + new)', {
+        service: 'HeritageContentService',
+        method: 'updateHeritageWithAttachments',
+        existingCount: existingAttachments.length,
+        newCount: newAttachments.length,
+        finalCount: allAttachments.length,
+      });
+    }
+
+    // Step 4: Prepare merged data
+    const mergedData = {
+      ...originalContribution,
+      ...updatedData,
+      attachments: allAttachments,
+    };
+
+    // Step 5: Check for changes (avoid unnecessary updates)
+    const hasContentChanges = Object.keys(updatedData).some(key => {
+      const originalValue = originalContribution[key as keyof HeritageContribution];
+      const newValue = mergedData[key as keyof typeof mergedData];
+      return originalValue !== newValue;
+    });
+
+    const hasAttachmentChanges = newAttachments.length > 0 || (selectiveOps && selectiveOps.removedAttachments.length > 0);
+
+    if (!hasContentChanges && !hasAttachmentChanges) {
+      logger.info('No changes detected, skipping update', {
+        service: 'HeritageContentService',
+        method: 'updateHeritageWithAttachments',
+        contributionId,
+        reason: 'No content or attachment changes detected',
+      });
+
+      return {
+        success: true,
+        contribution: originalContribution,
+        eventId: originalContribution.eventId,
+      };
+    }
+
+    logger.info('Changes detected, proceeding with update', {
+      service: 'HeritageContentService',
+      method: 'updateHeritageWithAttachments',
+      contributionId,
+      hasContentChanges,
+      hasAttachmentChanges,
+    });
+
+    // Step 6: Create NIP-33 replacement event (same dTag)
+    logger.info('Creating replacement event', {
+      service: 'HeritageContentService',
+      method: 'updateHeritageWithAttachments',
+      dTag: originalContribution.dTag,
+      title: mergedData.title,
+      attachmentCount: allAttachments.length,
+    });
+
+    const event = await nostrEventService.createHeritageEvent(
+      {
+        title: mergedData.title,
+        category: mergedData.category,
+        heritageType: mergedData.heritageType,
+        timePeriod: mergedData.timePeriod,
+        sourceType: mergedData.sourceType,
+        region: mergedData.regionOrigin,
+        country: mergedData.country || '',
+        contributorRole: mergedData.contributorRole || '',
+        description: mergedData.description,
+        language: mergedData.language,
+        community: mergedData.communityGroup,
+        knowledgeKeeperContact: mergedData.knowledgeKeeper,
+        tags: mergedData.tags,
+        attachments: allAttachments,
+      },
+      signer,
+      originalContribution.dTag // Same dTag for NIP-33 replacement
+    );
+
+    // Step 7: Publish to relays
+    logger.info('Publishing replacement event to relays', {
+      service: 'HeritageContentService',
+      method: 'updateHeritageWithAttachments',
+      eventId: event.id,
+      dTag: originalContribution.dTag,
+    });
+
+    const publishResult = await nostrEventService.publishEvent(
+      event,
+      signer,
+      (relay, status) => {
+        logger.info('Relay publishing status', {
+          service: 'HeritageContentService',
+          method: 'updateHeritageWithAttachments',
+          relay,
+          status,
+          eventId: event.id,
+        });
+      }
+    );
+
+    if (!publishResult.success) {
+      return {
+        success: false,
+        error: `Failed to publish to any relay: ${publishResult.error}`,
+        eventId: event.id,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+      };
+    }
+
+    // Step 8: Create updated contribution object
+    const media = createMediaItemsFromImeta(event);
+
+    const updatedContribution: HeritageContribution = {
+      ...originalContribution,
+      eventId: event.id,
+      title: mergedData.title,
+      description: mergedData.description,
+      category: mergedData.category,
+      heritageType: mergedData.heritageType,
+      language: mergedData.language,
+      communityGroup: mergedData.communityGroup,
+      regionOrigin: mergedData.regionOrigin,
+      country: mergedData.country,
+      timePeriod: mergedData.timePeriod,
+      sourceType: mergedData.sourceType,
+      contributorRole: mergedData.contributorRole,
+      knowledgeKeeper: mergedData.knowledgeKeeper,
+      media,
+      tags: mergedData.tags,
+      publishedAt: event.created_at,
+      publishedRelays: publishResult.publishedRelays,
+    };
+
+    logger.info('Heritage contribution updated successfully', {
+      service: 'HeritageContentService',
+      method: 'updateHeritageWithAttachments',
+      eventId: event.id,
+      dTag: originalContribution.dTag,
+      title: mergedData.title,
+      publishedRelays: publishResult.publishedRelays.length,
+      mediaCount: media.length,
+    });
+
+    return {
+      success: true,
+      eventId: event.id,
+      contribution: updatedContribution,
+      publishedRelays: publishResult.publishedRelays,
+      failedRelays: publishResult.failedRelays,
+    };
+
+  } catch (error) {
+    logger.error('Failed to update heritage contribution', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'HeritageContentService',
+      method: 'updateHeritageWithAttachments',
+      contributionId,
+    });
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error updating heritage contribution',
+    };
+  }
+}
+
 contentDetailService.registerProvider('heritage', heritageContentService);
 
 logger.info('Registering content detail provider', {

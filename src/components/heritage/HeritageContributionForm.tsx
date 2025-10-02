@@ -18,6 +18,7 @@ import { UserConsentDialog } from '@/components/generic/UserConsentDialog';
 import { GenericAttachment } from '@/types/attachments';
 import { X, Loader2 } from 'lucide-react';
 import { useHeritagePublishing } from '@/hooks/useHeritagePublishing';
+import { useHeritageEditing } from '@/hooks/useHeritageEditing';
 import type { HeritageContributionData } from '@/types/heritage';
 
 // Dynamic import for RichTextEditor (client-side only)
@@ -51,6 +52,7 @@ interface HeritageContributionFormProps {
   defaultValues?: Partial<HeritageFormData & { 
     attachments: GenericAttachment[];
     dTag?: string; // For updating existing contributions
+    contributionId?: string; // For editing with selective operations
   }>;
   isEditMode?: boolean;
 }
@@ -61,7 +63,11 @@ export const HeritageContributionForm = ({
   defaultValues,
   isEditMode = false,
 }: HeritageContributionFormProps) => {
-  // Initialize publishing hook
+  // Initialize hooks - use editing hook for edit mode, publishing hook for create mode
+  const publishingHook = useHeritagePublishing();
+  const editingHook = useHeritageEditing();
+  
+  // Choose the appropriate hook based on mode
   const {
     isPublishing,
     uploadProgress,
@@ -70,7 +76,51 @@ export const HeritageContributionForm = ({
     result,
     publishHeritage,
     consentDialog,
-  } = useHeritagePublishing();
+  } = isEditMode && defaultValues?.contributionId ? {
+    isPublishing: editingHook.isUpdating,
+    uploadProgress: editingHook.updateProgress,
+    currentStep: editingHook.updateProgress?.step || 'idle',
+    error: editingHook.updateError,
+    result: null, // Editing doesn't use result the same way
+    publishHeritage: async (data: HeritageContributionData, dTag?: string) => {
+      // For editing, extract new files and track selective operations
+      const newFiles = data.attachments.filter(a => a.originalFile).map(a => a.originalFile!);
+      const existingAttachments = defaultValues?.attachments || [];
+      const currentAttachmentIds = data.attachments.map(a => a.id);
+      
+      // Track removed and kept attachments
+      const removedAttachments = existingAttachments
+        .filter(a => !currentAttachmentIds.includes(a.id))
+        .map(a => a.id);
+      const keptAttachments = existingAttachments
+        .filter(a => currentAttachmentIds.includes(a.id))
+        .map(a => a.id);
+      
+      const result = await editingHook.updateContributionData(
+        defaultValues.contributionId!,
+        {
+          title: data.title,
+          description: data.description,
+          category: data.category,
+          heritageType: data.heritageType,
+          language: data.language,
+          community: data.community,
+          region: data.region,
+          country: data.country,
+          timePeriod: data.timePeriod,
+          sourceType: data.sourceType,
+          contributorRole: data.contributorRole,
+          knowledgeKeeperContact: data.knowledgeKeeperContact,
+          tags: data.tags,
+        },
+        newFiles,
+        { removedAttachments, keptAttachments }
+      );
+      
+      return result;
+    },
+    consentDialog: publishingHook.consentDialog, // Use publishing hook's consent dialog
+  } : publishingHook;
 
   const [formData, setFormData] = useState<HeritageFormData>({
     title: defaultValues?.title || '',
@@ -593,9 +643,12 @@ export const HeritageContributionForm = ({
         {isPublishing && currentStep && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              <strong>Publishing:</strong> {currentStep}
-              {uploadProgress > 0 && uploadProgress < 100 && (
+              <strong>{isEditMode ? 'Updating' : 'Publishing'}:</strong> {currentStep}
+              {typeof uploadProgress === 'number' && uploadProgress > 0 && uploadProgress < 100 && (
                 <span className="ml-2">({uploadProgress}%)</span>
+              )}
+              {typeof uploadProgress === 'object' && uploadProgress?.progress !== undefined && (
+                <span className="ml-2">({uploadProgress.progress}%)</span>
               )}
             </p>
           </div>
