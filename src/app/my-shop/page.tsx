@@ -12,7 +12,6 @@ import { BaseGrid } from '@/components/ui/BaseGrid';
 import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 import { logger } from '@/services/core/LoggingService';
-import { filterLatestRevisions } from '@/utils/revisionFilter';
 
 export default function MyShopPage() {
   const router = useRouter();
@@ -21,12 +20,11 @@ export default function MyShopPage() {
   const [showDeleted, setShowDeleted] = useState(false);
   const { products, isLoading, error, refreshProducts } = useMyShopProducts(showDeleted);
 
-  // Filter products to show only latest revisions
+  // No filtering needed - NIP-33 relays return only latest events per dTag
   const filteredProducts = useMemo(() => {
     console.log(`[MyShopPage] Raw products count: ${products.length}, showDeleted: ${showDeleted}`);
-    const filtered = filterLatestRevisions(products);
-    console.log(`[MyShopPage] Filtered products count: ${filtered.length}`);
-    return filtered;
+    console.log(`[MyShopPage] Filtered products count: ${products.length}`);
+    return products;
   }, [products, showDeleted]);
   // Edit functionality now handled by dedicated edit page
   const { 

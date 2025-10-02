@@ -8,21 +8,19 @@ import { ProductCreationForm } from '@/components/shop/ProductCreationForm';
 import { BaseGrid } from '@/components/ui/BaseGrid';
 import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
-import { filterLatestRevisions } from '@/utils/revisionFilter';
 
 export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const router = useRouter();
 
-  // Filter products to show only latest revisions
+  // No filtering needed - NIP-33 relays return only latest events per dTag
   const filteredProducts = useMemo(() => {
     console.log(`[ShopPage] Raw products count: ${products.length}`);
     console.log(`[ShopPage] Raw products:`, products);
-    const filtered = filterLatestRevisions(products);
-    console.log(`[ShopPage] Filtered products count: ${filtered.length}`);
-    console.log(`[ShopPage] Filtered products:`, filtered);
-    return filtered;
+    console.log(`[ShopPage] Filtered products count: ${products.length}`);
+    console.log(`[ShopPage] Filtered products:`, products);
+    return products;
   }, [products]);
 
   const handleProductCreated = (productId: string) => {

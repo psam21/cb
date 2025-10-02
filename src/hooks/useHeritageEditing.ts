@@ -81,6 +81,10 @@ export function useHeritageEditing() {
         updatedData,
         attachmentFiles,
         signer,
+        (progress) => {
+          // Update progress state with service progress
+          setUpdateProgress(progress);
+        },
         selectiveOps
       );
 

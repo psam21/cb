@@ -870,6 +870,16 @@ export interface UpdateHeritageResult {
 }
 
 /**
+ * Heritage publishing progress (matches Shop pattern)
+ */
+export interface HeritagePublishingProgress {
+  step: 'idle' | 'validating' | 'uploading' | 'publishing' | 'complete' | 'error';
+  progress: number;
+  message: string;
+  details?: string;
+}
+
+/**
  * Update an existing heritage contribution with attachments
  * Follows Shop's pattern: fetch original → upload new → merge with selective ops → publish
  * 
@@ -877,6 +887,7 @@ export interface UpdateHeritageResult {
  * @param updatedData - Partial heritage data with fields to update
  * @param attachmentFiles - New File objects to upload (NOT existing attachments)
  * @param signer - Nostr signer for signing events
+ * @param onProgress - Optional callback for progress updates
  * @param selectiveOps - Optional: Explicitly specify which attachments to keep/remove
  */
 export async function updateHeritageWithAttachments(
@@ -884,9 +895,17 @@ export async function updateHeritageWithAttachments(
   updatedData: Partial<HeritageContributionData>,
   attachmentFiles: File[],
   signer: NostrSigner,
+  onProgress?: (progress: HeritagePublishingProgress) => void,
   selectiveOps?: { removedAttachments: string[]; keptAttachments: string[] }
 ): Promise<UpdateHeritageResult> {
   try {
+    onProgress?.({
+      step: 'validating',
+      progress: 5,
+      message: 'Starting update...',
+      details: 'Validating contribution',
+    });
+
     logger.info('Starting heritage contribution update with attachments', {
       service: 'HeritageContentService',
       method: 'updateHeritageWithAttachments',
@@ -936,6 +955,13 @@ export async function updateHeritageWithAttachments(
     }> = [];
 
     if (attachmentFiles.length > 0) {
+      onProgress?.({
+        step: 'uploading',
+        progress: 10,
+        message: 'Starting media upload...',
+        details: `Uploading ${attachmentFiles.length} file(s)`,
+      });
+
       logger.info('Uploading new attachments', {
         service: 'HeritageContentService',
         method: 'updateHeritageWithAttachments',
@@ -949,6 +975,15 @@ export async function updateHeritageWithAttachments(
         attachmentFiles,
         signer,
         (progress) => {
+          // Map upload progress to heritage publishing progress (10% to 70%)
+          const progressPercent = 10 + (progress.overallProgress * 60);
+          onProgress?.({
+            step: 'uploading',
+            progress: progressPercent,
+            message: 'Uploading attachments...',
+            details: `File ${progress.currentFileIndex + 1} of ${progress.totalFiles}`,
+          });
+
           logger.info('Upload progress', {
             service: 'HeritageContentService',
             method: 'updateHeritageWithAttachments',
@@ -1083,6 +1118,13 @@ export async function updateHeritageWithAttachments(
     });
 
     // Step 6: Create NIP-33 replacement event (same dTag)
+    onProgress?.({
+      step: 'publishing',
+      progress: 75,
+      message: 'Creating event...',
+      details: 'Preparing NIP-33 replacement event',
+    });
+
     logger.info('Creating replacement event', {
       service: 'HeritageContentService',
       method: 'updateHeritageWithAttachments',
@@ -1113,6 +1155,13 @@ export async function updateHeritageWithAttachments(
     );
 
     // Step 7: Publish to relays
+    onProgress?.({
+      step: 'publishing',
+      progress: 85,
+      message: 'Publishing to relays...',
+      details: 'Broadcasting replacement event',
+    });
+
     logger.info('Publishing replacement event to relays', {
       service: 'HeritageContentService',
       method: 'updateHeritageWithAttachments',
@@ -1176,6 +1225,13 @@ export async function updateHeritageWithAttachments(
       title: mergedData.title,
       publishedRelays: publishResult.publishedRelays.length,
       mediaCount: media.length,
+    });
+
+    onProgress?.({
+      step: 'complete',
+      progress: 100,
+      message: 'Update complete!',
+      details: `Published to ${publishResult.publishedRelays.length} relays`,
     });
 
     return {
