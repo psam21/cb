@@ -339,7 +339,7 @@ export const HeritageContributionForm = ({
               value={formData.description}
               onChange={(value) => handleInputChange('description', value)}
               placeholder="Describe the tradition, practice, or knowledge. Include its significance, how it's practiced, and any important details..."
-              maxLength={5000}
+              maxLength={50000}
               minHeight={200}
               error={errors.description}
             />

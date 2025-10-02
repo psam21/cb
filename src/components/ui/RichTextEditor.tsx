@@ -53,6 +53,8 @@ export default function RichTextEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        // Disable strike to add it separately with custom config
+        strike: false,
       }),
       Link.configure({
         openOnClick: false,
