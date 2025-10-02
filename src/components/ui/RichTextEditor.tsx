@@ -60,7 +60,7 @@ export default function RichTextEditor({
         heading: {
           levels: [1, 2, 3],
         },
-        // Disable strike to add it separately with custom config
+        // Disable extensions we're adding separately to avoid duplicates
         strike: false,
       }),
       Link.configure({
@@ -129,7 +129,7 @@ export default function RichTextEditor({
         style: `min-height: ${minHeight}px`,
       },
     },
-  });
+  }, []); // Add empty dependency array to prevent re-creation
 
   // Update editor content when value changes externally
   useEffect(() => {
