@@ -461,13 +461,17 @@ export async function fetchHeritageById(id: string): Promise<HeritageContributio
     // Parse media from imeta tags (includes full metadata: size, dimensions, mime type, hash)
     const media = createMediaItemsFromImeta(latestEvent);
 
+    // Parse the JSON content to extract the actual description (following Shop's battle-tested pattern)
+    const parsedContent = nostrEventService.parseEventContent(latestEvent);
+    const description = parsedContent?.content || latestEvent.content;
+
     const contribution: HeritageContribution = {
       id: dTag,
       dTag,
       eventId: latestEvent.id,
       pubkey: latestEvent.pubkey,
       title,
-      description: latestEvent.content,
+      description,
       category,
       heritageType,
       language,
@@ -635,13 +639,17 @@ export async function fetchAllHeritage(): Promise<HeritageContribution[]> {
       // Parse media from imeta tags (includes full metadata: size, dimensions, mime type, hash)
       const media = createMediaItemsFromImeta(event);
 
+      // Parse the JSON content to extract the actual description (following Shop's battle-tested pattern)
+      const parsedContent = nostrEventService.parseEventContent(event as import('../../types/nostr').NIP23Event);
+      const description = parsedContent?.content || event.content;
+
       contributions.push({
         id: dTag,
         dTag,
         eventId: event.id || '',
         pubkey: event.pubkey,
         title,
-        description: event.content,
+        description,
         category,
         heritageType,
         language,
@@ -732,13 +740,17 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
       // Parse media from imeta tags (includes full metadata: size, dimensions, mime type, hash)
       const media = createMediaItemsFromImeta(event);
 
+      // Parse the JSON content to extract the actual description (following Shop's battle-tested pattern)
+      const parsedContent = nostrEventService.parseEventContent(event as import('../../types/nostr').NIP23Event);
+      const description = parsedContent?.content || event.content;
+
       contributions.push({
         id: dTag,
         dTag,
         eventId: event.id || '',
         pubkey: event.pubkey,
         title,
-        description: event.content,
+        description,
         category,
         heritageType,
         language,
