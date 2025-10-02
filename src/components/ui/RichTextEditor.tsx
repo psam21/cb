@@ -47,6 +47,13 @@ export default function RichTextEditor({
   minHeight = 200,
   error,
 }: RichTextEditorProps) {
+  // Debug: Log initial value to see markdown content
+  useEffect(() => {
+    if (value) {
+      console.log('[RichTextEditor] Initial markdown value:', value.substring(0, 200));
+    }
+  }, []);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -103,6 +110,13 @@ export default function RichTextEditor({
       }),
     ],
     content: value,
+    onCreate: ({ editor }) => {
+      // Debug: Check how content was parsed
+      console.log('[RichTextEditor] Editor created with content');
+      const storage = editor.storage as unknown as MarkdownStorage;
+      const parsedMarkdown = storage.markdown?.getMarkdown();
+      console.log('[RichTextEditor] Parsed markdown:', parsedMarkdown?.substring(0, 200));
+    },
     onUpdate: ({ editor }) => {
       // Export as markdown for Nostr NIP-23 events
       const storage = editor.storage as unknown as MarkdownStorage;
@@ -122,6 +136,7 @@ export default function RichTextEditor({
     if (editor) {
       const storage = editor.storage as unknown as MarkdownStorage;
       if (value !== storage.markdown?.getMarkdown()) {
+        console.log('[RichTextEditor] Updating content externally:', value?.substring(0, 100));
         editor.commands.setContent(value);
       }
     }
