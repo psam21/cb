@@ -336,7 +336,7 @@ export const HeritageContributionForm = ({
               Provide a detailed description of this cultural contribution using rich formatting
             </p>
             <RichTextEditor
-              value={formData.description}
+              value={formData.description || ''}
               onChange={(value) => handleInputChange('description', value)}
               placeholder="Describe the tradition, practice, or knowledge. Include its significance, how it's practiced, and any important details..."
               maxLength={50000}
