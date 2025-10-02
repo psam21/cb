@@ -47,7 +47,7 @@ export default function RichTextEditor({
   minHeight = 200,
   error,
 }: RichTextEditorProps) {
-  // Debug: Log initial value to see markdown content
+  // Log initial markdown value for debugging content flow
   useEffect(() => {
     if (value) {
       console.log('[RichTextEditor] Initial markdown value:', value.substring(0, 200));
