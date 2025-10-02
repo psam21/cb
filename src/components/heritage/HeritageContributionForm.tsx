@@ -19,6 +19,7 @@ import { GenericAttachment } from '@/types/attachments';
 import { X, Loader2 } from 'lucide-react';
 import { useHeritagePublishing } from '@/hooks/useHeritagePublishing';
 import { useHeritageEditing } from '@/hooks/useHeritageEditing';
+import { filterVisibleTags } from '@/utils/tagFilter';
 import type { HeritageContributionData } from '@/types/heritage';
 
 // Dynamic import for RichTextEditor (client-side only)
@@ -135,7 +136,7 @@ export const HeritageContributionForm = ({
     sourceType: defaultValues?.sourceType || '',
     contributorRole: defaultValues?.contributorRole || '',
     knowledgeKeeper: defaultValues?.knowledgeKeeper || '',
-    tags: defaultValues?.tags || [],
+    tags: filterVisibleTags(defaultValues?.tags || []), // Filter out hidden tags for editing
   });
   const [attachments, setAttachments] = useState<GenericAttachment[]>(defaultValues?.attachments || []);
   const [tagInput, setTagInput] = useState('');

@@ -248,7 +248,6 @@ export class NostrEventService {
 
       // Build heritage-specific tags
       const heritageTags: string[][] = [
-        ['t', 'culture-bridge-heritage-contribution'], // Heritage identifier tag
         ['title', heritageData.title],
         ['category', heritageData.category],
         ['heritage-type', heritageData.heritageType],
@@ -276,6 +275,11 @@ export class NostrEventService {
           heritageTags.push(['t', tag.trim()]);
         }
       });
+
+      // Only add culture-bridge-heritage-contribution tag if not already present
+      if (!heritageData.tags.includes('culture-bridge-heritage-contribution')) {
+        heritageTags.push(['t', 'culture-bridge-heritage-contribution']);
+      }
 
       // Add media tags with hashes
       heritageData.attachments.forEach(media => {
