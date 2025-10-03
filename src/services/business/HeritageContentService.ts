@@ -130,6 +130,23 @@ function createMediaItemsFromImeta(event: { tags: string[][] }): ContentMediaIte
   return mediaItems;
 }
 
+/**
+ * Clean legacy content that may have title embedded as H1 heading
+ * This handles backward compatibility with events created before the fix
+ */
+function cleanLegacyContent(content: string, title: string): string {
+  // Remove title as H1 heading from the beginning if it exists
+  const titleH1Pattern = new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n+`, 'i');
+  const cleaned = content.replace(titleH1Pattern, '');
+  
+  // Also remove if title appears at the very start without the H1 marker
+  if (cleaned.startsWith(`${title}\n`)) {
+    return cleaned.substring(title.length + 1).trimStart();
+  }
+  
+  return cleaned;
+}
+
 function buildMeta(contribution: HeritageContribution): ContentMeta[] {
   const meta: ContentMeta[] = [];
 
@@ -463,7 +480,10 @@ export async function fetchHeritageById(id: string): Promise<HeritageContributio
 
     // Parse the JSON content to extract the actual description (following Shop's battle-tested pattern)
     const parsedContent = nostrEventService.parseEventContent(latestEvent);
-    const description = parsedContent?.content || latestEvent.content;
+    const rawDescription = parsedContent?.content || latestEvent.content;
+    
+    // Clean legacy content that may have title embedded as H1 heading (backward compatibility)
+    const description = cleanLegacyContent(rawDescription, title);
 
     const contribution: HeritageContribution = {
       id: dTag,
@@ -641,7 +661,10 @@ export async function fetchAllHeritage(): Promise<HeritageContribution[]> {
 
       // Parse the JSON content to extract the actual description (following Shop's battle-tested pattern)
       const parsedContent = nostrEventService.parseEventContent(event as import('../../types/nostr').NIP23Event);
-      const description = parsedContent?.content || event.content;
+      const rawDescription = parsedContent?.content || event.content;
+      
+      // Clean legacy content that may have title embedded as H1 heading (backward compatibility)
+      const description = cleanLegacyContent(rawDescription, title);
 
       contributions.push({
         id: dTag,
@@ -742,7 +765,10 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
 
       // Parse the JSON content to extract the actual description (following Shop's battle-tested pattern)
       const parsedContent = nostrEventService.parseEventContent(event as import('../../types/nostr').NIP23Event);
-      const description = parsedContent?.content || event.content;
+      const rawDescription = parsedContent?.content || event.content;
+      
+      // Clean legacy content that may have title embedded as H1 heading (backward compatibility)
+      const description = cleanLegacyContent(rawDescription, title);
 
       contributions.push({
         id: dTag,
