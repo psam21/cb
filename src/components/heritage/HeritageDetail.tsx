@@ -36,11 +36,39 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
     return detail.actions.find(action => action.id === 'contact-author');
   }, [detail.actions]);
 
-  // Key metadata - fields shown in the grid (exclude what's shown prominently)
-  const keyMetadata: InfoItem[] = useMemo(() => {
+  // All heritage metadata in a single comprehensive grid
+  const allMetadata: InfoItem[] = useMemo(() => {
     const items: InfoItem[] = [];
 
-    // Don't include heritage type, time period, category, region (shown prominently above)
+    if (detail.customFields.heritageType) {
+      items.push({
+        label: 'Heritage Type',
+        value: detail.customFields.heritageType,
+        emphasis: true,
+      });
+    }
+
+    if (detail.customFields.category) {
+      items.push({
+        label: 'Category',
+        value: detail.customFields.category,
+      });
+    }
+
+    if (detail.customFields.timePeriod) {
+      items.push({
+        label: 'Time Period',
+        value: detail.customFields.timePeriod,
+      });
+    }
+
+    if (detail.customFields.regionOrigin) {
+      items.push({
+        label: 'Region',
+        value: detail.customFields.regionOrigin,
+      });
+    }
+
     if (detail.customFields.country) {
       items.push({
         label: 'Country',
@@ -85,16 +113,6 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
 
     return items;
   }, [detail.customFields]);
-
-  // Supplemental metadata - badges for additional fields from detail.meta
-  const supplementalMeta = useMemo(() => {
-    const hiddenLabels = new Set([
-      'Heritage Type', 'Time Period', 'Category', 'Region of Origin',  // Shown prominently
-      'Country', 'Source Type', 'Language', 'Community', 'Contributor Role', 'Knowledge Keeper',  // In key metadata
-      'Relays'  // Shown in sidebar
-    ]);
-    return (detail.meta ?? []).filter(meta => !hiddenLabels.has(meta.label));
-  }, [detail.meta]);
 
   const tags = useMemo(() => {
     return (detail.tags ?? []).filter(tag => tag.toLowerCase() !== 'culture-bridge-heritage-contribution');
@@ -152,60 +170,26 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
             aria-labelledby="heritage-contribution-details"
             className="space-y-5 rounded-2xl bg-white/80 p-6 shadow-sm ring-1 ring-primary-100"
           >
-            <div>
-              <h2
-                id="heritage-contribution-details"
-                className="text-sm font-semibold uppercase tracking-wide text-gray-500"
-              >
-                Heritage Details
-              </h2>
-              
-              {/* Prominent primary info */}
-              <div className="mt-3">
-                {detail.customFields.heritageType && (
-                  <p className="text-2xl font-semibold text-primary-900">
-                    {detail.customFields.heritageType}
-                    {detail.customFields.timePeriod && (
-                      <span className="text-lg text-gray-600"> • {detail.customFields.timePeriod}</span>
-                    )}
-                  </p>
-                )}
-                
-                {/* Secondary info */}
-                {(detail.customFields.category || detail.customFields.regionOrigin) && (
-                  <p className="mt-2 text-base text-gray-700">
-                    {[detail.customFields.category, detail.customFields.regionOrigin]
-                      .filter(Boolean)
-                      .join(' • ')}
-                  </p>
-                )}
-              </div>
-            </div>
+            <h2
+              id="heritage-contribution-details"
+              className="text-sm font-semibold uppercase tracking-wide text-gray-500"
+            >
+              Heritage Details
+            </h2>
 
-            {keyMetadata.length > 0 && (
+            {allMetadata.length > 0 && (
               <dl className="grid grid-cols-1 gap-4 rounded-2xl bg-white/70 p-4 shadow-inner ring-1 ring-primary-100 md:grid-cols-2">
-                {keyMetadata.map(item => (
+                {allMetadata.map(item => (
                   <div key={item.label}>
                     <dt className="text-xs uppercase tracking-wide text-gray-500">{item.label}</dt>
-                    <dd className="mt-1 text-base font-medium text-primary-900">{item.value}</dd>
+                    <dd
+                      className={`mt-1 text-base font-medium ${item.emphasis ? 'text-primary-900' : 'text-gray-700'}`}
+                    >
+                      {item.value}
+                    </dd>
                   </div>
                 ))}
               </dl>
-            )}
-```
-
-            {supplementalMeta.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {supplementalMeta.map(meta => (
-                  <span
-                    key={`${meta.label}-${meta.value}`}
-                    className="rounded-full border border-primary-100 bg-white px-3 py-1 text-xs font-medium text-primary-700"
-                    title={'tooltip' in meta ? (meta.tooltip as string | undefined) : undefined}
-                  >
-                    {meta.label}: {meta.value}
-                  </span>
-                ))}
-              </div>
             )}
           </section>
         }
