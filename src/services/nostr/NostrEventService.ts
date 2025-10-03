@@ -216,8 +216,8 @@ export class NostrEventService {
       const now = Math.floor(Date.now() / 1000);
       const pubkey = await signer.getPublicKey();
 
-      // Create markdown content with embedded media
-      let markdownContent = `# ${heritageData.title}\n\n${heritageData.description}`;
+      // Create markdown content with embedded media (title is displayed in header, so don't duplicate it here)
+      let markdownContent = heritageData.description;
       
       // Add embedded media to markdown content
       if (heritageData.attachments && heritageData.attachments.length > 0) {
