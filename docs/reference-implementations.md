@@ -15,27 +15,57 @@ This document identifies proven, production-tested implementations that should b
 - Event Creation: `/src/services/nostr/NostrEventService.ts` (createProductEvent)
 
 **Critical Patterns to Replicate**:
-1. **Tag Filtering**: Always use `filterVisibleTags()` when loading for edit
-2. **System Tag Handling**: Check existence before adding system tags
-3. **RichTextEditor Props**: Use `value={formData.field || ''}` (explicit fallback)
-4. **Attachment Operations**: Track `{removedAttachments, keptAttachments}` selectively
-5. **Progress Callbacks**: Wire `onProgress` throughout upload → publish flow
-6. **Form Initialization**: Use callback function in `useState` for complex defaults
-7. **Validation**: Check `hasContentChanges || hasAttachmentChanges` before save
+1. **Stable Identifier Pattern**: Use `id = dTag` (not `id = eventId`)
+   - Aligns with NIP-33: dTag persists across updates, eventId changes
+   - Provides user-friendly, stable URLs
+   - All create/update methods set `id = originalProduct.dTag`
+2. **dTag Generation**: Use `dTagPrefix: 'product'` in GenericEventService
+3. **Tag Filtering**: Always use `filterVisibleTags()` when loading for edit
+4. **System Tag Handling**: Check existence before adding system tags
+5. **RichTextEditor Props**: Use `value={formData.field || ''}` (explicit fallback)
+6. **Attachment Operations**: Track `{removedAttachments, keptAttachments}` selectively
+7. **Progress Callbacks**: Wire `onProgress` throughout upload → publish flow
+8. **Form Initialization**: Use callback function in `useState` for complex defaults
+9. **Validation**: Check `hasContentChanges || hasAttachmentChanges` before save
 
 ---
 
 ### Heritage Contribution Flow
-**Status**: ✅ Aligned with Shop (as of 2025-10-02)  
+**Status**: ✅ Fully aligned with Shop (as of 2025-10-03)  
 **Based On**: Shop Product Flow
 
-**Alignment Checklist** (completed):
+**Key Components**:
+- Form: `/src/components/heritage/HeritageContributionForm.tsx`
+- Service: `/src/services/business/HeritageContentService.ts`
+- Hooks: `/src/hooks/useHeritagePublishing.ts`, `/src/hooks/useHeritageEditing.ts`
+- Event Creation: `/src/services/nostr/NostrEventService.ts` (createHeritageEvent)
+
+**Critical Patterns Implemented**:
+1. **Stable Identifier Pattern**: Uses `id = dTag` (matches Shop)
+   - NIP-33 alignment: dTag persists, eventId changes on updates
+   - Provides stable URLs like `/heritage/contribution-xxx-yyy`
+2. **dTag Generation**: Uses `dTagPrefix: 'contribution'` (distinct from Shop's 'product')
+3. **Auto-Redirect**: Redirects to detail page 1 second after successful publication
+   - Uses `useEffect` with `setTimeout` for non-blocking user feedback
+   - Shows success message before redirect
+4. **Tag Filtering**: Uses `filterVisibleTags()` when loading for edit
+5. **System Tag Handling**: Prevents duplicate system tags
+6. **RichTextEditor Props**: Explicit fallback `|| ''`
+7. **Selective Attachment Operations**: Tracks `{removedAttachments, keptAttachments}`
+8. **Progress Callbacks**: Wired throughout upload → publish flow
+9. **Service Layer Architecture**: Business → Event → Generic service pattern
+10. **Hook-Based State Management**: Separates publishing and editing concerns
+
+**Alignment Checklist** (all completed):
+- [x] Stable identifier pattern (`id = dTag`)
+- [x] dTag prefix customization (`contribution-` vs `product-`)
+- [x] Auto-redirect after successful publication
 - [x] Tag filtering with `filterVisibleTags()`
 - [x] System tag duplication prevention
 - [x] RichTextEditor explicit fallback `|| ''`
 - [x] Selective attachment operations
 - [x] Progress callback wiring
-- [x] Service layer architecture
+- [x] Service layer architecture (SOA compliance)
 - [x] Hook-based state management
 
 ---

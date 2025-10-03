@@ -54,6 +54,12 @@ Create explicit comparison for EVERY aspect:
 - [ ] Attachment operations
 - [ ] Data validation
 
+### Identifier Pattern (NIP-33)
+- [ ] Uses `id = dTag` as stable identifier
+- [ ] dTag persists across updates (not eventId)
+- [ ] dTagPrefix customization (e.g., 'product', 'contribution')
+- [ ] URL routing uses dTag
+
 ### State Management
 - [ ] Hook usage patterns
 - [ ] State initialization
@@ -65,6 +71,12 @@ Create explicit comparison for EVERY aspect:
 - [ ] Progress callbacks
 - [ ] Error handling
 - [ ] Event creation logic
+
+### UX Patterns
+- [ ] Auto-redirect after success (if applicable)
+- [ ] Loading states
+- [ ] Error messages
+- [ ] Success feedback
 
 ### Edge Cases
 - [ ] Empty states

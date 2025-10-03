@@ -398,11 +398,38 @@ GenericEventService.createNIP23Event() (Generic Layer)
 Unsigned event → Sign → Publish
 ```
 
+**Critical Patterns:**
+- Uses `id = dTag` as stable identifier (persists across updates)
+- NIP-33 alignment: dTag stays same, eventId changes on replacement
+- `dTagPrefix: 'product'` generates IDs like `product-{timestamp}-{random}`
+- Business service orchestrates, event service builds, generic service creates
+
 **Study this. Replicate this. Don't deviate from this.**
 
-### ❌ WRONG: Heritage Contribution (Being Fixed)
+### ✅ CORRECT: Heritage Contribution Creation
 ```
 useHeritagePublishing.ts (Hook)
+  ↓ calls
+HeritageContentService.createHeritageContribution() (Business Layer)
+  ↓ calls  
+NostrEventService.createHeritageEvent() (Event Layer)
+  ↓ calls
+GenericEventService.createNIP23Event() (Generic Layer)
+  ↓ returns
+Unsigned event → Sign → Publish
+```
+
+**Critical Patterns:**
+- Uses `id = dTag` as stable identifier (matches Shop pattern)
+- `dTagPrefix: 'contribution'` generates IDs like `contribution-{timestamp}-{random}`
+- Auto-redirects to detail page after successful publication (1 second delay)
+- Follows same SOA architecture as Shop
+
+**Status: ✅ Fully aligned with Shop pattern (as of 2025-10-03)**
+
+### ❌ WRONG: Manual Event Building (NEVER DO THIS)
+```
+useCustomHook.ts (Hook)
   ↓ manually builds tags
   ↓ manually creates event object
   ↓ signs and publishes directly
@@ -413,7 +440,7 @@ NO generic service usage
 = ARCHITECTURAL VIOLATION
 ```
 
-**Never do this. Being refactored to match shop pattern.**
+**Never do this. Always use service layers.**
 
 ---
 
