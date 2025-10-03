@@ -5,16 +5,19 @@ This document identifies proven, production-tested implementations that should b
 ## 🏆 Gold Standard Implementations
 
 ### Shop Product Flow
+
 **Status**: ✅ Battle-tested in production  
 **Use As Reference For**: Any e-commerce, product listing, or item management features
 
 **Key Components**:
+
 - Form: `/src/components/shop/ProductEditForm.tsx`
 - Service: `/src/services/business/ShopBusinessService.ts`
 - Hook: `/src/hooks/useProductEditing.ts`
 - Event Creation: `/src/services/nostr/NostrEventService.ts` (createProductEvent)
 
 **Critical Patterns to Replicate**:
+
 1. **Stable Identifier Pattern**: Use `id = dTag` (not `id = eventId`)
    - Aligns with NIP-33: dTag persists across updates, eventId changes
    - Provides user-friendly, stable URLs
@@ -31,16 +34,19 @@ This document identifies proven, production-tested implementations that should b
 ---
 
 ### Heritage Contribution Flow
+
 **Status**: ✅ Fully aligned with Shop (as of 2025-10-03)  
 **Based On**: Shop Product Flow
 
 **Key Components**:
+
 - Form: `/src/components/heritage/HeritageContributionForm.tsx`
 - Service: `/src/services/business/HeritageContentService.ts`
 - Hooks: `/src/hooks/useHeritagePublishing.ts`, `/src/hooks/useHeritageEditing.ts`
 - Event Creation: `/src/services/nostr/NostrEventService.ts` (createHeritageEvent)
 
 **Critical Patterns Implemented**:
+
 1. **Stable Identifier Pattern**: Uses `id = dTag` (matches Shop)
    - NIP-33 alignment: dTag persists, eventId changes on updates
    - Provides stable URLs like `/heritage/contribution-xxx-yyy`
@@ -57,6 +63,7 @@ This document identifies proven, production-tested implementations that should b
 10. **Hook-Based State Management**: Separates publishing and editing concerns
 
 **Alignment Checklist** (all completed):
+
 - [x] Stable identifier pattern (`id = dTag`)
 - [x] dTag prefix customization (`contribution-` vs `product-`)
 - [x] Auto-redirect after successful publication
@@ -73,6 +80,7 @@ This document identifies proven, production-tested implementations that should b
 ## 📋 When to Use This Document
 
 ### Trigger Phrases:
+
 - "Use X as reference"
 - "Follow the same pattern as X"
 - "X is battle-tested"
@@ -80,6 +88,7 @@ This document identifies proven, production-tested implementations that should b
 - "Make Y work like X"
 
 ### Required Actions:
+
 1. ✅ Identify the reference implementation from this document
 2. ✅ Create comparison checklist of ALL patterns (not just obvious ones)
 3. ✅ Compare: Props, State Init, Tags, Validation, Error Handling, Edge Cases
@@ -91,6 +100,7 @@ This document identifies proven, production-tested implementations that should b
 ## 🔄 Update Protocol
 
 When a new feature is proven battle-tested:
+
 1. Add to this document with date and status
 2. List critical patterns to replicate
 3. Link to key files
@@ -101,6 +111,7 @@ When a new feature is proven battle-tested:
 ## ⚠️ Warning Signs
 
 If you see differences between new implementation and reference:
+
 - ❌ "This is just a small difference" → VERIFY it's intentional
 - ❌ "The new way might be better" → PROVE it first, then update reference
 - ❌ "I found one match, must be good" → Check EVERYTHING systematically

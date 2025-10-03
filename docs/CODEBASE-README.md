@@ -9,9 +9,11 @@ This directory contains critical documentation for the Culture Bridge codebase. 
 ### 🚨 **Start Here**
 
 #### [`critical-guidelines.md`](./critical-guidelines.md)
+
 **Purpose**: Non-negotiable rules for all code  
 **When to read**: FIRST - Before writing any code  
 **Contains**:
+
 - Cardinal sins (architecture violations, SOA bypasses)
 - Mandatory workflow (build → fix → commit → push → verify)
 - Code quality commandments
@@ -27,9 +29,11 @@ This directory contains critical documentation for the Culture Bridge codebase. 
 When implementing features based on proven patterns, use these three documents:
 
 #### 1. [`reference-implementations.md`](./reference-implementations.md)
+
 **Purpose**: Catalog of battle-tested code to replicate  
 **When to read**: When told to "follow X pattern" or "X is battle-tested"  
 **Contains**:
+
 - Gold standard implementations (Shop = reference)
 - Critical patterns to replicate
 - Component mapping guides
@@ -40,9 +44,11 @@ When implementing features based on proven patterns, use these three documents:
 ---
 
 #### 2. [`implementation-protocol.md`](./implementation-protocol.md)
+
 **Purpose**: Step-by-step procedure for reference-based work  
 **When to read**: After identifying a reference implementation  
 **Contains**:
+
 - Mandatory protocol phases
 - Comprehensive comparison checklist template
 - Anti-patterns to avoid
@@ -53,9 +59,11 @@ When implementing features based on proven patterns, use these three documents:
 ---
 
 #### 3. [`ai-assistant-guidance.md`](./ai-assistant-guidance.md)
+
 **Purpose**: Explicit instructions for AI assistants  
 **When to read**: At session start (AI) or when supervising AI work (human)  
 **Contains**:
+
 - Keyword trigger table (battle-tested, proven, reference)
 - Standard Operating Procedures
 - Escalation rules (reactive → comprehensive mode)
@@ -68,10 +76,12 @@ When implementing features based on proven patterns, use these three documents:
 ### 📖 **Feature-Specific Guides**
 
 #### [`heritage-testing-guide.md`](./heritage-testing-guide.md)
+
 **Purpose**: Testing procedures for heritage contributions  
 **Contains**: End-to-end testing workflows
 
 #### Other Guides
+
 - `detail-page-inconsistencies.md`
 - `heritage-architectural-issues-and-fixes.md`
 - `heritage-contribution-system.md`
@@ -85,17 +95,21 @@ When implementing features based on proven patterns, use these three documents:
 ## 🎯 Quick Decision Tree
 
 ### "I'm starting new work"
+
 → Read [`critical-guidelines.md`](./critical-guidelines.md)
 
 ### "User says: 'Follow shop pattern'" or "'Shop is battle-tested'"
+
 1. Read [`reference-implementations.md`](./reference-implementations.md) - What to replicate
 2. Follow [`implementation-protocol.md`](./implementation-protocol.md) - How to execute
 3. Use [`ai-assistant-guidance.md`](./ai-assistant-guidance.md) - AI workflow
 
 ### "I'm fixing a bug"
+
 → Check [`critical-guidelines.md`](./critical-guidelines.md) for anti-patterns
 
 ### "I'm testing a feature"
+
 → Check feature-specific guides + [`critical-guidelines.md`](./critical-guidelines.md) success criteria
 
 ---
@@ -103,30 +117,38 @@ When implementing features based on proven patterns, use these three documents:
 ## 🔑 Key Concepts
 
 ### SOA (Service-Oriented Architecture)
+
 **Defined in**: [`critical-guidelines.md`](./critical-guidelines.md)
-```
+
+```text
 Page → Component → Hook → Business Service → Event Service → Generic Service
 ```
+
 **Non-negotiable**: Never bypass these layers
 
 ### Battle-Tested Pattern
+
 **Defined in**: [`reference-implementations.md`](./reference-implementations.md)
+
 - Shop Product Flow = Gold Standard
 - All similar features must replicate its patterns
 - Use [`implementation-protocol.md`](./implementation-protocol.md) for systematic replication
 
 ### Tag System
+
 **Defined in**: [`critical-guidelines.md`](./critical-guidelines.md)
+
 ```typescript
-['t', 'culture-bridge-{content-type}']
+["t", "culture-bridge-{content-type}"];
 ```
+
 **Rule**: Use established patterns, don't invent new ones
 
 ---
 
 ## 📋 Document Relationships
 
-```
+```text
 critical-guidelines.md (Foundation)
     ├─ Defines: SOA, Tag patterns, Workflow
     └─ References: Shop as proven pattern
@@ -152,11 +174,13 @@ ai-assistant-guidance.md (Meta)
 ## ⚡ For AI Assistants
 
 **Session Start Checklist**:
+
 1. ✅ Read [`critical-guidelines.md`](./critical-guidelines.md) - Know the rules
 2. ✅ Open [`ai-assistant-guidance.md`](./ai-assistant-guidance.md) - Know the protocols
 3. ✅ Check if "battle-tested" mentioned → Execute comprehensive comparison
 
 **Trigger Phrases** (escalate to battle-tested protocol):
+
 - "battle-tested"
 - "proven"
 - "use X as reference"
@@ -168,16 +192,19 @@ ai-assistant-guidance.md (Meta)
 ## 🚀 For Human Developers
 
 **Before coding**:
+
 - Read [`critical-guidelines.md`](./critical-guidelines.md)
 - Check if similar feature exists in [`reference-implementations.md`](./reference-implementations.md)
 - Follow SOA layers strictly
 
 **During implementation**:
+
 - Use battle-tested patterns when available
 - Test before marking complete
 - Document as you code
 
 **Before commit**:
+
 - Build succeeds
 - All errors fixed
 - Manual testing complete
@@ -188,12 +215,14 @@ ai-assistant-guidance.md (Meta)
 ## 🔄 Maintenance
 
 **When to update**:
+
 - New battle-tested implementation → Add to [`reference-implementations.md`](./reference-implementations.md)
 - New anti-pattern discovered → Add to [`critical-guidelines.md`](./critical-guidelines.md)
 - Protocol improvement → Update [`implementation-protocol.md`](./implementation-protocol.md)
 - New keyword trigger → Update [`ai-assistant-guidance.md`](./ai-assistant-guidance.md)
 
 **How to update**:
+
 1. Make changes
 2. Update this README if structure changes
 3. Commit with clear explanation
@@ -201,4 +230,4 @@ ai-assistant-guidance.md (Meta)
 
 ---
 
-*This documentation system ensures consistent, high-quality implementations by providing clear standards, proven patterns, and systematic procedures.*
+_This documentation system ensures consistent, high-quality implementations by providing clear standards, proven patterns, and systematic procedures._

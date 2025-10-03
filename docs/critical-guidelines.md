@@ -8,68 +8,83 @@
 ## 🚨 CARDINAL SINS (Never Do These)
 
 ### 1. ARCHITECTURE THEATER
+
 **❌ Building code that looks right but doesn't work**
+
 - Coding without testing = FAILURE
 - "Complete" without proof = LYING
 - Pretty code without functionality = WASTE
 - Architecture over working features = WRONG PRIORITY
 
 **✅ THE FIX:**
+
 - Build → Test → Verify → THEN mark complete
 - Proof required: Event IDs, console logs, UI verification
 - Function over form. Working over pretty.
 - **NO SHORTCUTS. NO ASSUMPTIONS.**
 
 ### 2. SOA VIOLATIONS
+
 **❌ Bypassing established service layers**
 
 **CORRECT FLOW (NON-NEGOTIABLE):**
-```
+
+```text
 Page → Component → Hook → Business Service → Event Service → Generic Service
 ```
 
 **❌ WRONG (What heritage did):**
-```
+
+```text
 Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ```
 
 **✅ THE FIX:**
+
 - ALWAYS use service layers
 - NEVER build events in hooks/components
 - REUSE existing services (GenericEventService, NostrEventService)
 - Follow shop pattern, not custom shortcuts
 
 ### 3. TAG SYSTEM CHAOS
+
 **❌ Inventing your own tagging patterns**
 
 **ESTABLISHED PATTERN (Use This):**
+
 ```typescript
 // Event creation
 ['t', 'culture-bridge-{content-type}']
 
-// Query filter  
+// Query filter
 { kinds: [30023], '#t': ['culture-bridge-{content-type}'] }
 ```
 
 **❌ NEVER:**
+
 - Invent new tag patterns without checking shop
 - Use different discovery mechanisms per content type
 - Create tags that aren't queryable
 
 ### 4. DEAD CODE ACCUMULATION
+
 **❌ Leaving unused code "just in case"**
+
 - If it's not imported → DELETE
-- If it's not called → DELETE  
+- If it's not called → DELETE
 - If tests don't exist → DELETE or write tests
 - "Future use" without clear plan → DELETE
 
 **✅ THE FIX:**
+
 - Grep for usage before keeping code
 - Remove immediately when confirmed unused
 - No orphaned utilities, no dead exports
 
 ### 5. MOCK/PLACEHOLDER IMPLEMENTATIONS
+
 **❌ Shipping incomplete code**
+
 - "Coming Soon" pages → NOT ACCEPTABLE
 - Mock data without real implementation → REMOVE
 - Placeholder functions → COMPLETE OR DELETE
@@ -84,7 +99,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 **EVERY. SINGLE. TIME.**
 
 1. **Build:** `npm run build`
-2. **Fix:** ALL errors iteratively  
+2. **Fix:** ALL errors iteratively
 3. **Commit:** Detailed message explaining WHAT changed and WHY
 4. **Push:** `git push origin main`
 5. **Verify:** User tests on https://culturebridge.vercel.app
@@ -99,7 +114,9 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## 🎯 CODE QUALITY COMMANDMENTS
 
 ### 1. Service-Oriented Architecture (SOA)
+
 **Layers are LAW:**
+
 - **UI Layer:** Pages, Components (display only)
 - **Hook Layer:** State management, UI logic (no business logic)
 - **Business Service Layer:** Orchestration, validation, workflows
@@ -110,7 +127,9 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 **Each layer talks ONLY to adjacent layers.**
 
 ### 2. Code Reuse First
+
 **Before writing ANY new code:**
+
 1. Search for existing implementations
 2. Check GenericEventService for event creation
 3. Check if shop does something similar
@@ -119,7 +138,9 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 **The question: "Does this already exist?" is MANDATORY.**
 
 ### 3. Testing is Not Optional
+
 **Definition of "Complete":**
+
 - ✅ Code written
 - ✅ Build succeeds
 - ✅ Tested manually end-to-end
@@ -129,7 +150,9 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 **Anything less = INCOMPLETE**
 
 ### 4. Documentation is Sacred
+
 **When you touch architecture:**
+
 - Document the pattern
 - Explain WHY (Architecture Decision Record)
 - Update relevant docs
@@ -140,6 +163,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## 🔥 HERITAGE SYSTEM LESSONS (Never Repeat)
 
 ### What Went Wrong
+
 1. **No Architecture Review** → Built without checking shop pattern
 2. **Took Shortcuts** → Bypassed service layers for "speed" → Technical debt
 3. **Invented New Patterns** → Used `content-type` tag instead of `t` tag
@@ -148,6 +172,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 6. **Dead Code Created** → createRevisionEvent() never used, revisionFilter.ts orphaned
 
 ### Remediation Applied
+
 - ✅ Tag system aligned with shop pattern
 - ⏳ Service layers being added (business + event)
 - ⏳ Event creation moving to GenericEventService
@@ -155,6 +180,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 - ⏳ Full architectural compliance required
 
 ### Prevention Rules
+
 1. **MANDATORY:** Review shop pattern before implementing similar features
 2. **MANDATORY:** Use GenericEventService.createNIP23Event() for all Kind 30023 events
 3. **MANDATORY:** Architecture review for any new content type
@@ -166,22 +192,27 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## 💀 ANTI-PATTERNS (Instant Rejection)
 
 ### ❌ "It Compiles, Ship It"
+
 **Problem:** TypeScript happy ≠ Feature working
 **Fix:** Manual end-to-end testing REQUIRED
 
 ### ❌ "Works on My Machine"
+
 **Problem:** Localhost ≠ Production
 **Fix:** Test on https://culturebridge.vercel.app ONLY
 
-### ❌ "I'll Document Later"  
+### ❌ "I'll Document Later"
+
 **Problem:** Later = Never
 **Fix:** Document AS YOU CODE or don't code at all
 
 ### ❌ "Just One Little Shortcut"
+
 **Problem:** Technical debt compounds
 **Fix:** Do it right or don't do it
 
 ### ❌ "The User Will Test It"
+
 **Problem:** User is not QA
 **Fix:** YOU test it first, THEN user verifies
 
@@ -190,24 +221,28 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## 🛡️ DEFENSIVE CODING RULES
 
 ### 1. Never Trust Existing Code
+
 - Read it
 - Verify it works
 - Test it yourself
 - Ask user if uncertain
 
 ### 2. Never Assume State
+
 - Check for null/undefined
 - Validate all inputs
 - Log extensively (console, not runtime)
 - Handle errors explicitly
 
 ### 3. Never Skip Verification
+
 - grep for imports before deleting
 - Check usage before refactoring
 - Verify queries return data
 - Test ALL user paths
 
 ### 4. Never Bypass Validation
+
 - Use existing validation utilities
 - GenericEventService.validateEventForSigning()
 - Business service validation methods
@@ -218,12 +253,14 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## 📋 CHECKLIST FOR ANY NEW FEATURE
 
 **Before writing a single line:**
+
 - [ ] Does shop already do this? Study the pattern
 - [ ] What services exist? Reuse them
 - [ ] What's the SOA layer flow? Map it out
 - [ ] Where does GenericEventService fit? Use it
 
 **While coding:**
+
 - [ ] Following SOA layers strictly
 - [ ] Reusing existing services
 - [ ] Using established tag patterns
@@ -231,6 +268,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 - [ ] No business logic in hooks/components
 
 **Before committing:**
+
 - [ ] `npm run build` succeeds
 - [ ] All errors fixed
 - [ ] Manual testing complete
@@ -239,6 +277,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 - [ ] Documentation updated
 
 **After pushing:**
+
 - [ ] Vercel deployment successful
 - [ ] Production testing complete
 - [ ] User confirmation received
@@ -251,6 +290,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ### Context Window Optimization
 
 **When you have limited context:**
+
 1. **Read this file FIRST** - It contains critical patterns
 2. **Check shop implementation** - It's the reference pattern
 3. **Use grep aggressively** - Find before you build
@@ -281,24 +321,28 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ### Heritage Implementation Failures
 
 **Failure 1: Tag System Deviation**
+
 - **What:** Used `content-type` tag instead of `t` tag pattern
 - **Why:** Didn't check shop's established pattern
 - **Fix:** Always review shop before implementing
 - **Prevention:** Tag pattern is NOW standardized (see §3)
 
-**Failure 2: SOA Bypass**  
+**Failure 2: SOA Bypass**
+
 - **What:** Built events directly in useHeritagePublishing hook
 - **Why:** Took shortcut instead of creating service layers
 - **Fix:** Refactoring to use proper business/event services
 - **Prevention:** SOA is NON-NEGOTIABLE (see §2)
 
 **Failure 3: Code Duplication**
+
 - **What:** Reimplemented GenericEventService.createNIP23Event() logic
 - **Why:** Didn't check if event creation already existed
 - **Fix:** Migrate to use GenericEventService
 - **Prevention:** Code reuse first (see §2 of Code Quality)
 
 **Failure 4: Dead Code**
+
 - **What:** createRevisionEvent() created but never used
 - **Why:** Planned feature abandoned, code not removed
 - **Fix:** Deleting unused code + orphaned utilities
@@ -307,8 +351,9 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ### Architecture Theater Failure
 
 **Failure:** Generic event service "complete" but never tested
+
 - **What:** Built services, hooks, components
-- **Why:** Focused on architecture over functionality  
+- **Why:** Focused on architecture over functionality
 - **Fix:** Marked incomplete, went back, tested each piece
 - **Prevention:** Test BEFORE marking complete (see Workflow)
 
@@ -354,6 +399,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## ✅ SUCCESS CRITERIA
 
 **A feature is complete when:**
+
 1. ✅ Follows SOA architecture
 2. ✅ Reuses existing services
 3. ✅ Uses established patterns (tags, events, etc.)
@@ -372,6 +418,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## 🚨 EMERGENCY STOP CONDITIONS
 
 **STOP all work immediately if:**
+
 - ❌ You're building events outside service layer
 - ❌ You're inventing new patterns without checking shop
 - ❌ You're bypassing validation
@@ -386,11 +433,12 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ## 📚 REFERENCE IMPLEMENTATIONS
 
 ### ✅ CORRECT: Shop Product Creation
-```
+
+```text
 useShopPublishing.ts (Hook)
   ↓ calls
 ShopBusinessService.createProduct() (Business Layer)
-  ↓ calls  
+  ↓ calls
 NostrEventService.createProductEvent() (Event Layer)
   ↓ calls
 GenericEventService.createNIP23Event() (Generic Layer)
@@ -399,6 +447,7 @@ Unsigned event → Sign → Publish
 ```
 
 **Critical Patterns:**
+
 - Uses `id = dTag` as stable identifier (persists across updates)
 - NIP-33 alignment: dTag stays same, eventId changes on replacement
 - `dTagPrefix: 'product'` generates IDs like `product-{timestamp}-{random}`
@@ -407,11 +456,12 @@ Unsigned event → Sign → Publish
 **Study this. Replicate this. Don't deviate from this.**
 
 ### ✅ CORRECT: Heritage Contribution Creation
-```
+
+```text
 useHeritagePublishing.ts (Hook)
   ↓ calls
 HeritageContentService.createHeritageContribution() (Business Layer)
-  ↓ calls  
+  ↓ calls
 NostrEventService.createHeritageEvent() (Event Layer)
   ↓ calls
 GenericEventService.createNIP23Event() (Generic Layer)
@@ -420,6 +470,7 @@ Unsigned event → Sign → Publish
 ```
 
 **Critical Patterns:**
+
 - Uses `id = dTag` as stable identifier (matches Shop pattern)
 - `dTagPrefix: 'contribution'` generates IDs like `contribution-{timestamp}-{random}`
 - Auto-redirects to detail page after successful publication (1 second delay)
@@ -428,12 +479,13 @@ Unsigned event → Sign → Publish
 **Status: ✅ Fully aligned with Shop pattern (as of 2025-10-03)**
 
 ### ❌ WRONG: Manual Event Building (NEVER DO THIS)
-```
+
+```text
 useCustomHook.ts (Hook)
   ↓ manually builds tags
   ↓ manually creates event object
   ↓ signs and publishes directly
-  
+
 NO business layer
 NO event service
 NO generic service usage
@@ -455,8 +507,9 @@ NO generic service usage
 7. **Use established patterns** - Check shop first
 
 **This codebase has ZERO tolerance for:**
+
 - Architecture violations
-- Untested code marked "complete"  
+- Untested code marked "complete"
 - Pattern deviations without justification
 - Dead code accumulation
 - Shortcuts that create technical debt
@@ -465,6 +518,6 @@ NO generic service usage
 
 ---
 
-*Last Updated: October 1, 2025*
-*Status: ACTIVE - Mandatory compliance for all contributors*
-*Violations: Will be rejected and require immediate remediation*
+_Last Updated: October 1, 2025_
+_Status: ACTIVE - Mandatory compliance for all contributors_
+_Violations: Will be rejected and require immediate remediation_

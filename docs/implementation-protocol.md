@@ -5,14 +5,16 @@ This document defines **mandatory procedures** for implementing features based o
 ## 🚨 When This Protocol Applies
 
 ### Trigger Keywords from User:
+
 - "battle-tested"
 - "proven"
-- "use X as reference" 
+- "use X as reference"
 - "follow X pattern"
 - "make it work like X"
 - "X is the gold standard"
 
 ### Automatic Triggers:
+
 - Implementing Feature B based on Feature A
 - Migrating patterns between modules
 - Standardizing across components
@@ -22,12 +24,14 @@ This document defines **mandatory procedures** for implementing features based o
 ## ✅ Mandatory Protocol Steps
 
 ### Phase 1: Reference Identification
+
 **STOP and Execute:**
 
 1. **Locate Reference** in `/docs/reference-implementations.md`
 2. **Read ALL critical patterns** listed for that reference
 3. **Map components**: What maps to what?
-   ```
+
+   ```text
    Reference Shop          → New Heritage
    ProductEditForm         → HeritageContributionForm
    useProductEditing       → useHeritageEditing
@@ -35,6 +39,7 @@ This document defines **mandatory procedures** for implementing features based o
    ```
 
 ### Phase 2: Comprehensive Comparison
+
 **STOP and Execute:**
 
 Create explicit comparison for EVERY aspect:
@@ -43,42 +48,49 @@ Create explicit comparison for EVERY aspect:
 ## Comparison Checklist: [Reference] → [New]
 
 ### Form Layer
+
 - [ ] Props passed to components
 - [ ] Initial state structure
 - [ ] Default values handling
 - [ ] Form field mapping
 
 ### Data Processing
+
 - [ ] Tag filtering/handling
 - [ ] System tag management
 - [ ] Attachment operations
 - [ ] Data validation
 
 ### Identifier Pattern (NIP-33)
+
 - [ ] Uses `id = dTag` as stable identifier
 - [ ] dTag persists across updates (not eventId)
 - [ ] dTagPrefix customization (e.g., 'product', 'contribution')
 - [ ] URL routing uses dTag
 
 ### State Management
+
 - [ ] Hook usage patterns
 - [ ] State initialization
 - [ ] Update handlers
 - [ ] Error states
 
 ### Service Layer
+
 - [ ] API call patterns
 - [ ] Progress callbacks
 - [ ] Error handling
 - [ ] Event creation logic
 
 ### UX Patterns
+
 - [ ] Auto-redirect after success (if applicable)
 - [ ] Loading states
 - [ ] Error messages
 - [ ] Success feedback
 
 ### Edge Cases
+
 - [ ] Empty states
 - [ ] Null/undefined handling
 - [ ] Fallback values
@@ -88,6 +100,7 @@ Create explicit comparison for EVERY aspect:
 **DO NOT PROCEED** until ALL items verified.
 
 ### Phase 3: Implementation
+
 **STOP and Execute:**
 
 1. **Implement ONE section at a time**
@@ -96,16 +109,19 @@ Create explicit comparison for EVERY aspect:
 4. **Test immediately** - don't accumulate untested code
 
 ### Phase 4: Final Validation
+
 **STOP and Execute:**
 
 1. **Side-by-side code review**: Open reference file and new file
 2. **Line-by-line pattern verification** for critical sections
 3. **Run comparison search**:
+
    ```bash
    # Example: Compare tag handling
    grep -n "filterVisibleTags" src/components/shop/ProductEditForm.tsx
    grep -n "filterVisibleTags" src/components/heritage/HeritageContributionForm.tsx
    ```
+
 4. **Build and test**
 5. **Document completion** in `/docs/reference-implementations.md`
 
@@ -138,11 +154,12 @@ Create explicit comparison for EVERY aspect:
 ### When User Says "Battle-Tested":
 
 **Your Response Should Be:**
-```
+
+```text
 "Understood - I'll use [Reference] as the complete template.
 Let me do a comprehensive comparison of:
 1. Form patterns
-2. Data handling  
+2. Data handling
 3. Tag management
 4. State management
 5. Service layer
@@ -152,21 +169,24 @@ I'll verify EACH aspect matches before proceeding."
 ```
 
 **NOT:**
-```
+
+```text
 "I'll check the specific thing you asked about" ❌
 ```
 
 ### During Implementation:
 
 **Communicate Pattern Matches:**
-```
+
+```text
 ✅ Form initialization matches Shop pattern (filterVisibleTags)
 ✅ RichTextEditor props match Shop pattern (|| '' fallback)
 ✅ Tag handling matches Shop pattern (duplicate prevention)
 ```
 
 **Flag Deviations Immediately:**
-```
+
+```text
 ⚠️ Found difference in [X]. Shop does [A], Heritage does [B].
 Should Heritage match Shop's approach?
 ```
@@ -186,11 +206,11 @@ After each "battle-tested" implementation:
 
 ## 📌 Quick Reference Card
 
-```
+```text
 BATTLE-TESTED DETECTED
     ↓
 1. Identify reference in reference-implementations.md
-2. Create comprehensive comparison checklist  
+2. Create comprehensive comparison checklist
 3. Verify EVERY pattern (not just obvious ones)
 4. Implement with continuous verification
 5. Final side-by-side validation
