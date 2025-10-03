@@ -348,6 +348,7 @@ export const useHeritagePublishing = () => {
       const result: HeritagePublishingResult = {
         success: true,
         eventId: serviceResult.eventId!,
+        dTag: serviceResult.contribution?.dTag, // Include dTag for URL navigation
         event: undefined, // Event structure handled by service layer
         publishedToRelays: serviceResult.publishedRelays || [],
       };

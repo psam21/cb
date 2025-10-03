@@ -18,6 +18,7 @@ export interface EventCreationOptions {
     fileSize: number;
   };
   dTag?: string; // Custom d tag for parameterized replaceable events
+  dTagPrefix?: string; // Optional prefix for auto-generated dTag (e.g., 'product', 'contribution')
 }
 
 export interface DeletionEventOptions {
@@ -81,7 +82,9 @@ export class GenericEventService {
 
       const now = Math.floor(Date.now() / 1000);
       // Create a deterministic d tag based on content - this allows for proper replacement
-      const dTag = options.dTag || `product-${now}-${Math.random().toString(36).substring(2, 8)}`;
+      // Use custom prefix if provided, otherwise default to 'product'
+      const prefix = options.dTagPrefix || 'product';
+      const dTag = options.dTag || `${prefix}-${now}-${Math.random().toString(36).substring(2, 8)}`;
 
       // Create event with tags following NIP-23 and NIP-33 specifications
       const event: Omit<NIP23Event, 'id' | 'sig'> = {

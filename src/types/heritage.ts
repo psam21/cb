@@ -96,6 +96,7 @@ export interface HeritageEventData {
 export interface HeritagePublishingResult {
   success: boolean;
   eventId?: string;
+  dTag?: string; // The d-tag identifier for the contribution (used for URLs)
   event?: HeritageNostrEvent;
   error?: string;
   publishedToRelays?: string[];

@@ -307,9 +307,10 @@ export class NostrEventService {
         }
       });
 
-      // Create event using GenericEventService
+      // Create event using GenericEventService with 'contribution' prefix for heritage
       const eventResult = createNIP23Event(nip23Content, pubkey, {
         dTag, // Pass custom d tag if provided
+        dTagPrefix: 'contribution', // Use 'contribution-' prefix for heritage events
         tags: heritageTags,
       });
 

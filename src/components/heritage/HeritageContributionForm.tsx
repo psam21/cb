@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { getHeritageCategories } from '@/config/categories';
 import { 
@@ -64,6 +65,8 @@ export const HeritageContributionForm = ({
   defaultValues,
   isEditMode = false,
 }: HeritageContributionFormProps) => {
+  const router = useRouter();
+  
   // Initialize hooks - use editing hook for edit mode, publishing hook for create mode
   const publishingHook = useHeritagePublishing();
   const editingHook = useHeritageEditing();
@@ -141,6 +144,18 @@ export const HeritageContributionForm = ({
   const [attachments, setAttachments] = useState<GenericAttachment[]>(defaultValues?.attachments || []);
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Auto-redirect to detail page after successful publication
+  useEffect(() => {
+    if (result?.success && result.dTag) {
+      // Wait 1 second to show success message, then redirect
+      const redirectTimer = setTimeout(() => {
+        router.push(`/heritage/${result.dTag}`);
+      }, 1000);
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [result, router]);
 
   const handleInputChange = (field: keyof HeritageFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -655,20 +670,28 @@ export const HeritageContributionForm = ({
           </div>
         )}
 
-        {/* Success Message */}
+        {/* Success Message with Redirect Notice */}
         {result?.success && result.eventId && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <p className="text-sm text-green-800">
               <strong>Success!</strong> Your heritage contribution has been {isEditMode ? 'updated' : 'published'} successfully.
+              {result.dTag && (
+                <span className="block mt-1 text-green-700">
+                  Redirecting to your contribution page...
+                </span>
+              )}
             </p>
           </div>
         )}
 
-        {/* Error Message */}
+        {/* Error Message with Retry Option */}
         {publishError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-sm text-red-800">
               <strong>Error:</strong> {publishError}
+            </p>
+            <p className="text-xs text-red-700 mt-2">
+              You can fix any issues above and try publishing again.
             </p>
           </div>
         )}

@@ -37,7 +37,7 @@ export function useHeritageEditing() {
     updatedData: Partial<HeritageContributionData>,
     attachmentFiles: File[],
     selectiveOps?: { removedAttachments: string[]; keptAttachments: string[] }
-  ): Promise<{ success: boolean; error?: string; eventId?: string }> => {
+  ): Promise<{ success: boolean; error?: string; eventId?: string; dTag?: string }> => {
     if (!signer || !isAvailable) {
       const error = 'Nostr signer not available';
       logger.error('Cannot update contribution: No signer', new Error(error), {
@@ -110,7 +110,7 @@ export function useHeritageEditing() {
           setUpdateProgress(null);
         }, 2000);
 
-        return { success: true, eventId: result.eventId };
+        return { success: true, eventId: result.eventId, dTag: result.contribution?.dTag };
       } else {
         const error = result.error || 'Update failed';
         setUpdateError(error);
