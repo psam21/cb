@@ -256,7 +256,7 @@ export class ShopBusinessService {
       }
 
       const product: ShopProduct = {
-        id: event.id,
+        id: dTag, // Use dTag as stable identifier (aligns with Heritage pattern and NIP-33 design)
         dTag, // NIP-33 d tag identifier
         title: productData.title,
         description: productData.description,
@@ -831,7 +831,7 @@ export class ShopBusinessService {
 
       // Step 9: Create updated product object
       const updatedProduct: ShopProduct = {
-        id: updatedEvent.id,
+        id: originalProduct.dTag, // Use dTag as stable identifier (stays same across updates)
         dTag: originalProduct.dTag, // Keep same dTag for revisions
         title: mergedData.title || originalProduct.title,
         description: mergedData.description || originalProduct.description,
@@ -1071,7 +1071,7 @@ export class ShopBusinessService {
 
       // Create updated product object
       const updatedProduct: ShopProduct = {
-        id: updatedEvent.id,
+        id: originalProduct.dTag, // Use dTag as stable identifier (stays same across updates)
         dTag: originalProduct.dTag, // Keep same dTag
         title: mergedData.title,
         description: mergedData.description,
@@ -1289,7 +1289,7 @@ export class ShopBusinessService {
       const attachments = await this.parseAttachmentsFromEvent(event, productData);
 
       const product: ShopProduct = {
-        id: event.id,
+        id: dTag, // Use dTag as stable identifier (aligns with Heritage pattern and NIP-33 design)
         dTag, // NIP-33 d tag identifier
         title: productData.title,
         description: productData.description || content.content, // Use extracted description, fallback to full content
