@@ -20,15 +20,45 @@ export interface RelayConfig {
   reliability: 'high' | 'medium' | 'low';
   // Relay-specific configuration
   requiresAuth?: boolean;
-  supportsNip01?: boolean;
-  supportsNip15?: boolean;
-  supportsNip20?: boolean;
-  supportsNip26?: boolean;
-  supportsNip33?: boolean;
-  supportsNip40?: boolean;
-  supportsNip42?: boolean;
-  supportsNip50?: boolean;
-  supportsNip65?: boolean;
+  // Core Protocol NIPs
+  supportsNip01?: boolean;  // Basic Protocol Flow
+  supportsNip02?: boolean;  // Contact List and Petnames
+  supportsNip03?: boolean;  // OpenTimestamps Attestations
+  supportsNip04?: boolean;  // Encrypted Direct Message (deprecated)
+  supportsNip09?: boolean;  // Event Deletion
+  supportsNip11?: boolean;  // Relay Information Document
+  // Enhanced Features NIPs
+  supportsNip15?: boolean;  // End of Stored Events Notice
+  supportsNip16?: boolean;  // Event Treatment
+  supportsNip17?: boolean;  // Private Direct Messages
+  supportsNip20?: boolean;  // Command Results
+  supportsNip22?: boolean;  // Event created_at Limits
+  supportsNip23?: boolean;  // Long-form Content
+  supportsNip24?: boolean;  // Extra metadata fields and tags
+  supportsNip25?: boolean;  // Reactions
+  supportsNip26?: boolean;  // Delegated Event Signing
+  supportsNip28?: boolean;  // Public Chat
+  // Advanced Features NIPs
+  supportsNip33?: boolean;  // Parameterized Replaceable Events
+  supportsNip40?: boolean;  // Expiration Timestamp
+  supportsNip42?: boolean;  // Authentication
+  supportsNip44?: boolean;  // Encrypted Payloads (Versioned)
+  supportsNip45?: boolean;  // Counting Events
+  supportsNip47?: boolean;  // Nostr Wallet Connect (NWC)
+  supportsNip50?: boolean;  // Search Capability
+  supportsNip51?: boolean;  // Lists
+  supportsNip52?: boolean;  // Calendar Events
+  supportsNip53?: boolean;  // Live Activities
+  supportsNip54?: boolean;  // Wiki
+  supportsNip56?: boolean;  // Reporting
+  supportsNip57?: boolean;  // Lightning Zaps
+  supportsNip58?: boolean;  // Badges
+  supportsNip59?: boolean;  // Gift Wrap
+  supportsNip60?: boolean;  // Cashu Wallets
+  supportsNip61?: boolean;  // Nutzaps (P2PK Cashu tokens)
+  supportsNip65?: boolean;  // Relay List Metadata
+  supportsNip72?: boolean;  // Moderated Communities
+  supportsNip78?: boolean;  // Application-specific data
   // Custom query parameters or headers
   customHeaders?: Record<string, string>;
   queryParams?: Record<string, string>;
@@ -121,6 +151,53 @@ export const NOSTR_RELAYS: RelayConfig[] = [
     supportsNip42: true,
     supportsNip50: true,
     rateLimit: { requestsPerMinute: 80, burstSize: 12 }
+  },
+  {
+    url: 'wss://shu01.shugur.net',
+    name: 'Shugur Network',
+    description: 'Enterprise-grade distributed HA relay cluster - 35+ NIPs including Time Capsules, Calendar, Zaps, Encryption, Communities, Cashu Wallets',
+    region: 'Global',
+    reliability: 'high',
+    // Core Protocol NIPs (NIP-01 through NIP-11)
+    supportsNip01: true,  // Basic Protocol Flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip03: true,  // OpenTimestamps Attestations
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    // Enhanced Features NIPs (NIP-15 through NIP-26)
+    supportsNip15: true,  // End of Stored Events Notice
+    supportsNip16: true,  // Event Treatment
+    supportsNip17: true,  // Private Direct Messages
+    supportsNip20: true,  // Command Results
+    supportsNip22: true,  // Event created_at Limits
+    supportsNip23: true,  // Long-form Content
+    supportsNip24: true,  // Extra metadata fields and tags
+    supportsNip25: true,  // Reactions
+    supportsNip26: true,  // Delegated Event Signing
+    // Advanced Features NIPs (NIP-28 through NIP-65)
+    supportsNip28: true,  // Public Chat
+    supportsNip33: true,  // Parameterized Replaceable Events
+    supportsNip40: true,  // Expiration Timestamp
+    supportsNip42: true,  // Authentication
+    supportsNip44: true,  // Encrypted Payloads (Versioned)
+    supportsNip45: true,  // Counting Events
+    supportsNip47: true,  // Nostr Wallet Connect (NWC)
+    supportsNip50: true,  // Search Capability
+    supportsNip51: true,  // Lists
+    supportsNip52: true,  // Calendar Events
+    supportsNip53: true,  // Live Activities
+    supportsNip54: true,  // Wiki
+    supportsNip56: true,  // Reporting
+    supportsNip57: true,  // Lightning Zaps
+    supportsNip58: true,  // Badges
+    supportsNip59: true,  // Gift Wrap
+    supportsNip60: true,  // Cashu Wallets
+    supportsNip61: true,  // Nutzaps (P2PK Cashu tokens)
+    supportsNip65: true,  // Relay List Metadata
+    supportsNip72: true,  // Moderated Communities
+    supportsNip78: true,  // Application-specific data
+    rateLimit: { requestsPerMinute: 120, burstSize: 20 }
   }
 ];
 
