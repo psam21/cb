@@ -16,13 +16,21 @@ export const MyShopProductCard: React.FC<MyShopProductCardProps> = ({
   onDelete
 }) => {
   const formatPrice = (price: number, currency: string) => {
-    if (currency === 'BTC' || currency === 'SATS') {
-      return `${price} ${currency}`;
+    if (currency === 'BTC') {
+      return `${price.toFixed(8)} BTC`;
     }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(price);
+    const upperCurrency = currency?.toUpperCase();
+    if (upperCurrency === 'SATS' || upperCurrency === 'SAT' || upperCurrency === 'SATOSHIS') {
+      return `${price.toFixed(0)} sats`;
+    }
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+      }).format(price);
+    } catch {
+      return `${currency} ${price}`;
+    }
   };
 
   const getConditionColor = (condition: string) => {

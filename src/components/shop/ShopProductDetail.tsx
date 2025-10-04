@@ -20,7 +20,8 @@ const formatPrice = (price: number, currency: string): string => {
   if (currency === 'BTC') {
     return `${price.toFixed(8)} BTC`;
   }
-  if (currency?.toUpperCase() === 'SATS' || currency?.toUpperCase() === 'SAT') {
+  const upperCurrency = currency?.toUpperCase();
+  if (upperCurrency === 'SATS' || upperCurrency === 'SAT' || upperCurrency === 'SATOSHIS') {
     return `${price.toFixed(0)} sats`;
   }
   try {

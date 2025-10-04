@@ -100,13 +100,23 @@ export const ProductDeleteDialog: React.FC<ProductDeleteDialogProps> = ({
                     {product.title}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {product.currency === 'BTC' || product.currency === 'SATS' 
-                      ? `${product.price} ${product.currency}`
-                      : new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: product.currency,
-                        }).format(product.price)
-                    } • {product.category}
+                    {(() => {
+                      const upperCurrency = product.currency?.toUpperCase();
+                      if (product.currency === 'BTC') {
+                        return `${product.price.toFixed(8)} BTC`;
+                      } else if (upperCurrency === 'SATS' || upperCurrency === 'SAT' || upperCurrency === 'SATOSHIS') {
+                        return `${product.price.toFixed(0)} sats`;
+                      } else {
+                        try {
+                          return new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: product.currency,
+                          }).format(product.price);
+                        } catch {
+                          return `${product.currency} ${product.price}`;
+                        }
+                      }
+                    })()} • {product.category}
                   </p>
                 </div>
               </div>

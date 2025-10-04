@@ -64,13 +64,18 @@ export const BaseCard = ({
   const formatPrice = (price: number, currency: string) => {
     if (currency === 'BTC') {
       return `${price.toFixed(8)} BTC`;
-    } else if (currency === 'SATS') {
+    }
+    const upperCurrency = currency?.toUpperCase();
+    if (upperCurrency === 'SATS' || upperCurrency === 'SAT' || upperCurrency === 'SATOSHIS') {
       return `${price.toFixed(0)} sats`;
-    } else {
+    }
+    try {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency,
       }).format(price);
+    } catch {
+      return `${currency} ${price}`;
     }
   };
 
