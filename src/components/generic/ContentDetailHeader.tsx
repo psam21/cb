@@ -70,7 +70,7 @@ export function ContentDetailHeader({
   return (
     <header className={`space-y-4 ${className}`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
           {breadcrumbs && breadcrumbs.length > 0 && (
             <nav aria-label="Breadcrumb" className="text-xs text-gray-500">
               <ol className="flex items-center gap-2">
@@ -92,7 +92,7 @@ export function ContentDetailHeader({
           {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
         </div>
 
-        <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
+        <div className="flex flex-shrink-0 flex-wrap justify-start gap-2 sm:justify-end">
           <button
             type="button"
             onClick={handleBack}
