@@ -162,6 +162,22 @@ export class KVService {
   }
 
   /**
+   * Get Redis client for advanced operations
+   * Ensures connection is established before returning client
+   */
+  public async getRedisClient(): Promise<RedisClientType> {
+    if (!(await this.ensureConnected())) {
+      throw new Error('Redis connection not available');
+    }
+    
+    if (!this.redis) {
+      throw new Error('Redis client not initialized');
+    }
+    
+    return this.redis;
+  }
+
+  /**
    * Store event analytics data
    */
   public async logEvent(eventData: UserEventData): Promise<void> {
