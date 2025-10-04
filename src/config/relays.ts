@@ -76,80 +76,96 @@ export const NOSTR_RELAYS: RelayConfig[] = [
   {
     url: 'wss://relay.damus.io',
     name: 'Damus Relay',
-    description: 'Official relay for Damus app - 315ms response time',
+    description: 'Official relay for Damus app (strfry) - 315ms response time',
     region: 'Global',
     reliability: 'high',
-    supportsNip01: true,
-    supportsNip15: true,
-    supportsNip20: true,
-    supportsNip42: true,
-    supportsNip50: true,
+    supportsNip01: true,  // Basic protocol flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip22: true,  // Event created_at Limits
+    supportsNip28: true,  // Public Chat
+    supportsNip40: true,  // Expiration Timestamp
     rateLimit: { requestsPerMinute: 60, burstSize: 10 }
   },
   {
     url: 'wss://nos.lol',
     name: 'Nos.lol',
-    description: 'Popular general purpose relay - 194ms response time',
+    description: 'Popular general purpose relay (strfry) - 194ms response time',
     region: 'Global',
     reliability: 'high',
-    supportsNip01: true,
-    supportsNip15: true,
-    supportsNip20: true,
-    supportsNip42: true,
-    supportsNip50: true,
+    supportsNip01: true,  // Basic protocol flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip22: true,  // Event created_at Limits
+    supportsNip28: true,  // Public Chat
+    supportsNip40: true,  // Expiration Timestamp
     rateLimit: { requestsPerMinute: 120, burstSize: 20 }
   },
   {
     url: 'wss://relay.snort.social',
     name: 'Snort Social',
-    description: 'Official relay for Snort Social app - 280ms response time',
+    description: 'Official relay for Snort Social app (strfry) - 280ms response time',
     region: 'Global',
     reliability: 'high',
-    supportsNip01: true,
-    supportsNip15: true,
-    supportsNip20: true,
-    supportsNip42: true,
-    supportsNip50: true,
-    supportsNip65: true,
+    supportsNip01: true,  // Basic protocol flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip22: true,  // Event created_at Limits
+    supportsNip28: true,  // Public Chat
+    supportsNip40: true,  // Expiration Timestamp
     rateLimit: { requestsPerMinute: 90, burstSize: 15 }
   },
   {
     url: 'wss://relay.nostr.band',
     name: 'Nostr.band',
-    description: 'Official relay for Nostr.band explorer - 298ms response time',
+    description: 'Nostr.band explorer relay with search - 298ms response time',
     region: 'Global',
     reliability: 'high',
-    supportsNip01: true,
-    supportsNip15: true,
-    supportsNip20: true,
-    supportsNip42: true,
-    supportsNip50: true,
+    supportsNip01: true,  // Basic protocol flow
+    supportsNip11: true,  // Relay Information Document
+    supportsNip15: true,  // End of Stored Events Notice
+    supportsNip20: true,  // Command Results
+    supportsNip33: true,  // Parameterized Replaceable Events
+    supportsNip45: true,  // Counting Events
+    supportsNip50: true,  // Search Capability
     rateLimit: { requestsPerMinute: 80, burstSize: 12 }
   },
   {
     url: 'wss://relay.primal.net',
     name: 'Primal',
-    description: 'Official relay for Primal app - 328ms response time',
+    description: 'Official relay for Primal app (strfry) - 328ms response time',
     region: 'Global',
     reliability: 'high',
-    supportsNip01: true,
-    supportsNip15: true,
-    supportsNip20: true,
-    supportsNip42: true,
-    supportsNip50: true,
+    supportsNip01: true,  // Basic protocol flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip22: true,  // Event created_at Limits
+    supportsNip28: true,  // Public Chat
+    supportsNip40: true,  // Expiration Timestamp
     rateLimit: { requestsPerMinute: 100, burstSize: 15 }
   },
   {
     url: 'wss://offchain.pub',
     name: 'Offchain Pub',
-    description: 'Reliable public relay - 356ms response time',
+    description: 'Reliable public relay (strfry) - 356ms response time',
     region: 'Global',
     reliability: 'high',
-    supportsNip01: true,
-    supportsNip15: true,
-    supportsNip20: true,
-    supportsNip42: true,
-    supportsNip50: true,
+    supportsNip01: true,  // Basic protocol flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip22: true,  // Event created_at Limits
+    supportsNip28: true,  // Public Chat
+    supportsNip40: true,  // Expiration Timestamp
     rateLimit: { requestsPerMinute: 80, burstSize: 12 }
   },
   {
