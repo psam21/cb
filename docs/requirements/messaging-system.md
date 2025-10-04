@@ -941,11 +941,11 @@ subscribeToEvents(
 - **Loading state**: Show spinner on "Send" button, disable input while waiting for signer
 
 **Decrypting Messages - Signer Prompt**:
-- Load conversation → trigger `nip44.decrypt()` for each message → NIP-07 may prompt for approval
-- **Happy path**: User approves → decrypt all messages → render conversation
-- **User denies first prompt**: Show error "Cannot decrypt messages - permission denied" → retry button
-- **Batch decryption**: Decrypt messages sequentially to avoid 20+ simultaneous prompts (better UX)
+- Load conversation → trigger `nip44.decrypt()` for each message → NIP-07 extension handles prompts
+- **Happy path**: User approves (via their extension) → messages decrypt → render conversation
+- **User denies**: Catch error → show "Cannot decrypt messages - permission denied" → retry button
 - **Loading state**: Show skeleton loaders in message list while decrypting
+- **Note**: Extension-dependent UX (Alby/nos2x/etc. handle prompts differently) - we don't control this
 
 **Error Handling**:
 ```typescript
