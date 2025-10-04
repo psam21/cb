@@ -162,19 +162,67 @@ export class KVService {
   }
 
   /**
-   * Get Redis client for advanced operations
-   * Ensures connection is established before returning client
+   * Get raw Redis INFO output
    */
-  public async getRedisClient(): Promise<RedisClientType> {
+  public async getRedisInfo(): Promise<string> {
     if (!(await this.ensureConnected())) {
       throw new Error('Redis connection not available');
     }
-    
-    if (!this.redis) {
-      throw new Error('Redis client not initialized');
+    return await this.redis!.info();
+  }
+
+  /**
+   * Get database size
+   */
+  public async getDatabaseSize(): Promise<number> {
+    if (!(await this.ensureConnected())) {
+      throw new Error('Redis connection not available');
     }
-    
-    return this.redis;
+    return await this.redis!.dbSize();
+  }
+
+  /**
+   * Scan keys by pattern
+   */
+  public async scanKeys(pattern: string, count: number = 1000): Promise<string[]> {
+    if (!(await this.ensureConnected())) {
+      throw new Error('Redis connection not available');
+    }
+
+    const keys: string[] = [];
+    let cursor = 0;
+
+    do {
+      const scanResult = await this.redis!.scan(cursor.toString(), {
+        MATCH: pattern,
+        COUNT: count,
+      });
+
+      cursor = typeof scanResult.cursor === 'string' ? parseInt(scanResult.cursor) : scanResult.cursor;
+      keys.push(...scanResult.keys);
+    } while (cursor !== 0);
+
+    return keys;
+  }
+
+  /**
+   * Get memory usage for a key
+   */
+  public async getKeyMemoryUsage(key: string): Promise<number | null> {
+    if (!(await this.ensureConnected())) {
+      throw new Error('Redis connection not available');
+    }
+
+    try {
+      return await this.redis!.memoryUsage(key);
+    } catch (error) {
+      logger.warn('Failed to get memory usage for key', {
+        service: 'KVService',
+        method: 'getKeyMemoryUsage',
+        key,
+      });
+      return null;
+    }
   }
 
   /**

@@ -6,7 +6,6 @@
  * Dependencies: KVService (Core)
  */
 
-import { RedisClientType } from 'redis';
 import { KVService } from '../core/KVService';
 import { logger } from '../core/LoggingService';
 
@@ -84,21 +83,19 @@ export class RedisAnalyticsService {
         method: 'getRedisInfo',
       });
 
-      const redis = await this.kvService.getRedisClient();
-
-      // Get comprehensive Redis INFO
-      const rawInfo = await redis.info();
+      // Get comprehensive Redis INFO from Core Service
+      const rawInfo = await this.kvService.getRedisInfo();
       const parsedInfo = this.parseRedisInfo(rawInfo);
 
-      // Get keyspace information
-      const dbSize = await redis.dbSize();
+      // Get keyspace information from Core Service
+      const dbSize = await this.kvService.getDatabaseSize();
 
-      // Analyze key patterns
-      const keysByPattern = await this.analyzeKeyPatterns(redis);
+      // Analyze key patterns using Core Service
+      const keysByPattern = await this.analyzeKeyPatterns();
 
-      // Count unique users and events
-      const { userCount, indexKeys } = await this.countUsers(redis);
-      const eventCount = await this.countEvents(redis);
+      // Count unique users and events using Core Service
+      const { userCount, indexKeys } = await this.countUsers();
+      const eventCount = await this.countEvents();
 
       // Build memory breakdown
       const memorySection = parsedInfo.memory || {};
@@ -184,7 +181,7 @@ export class RedisAnalyticsService {
   /**
    * Analyze keys by pattern
    */
-  private async analyzeKeyPatterns(redis: RedisClientType): Promise<KeyPatternAnalysis[]> {
+  private async analyzeKeyPatterns(): Promise<KeyPatternAnalysis[]> {
     const keyPatterns = [
       { pattern: 'user_events:*', description: 'User event data' },
       { pattern: 'user_events_index:*', description: 'User event indexes' },
@@ -193,20 +190,11 @@ export class RedisAnalyticsService {
     const results: KeyPatternAnalysis[] = [];
 
     for (const { pattern, description } of keyPatterns) {
-      const keys: string[] = [];
-      let cursor = 0;
+      // Use Core Service to scan keys
+      const keys = await this.kvService.scanKeys(pattern, 1000);
 
-      do {
-        const scanResult = await redis.scan(cursor.toString(), {
-          MATCH: pattern,
-          COUNT: 1000,
-        });
-
-        cursor = typeof scanResult.cursor === 'string' ? parseInt(scanResult.cursor) : scanResult.cursor;
-        keys.push(...scanResult.keys);
-      } while (cursor !== 0);
-
-      const estimatedMemory = await this.estimateKeyMemory(redis, keys);
+      // Use Core Service to estimate memory
+      const estimatedMemory = await this.estimateKeyMemory(keys);
 
       results.push({
         pattern,
@@ -224,61 +212,36 @@ export class RedisAnalyticsService {
   /**
    * Count unique users from index keys
    */
-  private async countUsers(redis: RedisClientType): Promise<{ userCount: number; indexKeys: string[] }> {
-    const indexKeys: string[] = [];
-    let cursor = 0;
-
-    do {
-      const scanResult = await redis.scan(cursor.toString(), {
-        MATCH: 'user_events_index:*',
-        COUNT: 1000,
-      });
-
-      cursor = typeof scanResult.cursor === 'string' ? parseInt(scanResult.cursor) : scanResult.cursor;
-      indexKeys.push(...scanResult.keys);
-    } while (cursor !== 0);
-
+  private async countUsers(): Promise<{ userCount: number; indexKeys: string[] }> {
+    // Use Core Service to scan index keys
+    const indexKeys = await this.kvService.scanKeys('user_events_index:*', 1000);
     return { userCount: indexKeys.length, indexKeys };
   }
 
   /**
    * Count actual event keys (not index keys)
    */
-  private async countEvents(redis: RedisClientType): Promise<number> {
-    const eventKeys: string[] = [];
-    let cursor = 0;
-
-    do {
-      const scanResult = await redis.scan(cursor.toString(), {
-        MATCH: 'user_events:*',
-        COUNT: 1000,
-      });
-
-      cursor = typeof scanResult.cursor === 'string' ? parseInt(scanResult.cursor) : scanResult.cursor;
-      const filteredKeys = scanResult.keys.filter((key: string) => !key.includes('user_events_index:'));
-      eventKeys.push(...filteredKeys);
-    } while (cursor !== 0);
-
+  private async countEvents(): Promise<number> {
+    // Use Core Service to scan event keys
+    const allKeys = await this.kvService.scanKeys('user_events:*', 1000);
+    const eventKeys = allKeys.filter((key: string) => !key.includes('user_events_index:'));
     return eventKeys.length;
   }
 
   /**
    * Estimate memory usage for a set of keys
    */
-  private async estimateKeyMemory(redis: RedisClientType, keys: string[]): Promise<number> {
+  private async estimateKeyMemory(keys: string[]): Promise<number> {
     if (keys.length === 0) return 0;
 
     let totalMemory = 0;
     const sampleSize = Math.min(10, keys.length);
 
     for (let i = 0; i < sampleSize; i++) {
-      try {
-        const memory = await redis.memoryUsage(keys[i]);
-        if (memory) {
-          totalMemory += memory;
-        }
-      } catch (error) {
-        continue;
+      // Use Core Service to get memory usage
+      const memory = await this.kvService.getKeyMemoryUsage(keys[i]);
+      if (memory) {
+        totalMemory += memory;
       }
     }
 
