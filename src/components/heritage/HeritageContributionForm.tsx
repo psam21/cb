@@ -145,6 +145,31 @@ export const HeritageContributionForm = ({
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Sync form data when defaultValues change (important for edit mode when data loads asynchronously)
+  useEffect(() => {
+    if (defaultValues) {
+      setFormData({
+        title: defaultValues.title || '',
+        description: defaultValues.description || '',
+        category: defaultValues.category || '',
+        heritageType: defaultValues.heritageType || '',
+        language: defaultValues.language || '',
+        communityGroup: defaultValues.communityGroup || '',
+        region: defaultValues.region || '',
+        country: defaultValues.country || '',
+        timePeriod: defaultValues.timePeriod || '',
+        sourceType: defaultValues.sourceType || '',
+        contributorRole: defaultValues.contributorRole || '',
+        knowledgeKeeper: defaultValues.knowledgeKeeper || '',
+        tags: filterVisibleTags(defaultValues.tags || []),
+      });
+      
+      if (defaultValues.attachments) {
+        setAttachments(defaultValues.attachments);
+      }
+    }
+  }, [defaultValues]);
+
   // Auto-redirect to detail page after successful publication
   useEffect(() => {
     if (result?.success && result.dTag) {
