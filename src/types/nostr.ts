@@ -48,6 +48,10 @@ export interface NostrSigner {
     encrypt(peer: string, plaintext: string): Promise<string>;
     decrypt(peer: string, ciphertext: string): Promise<string>;
   };
+  nip44?: {
+    encrypt(peer: string, plaintext: string): Promise<string>;
+    decrypt(peer: string, ciphertext: string): Promise<string>;
+  };
 }
 
 export interface RelayInfo {

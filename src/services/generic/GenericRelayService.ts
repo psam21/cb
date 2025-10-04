@@ -675,6 +675,119 @@ export class GenericRelayService {
       }
     });
   }
+
+  /**
+   * Subscribe to events with real-time updates
+   * Opens WebSocket subscriptions and calls callback when new events arrive
+   * 
+   * @param filters - Nostr filters for subscription
+   * @param onEvent - Callback function called for each new event
+   * @param relayUrls - Optional array of relay URLs (defaults to configured relays)
+   * @returns Unsubscribe function to close the subscription
+   */
+  public subscribeToEvents(
+    filters: Record<string, unknown>[],
+    onEvent: (event: NostrEvent) => void,
+    relayUrls?: string[]
+  ): () => void {
+    const relays = relayUrls || NOSTR_RELAYS.map(r => r.url);
+    const subscriptionId = Math.random().toString(36).substring(7);
+    const websockets: WebSocket[] = [];
+
+    logger.info('Starting event subscription', {
+      service: 'GenericRelayService',
+      method: 'subscribeToEvents',
+      subscriptionId,
+      filters,
+      relayCount: relays.length,
+    });
+
+    relays.forEach((relayUrl) => {
+      try {
+        const ws = new WebSocket(relayUrl);
+
+        ws.onopen = () => {
+          logger.debug('WebSocket opened for subscription', {
+            service: 'GenericRelayService',
+            subscriptionId,
+            relayUrl,
+          });
+
+          // Send REQ message
+          const reqMessage = ['REQ', subscriptionId, ...filters];
+          ws.send(JSON.stringify(reqMessage));
+        };
+
+        ws.onmessage = (msg) => {
+          try {
+            const data = JSON.parse(msg.data);
+            
+            // Handle EVENT messages
+            if (Array.isArray(data) && data[0] === 'EVENT' && data[1] === subscriptionId) {
+              const event = data[2] as NostrEvent;
+              onEvent(event);
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            logger.error('Error parsing WebSocket message', error instanceof Error ? error : new Error(errorMessage), {
+              service: 'GenericRelayService',
+              subscriptionId,
+              relayUrl,
+            });
+          }
+        };
+
+        ws.onerror = () => {
+          logger.error('WebSocket error in subscription', new Error('WebSocket error'), {
+            service: 'GenericRelayService',
+            subscriptionId,
+            relayUrl,
+          });
+        };
+
+        ws.onclose = () => {
+          logger.debug('WebSocket closed for subscription', {
+            service: 'GenericRelayService',
+            subscriptionId,
+            relayUrl,
+          });
+        };
+
+        websockets.push(ws);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Failed to create WebSocket subscription', error instanceof Error ? error : new Error(errorMessage), {
+          service: 'GenericRelayService',
+          subscriptionId,
+          relayUrl,
+        });
+      }
+    });
+
+    // Return unsubscribe function
+    return () => {
+      logger.info('Unsubscribing from events', {
+        service: 'GenericRelayService',
+        subscriptionId,
+      });
+
+      websockets.forEach((ws) => {
+        try {
+          if (ws.readyState === WebSocket.OPEN) {
+            // Send CLOSE message
+            ws.send(JSON.stringify(['CLOSE', subscriptionId]));
+          }
+          ws.close();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          logger.error('Error closing WebSocket subscription', error instanceof Error ? error : new Error(errorMessage), {
+            service: 'GenericRelayService',
+            subscriptionId,
+          });
+        }
+      });
+    };
+  }
 }
 
 // Export singleton instance
@@ -686,6 +799,9 @@ export const publishEvent = (event: NostrEvent, signer: NostrSigner, onProgress?
 
 export const queryEvents = (filters: Record<string, unknown>[], onProgress?: (progress: { step: string; progress: number; message: string }) => void) =>
   genericRelayService.queryEvents(filters, onProgress);
+
+export const subscribeToEvents = (filters: Record<string, unknown>[], onEvent: (event: NostrEvent) => void, relayUrls?: string[]) =>
+  genericRelayService.subscribeToEvents(filters, onEvent, relayUrls);
 
 export const getRelayHealth = (relayUrl: string) => genericRelayService.getRelayHealth(relayUrl);
 export const getAllRelayHealth = () => genericRelayService.getAllRelayHealth();
