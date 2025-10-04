@@ -929,6 +929,43 @@ subscribeToEvents(
 
 ## Edge Cases
 
+### Signer Prompts & Approval
+
+**Assumption**: Signer is approved **most of the time** (users grant permission to decrypt/sign)
+
+**Sending Message - Signer Prompt**:
+- User clicks "Send" → trigger `signEvent()` → NIP-07 extension prompts for approval
+- **Happy path**: User approves → event signed → published to relays → optimistic UI updates immediately
+- **User denies**: Show toast error "Message not sent - signature denied" → remove from optimistic UI
+- **Timeout (30s)**: Show toast error "Signature request timed out" → retry button
+- **Loading state**: Show spinner on "Send" button, disable input while waiting for signer
+
+**Decrypting Messages - Signer Prompt**:
+- Load conversation → trigger `nip44.decrypt()` for each message → NIP-07 may prompt for approval
+- **Happy path**: User approves → decrypt all messages → render conversation
+- **User denies first prompt**: Show error "Cannot decrypt messages - permission denied" → retry button
+- **Batch decryption**: Decrypt messages sequentially to avoid 20+ simultaneous prompts (better UX)
+- **Loading state**: Show skeleton loaders in message list while decrypting
+
+**Error Handling**:
+```typescript
+try {
+  const signed = await signer.signEvent(event);
+  // Optimistic UI already updated
+} catch (error) {
+  if (error.message.includes('denied') || error.message.includes('rejected')) {
+    toast.error('Message not sent - signature denied');
+    removeOptimisticMessage(tempId);
+  } else {
+    toast.error('Failed to sign message - please try again');
+  }
+}
+```
+
+**UX Principle**: Assume approval, handle denial gracefully with clear error messages and retry options.
+
+---
+
 ### User Has No Signer
 **Scenario**: User lands on messaging page without NIP-07 extension
 
