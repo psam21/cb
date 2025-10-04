@@ -255,7 +255,7 @@ export default function MyContributionsPage() {
       {/* Main Content */}
       <div className="container-width py-8">
         {/* Statistics Dashboard */}
-        {!isLoading && !error && contributions.length > 0 && (
+        {!isLoading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Total Contributions */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -313,7 +313,7 @@ export default function MyContributionsPage() {
         )}
 
         {/* Filters */}
-        {!isLoading && !error && contributions.length > 0 && (
+        {!isLoading && !error && (
           <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Filter Your Contributions</h2>
@@ -455,37 +455,6 @@ export default function MyContributionsPage() {
             >
               Clear Filters
             </button>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && !error && contributions.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-primary-300 mb-4">
-              <svg
-                className="w-16 h-16 mx-auto"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-serif font-bold text-primary-800 mb-2">No contributions yet</h3>
-            <p className="text-gray-600 mb-6 text-lg">
-              Start sharing your cultural heritage knowledge with the world!
-            </p>
-            <a
-              href="/contribute"
-              className="btn-primary-sm"
-            >
-              Create First Contribution
-            </a>
           </div>
         )}
       </div>
