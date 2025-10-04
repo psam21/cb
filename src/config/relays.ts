@@ -27,6 +27,7 @@ export interface RelayConfig {
   supportsNip04?: boolean;  // Encrypted Direct Message (deprecated)
   supportsNip09?: boolean;  // Event Deletion
   supportsNip11?: boolean;  // Relay Information Document
+  supportsNip13?: boolean;  // Proof of Work
   // Enhanced Features NIPs
   supportsNip15?: boolean;  // End of Stored Events Notice
   supportsNip16?: boolean;  // Event Treatment
@@ -56,9 +57,13 @@ export interface RelayConfig {
   supportsNip59?: boolean;  // Gift Wrap
   supportsNip60?: boolean;  // Cashu Wallets
   supportsNip61?: boolean;  // Nutzaps (P2PK Cashu tokens)
+  supportsNip62?: boolean;  // Request to Vanish
   supportsNip65?: boolean;  // Relay List Metadata
+  supportsNip70?: boolean;  // Protected events
   supportsNip72?: boolean;  // Moderated Communities
+  supportsNip77?: boolean;  // Negentropy syncing
   supportsNip78?: boolean;  // Application-specific data
+  supportsNip119?: boolean; // AND operator for filters
   // Custom query parameters or headers
   customHeaders?: Record<string, string>;
   queryParams?: Record<string, string>;
@@ -167,6 +172,30 @@ export const NOSTR_RELAYS: RelayConfig[] = [
     supportsNip28: true,  // Public Chat
     supportsNip40: true,  // Expiration Timestamp
     rateLimit: { requestsPerMinute: 80, burstSize: 12 }
+  },
+  {
+    url: 'wss://relay.netstr.io',
+    name: 'Netstr.io',
+    description: 'Modern C# relay with advanced features - Auth, Search, Private DMs, Negentropy sync',
+    region: 'Global',
+    reliability: 'high',
+    supportsNip01: true,   // Basic protocol flow
+    supportsNip02: true,   // Follow list
+    supportsNip04: true,   // Encrypted Direct Message (deprecated)
+    supportsNip09: true,   // Event Deletion
+    supportsNip11: true,   // Relay Information Document
+    supportsNip13: true,   // Proof of Work
+    supportsNip17: true,   // Private Direct Messages (modern replacement for NIP-04)
+    supportsNip40: true,   // Expiration Timestamp
+    supportsNip42: true,   // Authentication of clients to relays
+    supportsNip45: true,   // Counting results
+    supportsNip50: true,   // Search Capability
+    supportsNip62: true,   // Request to Vanish
+    supportsNip70: true,   // Protected events
+    supportsNip77: true,   // Negentropy syncing (efficient event synchronization)
+    supportsNip119: true,  // AND operator for filters
+    requiresAuth: false,   // Optional auth available via NIP-42
+    rateLimit: { requestsPerMinute: 100, burstSize: 15 }
   },
   {
     url: 'wss://shu01.shugur.net',
