@@ -17,6 +17,7 @@ export interface UserEventData {
   totalRelaysAttempted: number;
   successfulRelays: string[];
   failedRelays: string[];
+  failedRelayReasons?: Record<string, string>; // relay URL -> rejection reason
   averageResponseTime: number;
   tagsCount: number;
   retryAttempts: number;

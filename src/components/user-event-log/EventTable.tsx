@@ -1,6 +1,7 @@
 'use client';
 
 import { UserEventData } from '@/services/core/KVService';
+import { useState } from 'react';
 
 interface EventTableProps {
   events: UserEventData[];
@@ -10,6 +11,8 @@ interface EventTableProps {
 }
 
 export function EventTable({ events, sortField, sortDirection, onSort }: EventTableProps) {
+  const [selectedRejections, setSelectedRejections] = useState<{ relays: string[]; reasons: Record<string, string> } | null>(null);
+
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString('en-US', {
       year: 'numeric',
@@ -46,6 +49,35 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
   const getFailedRelaysDisplay = (failedRelays: string[]): string => {
     if (failedRelays.length === 0) return '-';
     return failedRelays.map(getRelayName).join(', ');
+  };
+
+  // Get rejection reasons display with truncation
+  const getRejectionReasonsDisplay = (failedRelayReasons?: Record<string, string>) => {
+    if (!failedRelayReasons || Object.keys(failedRelayReasons).length === 0) {
+      return null;
+    }
+
+    const reasons = Object.entries(failedRelayReasons);
+    const firstReason = reasons[0];
+    const relayName = getRelayName(firstReason[0]);
+    const reason = firstReason[1];
+    
+    // Truncate if longer than 40 characters
+    const truncated = reason.length > 40 ? reason.substring(0, 40) + '...' : reason;
+    
+    if (reasons.length === 1) {
+      return {
+        display: `${relayName}: ${truncated}`,
+        full: `${relayName}: ${reason}`,
+        hasMore: false,
+      };
+    } else {
+      return {
+        display: `${relayName}: ${truncated} (+${reasons.length - 1} more)`,
+        full: reasons.map(([url, r]) => `${getRelayName(url)}: ${r}`).join('\n'),
+        hasMore: true,
+      };
+    }
   };
 
   // Note: We don't have per-relay response times in current data structure
@@ -113,6 +145,9 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                 <SortButton field="failedRelays">Failed Relay(s)</SortButton>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rejection Reasons
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <SortButton field="averageResponseTime">Avg Response</SortButton>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -151,6 +186,29 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                       <span className="text-gray-500">-</span>
                     )}
                   </div>
+                </td>
+                <td className="px-6 py-4">
+                  {(() => {
+                    const rejectionInfo = getRejectionReasonsDisplay(event.failedRelayReasons);
+                    if (!rejectionInfo) {
+                      return <span className="text-sm text-gray-500">-</span>;
+                    }
+                    
+                    return (
+                      <div className="text-sm text-gray-900 max-w-sm">
+                        <button
+                          onClick={() => setSelectedRejections({
+                            relays: event.failedRelays,
+                            reasons: event.failedRelayReasons || {}
+                          })}
+                          className="text-left hover:text-primary-600 underline decoration-dotted cursor-help"
+                          title="Click to see full rejection reasons"
+                        >
+                          {rejectionInfo.display}
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-900">
@@ -251,11 +309,86 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                     {getFailedRelaysDisplay(event.failedRelays)}
                   </span>
                 </div>
+                {event.failedRelayReasons && Object.keys(event.failedRelayReasons).length > 0 && (
+                  <div className="mt-1">
+                    <button
+                      onClick={() => setSelectedRejections({
+                        relays: event.failedRelays,
+                        reasons: event.failedRelayReasons || {}
+                      })}
+                      className="text-xs text-primary-600 hover:text-primary-700 underline"
+                    >
+                      View rejection reasons
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
         ))}
       </div>
+
+      {/* Rejection Reasons Modal */}
+      {selectedRejections && (
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto" 
+          aria-labelledby="modal-title" 
+          role="dialog" 
+          aria-modal="true"
+        >
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div 
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+              aria-hidden="true"
+              onClick={() => setSelectedRejections(null)}
+            ></div>
+
+            {/* Center modal */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+              <div className="sm:flex sm:items-start">
+                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                    Relay Rejection Reasons
+                  </h3>
+                  
+                  <div className="mt-2 space-y-3">
+                    {Object.entries(selectedRejections.reasons).map(([url, reason]) => (
+                      <div key={url} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900 mb-1">
+                              {getRelayName(url)}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2 font-mono break-all">
+                              {url}
+                            </div>
+                            <div className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                              {reason}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setSelectedRejections(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

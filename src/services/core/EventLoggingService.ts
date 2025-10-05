@@ -49,6 +49,7 @@ export class EventLoggingService {
         totalRelaysAttempted: publishResult.totalRelays,
         successfulRelays: publishResult.publishedRelays,
         failedRelays: publishResult.failedRelays,
+        failedRelayReasons: publishResult.failedRelayReasons,
         averageResponseTime: publishResult.averageResponseTime || 0,
         tagsCount: event.tags.length,
         retryAttempts: publishResult.retryAttempts || 0,

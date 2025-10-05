@@ -15,6 +15,7 @@ export interface RelayPublishingResult {
   eventId: string;
   publishedRelays: string[];
   failedRelays: string[];
+  failedRelayReasons?: Record<string, string>; // relay URL -> rejection reason
   totalRelays: number;
   successRate: number;
   error?: string;
@@ -117,6 +118,7 @@ export class GenericRelayService {
 
       const publishedRelays: string[] = [];
       const failedRelays: string[] = [];
+      const failedRelayReasons: Record<string, string> = {}; // Track rejection reasons
       const totalRelays = NOSTR_RELAYS.length;
       const responseTimes: number[] = []; // Track individual relay response times
 
@@ -176,6 +178,7 @@ export class GenericRelayService {
             });
           } else {
             failedRelays.push(relay.url);
+            failedRelayReasons[relay.url] = result.error || 'Unknown error';
             logger.warn(`❌ [${relay.name}] Publishing failed`, {
               service: 'GenericRelayService',
               method: 'publishEvent',
@@ -192,6 +195,7 @@ export class GenericRelayService {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           const totalTime = Date.now() - relayStartTime;
           failedRelays.push(relay.url);
+          failedRelayReasons[relay.url] = errorMessage;
           logger.error(`🔥 [${relay.name}] Exception during publish`, error instanceof Error ? error : new Error(errorMessage), {
             service: 'GenericRelayService',
             method: 'publishEvent',
@@ -250,6 +254,7 @@ export class GenericRelayService {
         eventId: event.id,
         publishedRelays,
         failedRelays,
+        failedRelayReasons,
         totalRelays,
         successRate,
         error: success ? undefined : 'Failed to publish to any relay',
