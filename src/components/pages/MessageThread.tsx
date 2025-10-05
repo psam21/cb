@@ -10,7 +10,6 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Message } from '@/types/messaging';
-import { logger } from '@/services/core/LoggingService';
 
 interface MessageThreadProps {
   messages: Message[];
@@ -64,13 +63,6 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       minute: '2-digit',
       hour12: true 
     });
-  };
-
-  const formatPubkey = (pubkey: string) => {
-    if (pubkey.length > 12) {
-      return `${pubkey.substring(0, 8)}...${pubkey.substring(pubkey.length - 4)}`;
-    }
-    return pubkey;
   };
 
   if (!otherUserPubkey) {

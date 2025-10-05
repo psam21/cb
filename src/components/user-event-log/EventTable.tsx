@@ -52,16 +52,6 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
   // These would need to be added to the event logging in GenericRelayService
   // For now, we show what's available
 
-  const getProcessingSpeedBadge = (duration: number) => {
-    if (duration < 1000) {
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">⚡ Fast</span>;
-    } else if (duration < 5000) {
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">⏱️ Normal</span>;
-    } else {
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">🐌 Slow</span>;
-    }
-  };
-
   const getEventKindName = (kind: number) => {
     const kindNames: Record<number, string> = {
       0: 'Profile',

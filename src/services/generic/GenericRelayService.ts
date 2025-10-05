@@ -433,7 +433,7 @@ export class GenericRelayService {
           }
         };
 
-        ws.onerror = (errorEvent) => {
+        ws.onerror = () => {
           clearTimeout(timeout);
           ws.close();
           
@@ -718,7 +718,7 @@ export class GenericRelayService {
           }
         };
 
-        ws.onerror = (errorEvent) => {
+        ws.onerror = () => {
           clearTimeout(timeout);
           ws.close();
           

@@ -52,7 +52,7 @@ export default function RichTextEditor({
     if (value) {
       console.log('[RichTextEditor] Initial markdown value:', value.substring(0, 200));
     }
-  }, []);
+  }, [value]);
 
   const editor = useEditor({
     extensions: [

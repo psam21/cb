@@ -86,7 +86,7 @@ export const HeritageContributionForm = ({
     currentStep: editingHook.updateProgress?.step || 'idle',
     error: editingHook.updateError,
     result: null, // Editing doesn't use result the same way
-    publishHeritage: async (data: HeritageContributionData, _dTag?: string) => {
+    publishHeritage: async (data: HeritageContributionData) => {
       // For editing, extract new files and track selective operations
       const newFiles = data.attachments.filter(a => a.originalFile).map(a => a.originalFile!);
       const existingAttachments = defaultValues?.attachments || [];
