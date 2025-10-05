@@ -131,7 +131,19 @@ export class GenericRelayService {
 
       // Publish to all relays in parallel
       const publishPromises = NOSTR_RELAYS.map(async (relay, index) => {
+        const relayStartTime = Date.now();
+        
         try {
+          logger.info(`📡 [${relay.name}] Attempting to publish event`, {
+            service: 'GenericRelayService',
+            method: 'publishEvent',
+            relayUrl: relay.url,
+            relayName: relay.name,
+            eventId: event.id,
+            relayIndex: index + 1,
+            totalRelays: NOSTR_RELAYS.length,
+          });
+
           onProgress?.({
             step: 'publishing',
             progress: Math.round((index / totalRelays) * 100),
@@ -141,45 +153,54 @@ export class GenericRelayService {
             currentRelay: relay.url,
           });
 
-          const result = await this.publishToRelay(event, relay.url);
+          const result = await this.publishToRelay(event, relay.url, relay.name);
           
           // Track response time if available
           if (result.responseTime !== undefined) {
             responseTimes.push(result.responseTime);
           }
           
+          const totalTime = Date.now() - relayStartTime;
+          
           if (result.success) {
             publishedRelays.push(relay.url);
-            logger.info('Event published successfully to relay', {
+            logger.info(`✅ [${relay.name}] Published successfully`, {
               service: 'GenericRelayService',
               method: 'publishEvent',
               relayUrl: relay.url,
               relayName: relay.name,
               eventId: event.id,
-              responseTime: result.responseTime,
+              responseTime: `${result.responseTime}ms`,
+              totalTime: `${totalTime}ms`,
+              relayIndex: index + 1,
             });
           } else {
             failedRelays.push(relay.url);
-            logger.warn('Event publishing failed to relay', {
+            logger.warn(`❌ [${relay.name}] Publishing failed`, {
               service: 'GenericRelayService',
               method: 'publishEvent',
               relayUrl: relay.url,
               relayName: relay.name,
               eventId: event.id,
               error: result.error,
-              responseTime: result.responseTime,
+              responseTime: result.responseTime ? `${result.responseTime}ms` : 'N/A',
+              totalTime: `${totalTime}ms`,
+              relayIndex: index + 1,
             });
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          const totalTime = Date.now() - relayStartTime;
           failedRelays.push(relay.url);
-          logger.error('Error publishing to relay', error instanceof Error ? error : new Error(errorMessage), {
+          logger.error(`🔥 [${relay.name}] Exception during publish`, error instanceof Error ? error : new Error(errorMessage), {
             service: 'GenericRelayService',
             method: 'publishEvent',
             relayUrl: relay.url,
             relayName: relay.name,
             eventId: event.id,
             error: errorMessage,
+            totalTime: `${totalTime}ms`,
+            relayIndex: index + 1,
           });
         }
       });
@@ -298,15 +319,18 @@ export class GenericRelayService {
   /**
    * Publish an event to a specific relay
    */
-  private async publishToRelay(event: NostrEvent, relayUrl: string): Promise<{ success: boolean; error?: string; responseTime?: number }> {
+  private async publishToRelay(event: NostrEvent, relayUrl: string, relayName?: string): Promise<{ success: boolean; error?: string; responseTime?: number }> {
+    const displayName = relayName || relayUrl;
+    
     return new Promise((resolve) => {
       try {
         const startTime = Date.now(); // Track response time
         
-        logger.debug('Publishing event to relay', {
+        logger.debug(`🔌 [${displayName}] Opening WebSocket connection`, {
           service: 'GenericRelayService',
           method: 'publishToRelay',
           relayUrl,
+          relayName: displayName,
           eventId: event.id,
         });
 
@@ -317,6 +341,14 @@ export class GenericRelayService {
           if (!resolved) {
             resolved = true;
             ws.close();
+            logger.warn(`⏱️ [${displayName}] Publish timeout after ${this.publishTimeout}ms`, {
+              service: 'GenericRelayService',
+              method: 'publishToRelay',
+              relayUrl,
+              relayName: displayName,
+              eventId: event.id,
+              timeout: `${this.publishTimeout}ms`,
+            });
             resolve({
               success: false,
               error: 'Publish timeout',
@@ -326,10 +358,13 @@ export class GenericRelayService {
         }, this.publishTimeout);
 
         ws.onopen = () => {
-          logger.debug('WebSocket connected to relay', {
+          logger.debug(`✓ [${displayName}] WebSocket connected, sending EVENT`, {
             service: 'GenericRelayService',
             method: 'publishToRelay',
             relayUrl,
+            relayName: displayName,
+            eventId: event.id,
+            connectionTime: `${Date.now() - startTime}ms`,
           });
 
           // Send EVENT message to publish
@@ -341,6 +376,15 @@ export class GenericRelayService {
           try {
             const data = JSON.parse(msg.data);
             
+            logger.debug(`📨 [${displayName}] Received message: ${JSON.stringify(data).substring(0, 100)}`, {
+              service: 'GenericRelayService',
+              method: 'publishToRelay',
+              relayUrl,
+              relayName: displayName,
+              eventId: event.id,
+              messageType: data[0],
+            });
+            
             if (data[0] === 'OK' && data[1] === event.id) {
               clearTimeout(timeout);
               ws.close();
@@ -350,8 +394,25 @@ export class GenericRelayService {
                 const responseTime = Date.now() - startTime;
                 
                 if (data[2] === true) {
+                  logger.debug(`👍 [${displayName}] Event accepted`, {
+                    service: 'GenericRelayService',
+                    method: 'publishToRelay',
+                    relayUrl,
+                    relayName: displayName,
+                    eventId: event.id,
+                    responseTime: `${responseTime}ms`,
+                  });
                   resolve({ success: true, responseTime });
                 } else {
+                  logger.warn(`👎 [${displayName}] Event rejected: ${data[3]}`, {
+                    service: 'GenericRelayService',
+                    method: 'publishToRelay',
+                    relayUrl,
+                    relayName: displayName,
+                    eventId: event.id,
+                    rejectionReason: data[3],
+                    responseTime: `${responseTime}ms`,
+                  });
                   resolve({
                     success: false,
                     error: data[3] || 'Event rejected by relay',
@@ -361,21 +422,32 @@ export class GenericRelayService {
               }
             }
           } catch (parseError) {
-            logger.warn('Failed to parse relay response', {
+            logger.warn(`⚠️ [${displayName}] Failed to parse relay response`, {
               service: 'GenericRelayService',
               method: 'publishToRelay',
               relayUrl,
+              relayName: displayName,
               error: parseError instanceof Error ? parseError.message : 'Unknown error',
+              rawMessage: msg.data.substring(0, 100),
             });
           }
         };
 
-        ws.onerror = () => {
+        ws.onerror = (errorEvent) => {
           clearTimeout(timeout);
           ws.close();
           
           if (!resolved) {
             resolved = true;
+            logger.error(`⚡ [${displayName}] WebSocket error`, new Error('WebSocket connection error'), {
+              service: 'GenericRelayService',
+              method: 'publishToRelay',
+              relayUrl,
+              relayName: displayName,
+              eventId: event.id,
+              errorType: 'WebSocket error event',
+              responseTime: `${Date.now() - startTime}ms`,
+            });
             resolve({
               success: false,
               error: 'WebSocket connection error',
@@ -384,24 +456,38 @@ export class GenericRelayService {
           }
         };
 
-        ws.onclose = () => {
+        ws.onclose = (closeEvent) => {
           clearTimeout(timeout);
           if (!resolved) {
             resolved = true;
+            logger.warn(`🔌 [${displayName}] WebSocket closed unexpectedly`, {
+              service: 'GenericRelayService',
+              method: 'publishToRelay',
+              relayUrl,
+              relayName: displayName,
+              eventId: event.id,
+              closeCode: closeEvent.code,
+              closeReason: closeEvent.reason || 'No reason provided',
+              wasClean: closeEvent.wasClean,
+              responseTime: `${Date.now() - startTime}ms`,
+            });
             resolve({
               success: false,
-              error: 'WebSocket connection closed',
+              error: `WebSocket closed (code: ${closeEvent.code})`,
               responseTime: Date.now() - startTime,
             });
           }
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        logger.error('Error creating WebSocket connection', error instanceof Error ? error : new Error(errorMessage), {
+        logger.error(`💥 [${displayName}] Exception creating WebSocket`, error instanceof Error ? error : new Error(errorMessage), {
           service: 'GenericRelayService',
           method: 'publishToRelay',
           relayUrl,
+          relayName: displayName,
+          eventId: event.id,
           error: errorMessage,
+          errorStack: error instanceof Error ? error.stack : undefined,
         });
         
         resolve({
@@ -440,14 +526,28 @@ export class GenericRelayService {
 
       // Query all relays in parallel
       const queryPromises = NOSTR_RELAYS.map(async (relay, index) => {
+        const relayStartTime = Date.now();
+        
         try {
+          logger.info(`🔍 [${relay.name}] Starting event query`, {
+            service: 'GenericRelayService',
+            method: 'queryEvents',
+            relayUrl: relay.url,
+            relayName: relay.name,
+            relayIndex: index + 1,
+            totalRelays: NOSTR_RELAYS.length,
+            filters: JSON.stringify(filters).substring(0, 100),
+          });
+
           onProgress?.({
             step: 'querying',
             progress: Math.round((index / NOSTR_RELAYS.length) * 100),
             message: `Querying ${relay.name}...`,
           });
 
-          const events = await this.queryRelay(relay.url, filters);
+          const events = await this.queryRelay(relay.url, filters, relay.name);
+          
+          const queryTime = Date.now() - relayStartTime;
           
           // Track which relay returned each event
           events.forEach(event => {
@@ -459,21 +559,26 @@ export class GenericRelayService {
           });
 
           completedRelays++;
-          logger.debug('Query completed for relay', {
+          logger.info(`✅ [${relay.name}] Query completed`, {
             service: 'GenericRelayService',
             method: 'queryEvents',
             relayUrl: relay.url,
             relayName: relay.name,
             eventCount: events.length,
             totalEvents: allEvents.length,
+            queryTime: `${queryTime}ms`,
+            relayIndex: index + 1,
           });
         } catch (error) {
-          logger.warn('Query failed for relay', {
+          const queryTime = Date.now() - relayStartTime;
+          logger.warn(`❌ [${relay.name}] Query failed`, {
             service: 'GenericRelayService',
             method: 'queryEvents',
             relayUrl: relay.url,
             relayName: relay.name,
             error: error instanceof Error ? error.message : 'Unknown error',
+            queryTime: `${queryTime}ms`,
+            relayIndex: index + 1,
           });
         }
       });
@@ -521,9 +626,21 @@ export class GenericRelayService {
   /**
    * Query events from a specific relay
    */
-  private async queryRelay(relayUrl: string, filters: Record<string, unknown>[]): Promise<NostrEvent[]> {
+  private async queryRelay(relayUrl: string, filters: Record<string, unknown>[], relayName?: string): Promise<NostrEvent[]> {
+    const displayName = relayName || relayUrl;
+    
     return new Promise((resolve) => {
       try {
+        const startTime = Date.now();
+        
+        logger.debug(`🔌 [${displayName}] Opening WebSocket for query`, {
+          service: 'GenericRelayService',
+          method: 'queryRelay',
+          relayUrl,
+          relayName: displayName,
+          filters: JSON.stringify(filters).substring(0, 100),
+        });
+
         const ws = new WebSocket(relayUrl);
         const events: NostrEvent[] = [];
         let resolved = false;
@@ -532,11 +649,27 @@ export class GenericRelayService {
           if (!resolved) {
             resolved = true;
             ws.close();
+            logger.warn(`⏱️ [${displayName}] Query timeout after ${this.connectionTimeout}ms`, {
+              service: 'GenericRelayService',
+              method: 'queryRelay',
+              relayUrl,
+              relayName: displayName,
+              timeout: `${this.connectionTimeout}ms`,
+              eventsReceived: events.length,
+            });
             resolve(events);
           }
         }, this.connectionTimeout);
 
         ws.onopen = () => {
+          logger.debug(`✓ [${displayName}] WebSocket connected, sending REQ`, {
+            service: 'GenericRelayService',
+            method: 'queryRelay',
+            relayUrl,
+            relayName: displayName,
+            connectionTime: `${Date.now() - startTime}ms`,
+          });
+
           // Send REQ message to query events
           const message = ['REQ', 'query', ...filters];
           ws.send(JSON.stringify(message));
@@ -548,47 +681,88 @@ export class GenericRelayService {
             
             if (data[0] === 'EVENT') {
               events.push(data[2] as NostrEvent);
+              logger.debug(`📨 [${displayName}] Received EVENT (total: ${events.length})`, {
+                service: 'GenericRelayService',
+                method: 'queryRelay',
+                relayUrl,
+                relayName: displayName,
+                eventId: (data[2] as NostrEvent).id,
+                totalEvents: events.length,
+              });
             } else if (data[0] === 'EOSE') {
               clearTimeout(timeout);
               ws.close();
               
               if (!resolved) {
                 resolved = true;
+                logger.debug(`🏁 [${displayName}] End of stored events (EOSE)`, {
+                  service: 'GenericRelayService',
+                  method: 'queryRelay',
+                  relayUrl,
+                  relayName: displayName,
+                  totalEvents: events.length,
+                  queryTime: `${Date.now() - startTime}ms`,
+                });
                 resolve(events);
               }
             }
           } catch (parseError) {
-            logger.warn('Failed to parse relay query response', {
+            logger.warn(`⚠️ [${displayName}] Failed to parse query response`, {
               service: 'GenericRelayService',
               method: 'queryRelay',
               relayUrl,
+              relayName: displayName,
               error: parseError instanceof Error ? parseError.message : 'Unknown error',
+              rawMessage: msg.data.substring(0, 100),
             });
           }
         };
 
-        ws.onerror = () => {
+        ws.onerror = (errorEvent) => {
           clearTimeout(timeout);
           ws.close();
           
           if (!resolved) {
             resolved = true;
+            logger.error(`⚡ [${displayName}] WebSocket error during query`, new Error('WebSocket connection error'), {
+              service: 'GenericRelayService',
+              method: 'queryRelay',
+              relayUrl,
+              relayName: displayName,
+              errorType: 'WebSocket error event',
+              eventsReceived: events.length,
+              queryTime: `${Date.now() - startTime}ms`,
+            });
             resolve(events);
           }
         };
 
-        ws.onclose = () => {
+        ws.onclose = (closeEvent) => {
           clearTimeout(timeout);
           if (!resolved) {
             resolved = true;
+            logger.warn(`🔌 [${displayName}] WebSocket closed during query`, {
+              service: 'GenericRelayService',
+              method: 'queryRelay',
+              relayUrl,
+              relayName: displayName,
+              closeCode: closeEvent.code,
+              closeReason: closeEvent.reason || 'No reason provided',
+              wasClean: closeEvent.wasClean,
+              eventsReceived: events.length,
+              queryTime: `${Date.now() - startTime}ms`,
+            });
             resolve(events);
           }
         };
       } catch (error) {
-        logger.error('Error creating query WebSocket connection', error instanceof Error ? error : new Error('Unknown error'), {
+        logger.error(`💥 [${displayName}] Exception creating WebSocket for query`, error instanceof Error ? error : new Error('Unknown error'), {
           service: 'GenericRelayService',
           method: 'queryRelay',
           relayUrl,
+          relayName: displayName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined,
         });
         
         resolve([]);
