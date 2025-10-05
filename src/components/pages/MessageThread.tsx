@@ -25,10 +25,13 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   isLoading = false,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive (only within the messages container)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }, [messages]);
 
   const formatTimestamp = (timestamp: number) => {
@@ -131,7 +134,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-primary-50 p-4 space-y-4">
+    <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-primary-50 p-4 space-y-4">
       {messages.map((message) => {
         const isSent = message.senderPubkey === currentUserPubkey;
 

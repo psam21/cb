@@ -16,6 +16,7 @@ import { queryEvents, publishEvent, subscribeToEvents } from '../generic/Generic
 import { EncryptionService } from '../generic/EncryptionService';
 import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
+import { profileService } from './ProfileBusinessService';
 
 export class MessagingBusinessService {
   private static instance: MessagingBusinessService;
@@ -135,12 +136,18 @@ export class MessagingBusinessService {
 
       const userPubkey = await signer.getPublicKey();
 
-      // Query for gift-wrapped messages addressed to user (Kind 1059 with p tag)
+      // Query for gift-wrapped messages involving the user
+      // Need TWO filters: messages TO user AND messages FROM user
       const filters = [
         {
           kinds: [1059],
-          '#p': [userPubkey],
-          limit: 100,
+          '#p': [userPubkey],  // Messages TO user
+          limit: 50,
+        },
+        {
+          kinds: [1059],
+          authors: [userPubkey], // Messages FROM user
+          limit: 50,
         },
       ];
 
@@ -179,6 +186,24 @@ export class MessagingBusinessService {
 
       const conversations = Array.from(conversationMap.values())
         .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+
+      // Fetch display names for all conversations
+      await Promise.all(conversations.map(async (conversation) => {
+        try {
+          const profile = await profileService.getUserProfile(conversation.pubkey);
+          if (profile) {
+            conversation.displayName = profile.display_name || undefined;
+            conversation.avatar = profile.picture || undefined;
+          }
+        } catch (error) {
+          // Silently fail - display name is optional
+          logger.debug('Failed to fetch profile for conversation', {
+            service: 'MessagingBusinessService',
+            method: 'getConversations',
+            pubkey: conversation.pubkey,
+          });
+        }
+      }));
 
       logger.info('Conversations loaded', {
         service: 'MessagingBusinessService',
@@ -221,12 +246,18 @@ export class MessagingBusinessService {
 
       const userPubkey = await signer.getPublicKey();
 
-      // Query for gift-wrapped messages between user and other party
+      // Query for gift-wrapped messages involving the user
+      // Need TWO filters: messages TO user AND messages FROM user (as author)
       const filters = [
         {
           kinds: [1059],
-          '#p': [userPubkey],
-          limit,
+          '#p': [userPubkey],  // Messages TO user
+          limit: limit / 2,    // Split limit between the two filters
+        },
+        {
+          kinds: [1059],
+          authors: [userPubkey], // Messages FROM user
+          limit: limit / 2,
         },
       ];
 
