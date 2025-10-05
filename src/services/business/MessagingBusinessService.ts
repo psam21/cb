@@ -33,6 +33,10 @@ export class MessagingBusinessService {
   /**
    * Send a gift-wrapped message to a recipient
    * 
+   * NIP-17 Implementation: Send TWO gift wraps:
+   * 1. One to the recipient (so they can read it)
+   * 2. One to ourselves (so we can retrieve our sent messages)
+   * 
    * @param recipientPubkey - Recipient's public key
    * @param content - Message content (plaintext)
    * @param signer - NIP-07 signer
@@ -62,30 +66,38 @@ export class MessagingBusinessService {
         messageContent = contextPrefix + content;
       }
 
-      // Create gift-wrapped message using Event Layer
-      const giftWrap = await nostrEventService.createGiftWrappedMessage(
+      // Create gift-wrapped message to recipient
+      const giftWrapToRecipient = await nostrEventService.createGiftWrappedMessage(
         recipientPubkey,
         messageContent,
         signer
       );
 
-      // Publish gift-wrapped event to relays
-      const publishResult = await publishEvent(giftWrap, signer);
+      // Create gift-wrapped message to ourselves (for message history persistence)
+      const giftWrapToSelf = await nostrEventService.createGiftWrappedMessage(
+        senderPubkey, // Send to ourselves
+        messageContent,
+        signer
+      );
 
-      if (!publishResult.success) {
+      // Publish both gift-wrapped events to relays
+      const publishResultRecipient = await publishEvent(giftWrapToRecipient, signer);
+      const publishResultSelf = await publishEvent(giftWrapToSelf, signer);
+
+      if (!publishResultRecipient.success && !publishResultSelf.success) {
         throw new AppError(
           'Failed to publish message to relays',
           ErrorCode.NOSTR_ERROR,
           HttpStatus.INTERNAL_SERVER_ERROR,
           ErrorCategory.EXTERNAL_SERVICE,
           ErrorSeverity.HIGH,
-          { publishResult }
+          { publishResultRecipient, publishResultSelf }
         );
       }
 
       // Create message object for return
       const message: Message = {
-        id: giftWrap.id,
+        id: giftWrapToRecipient.id,
         senderPubkey,
         recipientPubkey,
         content,
@@ -98,7 +110,8 @@ export class MessagingBusinessService {
         service: 'MessagingBusinessService',
         method: 'sendMessage',
         messageId: message.id,
-        publishedRelays: publishResult.publishedRelays.length,
+        publishedToRecipient: publishResultRecipient.publishedRelays.length,
+        publishedToSelf: publishResultSelf.publishedRelays.length,
       });
 
       return {
@@ -124,6 +137,10 @@ export class MessagingBusinessService {
    * Get all conversations for the current user
    * Queries for gift-wrapped messages (Kind 1059) addressed to user
    * 
+   * Note: We only query for messages TO us (p tag) because:
+   * - Gift wraps use ephemeral keys (can't query by author)
+   * - We send a copy to ourselves when sending (so sent messages appear here too)
+   * 
    * @param signer - NIP-07 signer
    * @returns Array of conversations with last message details
    */
@@ -136,18 +153,12 @@ export class MessagingBusinessService {
 
       const userPubkey = await signer.getPublicKey();
 
-      // Query for gift-wrapped messages involving the user
-      // Need TWO filters: messages TO user AND messages FROM user
+      // Query for gift-wrapped messages addressed to us (includes received + sent)
       const filters = [
         {
           kinds: [1059],
-          '#p': [userPubkey],  // Messages TO user
-          limit: 50,
-        },
-        {
-          kinds: [1059],
-          authors: [userPubkey], // Messages FROM user
-          limit: 50,
+          '#p': [userPubkey],  // Messages TO user (includes copies we sent to ourselves)
+          limit: 100,
         },
       ];
 
@@ -226,6 +237,10 @@ export class MessagingBusinessService {
   /**
    * Get all messages for a specific conversation
    * 
+   * Note: We only query for messages TO us (p tag) because:
+   * - Gift wraps use ephemeral keys (can't query by author)
+   * - We send a copy to ourselves when sending (so sent messages appear here too)
+   * 
    * @param otherPubkey - Public key of the other user
    * @param signer - NIP-07 signer
    * @param limit - Maximum number of messages to retrieve (default: 100)
@@ -246,18 +261,12 @@ export class MessagingBusinessService {
 
       const userPubkey = await signer.getPublicKey();
 
-      // Query for gift-wrapped messages involving the user
-      // Need TWO filters: messages TO user AND messages FROM user (as author)
+      // Query for gift-wrapped messages addressed to us (includes received + sent)
       const filters = [
         {
           kinds: [1059],
-          '#p': [userPubkey],  // Messages TO user
-          limit: limit / 2,    // Split limit between the two filters
-        },
-        {
-          kinds: [1059],
-          authors: [userPubkey], // Messages FROM user
-          limit: limit / 2,
+          '#p': [userPubkey],  // Messages TO user (includes copies we sent to ourselves)
+          limit,
         },
       ];
 
