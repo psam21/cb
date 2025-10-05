@@ -75,24 +75,25 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
         otherPubkey,
       });
 
-      // Merge loaded messages with any optimistic messages (preserve temp messages)
+      // Merge loaded messages with existing ones (preserve all messages from current session)
       setMessages(prev => {
-        // Get messages that were added optimistically (have tempId but no id yet)
-        const optimisticMessages = prev.filter(m => m.tempId && !m.id);
-        
-        // Combine loaded messages with optimistic ones, avoiding duplicates
+        // Create a map to avoid duplicates
         const messageMap = new Map<string, Message>();
         
-        // Add loaded messages first
+        // First, add all previously loaded/sent messages from this session
+        prev.forEach(msg => {
+          const key = msg.id || msg.tempId || `${msg.senderPubkey}-${msg.createdAt}`;
+          messageMap.set(key, msg);
+        });
+        
+        // Then add/update with newly loaded messages from relays
         messageList.forEach(msg => {
-          if (msg.id) messageMap.set(msg.id, msg);
+          if (msg.id) {
+            messageMap.set(msg.id, msg);
+          }
         });
         
-        // Add optimistic messages (they'll be replaced when real messages arrive)
-        optimisticMessages.forEach(msg => {
-          if (msg.tempId) messageMap.set(msg.tempId, msg);
-        });
-        
+        // Sort by timestamp and return
         return Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
       });
     } catch (err) {
