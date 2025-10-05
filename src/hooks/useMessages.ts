@@ -75,9 +75,27 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
         otherPubkey,
       });
 
-      // Merge loaded messages with existing ones (preserve all messages from current session)
+      // Set messages directly - when switching conversations, we want a fresh start
+      // Only merge messages if they're for the SAME conversation (by checking pubkeys match)
       setMessages(prev => {
-        // Create a map to avoid duplicates
+        // Check if previous messages are for the same conversation
+        const isSameConversation = prev.length === 0 || prev.every(msg => 
+          (msg.senderPubkey === otherPubkey || msg.recipientPubkey === otherPubkey)
+        );
+        
+        if (!isSameConversation) {
+          // Different conversation - replace entirely
+          logger.debug('Switching conversations - replacing messages', {
+            service: 'useMessages',
+            method: 'loadMessages',
+            previousCount: prev.length,
+            loadedCount: messageList.length,
+            otherPubkey,
+          });
+          return messageList.sort((a, b) => a.createdAt - b.createdAt);
+        }
+        
+        // Same conversation - merge to preserve optimistic updates
         const messageMap = new Map<string, Message>();
         
         // Helper to get consistent key for a message
@@ -87,7 +105,7 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
           return `fallback:${msg.senderPubkey}-${msg.recipientPubkey}-${msg.createdAt}`;
         };
         
-        logger.debug('Merging messages', {
+        logger.debug('Merging messages for same conversation', {
           service: 'useMessages',
           method: 'loadMessages',
           previousCount: prev.length,
