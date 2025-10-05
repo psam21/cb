@@ -188,13 +188,14 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
     const description = product.description || 'Description coming soon.';
     const summary = description.length > 160 ? `${description.slice(0, 157)}…` : description;
 
-    const contactInfo = product.contact
-      ? {
-          label: 'Contact Seller',
-          value: product.contact,
-          href: contactHref,
-        }
-      : undefined;
+    // Old contact field removed - now using contact-seller action for messaging
+    // const contactInfo = product.contact
+    //   ? {
+    //       label: 'Contact Seller',
+    //       value: product.contact,
+    //       href: contactHref,
+    //     }
+    //   : undefined;
 
     const actions = [
       ...(sellerPubkey
@@ -238,7 +239,7 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
         },
         tags: product.tags,
         media,
-        contact: contactInfo,
+        // contact field removed - using contact-seller action for messaging
         location: product.location,
         relays: product.publishedRelays,
         bookmarkable: true,
