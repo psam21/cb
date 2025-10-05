@@ -24,17 +24,32 @@ function MessagesPageContent() {
   const { signer, isLoading: signerLoading } = useNostrSigner();
   const [selectedPubkey, setSelectedPubkey] = useState<string | null>(null);
   const [currentUserPubkey, setCurrentUserPubkey] = useState<string | null>(null);
+  const [conversationContext, setConversationContext] = useState<{
+    type: 'product' | 'heritage';
+    id: string;
+  } | undefined>(undefined);
 
-  // Handle URL parameters for direct navigation
+  // Handle URL parameters for direct navigation (e.g., from "Contact Seller")
   React.useEffect(() => {
     const recipientParam = searchParams?.get('recipient');
+    const contextParam = searchParams?.get('context'); // Format: "product:123" or "heritage:456"
+    
     if (recipientParam && !selectedPubkey) {
       logger.info('Auto-selecting conversation from URL', {
         service: 'MessagesPage',
         method: 'useEffect[searchParams]',
         recipient: recipientParam,
+        context: contextParam,
       });
       setSelectedPubkey(recipientParam);
+      
+      // Parse context parameter
+      if (contextParam) {
+        const [type, id] = contextParam.split(':');
+        if ((type === 'product' || type === 'heritage') && id) {
+          setConversationContext({ type, id });
+        }
+      }
     }
   }, [searchParams, selectedPubkey]);
 
@@ -91,9 +106,11 @@ function MessagesPageContent() {
       service: 'MessagesPage',
       method: 'handleSendMessage',
       recipientPubkey: selectedPubkey,
+      context: conversationContext,
     });
 
-    await sendMessage(selectedPubkey, content, undefined, {
+    // Pass conversation context if available (e.g., from "Contact Seller" button)
+    await sendMessage(selectedPubkey, content, conversationContext, {
       onOptimisticUpdate: (tempMessage) => {
         // Add to messages list immediately
         addMessage(tempMessage);
