@@ -71,6 +71,16 @@ export const useAuthStore = create<AuthState>()(
       setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
       
       logout: () => {
+        // Clear message cache
+        (async () => {
+          try {
+            const { messagingBusinessService } = await import('@/services/business/MessagingBusinessService');
+            await messagingBusinessService.clearCache();
+          } catch (error) {
+            console.warn('Failed to clear message cache on logout:', error);
+          }
+        })();
+        
         // Clear authentication state
         set({
           user: null,

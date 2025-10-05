@@ -17,17 +17,60 @@ import { EncryptionService } from '../generic/EncryptionService';
 import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 import { profileService } from './ProfileBusinessService';
+import { MessageCacheService } from './MessageCacheService';
 
 export class MessagingBusinessService {
   private static instance: MessagingBusinessService;
+  private cache: MessageCacheService;
 
-  private constructor() {}
+  private constructor() {
+    this.cache = MessageCacheService.getInstance();
+  }
 
   public static getInstance(): MessagingBusinessService {
     if (!MessagingBusinessService.instance) {
       MessagingBusinessService.instance = new MessagingBusinessService();
     }
     return MessagingBusinessService.instance;
+  }
+
+  /**
+   * Initialize cache with user's pubkey (call on login)
+   * 
+   * @param pubkey - User's Nostr public key (hex format)
+   */
+  public async initializeCache(pubkey: string): Promise<void> {
+    try {
+      await this.cache.initialize(pubkey);
+      logger.info('Message cache initialized', {
+        service: 'MessagingBusinessService',
+        method: 'initializeCache',
+      });
+    } catch (error) {
+      logger.error('Failed to initialize message cache', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'MessagingBusinessService',
+        method: 'initializeCache',
+      });
+      // Don't throw - cache is optional, continue without it
+    }
+  }
+
+  /**
+   * Clear cache (call on logout)
+   */
+  public async clearCache(): Promise<void> {
+    try {
+      await this.cache.clearCache();
+      logger.info('Message cache cleared', {
+        service: 'MessagingBusinessService',
+        method: 'clearCache',
+      });
+    } catch (error) {
+      logger.error('Failed to clear message cache', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'MessagingBusinessService',
+        method: 'clearCache',
+      });
+    }
   }
 
   /**
@@ -140,6 +183,11 @@ export class MessagingBusinessService {
    * Get all conversations for the current user
    * Queries for gift-wrapped messages (Kind 1059) addressed to user
    * 
+   * Performance:
+   * - Checks cache first (instant load)
+   * - Returns cached data immediately
+   * - Background sync for new messages using "since" filter
+   * 
    * Note: We only query for messages TO us (p tag) because:
    * - Gift wraps use ephemeral keys (can't query by author)
    * - We send a copy to ourselves when sending (so sent messages appear here too)
@@ -154,7 +202,114 @@ export class MessagingBusinessService {
         method: 'getConversations',
       });
 
+      // Try cache first
+      const cachedConversations = await this.cache.getConversations();
+      if (cachedConversations.length > 0) {
+        logger.info('✅ Loaded conversations from cache', {
+          service: 'MessagingBusinessService',
+          method: 'getConversations',
+          count: cachedConversations.length,
+        });
+
+        // Background sync for new messages (don't await)
+        this.syncNewMessages(signer).catch(error => {
+          logger.error('Background sync failed', error instanceof Error ? error : new Error('Unknown error'), {
+            service: 'MessagingBusinessService',
+            method: 'getConversations',
+          });
+        });
+
+        return cachedConversations;
+      }
+
+      // Cache miss - fetch from relays
+      logger.info('Cache miss - fetching from relays', {
+        service: 'MessagingBusinessService',
+        method: 'getConversations',
+      });
+
+      const conversations = await this.fetchConversationsFromRelays(signer);
+
+      // Cache for next time
+      await this.cache.cacheConversations(conversations);
+      await this.cache.setLastSyncTime(Math.floor(Date.now() / 1000));
+
+      return conversations;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to load conversations', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'MessagingBusinessService',
+        method: 'getConversations',
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Background sync for new messages (since last sync)
+   * Does NOT block UI - runs in background
+   */
+  private async syncNewMessages(signer: NostrSigner): Promise<void> {
+    try {
+      const lastSync = await this.cache.getLastSyncTime();
+      if (lastSync === 0) {
+        return; // No last sync time, skip background sync
+      }
+
+      logger.info('🔄 Background sync: fetching new messages', {
+        service: 'MessagingBusinessService',
+        method: 'syncNewMessages',
+        since: new Date(lastSync * 1000).toISOString(),
+      });
+
       const userPubkey = await signer.getPublicKey();
+
+      // Fetch only messages AFTER last sync
+      const filters = [
+        {
+          kinds: [1059],
+          '#p': [userPubkey],
+          since: lastSync, // Only new messages
+          limit: 100,
+        },
+      ];
+
+      const queryResult = await queryEvents(filters);
+      if (!queryResult.success || queryResult.events.length === 0) {
+        logger.info('No new messages in background sync', {
+          service: 'MessagingBusinessService',
+          method: 'syncNewMessages',
+        });
+        return;
+      }
+
+      // Decrypt and cache new messages
+      const newMessages = await this.decryptGiftWraps(queryResult.events, signer);
+      if (newMessages.length > 0) {
+        await this.cache.cacheMessages(newMessages);
+        await this.cache.setLastSyncTime(Math.floor(Date.now() / 1000));
+
+        logger.info('✅ Background sync: cached new messages', {
+          service: 'MessagingBusinessService',
+          method: 'syncNewMessages',
+          count: newMessages.length,
+        });
+      }
+    } catch (error) {
+      logger.error('Background sync failed', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'MessagingBusinessService',
+        method: 'syncNewMessages',
+      });
+    }
+  }
+
+  /**
+   * Fetch conversations from relays (no cache)
+   * Extracted for reusability
+   */
+  private async fetchConversationsFromRelays(signer: NostrSigner): Promise<Conversation[]> {
+    const userPubkey = await signer.getPublicKey();
 
       // Query for gift-wrapped messages addressed to us (includes received + sent)
       const filters = [
@@ -230,26 +385,22 @@ export class MessagingBusinessService {
         }
       }));
 
-      logger.info('Conversations loaded', {
+      logger.info('Conversations loaded from relays', {
         service: 'MessagingBusinessService',
-        method: 'getConversations',
+        method: 'fetchConversationsFromRelays',
         count: conversations.length,
       });
 
       return conversations;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Failed to load conversations', error instanceof Error ? error : new Error(errorMessage), {
-        service: 'MessagingBusinessService',
-        method: 'getConversations',
-      });
-
-      throw error;
-    }
   }
 
   /**
    * Get all messages for a specific conversation
+   * 
+   * Performance:
+   * - Checks cache first (instant load)
+   * - Falls back to relay fetch if cache miss
+   * - Caches fetched messages for future use
    * 
    * Note: We only query for messages TO us (p tag) because:
    * - Gift wraps use ephemeral keys (can't query by author)
@@ -271,6 +422,31 @@ export class MessagingBusinessService {
         method: 'getMessages',
         otherPubkey,
         limit,
+      });
+
+      // Try cache first
+      const cachedMessages = await this.cache.getMessages(otherPubkey);
+      if (cachedMessages.length > 0) {
+        logger.info('✅ Loaded messages from cache', {
+          service: 'MessagingBusinessService',
+          method: 'getMessages',
+          count: cachedMessages.length,
+        });
+
+        const userPubkey = await signer.getPublicKey();
+        
+        // Mark messages as sent or received
+        cachedMessages.forEach(msg => {
+          msg.isSent = msg.senderPubkey === userPubkey;
+        });
+
+        return cachedMessages;
+      }
+
+      // Cache miss - fetch from relays
+      logger.info('Cache miss - fetching messages from relays', {
+        service: 'MessagingBusinessService',
+        method: 'getMessages',
       });
 
       const userPubkey = await signer.getPublicKey();
@@ -352,6 +528,11 @@ export class MessagingBusinessService {
       conversationMessages.forEach(msg => {
         msg.isSent = msg.senderPubkey === userPubkey;
       });
+
+      // Cache the messages for future use
+      if (conversationMessages.length > 0) {
+        await this.cache.cacheMessages(conversationMessages);
+      }
 
       logger.info('Messages loaded for conversation', {
         service: 'MessagingBusinessService',

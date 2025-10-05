@@ -89,6 +89,23 @@ export default function SigninPage() {
       setUser(userData);
       setAuthenticated(true);
       
+      // Initialize message cache with user's pubkey
+      try {
+        const { messagingBusinessService } = await import('@/services/business/MessagingBusinessService');
+        await messagingBusinessService.initializeCache(pubkey);
+        logger.info('Message cache initialized successfully', {
+          service: 'signin',
+          method: 'handleSignIn'
+        });
+      } catch (cacheError) {
+        logger.warn('Failed to initialize message cache', {
+          error: cacheError instanceof Error ? cacheError.message : 'Unknown error',
+          service: 'signin',
+          method: 'handleSignIn'
+        });
+        // Don't fail login if cache fails - cache is optional
+      }
+      
       logger.info('User authentication completed', { 
         pubkey: pubkey.substring(0, 8) + '...',
         npub: npub.substring(0, 12) + '...',
