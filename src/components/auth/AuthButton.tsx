@@ -36,6 +36,12 @@ export default function AuthButton() {
   const handleLogout = () => {
     logout();
     setShowDropdown(false);
+    
+    // Reload the page to ensure all state is cleared
+    // Use replace to prevent back button issues
+    if (typeof window !== 'undefined') {
+      window.location.replace('/');
+    }
   };
 
   // Don't show loading state on home page - only show when explicitly detecting

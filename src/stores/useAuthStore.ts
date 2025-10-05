@@ -70,10 +70,82 @@ export const useAuthStore = create<AuthState>()(
       
       setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
       
-      logout: () => set({
-        user: null,
-        isAuthenticated: false
-      }),
+      logout: () => {
+        // Clear authentication state
+        set({
+          user: null,
+          isAuthenticated: false,
+          signer: null,
+          error: null,
+        });
+        
+        // Clear ONLY Culture Bridge's browser storage (not other sites)
+        if (typeof window !== 'undefined') {
+          // Clear localStorage - only our keys
+          // (localStorage is already origin-isolated, but we'll be explicit)
+          const keysToRemove = Object.keys(localStorage).filter(key => 
+            key.startsWith('auth-store') || 
+            key.startsWith('product-store') || 
+            key.startsWith('my-shop-store') ||
+            key.startsWith('shop-store') ||
+            key === 'lastPublishedEvent' ||
+            key.startsWith('nostr') ||
+            key.startsWith('culture-bridge')
+          );
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+          
+          // Clear sessionStorage - only our keys
+          const sessionKeysToRemove = Object.keys(sessionStorage).filter(key => 
+            key.startsWith('auth-store') || 
+            key.startsWith('product-store') || 
+            key.startsWith('my-shop-store') ||
+            key.startsWith('shop-store') ||
+            key.startsWith('nostr') ||
+            key.startsWith('culture-bridge')
+          );
+          sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+          
+          // Clear cookies - only for this domain (cookies are already domain-isolated)
+          // This only affects culturebridge.vercel.app cookies
+          document.cookie.split(';').forEach((cookie) => {
+            const name = cookie.split('=')[0].trim();
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
+          });
+          
+          // Clear IndexedDB - only Culture Bridge databases
+          if (window.indexedDB) {
+            indexedDB.databases().then((databases) => {
+              databases.forEach((db) => {
+                // Only delete databases that belong to Culture Bridge
+                if (db.name && (
+                  db.name.includes('culture-bridge') || 
+                  db.name.includes('nostr') ||
+                  db.name.includes('auth')
+                )) {
+                  indexedDB.deleteDatabase(db.name);
+                }
+              });
+            }).catch((error) => {
+              console.warn('Failed to clear IndexedDB:', error);
+            });
+          }
+          
+          // Clear Cache API - only Culture Bridge caches
+          // (Caches are already origin-isolated, so this only affects our domain)
+          if ('caches' in window) {
+            caches.keys().then((names) => {
+              // Cache names are scoped to this origin by the browser
+              // so we're only seeing culturebridge.vercel.app caches
+              names.forEach((name) => {
+                caches.delete(name);
+              });
+            }).catch((error) => {
+              console.warn('Failed to clear caches:', error);
+            });
+          }
+        }
+      },
       
       // Utility actions
       reset: () => set({
