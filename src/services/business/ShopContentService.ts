@@ -171,6 +171,12 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
     const npub = product.author ? tryGetNpub(product.author) : undefined;
     const displayName = product.author ? await tryGetAuthorDisplayName(product.author) : undefined;
 
+    // For messaging, we use the author's pubkey (seller)
+    // If there's a separate contact npub, we'd need to decode it
+    // For now, messaging goes to the product author
+    const sellerPubkey = product.author;
+    const productImageUrl = product.attachments?.[0]?.url || product.imageUrl;
+    
     const contactHref = product.contact
       ? product.contact.startsWith('npub')
         ? `nostr:${product.contact}`
@@ -191,13 +197,19 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
       : undefined;
 
     const actions = [
-      ...(product.contact
+      ...(sellerPubkey
         ? [
             {
               id: 'contact-seller',
               label: 'Contact Seller',
-              href: contactHref,
               type: 'primary' as const,
+              // Store seller pubkey and product info for messaging
+              metadata: {
+                sellerPubkey,
+                productId: product.id,
+                productTitle: product.title,
+                productImageUrl,
+              },
             },
           ]
         : []),

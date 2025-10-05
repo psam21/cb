@@ -1,12 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Heart, Bookmark, Share2 } from 'lucide-react';
 import { ContentDetailHeader } from '@/components/generic/ContentDetailHeader';
 import { ContentDetailLayout } from '@/components/generic/ContentDetailLayout';
 import { ContentMediaGallery } from '@/components/generic/ContentMediaGallery';
 import { ContentDetailInfo } from '@/components/generic/ContentDetailInfo';
 import { ContentMetaInfo } from '@/components/generic/ContentMetaInfo';
+import { logger } from '@/services/core/LoggingService';
 import type { HeritageContentDetail } from '@/types/heritage-content';
 import type { InfoItem } from '@/components/generic/ContentDetailInfo';
 
@@ -16,8 +18,45 @@ interface HeritageDetailProps {
 }
 
 export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetailProps) {
+  const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+
+  const handleContactContributor = () => {
+    const contactAction = detail.actions.find(action => action.id === 'contact-author');
+    if (!contactAction || !contactAction.metadata) {
+      logger.warn('Contact author action has no metadata', {
+        service: 'HeritageDetail',
+        method: 'handleContactContributor',
+      });
+      return;
+    }
+
+    const metadata = contactAction.metadata as {
+      contributorPubkey: string;
+      heritageId: string;
+      heritageTitle: string;
+      heritageImageUrl?: string;
+    };
+    const { contributorPubkey, heritageId, heritageTitle, heritageImageUrl } = metadata;
+
+    logger.info('Navigating to messages for contributor', {
+      service: 'HeritageDetail',
+      method: 'handleContactContributor',
+      contributorPubkey,
+      heritageId,
+    });
+
+    // Navigate to messages with context
+    const params = new URLSearchParams({
+      recipient: contributorPubkey,
+      context: `heritage:${heritageId}`,
+      contextTitle: heritageTitle || 'Heritage',
+      ...(heritageImageUrl && { contextImage: heritageImageUrl }),
+    });
+
+    router.push(`/messages?${params.toString()}`);
+  };
 
   const actions = useMemo(() => {
     const filtered = detail.actions.filter(action => 
@@ -204,7 +243,7 @@ export function HeritageDetail({ detail, backHref = '/heritage' }: HeritageDetai
             {contactAction && (
               <button
                 type="button"
-                onClick={contactAction.onClick}
+                onClick={handleContactContributor}
                 className="btn-primary-sm w-full"
                 aria-label={contactAction.ariaLabel ?? contactAction.label}
                 disabled={contactAction.disabled}

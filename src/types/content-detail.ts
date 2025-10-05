@@ -20,6 +20,7 @@ export interface ContentAction {
   type?: 'primary' | 'secondary' | 'ghost';
   ariaLabel?: string;
   disabled?: boolean;
+  metadata?: Record<string, unknown>; // For storing additional data (e.g., messaging context)
 }
 
 export interface ContentContactInfo {

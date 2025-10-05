@@ -554,6 +554,10 @@ class HeritageContentService implements ContentDetailProvider<HeritageCustomFiel
       const npub = tryGetNpub(contribution.pubkey);
       const authorDisplayName = await tryGetAuthorDisplayName(contribution.pubkey);
 
+      // For messaging, we use the author's pubkey (contributor)
+      const contributorPubkey = contribution.pubkey;
+      const contributionImageUrl = contribution.media?.[0]?.source?.url;
+
       const result: ContentDetailResult<HeritageCustomFields> = {
         success: true,
         content: {
@@ -585,7 +589,24 @@ class HeritageContentService implements ContentDetailProvider<HeritageCustomFiel
             contributorRole: contribution.contributorRole,
             knowledgeKeeper: contribution.knowledgeKeeper,
           },
-          actions: [],
+          actions: [
+            ...(contributorPubkey
+              ? [
+                  {
+                    id: 'contact-author',
+                    label: 'Contact Contributor',
+                    type: 'primary' as const,
+                    // Store contributor pubkey and heritage info for messaging
+                    metadata: {
+                      contributorPubkey,
+                      heritageId: contribution.id,
+                      heritageTitle: contribution.title,
+                      heritageImageUrl: contributionImageUrl,
+                    },
+                  },
+                ]
+              : []),
+          ],
         },
       };
 

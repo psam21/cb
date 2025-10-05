@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Heart, Bookmark, Share2 } from 'lucide-react';
 import { ContentDetailHeader } from '@/components/generic/ContentDetailHeader';
 import { ContentDetailLayout } from '@/components/generic/ContentDetailLayout';
@@ -8,6 +9,7 @@ import { ContentMediaGallery } from '@/components/generic/ContentMediaGallery';
 import { ContentDetailInfo } from '@/components/generic/ContentDetailInfo';
 import { ContentMetaInfo } from '@/components/generic/ContentMetaInfo';
 import { getCategoryById } from '@/config/categories';
+import { logger } from '@/services/core/LoggingService';
 import type { ShopContentDetail } from '@/types/shop-content';
 import type { InfoItem } from '@/components/generic/ContentDetailInfo';
 
@@ -32,8 +34,45 @@ const formatPrice = (price: number, currency: string): string => {
 };
 
 export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDetailProps) {
+  const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+
+  const handleContactSeller = () => {
+    const contactAction = detail.actions.find(action => action.id === 'contact-seller');
+    if (!contactAction || !contactAction.metadata) {
+      logger.warn('Contact seller action has no metadata', {
+        service: 'ShopProductDetail',
+        method: 'handleContactSeller',
+      });
+      return;
+    }
+
+    const metadata = contactAction.metadata as {
+      sellerPubkey: string;
+      productId: string;
+      productTitle: string;
+      productImageUrl?: string;
+    };
+    const { sellerPubkey, productId, productTitle, productImageUrl } = metadata;
+
+    logger.info('Navigating to messages for seller', {
+      service: 'ShopProductDetail',
+      method: 'handleContactSeller',
+      sellerPubkey,
+      productId,
+    });
+
+    // Navigate to messages with context
+    const params = new URLSearchParams({
+      recipient: sellerPubkey,
+      context: `product:${productId}`,
+      contextTitle: productTitle || 'Product',
+      ...(productImageUrl && { contextImage: productImageUrl }),
+    });
+
+    router.push(`/messages?${params.toString()}`);
+  };
 
   const priceLabel = useMemo(() => {
     if (typeof detail.customFields.price !== 'number' || !detail.customFields.currency) {
@@ -199,7 +238,7 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
             {contactAction && (
               <button
                 type="button"
-                onClick={contactAction.onClick}
+                onClick={handleContactSeller}
                 className="btn-primary-sm w-full"
                 aria-label={contactAction.ariaLabel ?? contactAction.label}
                 disabled={contactAction.disabled}
