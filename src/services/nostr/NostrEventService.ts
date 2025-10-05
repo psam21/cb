@@ -4,6 +4,8 @@ import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 import { createNIP23Event, signEvent as genericSignEvent } from '../generic/GenericEventService';
 import { publishEvent as genericPublishEvent, RelayPublishingResult } from '../generic/GenericRelayService';
+import { EncryptionService } from '../generic/EncryptionService';
+import { getPublicKey, finalizeEvent, generateSecretKey } from 'nostr-tools';
 
 export interface ProductEventData {
   title: string;
@@ -770,6 +772,174 @@ export class NostrEventService {
       };
     }
   }
+
+  /**
+   * Create a Kind 14 rumor (unsigned event for gift-wrapped messages)
+   * NIP-17: Private Direct Messages
+   * 
+   * @param recipientPubkey - Recipient's public key
+   * @param content - Message content (plaintext)
+   * @param senderPubkey - Sender's public key
+   * @returns Unsigned Kind 14 event
+   */
+  public createRumor(
+    recipientPubkey: string,
+    content: string,
+    senderPubkey: string
+  ): Omit<NostrEvent, 'id' | 'sig'> {
+    const now = Math.floor(Date.now() / 1000);
+
+    return {
+      pubkey: senderPubkey,
+      created_at: now,
+      kind: 14,
+      tags: [['p', recipientPubkey]],
+      content,
+    };
+  }
+
+  /**
+   * Create a Kind 1059 seal (encrypted rumor)
+   * NIP-17: Private Direct Messages
+   * 
+   * @param rumor - Kind 14 rumor event
+   * @param recipientPubkey - Recipient's public key
+   * @param signer - NIP-07 signer for encryption
+   * @returns Unsigned Kind 1059 seal event
+   */
+  public async createSeal(
+    rumor: Omit<NostrEvent, 'id' | 'sig'>,
+    recipientPubkey: string,
+    signer: NostrSigner
+  ): Promise<Omit<NostrEvent, 'id' | 'sig'>> {
+    const now = Math.floor(Date.now() / 1000);
+    const senderPubkey = await signer.getPublicKey();
+
+    // Serialize rumor as JSON
+    const rumorJson = JSON.stringify(rumor);
+
+    // Encrypt rumor using NIP-44
+    const encryptedContent = await EncryptionService.encryptWithSigner(
+      signer,
+      recipientPubkey,
+      rumorJson
+    );
+
+    return {
+      pubkey: senderPubkey,
+      created_at: now,
+      kind: 1059,
+      tags: [],
+      content: encryptedContent,
+    };
+  }
+
+  /**
+   * Create a Kind 1059 gift wrap (encrypted seal)
+   * NIP-17: Private Direct Messages
+   * 
+   * @param seal - Kind 1059 seal event (signed)
+   * @param recipientPubkey - Recipient's public key
+   * @returns Signed Kind 1059 gift wrap event (uses random ephemeral key)
+   */
+  public async createGiftWrap(
+    seal: NostrEvent,
+    recipientPubkey: string
+  ): Promise<NostrEvent> {
+    // Generate random ephemeral private key
+    const ephemeralPrivateKey = generateSecretKey();
+    const ephemeralPubkey = getPublicKey(ephemeralPrivateKey);
+
+    // Random timestamp within last 2 days
+    const now = Math.floor(Date.now() / 1000);
+    const randomOffset = Math.floor(Math.random() * 172800); // 0-2 days in seconds
+    const randomCreatedAt = now - randomOffset;
+
+    // Serialize seal as JSON
+    const sealJson = JSON.stringify(seal);
+
+    // Encrypt seal using NIP-44 with ephemeral key
+    const encryptedContent = EncryptionService.encrypt(
+      Buffer.from(ephemeralPrivateKey).toString('hex'),
+      recipientPubkey,
+      sealJson
+    );
+
+    // Create and sign gift wrap with ephemeral key
+    const unsignedGiftWrap: Omit<NostrEvent, 'id' | 'sig'> = {
+      pubkey: ephemeralPubkey,
+      created_at: randomCreatedAt,
+      kind: 1059,
+      tags: [['p', recipientPubkey]],
+      content: encryptedContent,
+    };
+
+    // Sign with ephemeral key using finalizeEvent
+    const giftWrap = finalizeEvent(unsignedGiftWrap, ephemeralPrivateKey);
+
+    return giftWrap;
+  }
+
+  /**
+   * Create a complete gift-wrapped message (NIP-17)
+   * Combines createRumor, createSeal, and createGiftWrap
+   * 
+   * @param recipientPubkey - Recipient's public key
+   * @param content - Message content (plaintext)
+   * @param signer - NIP-07 signer
+   * @returns Signed Kind 1059 gift wrap event ready to publish
+   */
+  public async createGiftWrappedMessage(
+    recipientPubkey: string,
+    content: string,
+    signer: NostrSigner
+  ): Promise<NostrEvent> {
+    logger.info('Creating gift-wrapped message', {
+      service: 'NostrEventService',
+      method: 'createGiftWrappedMessage',
+      recipientPubkey,
+    });
+
+    try {
+      const senderPubkey = await signer.getPublicKey();
+
+      // Step 1: Create rumor (unsigned Kind 14)
+      const rumor = this.createRumor(recipientPubkey, content, senderPubkey);
+
+      // Step 2: Create seal (encrypted rumor as Kind 1059)
+      const unsignedSeal = await this.createSeal(rumor, recipientPubkey, signer);
+
+      // Step 3: Sign the seal
+      const seal = await signer.signEvent(unsignedSeal);
+
+      // Step 4: Create gift wrap (encrypted seal as Kind 1059 with ephemeral key)
+      const giftWrap = await this.createGiftWrap(seal, recipientPubkey);
+
+      logger.info('Gift-wrapped message created successfully', {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+        giftWrapId: giftWrap.id,
+      });
+
+      return giftWrap;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to create gift-wrapped message', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+        recipientPubkey,
+      });
+
+      throw new AppError(
+        'Failed to create gift-wrapped message',
+        ErrorCode.SIGNER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        ErrorCategory.AUTHENTICATION,
+        ErrorSeverity.HIGH,
+        { recipientPubkey, error: errorMessage }
+      );
+    }
+  }
 }
 
 // Export singleton instance
@@ -787,6 +957,9 @@ export const parseEventContent = (event: NIP23Event) =>
 
 export const extractProductData = (event: NIP23Event) =>
   nostrEventService.extractProductData(event);
+
+export const createGiftWrappedMessage = (recipientPubkey: string, content: string, signer: NostrSigner) =>
+  nostrEventService.createGiftWrappedMessage(recipientPubkey, content, signer);
 
 export const validateEvent = (event: NostrEvent) =>
   nostrEventService.validateEvent(event);
