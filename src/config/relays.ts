@@ -174,30 +174,6 @@ export const NOSTR_RELAYS: RelayConfig[] = [
     rateLimit: { requestsPerMinute: 80, burstSize: 12 }
   },
   {
-    url: 'wss://relay.netstr.io',
-    name: 'Netstr.io',
-    description: 'Modern C# relay with advanced features - Auth, Search, Private DMs, Negentropy sync',
-    region: 'Global',
-    reliability: 'high',
-    supportsNip01: true,   // Basic protocol flow
-    supportsNip02: true,   // Follow list
-    supportsNip04: true,   // Encrypted Direct Message (deprecated)
-    supportsNip09: true,   // Event Deletion
-    supportsNip11: true,   // Relay Information Document
-    supportsNip13: true,   // Proof of Work
-    supportsNip17: true,   // Private Direct Messages (modern replacement for NIP-04)
-    supportsNip40: true,   // Expiration Timestamp
-    supportsNip42: true,   // Authentication of clients to relays
-    supportsNip45: true,   // Counting results
-    supportsNip50: true,   // Search Capability
-    supportsNip62: true,   // Request to Vanish
-    supportsNip70: true,   // Protected events
-    supportsNip77: true,   // Negentropy syncing (efficient event synchronization)
-    supportsNip119: true,  // AND operator for filters
-    requiresAuth: false,   // Optional auth available via NIP-42
-    rateLimit: { requestsPerMinute: 100, burstSize: 15 }
-  },
-  {
     url: 'wss://shu01.shugur.net',
     name: 'Shugur Network',
     description: 'Enterprise-grade distributed HA relay cluster - 35+ NIPs including Time Capsules, Calendar, Zaps, Encryption, Communities, Cashu Wallets',
