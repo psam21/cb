@@ -94,37 +94,56 @@ export const useMessageSending = () => {
       // Trigger optimistic update
       options?.onOptimisticUpdate?.(tempMessage);
 
-      // Send message via business service
-      const result = await messagingBusinessService.sendMessage(
-        recipientPubkey,
-        content,
-        signer,
-        context
-      );
+      try {
+        // Send message via business service
+        const result = await messagingBusinessService.sendMessage(
+          recipientPubkey,
+          content,
+          signer,
+          context
+        );
 
-      if (!result.success || !result.message) {
-        throw new Error(result.error || 'Failed to send message');
+        if (!result.success || !result.message) {
+          throw new Error(result.error || 'Failed to send message');
+        }
+
+        logger.info('Message sent successfully', {
+          service: 'useMessageSending',
+          method: 'sendMessage',
+          messageId: result.message.id,
+          tempId,
+        });
+
+        // Add tempId to the message so it can replace the optimistic one
+        const messageWithTempId = {
+          ...result.message,
+          tempId,
+        };
+
+        // Trigger success callback
+        options?.onSuccess?.(messageWithTempId);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+        logger.error('Failed to send message', err instanceof Error ? err : new Error(errorMessage), {
+          service: 'useMessageSending',
+          method: 'sendMessage',
+          recipientPubkey,
+        });
+        
+        setSendError(errorMessage);
+        options?.onError?.(errorMessage, tempId);
+      } finally {
+        setIsSending(false);
       }
-
-      logger.info('Message sent successfully', {
-        service: 'useMessageSending',
-        method: 'sendMessage',
-        messageId: result.message.id,
-      });
-
-      // Trigger success callback
-      options?.onSuccess?.(result.message);
     } catch (err) {
+      // Outer catch for signer.getPublicKey() and other early failures
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
-      logger.error('Failed to send message', err instanceof Error ? err : new Error(errorMessage), {
+      logger.error('Failed to get signer or send message', err instanceof Error ? err : new Error(errorMessage), {
         service: 'useMessageSending',
         method: 'sendMessage',
         recipientPubkey,
       });
-      
       setSendError(errorMessage);
-      options?.onError?.(errorMessage);
-    } finally {
       setIsSending(false);
     }
   }, [signer]);
