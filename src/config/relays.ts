@@ -219,6 +219,58 @@ export const NOSTR_RELAYS: RelayConfig[] = [
     supportsNip72: true,  // Moderated Communities
     supportsNip78: true,  // Application-specific data
     rateLimit: { requestsPerMinute: 120, burstSize: 20 }
+  },
+  {
+    url: 'wss://nostr.wine',
+    name: 'Nostr Wine',
+    description: 'High-performance relay with paid tiers (free tier available) - Global CDN, NIP-17 DMs',
+    region: 'Global',
+    reliability: 'high',
+    supportsNip01: true,  // Basic Protocol Flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip17: true,  // Private Direct Messages
+    supportsNip40: true,  // Expiration Timestamp
+    supportsNip42: true,  // Authentication
+    supportsNip44: true,  // Encrypted Payloads (Versioned)
+    supportsNip50: true,  // Search Capability
+    supportsNip59: true,  // Gift Wrap
+    supportsNip65: true,  // Relay List Metadata
+    rateLimit: { requestsPerMinute: 120, burstSize: 20 }
+  },
+  {
+    url: 'wss://relay.0xchat.com',
+    name: '0xchat Relay',
+    description: 'Dedicated NIP-17 messaging relay - optimized for private DMs and group chats',
+    region: 'Global',
+    reliability: 'high',
+    supportsNip01: true,  // Basic Protocol Flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip17: true,  // Private Direct Messages
+    supportsNip40: true,  // Expiration Timestamp
+    supportsNip44: true,  // Encrypted Payloads (Versioned)
+    supportsNip59: true,  // Gift Wrap
+    rateLimit: { requestsPerMinute: 100, burstSize: 15 }
+  },
+  {
+    url: 'wss://relay.nostr.wirednet.jp',
+    name: 'WiredNet (Japan)',
+    description: 'Japan-based relay for Asia-Pacific coverage - strfry implementation',
+    region: 'Asia-Pacific',
+    reliability: 'high',
+    supportsNip01: true,  // Basic Protocol Flow
+    supportsNip02: true,  // Contact List and Petnames
+    supportsNip04: true,  // Encrypted Direct Message (deprecated)
+    supportsNip09: true,  // Event Deletion
+    supportsNip11: true,  // Relay Information Document
+    supportsNip15: true,  // End of Stored Events Notice
+    supportsNip40: true,  // Expiration Timestamp
+    rateLimit: { requestsPerMinute: 100, burstSize: 15 }
   }
 ];
 
