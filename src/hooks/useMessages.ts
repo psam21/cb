@@ -171,16 +171,38 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
       } else {
         // New message - check if it replaces a temp message
         if (message.id) {
-          // Look for temp version of this message
-          const tempKey = `temp:${message.tempId}`;
-          if (messageMap.has(tempKey)) {
-            logger.debug('Replacing temp message with real message', {
-              service: 'useMessages',
-              method: 'addMessage',
-              tempId: message.tempId,
-              realId: message.id,
+          // Look for temp version by matching tempId OR by sender/recipient/timestamp
+          if (message.tempId) {
+            // We have explicit tempId - remove that temp message
+            const tempKey = `temp:${message.tempId}`;
+            if (messageMap.has(tempKey)) {
+              logger.debug('Replacing temp message with real message (by tempId)', {
+                service: 'useMessages',
+                method: 'addMessage',
+                tempId: message.tempId,
+                realId: message.id,
+              });
+              messageMap.delete(tempKey);
+            }
+          } else {
+            // No tempId (probably from subscription) - find temp by matching sender/time
+            // This handles the case where subscription arrives before onSuccess
+            prev.forEach(prevMsg => {
+              if (prevMsg.tempId && 
+                  !prevMsg.id &&
+                  prevMsg.senderPubkey === message.senderPubkey &&
+                  prevMsg.recipientPubkey === message.recipientPubkey &&
+                  Math.abs(prevMsg.createdAt - message.createdAt) < 5) {
+                logger.debug('Replacing temp message with real message (by timestamp match)', {
+                  service: 'useMessages',
+                  method: 'addMessage',
+                  tempId: prevMsg.tempId,
+                  realId: message.id,
+                  timeDiff: Math.abs(prevMsg.createdAt - message.createdAt),
+                });
+                messageMap.delete(`temp:${prevMsg.tempId}`);
+              }
             });
-            messageMap.delete(tempKey);
           }
         }
         
@@ -190,6 +212,7 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
           method: 'addMessage',
           messageId: message.id,
           tempId: message.tempId,
+          hasTempId: !!message.tempId,
         });
         messageMap.set(messageKey, message);
       }
