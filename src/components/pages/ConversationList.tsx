@@ -77,6 +77,43 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   }
 
   if (conversations.length === 0) {
+    // If we have a selected pubkey (from URL), show it as a new conversation
+    if (selectedPubkey) {
+      return (
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b border-primary-200">
+            <h2 className="text-lg font-semibold text-primary-900">Messages</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <button
+              onClick={() => onSelectConversation(selectedPubkey)}
+              className="w-full p-4 border-b border-primary-100 bg-primary-100 text-left"
+            >
+              <div className="flex items-start gap-3">
+                {/* Avatar placeholder */}
+                <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-accent-700 font-semibold text-sm">
+                    {selectedPubkey[0]?.toUpperCase()}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-primary-900 truncate">
+                    {formatPubkey(selectedPubkey)}
+                  </h3>
+                  <p className="text-sm text-primary-500 italic">
+                    Start a new conversation
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // No conversations and no selected recipient
     return (
       <div className="flex flex-col h-full">
         <div className="p-4 border-b border-primary-200">
@@ -117,6 +154,34 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto">
+        {/* If selectedPubkey doesn't exist in conversations, show it first */}
+        {selectedPubkey && !conversations.find(c => c.pubkey === selectedPubkey) && (
+          <button
+            onClick={() => handleSelect(selectedPubkey)}
+            className="w-full p-4 border-b border-primary-100 bg-primary-100 text-left"
+          >
+            <div className="flex items-start gap-3">
+              {/* Avatar placeholder */}
+              <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-accent-700 font-semibold text-sm">
+                  {selectedPubkey[0]?.toUpperCase()}
+                </span>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-primary-900 truncate">
+                  {formatPubkey(selectedPubkey)}
+                </h3>
+                <p className="text-sm text-primary-500 italic">
+                  Start a new conversation
+                </p>
+              </div>
+            </div>
+          </button>
+        )}
+
+        {/* Existing conversations */}
         {conversations.map((conversation) => (
           <button
             key={conversation.pubkey}
