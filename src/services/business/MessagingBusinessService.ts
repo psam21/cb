@@ -182,6 +182,17 @@ export class MessagingBusinessService {
       const conversationMap = new Map<string, Conversation>();
 
       for (const message of messages) {
+        // Determine the "other person" in the conversation
+        // Skip if both sender and recipient are the user (self-copy)
+        if (message.senderPubkey === userPubkey && message.recipientPubkey === userPubkey) {
+          logger.debug('Skipping self-to-self message copy', {
+            service: 'MessagingBusinessService',
+            method: 'getConversations',
+            messageId: message.id,
+          });
+          continue; // Skip messages we sent to ourselves (self-copies)
+        }
+        
         const otherPubkey = message.senderPubkey === userPubkey ? message.recipientPubkey : message.senderPubkey;
 
         const existing = conversationMap.get(otherPubkey);
