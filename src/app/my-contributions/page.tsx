@@ -58,6 +58,7 @@ export default function MyContributionsPage() {
           country: contrib.country,
           imageUrl: contrib.media[0]?.source.url,
           tags: contrib.tags,
+          pubkey: contrib.pubkey, // Add author's pubkey for contact functionality
         }));
 
         setContributions(cardData);
