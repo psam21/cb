@@ -133,10 +133,27 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     );
   }
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[MessageThread] Debug Info:', {
+      messagesCount: messages.length,
+      currentUserPubkey,
+      otherUserPubkey,
+      messages: messages.map(m => ({
+        id: m.id,
+        senderPubkey: m.senderPubkey?.substring(0, 8),
+        recipientPubkey: m.recipientPubkey?.substring(0, 8),
+        isSent: m.isSent,
+        content: m.content.substring(0, 20),
+      })),
+    });
+  }, [messages, currentUserPubkey, otherUserPubkey]);
+
   return (
     <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-primary-50 p-4 space-y-4">
       {messages.map((message) => {
-        const isSent = message.senderPubkey === currentUserPubkey;
+        // Use the isSent flag from the message (already set by business service)
+        const isSent = message.isSent ?? (message.senderPubkey === currentUserPubkey);
 
         return (
           <div
