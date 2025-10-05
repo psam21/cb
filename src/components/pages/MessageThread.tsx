@@ -27,6 +27,22 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[MessageThread] Debug Info:', {
+      messagesCount: messages.length,
+      currentUserPubkey,
+      otherUserPubkey,
+      messages: messages.map(m => ({
+        id: m.id,
+        senderPubkey: m.senderPubkey?.substring(0, 8),
+        recipientPubkey: m.recipientPubkey?.substring(0, 8),
+        isSent: m.isSent,
+        content: m.content.substring(0, 20),
+      })),
+    });
+  }, [messages, currentUserPubkey, otherUserPubkey]);
+
   // Auto-scroll to bottom when new messages arrive (only within the messages container)
   useEffect(() => {
     if (messagesContainerRef.current && messagesEndRef.current) {
@@ -132,22 +148,6 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       </div>
     );
   }
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('[MessageThread] Debug Info:', {
-      messagesCount: messages.length,
-      currentUserPubkey,
-      otherUserPubkey,
-      messages: messages.map(m => ({
-        id: m.id,
-        senderPubkey: m.senderPubkey?.substring(0, 8),
-        recipientPubkey: m.recipientPubkey?.substring(0, 8),
-        isSent: m.isSent,
-        content: m.content.substring(0, 20),
-      })),
-    });
-  }, [messages, currentUserPubkey, otherUserPubkey]);
 
   return (
     <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-primary-50 p-4 space-y-4">

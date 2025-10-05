@@ -884,20 +884,23 @@ export class NostrEventService {
    * Create a complete gift-wrapped message (NIP-17)
    * Combines createRumor, createSeal, and createGiftWrap
    * 
-   * @param recipientPubkey - Recipient's public key
+   * @param recipientPubkey - Recipient's public key (who can unwrap the gift)
    * @param content - Message content (plaintext)
    * @param signer - NIP-07 signer
+   * @param rumorRecipientPubkey - Optional: different recipient for rumor (for self-copies where gift wrap goes to you but rumor shows actual recipient)
    * @returns Signed Kind 1059 gift wrap event ready to publish
    */
   public async createGiftWrappedMessage(
     recipientPubkey: string,
     content: string,
-    signer: NostrSigner
+    signer: NostrSigner,
+    rumorRecipientPubkey?: string
   ): Promise<NostrEvent> {
     logger.info('Creating gift-wrapped message', {
       service: 'NostrEventService',
       method: 'createGiftWrappedMessage',
       recipientPubkey,
+      rumorRecipientPubkey,
     });
 
     try {
@@ -909,7 +912,9 @@ export class NostrEventService {
       });
 
       // Step 1: Create rumor (unsigned Kind 14)
-      const rumor = this.createRumor(recipientPubkey, content, senderPubkey);
+      // Use rumorRecipientPubkey if provided (for self-copies), otherwise use recipientPubkey
+      const actualRumorRecipient = rumorRecipientPubkey || recipientPubkey;
+      const rumor = this.createRumor(actualRumorRecipient, content, senderPubkey);
       logger.info('Created rumor', {
         service: 'NostrEventService',
         method: 'createGiftWrappedMessage',

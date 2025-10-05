@@ -74,10 +74,13 @@ export class MessagingBusinessService {
       );
 
       // Create gift-wrapped message to ourselves (for message history persistence)
+      // Gift wrap is addressed TO us (senderPubkey) so we can decrypt it
+      // BUT the rumor INSIDE still shows the actual recipient (recipientPubkey)
       const giftWrapToSelf = await nostrEventService.createGiftWrappedMessage(
-        senderPubkey, // Send to ourselves
+        senderPubkey, // Gift wrap TO ourselves (so we can unwrap it)
         messageContent,
-        signer
+        signer,
+        recipientPubkey // BUT rumor shows the actual recipient
       );
 
       // Publish both gift-wrapped events to relays
