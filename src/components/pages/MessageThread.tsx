@@ -35,10 +35,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       otherUserPubkey,
       messages: messages.map(m => ({
         id: m.id,
-        senderPubkey: m.senderPubkey?.substring(0, 8),
-        recipientPubkey: m.recipientPubkey?.substring(0, 8),
+        senderPubkey: m.senderPubkey,
+        recipientPubkey: m.recipientPubkey,
         isSent: m.isSent,
-        content: m.content.substring(0, 20),
+        content: m.content.substring(0, 30),
+        createdAt: m.createdAt,
       })),
     });
   }, [messages, currentUserPubkey, otherUserPubkey]);

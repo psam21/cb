@@ -300,12 +300,52 @@ export class MessagingBusinessService {
       // Decrypt and parse messages
       const allMessages = await this.decryptGiftWraps(queryResult.events, signer);
 
+      logger.info('All decrypted messages before filtering', {
+        service: 'MessagingBusinessService',
+        method: 'getMessages',
+        totalMessages: allMessages.length,
+        messages: allMessages.map(m => ({
+          id: m.id?.substring(0, 8),
+          senderPubkey: m.senderPubkey?.substring(0, 8),
+          recipientPubkey: m.recipientPubkey?.substring(0, 8),
+          createdAt: m.createdAt,
+          content: m.content?.substring(0, 30),
+        })),
+      });
+
       // Filter messages for this specific conversation
+      // Note: We need to handle both new (fixed) and old (buggy) message formats:
+      // - New format: sent messages have recipientPubkey = otherPubkey
+      // - Old format: sent messages have recipientPubkey = userPubkey (buggy self-copies)
       const conversationMessages = allMessages
-        .filter(msg => 
-          (msg.senderPubkey === userPubkey && msg.recipientPubkey === otherPubkey) ||
-          (msg.senderPubkey === otherPubkey && msg.recipientPubkey === userPubkey)
-        )
+        .filter(msg => {
+          // Received messages: sender is other person, recipient is us
+          if (msg.senderPubkey === otherPubkey && msg.recipientPubkey === userPubkey) {
+            return true;
+          }
+          
+          // Sent messages (new format): sender is us, recipient is other person
+          if (msg.senderPubkey === userPubkey && msg.recipientPubkey === otherPubkey) {
+            return true;
+          }
+          
+          // Sent messages (old buggy format): sender is us, recipient is also us (self-copy bug)
+          // We can identify these as conversation messages if no other conversation exists with same timestamp
+          if (msg.senderPubkey === userPubkey && msg.recipientPubkey === userPubkey) {
+            // This is a buggy self-copy. We'll include it but mark it properly later.
+            // For now, we need more context to determine if it belongs to this conversation.
+            // Since we can't be sure, we'll exclude these to avoid showing messages in wrong conversations.
+            logger.warn('Found buggy self-copy message (old format)', {
+              service: 'MessagingBusinessService',
+              method: 'getMessages',
+              messageId: msg.id?.substring(0, 8),
+              content: msg.content?.substring(0, 30),
+            });
+            return false;
+          }
+          
+          return false;
+        })
         .sort((a, b) => a.createdAt - b.createdAt); // Oldest first
 
       // Mark messages as sent or received
