@@ -202,6 +202,16 @@ export class MessagingBusinessService {
         method: 'getConversations',
       });
 
+      // Ensure cache is initialized (in case user navigated directly to /messages)
+      const userPubkey = await signer.getPublicKey();
+      if (!this.cache.isInitialized()) {
+        logger.warn('Cache not initialized, initializing now', {
+          service: 'MessagingBusinessService',
+          method: 'getConversations',
+        });
+        await this.cache.initialize(userPubkey);
+      }
+
       // Try cache first
       const cachedConversations = await this.cache.getConversations();
       if (cachedConversations.length > 0) {
@@ -424,6 +434,16 @@ export class MessagingBusinessService {
         limit,
       });
 
+      // Ensure cache is initialized
+      const userPubkey = await signer.getPublicKey();
+      if (!this.cache.isInitialized()) {
+        logger.warn('Cache not initialized, initializing now', {
+          service: 'MessagingBusinessService',
+          method: 'getMessages',
+        });
+        await this.cache.initialize(userPubkey);
+      }
+
       // Try cache first
       const cachedMessages = await this.cache.getMessages(otherPubkey);
       if (cachedMessages.length > 0) {
@@ -432,8 +452,6 @@ export class MessagingBusinessService {
           method: 'getMessages',
           count: cachedMessages.length,
         });
-
-        const userPubkey = await signer.getPublicKey();
         
         // Mark messages as sent or received
         cachedMessages.forEach(msg => {
@@ -448,8 +466,6 @@ export class MessagingBusinessService {
         service: 'MessagingBusinessService',
         method: 'getMessages',
       });
-
-      const userPubkey = await signer.getPublicKey();
 
       // Query for gift-wrapped messages addressed to us (includes received + sent)
       const filters = [

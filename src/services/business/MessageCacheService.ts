@@ -126,6 +126,13 @@ export class MessageCacheService {
   }
 
   /**
+   * Check if cache is initialized
+   */
+  isInitialized(): boolean {
+    return this.db !== null && this.encryption.isInitialized();
+  }
+
+  /**
    * Cache multiple messages
    */
   async cacheMessages(messages: Message[]): Promise<void> {
