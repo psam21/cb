@@ -80,16 +80,36 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
         // Create a map to avoid duplicates
         const messageMap = new Map<string, Message>();
         
+        // Helper to get consistent key for a message
+        const getKey = (msg: Message) => {
+          if (msg.id) return `id:${msg.id}`;
+          if (msg.tempId) return `temp:${msg.tempId}`;
+          return `fallback:${msg.senderPubkey}-${msg.recipientPubkey}-${msg.createdAt}`;
+        };
+        
         // First, add all previously loaded/sent messages from this session
         prev.forEach(msg => {
-          const key = msg.id || msg.tempId || `${msg.senderPubkey}-${msg.createdAt}`;
-          messageMap.set(key, msg);
+          messageMap.set(getKey(msg), msg);
         });
         
         // Then add/update with newly loaded messages from relays
+        // These should overwrite any temp/fallback keys with real IDs
         messageList.forEach(msg => {
+          const key = getKey(msg);
+          messageMap.set(key, msg);
+          
+          // Also check if this message replaces a temp message
+          // (in case we have a temp message that now has a real ID)
           if (msg.id) {
-            messageMap.set(msg.id, msg);
+            // Remove any temp version of this message
+            prev.forEach(prevMsg => {
+              if (prevMsg.tempId && 
+                  prevMsg.senderPubkey === msg.senderPubkey &&
+                  prevMsg.recipientPubkey === msg.recipientPubkey &&
+                  Math.abs(prevMsg.createdAt - msg.createdAt) < 5) {
+                messageMap.delete(`temp:${prevMsg.tempId}`);
+              }
+            });
           }
         });
         
