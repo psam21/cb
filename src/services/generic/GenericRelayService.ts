@@ -851,12 +851,11 @@ export class GenericRelayService {
   }
 
   /**
-   * Subscribe to events with real-time updates
-   * Opens WebSocket subscriptions and calls callback when new events arrive
+   * Subscribe to events from relays with real-time updates
    * 
-   * @param filters - Nostr filters for subscription
-   * @param onEvent - Callback function called for each new event
-   * @param relayUrls - Optional array of relay URLs (defaults to configured relays)
+   * @param filters - Nostr filters
+   * @param onEvent - Callback for each event (deduplicated across relays)
+   * @param relayUrls - Optional specific relay URLs (defaults to all configured relays)
    * @returns Unsubscribe function to close the subscription
    */
   public subscribeToEvents(
@@ -867,6 +866,7 @@ export class GenericRelayService {
     const relays = relayUrls || NOSTR_RELAYS.map(r => r.url);
     const subscriptionId = Math.random().toString(36).substring(7);
     const websockets: WebSocket[] = [];
+    const seenEventIds = new Set<string>(); // Track events we've already delivered
 
     logger.info('Starting event subscription', {
       service: 'GenericRelayService',
@@ -899,7 +899,27 @@ export class GenericRelayService {
             // Handle EVENT messages
             if (Array.isArray(data) && data[0] === 'EVENT' && data[1] === subscriptionId) {
               const event = data[2] as NostrEvent;
-              onEvent(event);
+              
+              // Only deliver each event once (deduplicate across relays)
+              if (!seenEventIds.has(event.id)) {
+                seenEventIds.add(event.id);
+                onEvent(event);
+                
+                logger.debug('New event received from subscription', {
+                  service: 'GenericRelayService',
+                  subscriptionId,
+                  relayUrl,
+                  eventId: event.id,
+                  totalSeenEvents: seenEventIds.size,
+                });
+              } else {
+                logger.debug('Duplicate event ignored (already seen from another relay)', {
+                  service: 'GenericRelayService',
+                  subscriptionId,
+                  relayUrl,
+                  eventId: event.id,
+                });
+              }
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -909,9 +929,7 @@ export class GenericRelayService {
               relayUrl,
             });
           }
-        };
-
-        ws.onerror = () => {
+        };        ws.onerror = () => {
           logger.error('WebSocket error in subscription', new Error('WebSocket error'), {
             service: 'GenericRelayService',
             subscriptionId,

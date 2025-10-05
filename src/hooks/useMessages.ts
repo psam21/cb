@@ -87,34 +87,40 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
           return `fallback:${msg.senderPubkey}-${msg.recipientPubkey}-${msg.createdAt}`;
         };
         
+        logger.debug('Merging messages', {
+          service: 'useMessages',
+          method: 'loadMessages',
+          previousCount: prev.length,
+          loadedCount: messageList.length,
+        });
+        
         // First, add all previously loaded/sent messages from this session
         prev.forEach(msg => {
           messageMap.set(getKey(msg), msg);
         });
         
-        // Then add/update with newly loaded messages from relays
-        // These should overwrite any temp/fallback keys with real IDs
+        // Then add newly loaded messages from relays
         messageList.forEach(msg => {
           const key = getKey(msg);
-          messageMap.set(key, msg);
           
-          // Also check if this message replaces a temp message
-          // (in case we have a temp message that now has a real ID)
-          if (msg.id) {
-            // Remove any temp version of this message
-            prev.forEach(prevMsg => {
-              if (prevMsg.tempId && 
-                  prevMsg.senderPubkey === msg.senderPubkey &&
-                  prevMsg.recipientPubkey === msg.recipientPubkey &&
-                  Math.abs(prevMsg.createdAt - msg.createdAt) < 5) {
-                messageMap.delete(`temp:${prevMsg.tempId}`);
-              }
-            });
+          // Only add if not already present OR if this is a real message replacing a temp one
+          if (!messageMap.has(key)) {
+            messageMap.set(key, msg);
+          } else if (msg.id && !messageMap.get(key)!.id) {
+            // Replace temp/fallback with real message
+            messageMap.set(key, msg);
           }
         });
         
-        // Sort by timestamp and return
-        return Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+        const mergedMessages = Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+        
+        logger.debug('Messages merged', {
+          service: 'useMessages',
+          method: 'loadMessages',
+          finalCount: mergedMessages.length,
+        });
+        
+        return mergedMessages;
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load messages';
@@ -134,17 +140,62 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
    */
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => {
-      // Check if message already exists (avoid duplicates)
-      const exists = prev.some(m => m.id === message.id || m.tempId === message.tempId);
-      if (exists) {
-        // Update existing message (e.g., replace tempId with real id after publishing)
-        return prev.map(m => 
-          (m.id === message.id || m.tempId === message.tempId) ? message : m
-        );
+      // Create a map to track existing messages
+      const messageMap = new Map<string, Message>();
+      
+      // Helper to get consistent key for a message
+      const getKey = (msg: Message) => {
+        if (msg.id) return `id:${msg.id}`;
+        if (msg.tempId) return `temp:${msg.tempId}`;
+        return `fallback:${msg.senderPubkey}-${msg.recipientPubkey}-${msg.createdAt}`;
+      };
+      
+      // First, add all existing messages
+      prev.forEach(msg => {
+        messageMap.set(getKey(msg), msg);
+      });
+      
+      // Check if this message already exists
+      const messageKey = getKey(message);
+      const isDuplicate = messageMap.has(messageKey);
+      
+      if (isDuplicate) {
+        // Update existing message (e.g., replace tempId with real id)
+        logger.debug('Updating existing message', {
+          service: 'useMessages',
+          method: 'addMessage',
+          messageId: message.id,
+          tempId: message.tempId,
+        });
+        messageMap.set(messageKey, message);
+      } else {
+        // New message - check if it replaces a temp message
+        if (message.id) {
+          // Look for temp version of this message
+          const tempKey = `temp:${message.tempId}`;
+          if (messageMap.has(tempKey)) {
+            logger.debug('Replacing temp message with real message', {
+              service: 'useMessages',
+              method: 'addMessage',
+              tempId: message.tempId,
+              realId: message.id,
+            });
+            messageMap.delete(tempKey);
+          }
+        }
+        
+        // Add the new message
+        logger.debug('Adding new message', {
+          service: 'useMessages',
+          method: 'addMessage',
+          messageId: message.id,
+          tempId: message.tempId,
+        });
+        messageMap.set(messageKey, message);
       }
       
-      // Add new message at the end (messages are sorted oldest first)
-      return [...prev, message];
+      // Sort by timestamp and return
+      return Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
     });
   }, []);
 
