@@ -27,6 +27,31 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
     return `${(ms / 60000).toFixed(1)}m`;
   };
 
+  // Extract relay name from URL
+  const getRelayName = (url: string): string => {
+    try {
+      const hostname = new URL(url).hostname;
+      // Remove 'wss://' and common prefixes
+      return hostname
+        .replace('relay.', '')
+        .replace('www.', '')
+        .split('.')[0]
+        || hostname;
+    } catch {
+      return url;
+    }
+  };
+
+  // Get failed relays as comma-separated names
+  const getFailedRelaysDisplay = (failedRelays: string[]): string => {
+    if (failedRelays.length === 0) return '-';
+    return failedRelays.map(getRelayName).join(', ');
+  };
+
+  // Note: We don't have per-relay response times in current data structure
+  // These would need to be added to the event logging in GenericRelayService
+  // For now, we show what's available
+
   const getProcessingSpeedBadge = (duration: number) => {
     if (duration < 1000) {
       return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">⚡ Fast</span>;
@@ -92,19 +117,16 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                 <SortButton field="eventKind">Event Kind</SortButton>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <SortButton field="eventId">Event ID</SortButton>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <SortButton field="processedTimestamp">Processed</SortButton>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <SortButton field="processingDuration">Duration</SortButton>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <SortButton field="totalRelaysAttempted">Relays</SortButton>
+                <SortButton field="failedRelays">Failed Relay(s)</SortButton>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <SortButton field="averageResponseTime">Avg Response</SortButton>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <SortButton field="totalRelaysAttempted">Relays</SortButton>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <SortButton field="tagsCount">Tags</SortButton>
@@ -125,22 +147,25 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-mono text-gray-900">
-                    {event.eventId.substring(0, 16)}...
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {formatTimestamp(event.processedTimestamp)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-900">
-                      {formatDuration(event.processingDuration)}
-                    </span>
-                    {getProcessingSpeedBadge(event.processingDuration)}
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 max-w-xs">
+                    {event.failedRelays.length > 0 ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        ❌ {getFailedRelaysDisplay(event.failedRelays)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-900">
+                    {formatDuration(event.averageResponseTime)}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
@@ -156,11 +181,6 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                       /{event.totalRelaysAttempted}
                     </span>
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-gray-900">
-                    {formatDuration(event.averageResponseTime)}
-                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-900">
@@ -201,22 +221,15 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
               </a>
             </div>
             
-            <div className="text-sm font-mono text-gray-600 mb-2">
-              {event.eventId.substring(0, 32)}...
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-sm mt-3">
               <div>
                 <span className="text-gray-500">Processed:</span>
                 <div className="font-medium">{formatTimestamp(event.processedTimestamp)}</div>
               </div>
               
               <div>
-                <span className="text-gray-500">Duration:</span>
-                <div className="flex items-center space-x-1">
-                  <span className="font-medium">{formatDuration(event.processingDuration)}</span>
-                  {getProcessingSpeedBadge(event.processingDuration)}
-                </div>
+                <span className="text-gray-500">Avg Response:</span>
+                <div className="font-medium">{formatDuration(event.averageResponseTime)}</div>
               </div>
               
               <div>
@@ -235,15 +248,21 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
               </div>
               
               <div>
-                <span className="text-gray-500">Avg Response:</span>
-                <div className="font-medium">{formatDuration(event.averageResponseTime)}</div>
+                <span className="text-gray-500">Tags:</span>
+                <span className="font-medium ml-1">{event.tagsCount}</span>
               </div>
             </div>
             
-            <div className="mt-2 text-sm">
-              <span className="text-gray-500">Tags:</span>
-              <span className="font-medium ml-1">{event.tagsCount}</span>
-            </div>
+            {event.failedRelays.length > 0 && (
+              <div className="mt-2 text-sm">
+                <span className="text-gray-500">Failed:</span>
+                <div className="mt-1">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                    {getFailedRelaysDisplay(event.failedRelays)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
