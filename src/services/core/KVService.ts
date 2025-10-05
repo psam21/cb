@@ -18,6 +18,11 @@ export interface UserEventData {
   successfulRelays: string[];
   failedRelays: string[];
   failedRelayReasons?: Record<string, string>; // relay URL -> rejection reason
+  // Verification tracking - background verification of relay storage
+  verifiedRelays?: string[]; // Relays that BOTH accepted AND returned event on query
+  silentFailureRelays?: string[]; // Relays that accepted but DON'T return event (silent data loss)
+  unverifiedRelays?: string[]; // Relays not yet verified (verification in progress or skipped)
+  verificationTimestamp?: number; // When verification was completed
   averageResponseTime: number;
   tagsCount: number;
   retryAttempts: number;

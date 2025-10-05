@@ -16,6 +16,11 @@ export interface RelayPublishingResult {
   publishedRelays: string[];
   failedRelays: string[];
   failedRelayReasons?: Record<string, string>; // relay URL -> rejection reason
+  // Verification tracking
+  verifiedRelays?: string[];
+  silentFailureRelays?: string[];
+  unverifiedRelays?: string[];
+  verificationTimestamp?: number;
   totalRelays: number;
   successRate: number;
   error?: string;
@@ -268,6 +273,21 @@ export class GenericRelayService {
 
       // 🚀 UNIVERSAL EVENT LOGGING - Log ALL events automatically
       eventLoggingService.logEventPublishingAsync(event, result);
+
+      // 🔍 BACKGROUND VERIFICATION - Verify relays actually stored the event
+      // Run async after 2 seconds to allow relay propagation
+      if (success && publishedRelays.length > 0) {
+        setTimeout(() => {
+          this.verifyEventStorage(event, publishedRelays, result).catch(error => {
+            logger.warn('Background verification failed', {
+              service: 'GenericRelayService',
+              method: 'publishEvent',
+              eventId: event.id,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          });
+        }, 2000); // 2 second delay
+      }
 
       if (success) {
         logger.info('Event publishing completed successfully', {
@@ -984,6 +1004,116 @@ export class GenericRelayService {
         }
       });
     };
+  }
+
+  /**
+   * Background verification: Query relays that claimed success to verify they actually stored the event
+   * This detects "silent failures" where relays accept events but don't store/index them
+   */
+  private async verifyEventStorage(
+    event: NostrEvent,
+    publishedRelays: string[],
+    originalResult: RelayPublishingResult
+  ): Promise<void> {
+    const startTime = Date.now();
+    
+    logger.info('🔍 Starting background verification', {
+      service: 'GenericRelayService',
+      method: 'verifyEventStorage',
+      eventId: event.id,
+      publishedRelaysCount: publishedRelays.length,
+    });
+
+    const verifiedRelays: string[] = [];
+    const silentFailureRelays: string[] = [];
+    
+    // Query each "successful" relay to verify it returns our event
+    const verificationPromises = publishedRelays.map(async (relayUrl) => {
+      const relay = NOSTR_RELAYS.find(r => r.url === relayUrl);
+      const displayName = relay?.name || relayUrl;
+      
+      try {
+        const filters = [{
+          ids: [event.id],
+          limit: 1,
+        }];
+
+        logger.debug(`🔍 [${displayName}] Verifying event storage`, {
+          service: 'GenericRelayService',
+          method: 'verifyEventStorage',
+          relayUrl,
+          eventId: event.id,
+        });
+
+        const result = await this.queryRelay(relayUrl, filters, displayName);
+        
+        if (result && result.length > 0) {
+          // Relay returned our event - VERIFIED
+          verifiedRelays.push(relayUrl);
+          logger.info(`✅ [${displayName}] Event verified on relay`, {
+            service: 'GenericRelayService',
+            method: 'verifyEventStorage',
+            relayUrl,
+            relayName: displayName,
+            eventId: event.id,
+          });
+        } else {
+          // Relay claimed success but doesn't return the event - SILENT FAILURE
+          silentFailureRelays.push(relayUrl);
+          logger.warn(`⚠️ [${displayName}] Silent failure detected - relay accepted but didn't store event`, {
+            service: 'GenericRelayService',
+            method: 'verifyEventStorage',
+            relayUrl,
+            relayName: displayName,
+            eventId: event.id,
+            eventsReturned: result ? result.length : 0,
+          });
+        }
+      } catch (error) {
+        // Query failed - mark as unverified (not necessarily a silent failure)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.warn(`⚠️ [${displayName}] Verification query failed`, {
+          service: 'GenericRelayService',
+          method: 'verifyEventStorage',
+          relayUrl,
+          relayName: displayName,
+          eventId: event.id,
+          error: errorMessage,
+        });
+      }
+    });
+
+    await Promise.allSettled(verificationPromises);
+
+    // Calculate unverified relays (relays we couldn't verify due to query failures)
+    const unverifiedRelays = publishedRelays.filter(
+      url => !verifiedRelays.includes(url) && !silentFailureRelays.includes(url)
+    );
+
+    const verificationDuration = Date.now() - startTime;
+    const verificationTimestamp = Date.now();
+
+    logger.info('🔍 Background verification completed', {
+      service: 'GenericRelayService',
+      method: 'verifyEventStorage',
+      eventId: event.id,
+      verifiedCount: verifiedRelays.length,
+      silentFailureCount: silentFailureRelays.length,
+      unverifiedCount: unverifiedRelays.length,
+      verificationDuration: `${verificationDuration}ms`,
+    });
+
+    // Update the event log with verification results
+    const updatedResult: RelayPublishingResult = {
+      ...originalResult,
+      verifiedRelays,
+      silentFailureRelays,
+      unverifiedRelays,
+      verificationTimestamp,
+    };
+
+    // Log updated results to Redis
+    eventLoggingService.logEventPublishingAsync(event, updatedResult);
   }
 }
 

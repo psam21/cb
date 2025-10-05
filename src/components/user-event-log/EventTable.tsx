@@ -12,6 +12,7 @@ interface EventTableProps {
 
 export function EventTable({ events, sortField, sortDirection, onSort }: EventTableProps) {
   const [selectedRejections, setSelectedRejections] = useState<{ relays: string[]; reasons: Record<string, string> } | null>(null);
+  const [selectedSilentFailures, setSelectedSilentFailures] = useState<string[] | null>(null);
 
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString('en-US', {
@@ -78,6 +79,16 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
         hasMore: true,
       };
     }
+  };
+
+  // Get relay names list for display
+  const getRelayNamesList = (relays: string[], maxDisplay: number = 3): string => {
+    if (relays.length === 0) return '';
+    const names = relays.map(getRelayName);
+    if (names.length <= maxDisplay) {
+      return names.join(', ');
+    }
+    return `${names.slice(0, maxDisplay).join(', ')} +${names.length - maxDisplay} more`;
   };
 
   // Note: We don't have per-relay response times in current data structure
@@ -215,19 +226,64 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                     {formatDuration(event.averageResponseTime)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center space-x-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                      ✅ {event.successfulRelays.length}
-                    </span>
-                    {event.failedRelays.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                        ❌ {event.failedRelays.length}
-                      </span>
+                <td className="px-6 py-4">
+                  <div className="flex flex-col space-y-1">
+                    {/* Verified relays */}
+                    {event.verifiedRelays && event.verifiedRelays.length > 0 && (
+                      <div className="flex items-center space-x-1" title={event.verifiedRelays.map(getRelayName).join(', ')}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          ✅ {event.verifiedRelays.length} verified
+                        </span>
+                        <span className="text-xs text-gray-600">({getRelayNamesList(event.verifiedRelays, 2)})</span>
+                      </div>
                     )}
-                    <span className="text-xs text-gray-500">
-                      /{event.totalRelaysAttempted}
-                    </span>
+                    {/* Unverified relays (accepted but not yet verified) */}
+                    {event.unverifiedRelays && event.unverifiedRelays.length > 0 && (
+                      <div className="flex items-center space-x-1" title={event.unverifiedRelays.map(getRelayName).join(', ')}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                          ⚠️ {event.unverifiedRelays.length} unverified
+                        </span>
+                        <span className="text-xs text-gray-600">({getRelayNamesList(event.unverifiedRelays, 2)})</span>
+                      </div>
+                    )}
+                    {/* Silent failures (accepted but didn't store) */}
+                    {event.silentFailureRelays && event.silentFailureRelays.length > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => setSelectedSilentFailures(event.silentFailureRelays || [])}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 hover:bg-orange-200 cursor-pointer"
+                          title="Click to see details - these relays accepted the event but didn't store it"
+                        >
+                          🔇 {event.silentFailureRelays.length} silent fail
+                        </button>
+                        <span className="text-xs text-gray-600">({getRelayNamesList(event.silentFailureRelays, 2)})</span>
+                      </div>
+                    )}
+                    {/* Failed relays */}
+                    {event.failedRelays.length > 0 && (
+                      <div className="flex items-center space-x-1" title={event.failedRelays.map(getRelayName).join(', ')}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                          ❌ {event.failedRelays.length} failed
+                        </span>
+                        <span className="text-xs text-gray-600">({getRelayNamesList(event.failedRelays, 2)})</span>
+                      </div>
+                    )}
+                    {/* Fallback for old data without verification */}
+                    {!event.verifiedRelays && !event.unverifiedRelays && !event.silentFailureRelays && (
+                      <div className="flex items-center space-x-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          ✅ {event.successfulRelays.length}
+                        </span>
+                        {event.failedRelays.length > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            ❌ {event.failedRelays.length}
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500">
+                          /{event.totalRelaysAttempted}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -381,6 +437,81 @@ export function EventTable({ events, sortField, sortDirection, onSort }: EventTa
                   type="button"
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={() => setSelectedRejections(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Silent Failures Modal */}
+      {selectedSilentFailures && (
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto" 
+          aria-labelledby="modal-title" 
+          role="dialog" 
+          aria-modal="true"
+        >
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div 
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+              aria-hidden="true"
+              onClick={() => setSelectedSilentFailures(null)}
+            ></div>
+
+            {/* Center modal */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+              <div className="sm:flex sm:items-start">
+                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2" id="modal-title">
+                    🔇 Silent Failures Detected
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    These relays accepted the event (sent OK=true) but did NOT return it when queried. 
+                    This indicates the event was not properly stored or indexed.
+                  </p>
+                  
+                  <div className="mt-2 space-y-3">
+                    {selectedSilentFailures.map((url) => (
+                      <div key={url} className="border border-orange-200 rounded-lg p-3 bg-orange-50">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900 mb-1">
+                              {getRelayName(url)}
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2 font-mono break-all">
+                              {url}
+                            </div>
+                            <div className="text-sm text-orange-700 bg-orange-100 p-2 rounded border border-orange-300">
+                              ⚠️ Relay claimed success but event not found on verification query
+                            </div>
+                            <div className="mt-2 text-xs text-gray-600">
+                              <strong>Possible causes:</strong>
+                              <ul className="list-disc ml-4 mt-1">
+                                <li>Relay doesn&apos;t support this event kind (NIP)</li>
+                                <li>Storage quota exceeded</li>
+                                <li>Event accepted but not properly indexed</li>
+                                <li>Relay clearing old events too quickly</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setSelectedSilentFailures(null)}
                 >
                   Close
                 </button>

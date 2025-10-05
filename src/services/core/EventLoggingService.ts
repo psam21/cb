@@ -50,6 +50,11 @@ export class EventLoggingService {
         successfulRelays: publishResult.publishedRelays,
         failedRelays: publishResult.failedRelays,
         failedRelayReasons: publishResult.failedRelayReasons,
+        // Verification data
+        verifiedRelays: publishResult.verifiedRelays,
+        silentFailureRelays: publishResult.silentFailureRelays,
+        unverifiedRelays: publishResult.unverifiedRelays,
+        verificationTimestamp: publishResult.verificationTimestamp,
         averageResponseTime: publishResult.averageResponseTime || 0,
         tagsCount: event.tags.length,
         retryAttempts: publishResult.retryAttempts || 0,
