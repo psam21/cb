@@ -95,22 +95,6 @@ export const NOSTR_RELAYS: RelayConfig[] = [
     rateLimit: { requestsPerMinute: 60, burstSize: 10 }
   },
   {
-    url: 'wss://nos.lol',
-    name: 'Nos.lol',
-    description: 'Popular general purpose relay (strfry) - 194ms response time',
-    region: 'Global',
-    reliability: 'high',
-    supportsNip01: true,  // Basic protocol flow
-    supportsNip02: true,  // Contact List and Petnames
-    supportsNip04: true,  // Encrypted Direct Message (deprecated)
-    supportsNip09: true,  // Event Deletion
-    supportsNip11: true,  // Relay Information Document
-    supportsNip22: true,  // Event created_at Limits
-    supportsNip28: true,  // Public Chat
-    supportsNip40: true,  // Expiration Timestamp
-    rateLimit: { requestsPerMinute: 120, burstSize: 20 }
-  },
-  {
     url: 'wss://relay.snort.social',
     name: 'Snort Social',
     description: 'Official relay for Snort Social app (strfry) - 280ms response time',
@@ -218,26 +202,6 @@ export const NOSTR_RELAYS: RelayConfig[] = [
     supportsNip65: true,  // Relay List Metadata
     supportsNip72: true,  // Moderated Communities
     supportsNip78: true,  // Application-specific data
-    rateLimit: { requestsPerMinute: 120, burstSize: 20 }
-  },
-  {
-    url: 'wss://nostr.wine',
-    name: 'Nostr Wine',
-    description: 'High-performance relay with paid tiers (free tier available) - Global CDN, NIP-17 DMs',
-    region: 'Global',
-    reliability: 'high',
-    supportsNip01: true,  // Basic Protocol Flow
-    supportsNip02: true,  // Contact List and Petnames
-    supportsNip04: true,  // Encrypted Direct Message (deprecated)
-    supportsNip09: true,  // Event Deletion
-    supportsNip11: true,  // Relay Information Document
-    supportsNip17: true,  // Private Direct Messages
-    supportsNip40: true,  // Expiration Timestamp
-    supportsNip42: true,  // Authentication
-    supportsNip44: true,  // Encrypted Payloads (Versioned)
-    supportsNip50: true,  // Search Capability
-    supportsNip59: true,  // Gift Wrap
-    supportsNip65: true,  // Relay List Metadata
     rateLimit: { requestsPerMinute: 120, burstSize: 20 }
   },
   {
