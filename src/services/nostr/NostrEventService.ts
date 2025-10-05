@@ -902,18 +902,56 @@ export class NostrEventService {
 
     try {
       const senderPubkey = await signer.getPublicKey();
+      logger.info('Got sender pubkey', {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+        senderPubkey,
+      });
 
       // Step 1: Create rumor (unsigned Kind 14)
       const rumor = this.createRumor(recipientPubkey, content, senderPubkey);
+      logger.info('Created rumor', {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+        rumorKind: rumor.kind,
+      });
 
       // Step 2: Create seal (encrypted rumor as Kind 1059)
       const unsignedSeal = await this.createSeal(rumor, recipientPubkey, signer);
+      logger.info('Created unsigned seal', {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+        sealKind: unsignedSeal.kind,
+      });
 
       // Step 3: Sign the seal
-      const seal = await signer.signEvent(unsignedSeal);
+      logger.info('Requesting signature for seal from signer', {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+      });
+      
+      // Add timeout for signing request (30 seconds)
+      const signWithTimeout = Promise.race([
+        signer.signEvent(unsignedSeal),
+        new Promise<NostrEvent>((_, reject) => 
+          setTimeout(() => reject(new Error('Signing timeout - user may have denied the request')), 30000)
+        )
+      ]);
+      
+      const seal = await signWithTimeout;
+      logger.info('Seal signed successfully', {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+        sealId: seal.id,
+      });
 
       // Step 4: Create gift wrap (encrypted seal as Kind 1059 with ephemeral key)
       const giftWrap = await this.createGiftWrap(seal, recipientPubkey);
+      logger.info('Created gift wrap', {
+        service: 'NostrEventService',
+        method: 'createGiftWrappedMessage',
+        giftWrapId: giftWrap.id,
+      });
 
       logger.info('Gift-wrapped message created successfully', {
         service: 'NostrEventService',
