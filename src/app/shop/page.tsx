@@ -44,9 +44,15 @@ export default function ShopPage() {
       title: product.title,
     });
     
-    // In a real implementation, this would open a contact modal or redirect
-    // For now, we'll just show the contact information
-    alert(`Contact information for "${product.title}":\n\n${product.contact}`);
+    // Navigate to messages with context (same as detail page)
+    const params = new URLSearchParams({
+      recipient: product.author,
+      context: `product:${product.id}`,
+      contextTitle: product.title || 'Product',
+      ...(product.imageUrl && { contextImage: product.imageUrl }),
+    });
+
+    router.push(`/messages?${params.toString()}`);
   };
 
   const handleCreateProduct = () => {

@@ -100,8 +100,8 @@ export default function SigninPage() {
       
       logger.info('User signed in successfully', { pubkey });
       
-      // Redirect to profile page
-      router.push('/profile');
+      // Redirect to home page
+      router.push('/');
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';

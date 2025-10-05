@@ -1,7 +1,8 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, MapPin, Bookmark } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Clock, MapPin, Bookmark, MessageCircle } from 'lucide-react';
 import { logger } from '@/services/core/LoggingService';
 import { filterVisibleTags } from '@/utils/tagFilter';
 
@@ -17,6 +18,7 @@ export interface HeritageCardData {
   country?: string;
   imageUrl?: string;
   tags: string[];
+  pubkey: string; // Author's pubkey for contact functionality
 }
 
 interface HeritageCardProps {
@@ -24,6 +26,30 @@ interface HeritageCardProps {
 }
 
 export const HeritageCard: React.FC<HeritageCardProps> = ({ contribution }) => {
+  const router = useRouter();
+
+  const handleContactContributor = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to detail page
+    e.stopPropagation();
+
+    logger.info('Contact contributor clicked', {
+      service: 'HeritageCard',
+      method: 'handleContactContributor',
+      contributionId: contribution.id,
+      title: contribution.title,
+    });
+
+    // Navigate to messages with context (same as detail page)
+    const params = new URLSearchParams({
+      recipient: contribution.pubkey,
+      context: `heritage:${contribution.id}`,
+      contextTitle: contribution.title || 'Heritage',
+      ...(contribution.imageUrl && { contextImage: contribution.imageUrl }),
+    });
+
+    router.push(`/messages?${params.toString()}`);
+  };
+
   const getHeritageTypeColor = (type: string) => {
     const lowerType = type.toLowerCase();
     if (lowerType.includes('ritual') || lowerType.includes('ceremony')) {
@@ -144,7 +170,7 @@ export const HeritageCard: React.FC<HeritageCardProps> = ({ contribution }) => {
           {contribution.tags.length > 0 && (() => {
             const visibleTags = filterVisibleTags(contribution.tags);
             return visibleTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {visibleTags.slice(0, 3).map((tag, index) => (
                   <span 
                     key={index}
@@ -161,6 +187,16 @@ export const HeritageCard: React.FC<HeritageCardProps> = ({ contribution }) => {
               </div>
             );
           })()}
+
+          {/* Contact Contributor Button */}
+          <button
+            onClick={handleContactContributor}
+            className="w-full btn-primary-sm flex items-center justify-center gap-2"
+            aria-label="Contact contributor"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Contact Contributor
+          </button>
         </div>
       </div>
     </Link>

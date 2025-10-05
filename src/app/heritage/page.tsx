@@ -41,6 +41,7 @@ export default function HeritagePage() {
           country: contrib.country,
           imageUrl: contrib.media[0]?.source.url,
           tags: contrib.tags,
+          pubkey: contrib.pubkey,
         }));
 
         setContributions(cardData);
