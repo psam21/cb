@@ -101,13 +101,15 @@ function MessagesPageContent() {
         updateConversationWithMessage(tempMessage);
       },
       onSuccess: (message) => {
-        logger.info('Message sent successfully', {
+        logger.info('Message sent successfully, updating with real ID', {
           service: 'MessagesPage',
           method: 'handleSendMessage',
           messageId: message.id,
         });
-        // Message is already in the list from optimistic update
-        // Real-time subscription will handle updates if needed
+        // Update the optimistic message with the real ID and details
+        addMessage(message);
+        // Update conversation list
+        updateConversationWithMessage(message);
       },
       onError: (error, tempId) => {
         logger.error('Failed to send message', new Error(error), {

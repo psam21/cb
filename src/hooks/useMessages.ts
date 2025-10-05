@@ -75,7 +75,26 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
         otherPubkey,
       });
 
-      setMessages(messageList);
+      // Merge loaded messages with any optimistic messages (preserve temp messages)
+      setMessages(prev => {
+        // Get messages that were added optimistically (have tempId but no id yet)
+        const optimisticMessages = prev.filter(m => m.tempId && !m.id);
+        
+        // Combine loaded messages with optimistic ones, avoiding duplicates
+        const messageMap = new Map<string, Message>();
+        
+        // Add loaded messages first
+        messageList.forEach(msg => {
+          if (msg.id) messageMap.set(msg.id, msg);
+        });
+        
+        // Add optimistic messages (they'll be replaced when real messages arrive)
+        optimisticMessages.forEach(msg => {
+          if (msg.tempId) messageMap.set(msg.tempId, msg);
+        });
+        
+        return Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load messages';
       logger.error('Failed to load messages', err instanceof Error ? err : new Error(errorMessage), {
@@ -160,8 +179,16 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
    * Load messages when otherPubkey changes
    */
   useEffect(() => {
-    loadMessages();
-  }, [loadMessages]);
+    // Only load messages when otherPubkey changes or on initial mount
+    // Don't reload if we're just updating messages in the same conversation
+    if (otherPubkey) {
+      loadMessages();
+    } else {
+      setMessages([]);
+      setIsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otherPubkey]); // Only depend on otherPubkey, not loadMessages
 
   /**
    * Refresh messages manually
