@@ -461,6 +461,11 @@ export class MessagingBusinessService {
       // Decrypt and parse messages
       const messages = await this.decryptGiftWraps(queryResult.events, signer);
 
+      // Mark messages as sent or received
+      messages.forEach(msg => {
+        msg.isSent = msg.senderPubkey === userPubkey;
+      });
+
       // Group by sender to create conversations
       const conversationMap = new Map<string, Conversation>();
 
