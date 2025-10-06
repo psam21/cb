@@ -129,7 +129,17 @@ export class MessageCacheService {
    * Check if cache is initialized
    */
   isInitialized(): boolean {
-    return this.db !== null && this.encryption.isInitialized();
+    const dbReady = this.db !== null;
+    const encryptionReady = this.encryption.isInitialized();
+    const isReady = dbReady && encryptionReady;
+    
+    console.log('[Cache] 🔍 isInitialized check:', { 
+      dbReady, 
+      encryptionReady, 
+      isReady 
+    });
+    
+    return isReady;
   }
 
   /**
@@ -215,13 +225,20 @@ export class MessageCacheService {
    * Cache conversations
    */
   async cacheConversations(conversations: Conversation[]): Promise<void> {
+    console.log(`[Cache] 💾 cacheConversations called with ${conversations.length} conversations`, {
+      dbInitialized: this.db !== null,
+      encryptionReady: this.encryption.isInitialized()
+    });
+
     if (!this.db) {
-      console.warn('⚠️ Cache not initialized, skipping cacheConversations');
+      console.warn('[Cache] ⚠️ Cache not initialized, skipping cacheConversations');
       return;
     }
 
     const tx = this.db.transaction('conversations', 'readwrite');
     const store = tx.objectStore('conversations');
+    let successCount = 0;
+    let failCount = 0;
 
     for (const conversation of conversations) {
       try {
@@ -237,20 +254,28 @@ export class MessageCacheService {
           unreadCount: 0, // TODO: Implement unread tracking
           cachedAt: Date.now()
         });
+        successCount++;
       } catch (error) {
+        failCount++;
         console.error(`❌ Failed to cache conversation ${conversation.pubkey}:`, error);
       }
     }
 
     await tx.done;
-    console.log(`✅ Cached ${conversations.length} conversations`);
+    console.log(`[Cache] ✅ Cache save transaction completed: ${successCount} saved, ${failCount} failed`);
   }
 
   /**
    * Get all cached conversations
    */
   async getConversations(): Promise<Conversation[]> {
+    console.log('[Cache] 🔍 getConversations called', {
+      dbInitialized: this.db !== null,
+      encryptionReady: this.encryption.isInitialized()
+    });
+
     if (!this.db) {
+      console.warn('[Cache] ⚠️ Database not initialized in getConversations');
       return [];
     }
 
@@ -260,6 +285,7 @@ export class MessageCacheService {
       
       // Get all encrypted conversations
       const encryptedConvos = await store.getAll();
+      console.log(`[Cache] 📦 Retrieved ${encryptedConvos.length} encrypted conversations from IndexedDB`);
 
       // Decrypt all conversations
       const conversations: Conversation[] = [];
@@ -274,6 +300,8 @@ export class MessageCacheService {
           console.error(`❌ Failed to decrypt conversation ${encrypted.pubkey}:`, error);
         }
       }
+
+      console.log(`[Cache] ✅ Successfully decrypted ${conversations.length} conversations`);
 
       // Sort by last message time (newest first)
       conversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);

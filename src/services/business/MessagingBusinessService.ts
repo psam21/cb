@@ -213,7 +213,10 @@ export class MessagingBusinessService {
       }
 
       // Try cache first
+      console.log('[Business] 📥 Attempting to load from cache...');
       const cachedConversations = await this.cache.getConversations();
+      console.log(`[Business] 📦 Cache returned ${cachedConversations.length} conversations`);
+      
       if (cachedConversations.length > 0) {
         logger.info('✅ Loaded conversations from cache', {
           service: 'MessagingBusinessService',
@@ -238,11 +241,19 @@ export class MessagingBusinessService {
         method: 'getConversations',
       });
 
+      console.log('[Business] 🌐 Fetching conversations from relays...');
       const conversations = await this.fetchConversationsFromRelays(signer);
+      console.log(`[Business] 📬 Fetched ${conversations.length} conversations from relays`);
 
       // Cache for next time
+      console.log('[Business] 💾 Saving conversations to cache...');
       await this.cache.cacheConversations(conversations);
       await this.cache.setLastSyncTime(Math.floor(Date.now() / 1000));
+      console.log('[Business] ✅ Conversations saved to cache');
+
+      // Verify cache was saved
+      const verifyCache = await this.cache.getConversations();
+      console.log(`[Business] 🔍 Cache verification: ${verifyCache.length} conversations now in cache`);
 
       return conversations;
     } catch (error) {
