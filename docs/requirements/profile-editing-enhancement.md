@@ -11,6 +11,8 @@
 
 Enhance the `/profile` page from read-only display to full-featured profile editing with support for all Nostr Kind 0 metadata fields, including profile picture upload, banner upload, lightning addresses, and extended metadata.
 
+**CRITICAL REQUIREMENT**: All implementation must follow Service-Oriented Architecture (SOA) patterns established in the codebase. See Section 12 for detailed SOA requirements.
+
 ---
 
 ## Current State Assessment
@@ -49,10 +51,6 @@ Enhance the `/profile` page from read-only display to full-featured profile edit
 
 #### 1.2 Profile Syncing
 - Fetch existing profile from relays on page load
-- Merge local auth store data with relay data
-- Resolve conflicts between local and remote profiles
-- Cache profile data to avoid redundant fetches
-- Background refresh of profile data
 
 #### 1.3 Profile History
 - Display when profile was last updated
@@ -133,18 +131,10 @@ Enhance the `/profile` page from read-only display to full-featured profile edit
 - Bot field (boolean, mark bot accounts)
 - Birthday field (YYYY-MM-DD format)
 
-#### 4.4 Custom Fields
-- Allow arbitrary custom metadata fields
-- Support key-value pairs beyond standard fields
-- Validate custom field names (no conflicts with standard fields)
-- Show advanced mode toggle for custom fields
-- Warn users about client compatibility
-
 ### 5. User Experience Enhancements
 
 #### 5.1 Edit Mode Improvements
 - Inline editing for all fields
-- Auto-save drafts to local storage
 - Warn before leaving with unsaved changes
 - Show which fields have been modified
 - Restore previous values on cancel
@@ -197,20 +187,6 @@ Enhance the `/profile` page from read-only display to full-featured profile edit
 - Sanitize markdown content
 - Prevent XSS in profile fields
 - Rate limit profile updates
-
-#### 7.2 Privacy Controls
-- Mark profile as private/public
-- Control which fields are visible
-- Choose which relays to publish to
-- Option to delete profile from relays
-- Control profile discoverability
-
-#### 7.3 Content Moderation
-- Validate image content appropriateness (optional)
-- Warn about sensitive content
-- Allow NSFW flag for profile pictures
-- Content policy guidelines link
-- Report abusive profiles
 
 ### 8. Mobile Responsiveness
 
@@ -283,21 +259,28 @@ Enhance the `/profile` page from read-only display to full-featured profile edit
 - Suggest fixes for common errors
 - Allow saving draft even if invalid
 
-### 12. Analytics & Monitoring
+### 12. Service-Oriented Architecture (SOA)
 
-#### 12.1 User Analytics
-- Track profile completion percentage
-- Measure time to complete profile
-- Track which fields are most commonly filled
-- Measure upload success rates
-- Track relay publishing success rates
+#### 12.1 Business Service Layer
+- ProfileBusinessService handles all profile logic
+- Separation of concerns between UI and business logic
+- Reusable profile validation methods
+- Centralized profile formatting and parsing
+- No direct relay calls from UI components
 
-#### 12.2 Error Monitoring
-- Log upload failures
-- Log relay publishing failures
-- Track validation error frequency
-- Monitor performance metrics
-- Alert on critical failures
+#### 12.2 Generic Service Layer
+- GenericBlossomService for image uploads
+- GenericEventService for Kind 0 event creation
+- GenericRelayService for event publishing
+- Consistent error handling across services
+- Service dependencies properly managed
+
+#### 12.3 Service Integration
+- Hook layer (useUserProfile, useMediaUpload) coordinates services
+- UI components consume hooks, not services directly
+- Clear data flow: UI → Hook → Business Service → Generic Service
+- State management via hooks and stores
+- Service methods return typed results
 
 ### 13. Testing Requirements
 
