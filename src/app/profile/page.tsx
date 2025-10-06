@@ -10,9 +10,6 @@ import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useMyShopProducts } from '@/hooks/useMyShopProducts';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 import { ImageUpload } from '@/components/profile/ImageUpload';
-import { validateProfileFields } from '@/utils/profileValidation';
-import { verifyNIP05 } from '@/utils/nip05';
-import { fetchHeritageByAuthor } from '@/services/business/HeritageContentService';
 
 // Dynamic import for RichTextEditor (client-only for Vercel compatibility)
 const RichTextEditor = dynamic(
@@ -43,7 +40,13 @@ export default function ProfilePage() {
     isPublishing,
     publishError,
     publishedRelays,
-    failedRelays
+    failedRelays,
+    contributionsCount,
+    isLoadingContributions,
+    isNip05Verified,
+    isVerifyingNip05,
+    verifyNip05,
+    validateProfileFields,
   } = useUserProfile();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -52,59 +55,12 @@ export default function ProfilePage() {
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const [isNip05Verified, setIsNip05Verified] = useState(false);
-  const [isVerifyingNip05, setIsVerifyingNip05] = useState(false);
-  const [contributionsCount, setContributionsCount] = useState(0);
-  const [isLoadingContributions, setIsLoadingContributions] = useState(true);
   const { products: myProducts } = useMyShopProducts(false);
 
   // Ensure we're on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // Verify NIP-05 when profile loads or nip05 field changes
-  useEffect(() => {
-    const verifyNip05Status = async () => {
-      if (!profile?.nip05 || !user?.pubkey) {
-        setIsNip05Verified(false);
-        return;
-      }
-
-      setIsVerifyingNip05(true);
-      try {
-        const result = await verifyNIP05(profile.nip05, user.pubkey);
-        setIsNip05Verified(result !== null);
-      } catch (error) {
-        setIsNip05Verified(false);
-      } finally {
-        setIsVerifyingNip05(false);
-      }
-    };
-
-    verifyNip05Status();
-  }, [profile?.nip05, user?.pubkey]);
-
-  // Load contributions count
-  useEffect(() => {
-    const loadContributionsCount = async () => {
-      if (!user?.pubkey) {
-        setIsLoadingContributions(false);
-        return;
-      }
-      try {
-        setIsLoadingContributions(true);
-        const contributions = await fetchHeritageByAuthor(user.pubkey);
-        setContributionsCount(contributions.length);
-      } catch (error) {
-        console.error('Error loading contributions count:', error);
-        setContributionsCount(0);
-      } finally {
-        setIsLoadingContributions(false);
-      }
-    };
-    loadContributionsCount();
-  }, [user?.pubkey]);
 
   // Show loading state during hydration
   if (!isClient) {
@@ -187,10 +143,8 @@ export default function ProfilePage() {
   const handleReVerifyNip05 = async () => {
     if (!editForm.nip05 || !user?.pubkey) return;
 
-    setIsVerifyingNip05(true);
     try {
-      const result = await verifyNIP05(editForm.nip05, user.pubkey);
-      setIsNip05Verified(result !== null);
+      const result = await verifyNip05(editForm.nip05, user.pubkey);
       
       if (result) {
         alert('✅ NIP-05 verified successfully!');
@@ -198,10 +152,7 @@ export default function ProfilePage() {
         alert('❌ NIP-05 verification failed. Please check your identifier and DNS setup.');
       }
     } catch (error) {
-      setIsNip05Verified(false);
       alert('❌ NIP-05 verification failed. Please try again.');
-    } finally {
-      setIsVerifyingNip05(false);
     }
   };
 
