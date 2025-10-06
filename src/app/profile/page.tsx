@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
+import { ImageUpload } from '@/components/profile/ImageUpload';
 
 // Dynamic import for RichTextEditor (client-only for Vercel compatibility)
 const RichTextEditor = dynamic(
@@ -129,6 +129,56 @@ export default function ProfilePage() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleProfilePictureUploaded = async (url: string) => {
+    // Immediately publish the profile with new picture
+    setSaveError(null);
+    setPublishSuccess(false);
+
+    try {
+      const signer = await getSigner();
+      if (!signer) {
+        setSaveError('No Nostr signer available.');
+        return;
+      }
+
+      const success = await publishProfile({ picture: url }, signer);
+      
+      if (success) {
+        setPublishSuccess(true);
+        setTimeout(() => setPublishSuccess(false), 5000);
+      } else {
+        setSaveError(publishError || 'Failed to publish profile picture');
+      }
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Failed to publish profile picture');
+    }
+  };
+
+  const handleBannerUploaded = async (url: string) => {
+    // Immediately publish the profile with new banner
+    setSaveError(null);
+    setPublishSuccess(false);
+
+    try {
+      const signer = await getSigner();
+      if (!signer) {
+        setSaveError('No Nostr signer available.');
+        return;
+      }
+
+      const success = await publishProfile({ banner: url }, signer);
+      
+      if (success) {
+        setPublishSuccess(true);
+        setTimeout(() => setPublishSuccess(false), 5000);
+      } else {
+        setSaveError(publishError || 'Failed to publish banner');
+      }
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Failed to publish banner');
+    }
   };
 
 
@@ -382,30 +432,29 @@ export default function ProfilePage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Banner Image */}
+            <div className="card">
+              <div className="p-6">
+                <ImageUpload
+                  currentImageUrl={profile?.banner}
+                  onImageUploaded={handleBannerUploaded}
+                  label="Banner Image"
+                  aspectRatio="banner"
+                  maxSizeMB={10}
+                />
+              </div>
+            </div>
+
             {/* Profile Picture */}
             <div className="card">
               <div className="p-6">
-                <h3 className="text-lg font-serif font-bold text-accent-800 mb-4">Profile Picture</h3>
-                <div className="text-center">
-                  {profile?.picture ? (
-                    <Image
-                      src={profile.picture}
-                      alt="Profile"
-                      width={96}
-                      height={96}
-                      className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-2 border-accent-200"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 bg-accent-100 rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-accent-200">
-                      <svg className="w-8 h-8 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                  )}
-                  <p className="text-sm text-accent-600 font-medium">
-                    {profile?.picture ? 'Profile picture set' : 'No profile picture'}
-                  </p>
-                </div>
+                <ImageUpload
+                  currentImageUrl={profile?.picture}
+                  onImageUploaded={handleProfilePictureUploaded}
+                  label="Profile Picture"
+                  aspectRatio="square"
+                  maxSizeMB={5}
+                />
               </div>
             </div>
 
