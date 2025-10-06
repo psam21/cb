@@ -16,14 +16,15 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const eventData: UserEventData = await request.json();
 
-    // Basic validation
-    if (!eventData.npub || !eventData.eventId || !eventData.eventKind) {
+    // Basic validation (check for undefined/null, not falsy - kind 0 is valid!)
+    if (!eventData.npub || !eventData.eventId || eventData.eventKind === undefined || eventData.eventKind === null) {
       logger.warn('Invalid event data received', {
         service: 'log-event-api',
         method: 'POST',
         hasNpub: !!eventData.npub,
         hasEventId: !!eventData.eventId,
-        hasEventKind: !!eventData.eventKind,
+        hasEventKind: eventData.eventKind !== undefined && eventData.eventKind !== null,
+        eventKind: eventData.eventKind,
       });
 
       return NextResponse.json(
