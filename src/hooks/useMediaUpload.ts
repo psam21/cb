@@ -29,7 +29,7 @@ export interface UseMediaUploadReturn {
   uploadState: MediaUploadState;
   
   // Actions
-  uploadFiles: (files: File[], signer: NostrSigner) => Promise<SequentialUploadResult>;
+  uploadFiles: (files: File[], signer: NostrSigner, skipConsent?: boolean) => Promise<SequentialUploadResult>;
   resetUpload: () => void;
   retryFailedFiles: (signer: NostrSigner) => Promise<SequentialUploadResult>;
   
@@ -71,7 +71,8 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
    */
   const uploadFiles = useCallback(async (
     files: File[], 
-    signer: NostrSigner
+    signer: NostrSigner,
+    skipConsent: boolean = false
   ): Promise<SequentialUploadResult> => {
     if (!files.length) {
       logger.warn('No files provided for upload', {
@@ -111,25 +112,33 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
     }));
 
     try {
-      // Show consent dialog first
-      const userAccepted = await consentDialog.showConsentDialog(files);
-      if (!userAccepted) {
-        logger.info('User cancelled upload during consent phase', {
+      // Show consent dialog first (unless skipped for single file uploads)
+      if (!skipConsent) {
+        const userAccepted = await consentDialog.showConsentDialog(files);
+        if (!userAccepted) {
+          logger.info('User cancelled upload during consent phase', {
+            hook: 'useMediaUpload',
+            method: 'uploadFiles',
+            fileCount: files.length
+          });
+
+          return {
+            success: false,
+            uploadedFiles: [],
+            failedFiles: [],
+            partialSuccess: false,
+            userCancelled: true,
+            totalFiles: files.length,
+            successCount: 0,
+            failureCount: 0
+          };
+        }
+      } else {
+        logger.info('Skipping consent dialog (single file upload)', {
           hook: 'useMediaUpload',
           method: 'uploadFiles',
           fileCount: files.length
         });
-
-        return {
-          success: false,
-          uploadedFiles: [],
-          failedFiles: [],
-          partialSuccess: false,
-          userCancelled: true,
-          totalFiles: files.length,
-          successCount: 0,
-          failureCount: 0
-        };
       }
 
       const result = await blossomService.uploadSequentialWithConsent(

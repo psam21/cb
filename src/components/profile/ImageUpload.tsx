@@ -16,6 +16,7 @@ interface ImageUploadProps {
   aspectRatio?: 'square' | 'banner'; // square for profile pic, banner for banner image
   maxSizeMB?: number;
   enableCrop?: boolean; // Enable cropping feature
+  skipConsent?: boolean; // Skip consent dialog for single file uploads (default: true for profile images)
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -24,7 +25,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   label,
   aspectRatio = 'square',
   maxSizeMB = 10,
-  enableCrop = true
+  enableCrop = true,
+  skipConsent = true // Default to skipping consent for profile images
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -49,8 +51,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         return;
       }
 
-      // Upload to Blossom
-      const result = await uploadFiles([file], signer);
+      // Upload to Blossom (skip consent for single file profile image uploads)
+      const result = await uploadFiles([file], signer, skipConsent);
       
       if (result.success && result.uploadedFiles.length > 0) {
         const uploadedUrl = result.uploadedFiles[0].url;
@@ -64,7 +66,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
     }
-  }, [getSigner, onImageUploaded, uploadFiles]);
+  }, [getSigner, onImageUploaded, uploadFiles, skipConsent]);
 
   const handleFileSelect = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
