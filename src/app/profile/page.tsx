@@ -315,6 +315,44 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Banner Section */}
+        <div className="mb-8">
+          <div className="card overflow-hidden">
+            {/* Banner Display/Upload Area */}
+            <div className="relative bg-gradient-to-r from-primary-100 to-accent-100" style={{ minHeight: '200px' }}>
+              {profile?.banner ? (
+                <div className="relative w-full" style={{ paddingBottom: '33.33%' }}>
+                  <img 
+                    src={profile.banner} 
+                    alt="Profile Banner" 
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center" style={{ minHeight: '200px' }}>
+                  <div className="text-center text-accent-600">
+                    <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm font-medium">No banner image</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Banner Upload Controls */}
+            <div className="p-6 bg-white border-t border-accent-100">
+              <ImageUpload
+                currentImageUrl={profile?.banner}
+                onImageUploaded={handleBannerUploaded}
+                label="Banner Image"
+                aspectRatio="banner"
+                maxSizeMB={10}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Profile Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Info */}
@@ -645,19 +683,6 @@ export default function ProfilePage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Banner Image */}
-            <div className="card">
-              <div className="p-6">
-                <ImageUpload
-                  currentImageUrl={profile?.banner}
-                  onImageUploaded={handleBannerUploaded}
-                  label="Banner Image"
-                  aspectRatio="banner"
-                  maxSizeMB={10}
-                />
-              </div>
-            </div>
-
             {/* Profile Picture */}
             <div className="card">
               <div className="p-6">
