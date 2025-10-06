@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 
 // Dynamic import for RichTextEditor (client-only for Vercel compatibility)
@@ -28,6 +29,7 @@ const MarkdownRenderer = dynamic(
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
+  const { getSigner } = useNostrSigner();
   const { 
     profile, 
     stats, 
@@ -35,13 +37,17 @@ export default function ProfilePage() {
     isLoadingStats, 
     profileError, 
     statsError,
-    updateProfile
+    publishProfile,
+    isPublishing,
+    publishError,
+    publishedRelays,
+    failedRelays
   } = useUserProfile();
   
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
-  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [publishSuccess, setPublishSuccess] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   // Ensure we're on the client side
@@ -89,19 +95,32 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!editForm) return;
 
-    setIsSaving(true);
     setSaveError(null);
+    setPublishSuccess(false);
 
     try {
-      const success = await updateProfile(editForm);
+      // Get signer from browser extension
+      const signer = await getSigner();
+      if (!signer) {
+        setSaveError('No Nostr signer available. Please install a Nostr browser extension.');
+        return;
+      }
+
+      // Publish profile to Nostr
+      const success = await publishProfile(editForm, signer);
+      
       if (success) {
         setIsEditing(false);
         setEditForm({});
+        setPublishSuccess(true);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => setPublishSuccess(false), 5000);
+      } else {
+        setSaveError(publishError || 'Failed to publish profile');
       }
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Failed to save profile');
-    } finally {
-      setIsSaving(false);
+      setSaveError(error instanceof Error ? error.message : 'Failed to publish profile');
     }
   };
 
@@ -163,6 +182,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleEdit}
                   className="btn-outline-sm"
+                  disabled={isPublishing}
                 >
                   Edit Profile
                 </button>
@@ -171,16 +191,16 @@ export default function ProfilePage() {
                   <button
                     onClick={handleCancelEdit}
                     className="btn-outline-sm"
-                    disabled={isSaving}
+                    disabled={isPublishing}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     className="btn-primary-sm"
-                    disabled={isSaving}
+                    disabled={isPublishing}
                   >
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isPublishing ? 'Publishing...' : 'Publish to Nostr'}
                   </button>
                 </div>
               )}
@@ -195,6 +215,31 @@ export default function ProfilePage() {
             <div className="card">
               <div className="p-6">
                 
+                {/* Success Message */}
+                {publishSuccess && (
+                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-green-800">Profile Published Successfully!</h3>
+                        <div className="mt-2 text-sm text-green-700">
+                          <p>Published to {publishedRelays.length} relay{publishedRelays.length !== 1 ? 's' : ''}.</p>
+                          {failedRelays.length > 0 && (
+                            <p className="mt-1 text-yellow-700">
+                              Failed to publish to {failedRelays.length} relay{failedRelays.length !== 1 ? 's' : ''}.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
                 {saveError && (
                   <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex">
@@ -204,7 +249,7 @@ export default function ProfilePage() {
                         </svg>
                       </div>
                       <div className="ml-3">
-                        <h3 className="text-sm font-medium text-red-800">Save Failed</h3>
+                        <h3 className="text-sm font-medium text-red-800">Publishing Failed</h3>
                         <div className="mt-2 text-sm text-red-700">{saveError}</div>
                       </div>
                     </div>
