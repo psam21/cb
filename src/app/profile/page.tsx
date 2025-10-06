@@ -189,7 +189,16 @@ export default function ProfilePage() {
   };
 
   const handleProfilePictureUploaded = async (url: string) => {
-    // Immediately publish the profile with new picture
+    // Update editForm if in editing mode
+    if (isEditing) {
+      setEditForm(prev => ({
+        ...prev,
+        picture: url
+      }));
+      return; // Don't publish immediately if editing - let user click Publish button
+    }
+
+    // If not editing, immediately publish the profile with new picture
     setSaveError(null);
     setPublishSuccess(false);
 
@@ -214,7 +223,16 @@ export default function ProfilePage() {
   };
 
   const handleBannerUploaded = async (url: string) => {
-    // Immediately publish the profile with new banner
+    // Update editForm if in editing mode
+    if (isEditing) {
+      setEditForm(prev => ({
+        ...prev,
+        banner: url
+      }));
+      return; // Don't publish immediately if editing - let user click Publish button
+    }
+
+    // If not editing, immediately publish the profile with new banner
     setSaveError(null);
     setPublishSuccess(false);
 
@@ -318,7 +336,7 @@ export default function ProfilePage() {
         {/* Banner Section */}
         <div className="mb-8">
           <ImageUpload
-            currentImageUrl={profile?.banner}
+            currentImageUrl={isEditing ? editForm.banner : profile?.banner}
             onImageUploaded={handleBannerUploaded}
             label=""
             aspectRatio="banner"
@@ -661,7 +679,7 @@ export default function ProfilePage() {
             <div className="card">
               <div className="p-6">
                 <ImageUpload
-                  currentImageUrl={profile?.picture}
+                  currentImageUrl={isEditing ? editForm.picture : profile?.picture}
                   onImageUploaded={handleProfilePictureUploaded}
                   label="Profile Picture"
                   aspectRatio="square"
