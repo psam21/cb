@@ -625,16 +625,39 @@ export class MessagingBusinessService {
           }
           
           // Sent messages (old buggy format): sender is us, recipient is also us (self-copy bug)
-          // We can identify these as conversation messages if no other conversation exists with same timestamp
+          // Smart recovery: Match these with received messages by timestamp correlation
           if (msg.senderPubkey === userPubkey && msg.recipientPubkey === userPubkey) {
-            // This is a buggy self-copy. We'll include it but mark it properly later.
-            // For now, we need more context to determine if it belongs to this conversation.
-            // Since we can't be sure, we'll exclude these to avoid showing messages in wrong conversations.
-            logger.warn('Found buggy self-copy message (old format)', {
+            // Try to match with a received message from this conversation within ±5 seconds
+            const matchingReceived = allMessages.find(m => 
+              m.senderPubkey === otherPubkey && 
+              m.recipientPubkey === userPubkey &&
+              Math.abs(m.createdAt - msg.createdAt) <= 5
+            );
+            
+            if (matchingReceived) {
+              // Found a temporal match - this message likely belongs to this conversation
+              logger.info('✅ Recovered old sent message via timestamp matching', {
+                service: 'MessagingBusinessService',
+                method: 'getMessages',
+                messageId: msg.id?.substring(0, 8),
+                content: msg.content?.substring(0, 30),
+                matchedWith: matchingReceived.id?.substring(0, 8),
+                timeDiff: Math.abs(matchingReceived.createdAt - msg.createdAt),
+              });
+              
+              // Fix the recipient to show correct conversation context
+              msg.recipientPubkey = otherPubkey;
+              return true; // Include this message
+            }
+            
+            // No temporal match found - might be a message sent without a reply
+            // or to a different conversation. Exclude to avoid misplacement.
+            logger.debug('⚠️ Old sent message with no temporal match - excluding', {
               service: 'MessagingBusinessService',
               method: 'getMessages',
               messageId: msg.id?.substring(0, 8),
               content: msg.content?.substring(0, 30),
+              timestamp: msg.createdAt,
             });
             return false;
           }
