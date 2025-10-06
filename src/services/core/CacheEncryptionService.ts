@@ -11,6 +11,8 @@
  * - Cleared on logout
  */
 
+import { nip19 } from 'nostr-tools';
+
 export class CacheEncryptionService {
   private encryptionKey: CryptoKey | null = null;
   private static instance: CacheEncryptionService;
@@ -33,9 +35,20 @@ export class CacheEncryptionService {
    */
   async initializeKey(pubkey: string): Promise<void> {
     try {
-      // Remove 'npub' prefix if present and convert to bytes
-      const cleanPubkey = pubkey.startsWith('npub') ? pubkey.slice(4) : pubkey;
-      const pubkeyBytes = this.hexToBytes(cleanPubkey);
+      // Decode npub to hex if needed
+      let hexPubkey: string;
+      if (pubkey.startsWith('npub')) {
+        const decoded = nip19.decode(pubkey);
+        if (decoded.type !== 'npub') {
+          throw new Error('Invalid npub format');
+        }
+        hexPubkey = decoded.data;
+      } else {
+        hexPubkey = pubkey;
+      }
+
+      // Convert hex pubkey to bytes
+      const pubkeyBytes = this.hexToBytes(hexPubkey);
 
       // Import as raw key material
       const keyMaterial = await crypto.subtle.importKey(
