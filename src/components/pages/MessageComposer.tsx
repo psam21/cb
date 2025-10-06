@@ -68,7 +68,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
   return (
     <div className="border-t border-primary-200 bg-white p-4">
-      <div className="flex items-end gap-2">
+      <div className="flex items-start gap-2">
         {/* Message input */}
         <div className="flex-1">
           <textarea
@@ -91,30 +91,15 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         <button
           onClick={handleSend}
           disabled={!message.trim() || disabled || isSending}
-          className="px-6 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:bg-primary-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 h-10"
+          className="px-6 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:bg-primary-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center h-[40px]"
         >
           {isSending ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               <span>Sending...</span>
             </>
           ) : (
-            <>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-              <span>Send</span>
-            </>
+            <span>Send</span>
           )}
         </button>
       </div>
