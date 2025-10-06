@@ -425,6 +425,96 @@ export default function ProfilePage() {
                       </p>
                     )}
                   </div>
+
+                  {/* Lightning Address (lud16) */}
+                  <div>
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
+                      Lightning Address (lud16)
+                    </label>
+                    {isEditing ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editForm.lud16 || ''}
+                          onChange={(e) => handleInputChange('lud16', e.target.value)}
+                          className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                          placeholder="user@domain.com"
+                        />
+                        <p className="mt-1 text-xs text-accent-600">
+                          Modern Lightning Address format. Example: satoshi@getalby.com
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-primary-600">
+                        {profile?.lud16 || 'No lightning address provided'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* LNURL (lud06) */}
+                  <div>
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
+                      LNURL (lud06)
+                    </label>
+                    {isEditing ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editForm.lud06 || ''}
+                          onChange={(e) => handleInputChange('lud06', e.target.value)}
+                          className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                          placeholder="lnurl1..."
+                        />
+                        <p className="mt-1 text-xs text-accent-600">
+                          Legacy LNURL format. Starts with &ldquo;lnurl1&rdquo;. Most users should use Lightning Address instead.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-primary-600 break-all">
+                        {profile?.lud06 || 'No LNURL provided'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* NIP-05 Verification */}
+                  <div>
+                    <label className="block text-sm font-medium text-accent-700 mb-2">
+                      NIP-05 Identifier
+                    </label>
+                    {isEditing ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editForm.nip05 || ''}
+                          onChange={(e) => handleInputChange('nip05', e.target.value)}
+                          className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                          placeholder="user@domain.com"
+                        />
+                        <p className="mt-1 text-xs text-accent-600">
+                          DNS-based identity verification. Example: alice@example.com.{' '}
+                          <a 
+                            href="https://github.com/nostr-protocol/nips/blob/master/05.md" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-accent-700 hover:text-accent-800 underline"
+                          >
+                            Learn more about NIP-05
+                          </a>
+                        </p>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <p className="text-primary-600">
+                          {profile?.nip05 || 'Not verified'}
+                        </p>
+                        {profile?.nip05 && (
+                          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
