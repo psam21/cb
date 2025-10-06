@@ -11,6 +11,7 @@ export interface UserProfile {
   banner: string;
   bot: boolean;
   birthday: string;
+  nip05?: string;  // NIP-05 identifier (e.g., "alice@example.com")
 }
 
 export interface User {
@@ -98,14 +99,16 @@ export class ProfileBusinessService {
         website: content.website || content.url || '',
         banner: content.banner || '',
         bot: Boolean(content.bot),
-        birthday: content.birthday || ''
+        birthday: content.birthday || '',
+        nip05: content.nip05 || undefined,
       };
 
       logger.debug('Parsed profile metadata', { 
         display_name: profile.display_name,
         hasAbout: !!profile.about,
         hasPicture: !!profile.picture,
-        hasWebsite: !!profile.website
+        hasWebsite: !!profile.website,
+        hasNip05: !!profile.nip05,
       });
 
       return profile;
@@ -201,7 +204,8 @@ export class ProfileBusinessService {
       website: profile.website || '',
       banner: profile.banner || '',
       bot: profile.bot || false,
-      birthday: profile.birthday || ''
+      birthday: profile.birthday || '',
+      nip05: profile.nip05 || undefined,
     };
   }
 

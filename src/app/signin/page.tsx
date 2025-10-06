@@ -48,7 +48,8 @@ export default function SigninPage() {
         website: '',
         banner: '',
         bot: false,
-        birthday: ''
+        birthday: '',
+        nip05: undefined as string | undefined,
       };
 
       try {
@@ -62,11 +63,13 @@ export default function SigninPage() {
             website: fetchedProfile.website || '',
             banner: fetchedProfile.banner || '',
             bot: fetchedProfile.bot || false,
-            birthday: fetchedProfile.birthday || ''
+            birthday: fetchedProfile.birthday || '',
+            nip05: fetchedProfile.nip05 || undefined,
           };
           logger.info('Profile fetched successfully from relays', { 
             display_name: profile.display_name,
-            hasPicture: !!profile.picture 
+            hasPicture: !!profile.picture,
+            hasNip05: !!profile.nip05,
           });
         } else {
           logger.info('No profile found in relays, using default');

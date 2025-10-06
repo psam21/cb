@@ -18,6 +18,7 @@ import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 import { profileService } from './ProfileBusinessService';
 import { MessageCacheService } from './MessageCacheService';
+import { getDisplayNameFromNIP05 } from '@/utils/nip05';
 
 export class MessagingBusinessService {
   private static instance: MessagingBusinessService;
@@ -232,6 +233,14 @@ export class MessagingBusinessService {
           });
         });
 
+        // Background profile refresh for cached conversations (don't await)
+        this.refreshProfilesInBackground(cachedConversations).catch(error => {
+          logger.error('Profile refresh failed', error instanceof Error ? error : new Error('Unknown error'), {
+            service: 'MessagingBusinessService',
+            method: 'getConversations',
+          });
+        });
+
         return cachedConversations;
       }
 
@@ -326,6 +335,101 @@ export class MessagingBusinessService {
   }
 
   /**
+   * Refresh profiles for conversations in the background
+   * Attempts to enrich conversation display names using:
+   * 1. Profile metadata (Kind 0)
+   * 2. NIP-05 verification (fallback)
+   * 
+   * @param conversations - Conversations to enrich
+   */
+  private async refreshProfilesInBackground(conversations: Conversation[]): Promise<void> {
+    try {
+      logger.info('🔄 Refreshing profiles in background', {
+        service: 'MessagingBusinessService',
+        method: 'refreshProfilesInBackground',
+        count: conversations.length,
+      });
+
+      // Refresh profiles in parallel
+      await Promise.all(conversations.map(async (conversation) => {
+        try {
+          await this.enrichConversationProfile(conversation);
+        } catch (error) {
+          logger.debug('Failed to refresh profile', {
+            service: 'MessagingBusinessService',
+            method: 'refreshProfilesInBackground',
+            pubkey: conversation.pubkey.substring(0, 8) + '...',
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }));
+
+      // Re-cache conversations with updated profiles
+      await this.cache.cacheConversations(conversations);
+
+      logger.info('✅ Profiles refreshed successfully', {
+        service: 'MessagingBusinessService',
+        method: 'refreshProfilesInBackground',
+        enriched: conversations.filter(c => c.displayName).length,
+        total: conversations.length,
+      });
+    } catch (error) {
+      logger.error('Profile refresh failed', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'MessagingBusinessService',
+        method: 'refreshProfilesInBackground',
+      });
+    }
+  }
+
+  /**
+   * Enrich a single conversation with profile information
+   * Uses fallback strategy: Profile metadata → NIP-05 → npub truncation
+   * 
+   * @param conversation - Conversation to enrich (modified in place)
+   */
+  private async enrichConversationProfile(conversation: Conversation): Promise<void> {
+    // Try fetching profile metadata first
+    try {
+      const profile = await profileService.getUserProfile(conversation.pubkey);
+      if (profile) {
+        conversation.displayName = profile.display_name || undefined;
+        conversation.avatar = profile.picture || undefined;
+        
+        // If still no display name, try NIP-05 from profile
+        if (!conversation.displayName && profile.nip05) {
+          const nip05Name = await getDisplayNameFromNIP05(profile.nip05, conversation.pubkey);
+          if (nip05Name) {
+            conversation.displayName = nip05Name;
+            logger.info('✅ Resolved name via NIP-05', {
+              service: 'MessagingBusinessService',
+              method: 'enrichConversationProfile',
+              pubkey: conversation.pubkey.substring(0, 8) + '...',
+              displayName: nip05Name,
+            });
+          }
+        }
+        
+        return;
+      }
+    } catch (error) {
+      logger.debug('Profile fetch failed, trying NIP-05', {
+        service: 'MessagingBusinessService',
+        method: 'enrichConversationProfile',
+        pubkey: conversation.pubkey.substring(0, 8) + '...',
+      });
+    }
+
+    // Fallback: Try NIP-05 without profile metadata
+    // (Some users might have NIP-05 setup but no Kind 0 event)
+    // This is less common but worth trying
+    logger.debug('No profile metadata, skipping NIP-05 fallback (requires profile)', {
+      service: 'MessagingBusinessService',
+      method: 'enrichConversationProfile',
+      pubkey: conversation.pubkey.substring(0, 8) + '...',
+    });
+  }
+
+  /**
    * Fetch conversations from relays (no cache)
    * Extracted for reusability
    */
@@ -388,28 +492,16 @@ export class MessagingBusinessService {
       const conversations = Array.from(conversationMap.values())
         .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
 
-      // Fetch display names for all conversations
+      // Enrich conversations with profiles (using fallback strategy)
       await Promise.all(conversations.map(async (conversation) => {
-        try {
-          const profile = await profileService.getUserProfile(conversation.pubkey);
-          if (profile) {
-            conversation.displayName = profile.display_name || undefined;
-            conversation.avatar = profile.picture || undefined;
-          }
-        } catch (error) {
-          // Silently fail - display name is optional
-          logger.debug('Failed to fetch profile for conversation', {
-            service: 'MessagingBusinessService',
-            method: 'getConversations',
-            pubkey: conversation.pubkey,
-          });
-        }
+        await this.enrichConversationProfile(conversation);
       }));
 
       logger.info('Conversations loaded from relays', {
         service: 'MessagingBusinessService',
         method: 'fetchConversationsFromRelays',
         count: conversations.length,
+        enriched: conversations.filter(c => c.displayName).length,
       });
 
       return conversations;
