@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 import { ImageUpload } from '@/components/profile/ImageUpload';
+import { validateProfileFields } from '@/utils/profileValidation';
 
 // Dynamic import for RichTextEditor (client-only for Vercel compatibility)
 const RichTextEditor = dynamic(
@@ -49,6 +50,7 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   // Ensure we're on the client side
   useEffect(() => {
@@ -95,6 +97,15 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!editForm) return;
 
+    // Validate all fields
+    const errors = validateProfileFields(editForm);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setSaveError('Please fix the errors before publishing');
+      return;
+    }
+
+    setFieldErrors({});
     setSaveError(null);
     setPublishSuccess(false);
 
@@ -313,14 +324,21 @@ export default function ProfilePage() {
                       Display Name
                     </label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={editForm.display_name || ''}
-                        onChange={(e) => handleInputChange('display_name', e.target.value)}
-                        className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
-                        placeholder="Enter your display name"
-                        maxLength={100}
-                      />
+                      <>
+                        <input
+                          type="text"
+                          value={editForm.display_name || ''}
+                          onChange={(e) => handleInputChange('display_name', e.target.value)}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
+                            fieldErrors.display_name ? 'border-red-500' : 'border-accent-300'
+                          }`}
+                          placeholder="Enter your display name"
+                          maxLength={100}
+                        />
+                        {fieldErrors.display_name && (
+                          <p className="mt-1 text-sm text-red-600">{fieldErrors.display_name}</p>
+                        )}
+                      </>
                     ) : (
                       <p className="text-primary-800 font-medium">
                         {profile?.display_name || 'Anonymous'}
@@ -358,13 +376,20 @@ export default function ProfilePage() {
                       Website
                     </label>
                     {isEditing ? (
-                      <input
-                        type="url"
-                        value={editForm.website || ''}
-                        onChange={(e) => handleInputChange('website', e.target.value)}
-                        className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
-                        placeholder="https://your-website.com"
-                      />
+                      <>
+                        <input
+                          type="url"
+                          value={editForm.website || ''}
+                          onChange={(e) => handleInputChange('website', e.target.value)}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
+                            fieldErrors.website ? 'border-red-500' : 'border-accent-300'
+                          }`}
+                          placeholder="https://your-website.com"
+                        />
+                        {fieldErrors.website && (
+                          <p className="mt-1 text-sm text-red-600">{fieldErrors.website}</p>
+                        )}
+                      </>
                     ) : (
                       <p className="text-primary-600">
                         {profile?.website ? (
@@ -437,12 +462,18 @@ export default function ProfilePage() {
                           type="text"
                           value={editForm.lud16 || ''}
                           onChange={(e) => handleInputChange('lud16', e.target.value)}
-                          className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
+                            fieldErrors.lud16 ? 'border-red-500' : 'border-accent-300'
+                          }`}
                           placeholder="user@domain.com"
                         />
-                        <p className="mt-1 text-xs text-accent-600">
-                          Modern Lightning Address format. Example: satoshi@getalby.com
-                        </p>
+                        {fieldErrors.lud16 ? (
+                          <p className="mt-1 text-sm text-red-600">{fieldErrors.lud16}</p>
+                        ) : (
+                          <p className="mt-1 text-xs text-accent-600">
+                            Modern Lightning Address format. Example: satoshi@getalby.com
+                          </p>
+                        )}
                       </>
                     ) : (
                       <p className="text-primary-600">
@@ -462,12 +493,18 @@ export default function ProfilePage() {
                           type="text"
                           value={editForm.lud06 || ''}
                           onChange={(e) => handleInputChange('lud06', e.target.value)}
-                          className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
+                            fieldErrors.lud06 ? 'border-red-500' : 'border-accent-300'
+                          }`}
                           placeholder="lnurl1..."
                         />
-                        <p className="mt-1 text-xs text-accent-600">
-                          Legacy LNURL format. Starts with &ldquo;lnurl1&rdquo;. Most users should use Lightning Address instead.
-                        </p>
+                        {fieldErrors.lud06 ? (
+                          <p className="mt-1 text-sm text-red-600">{fieldErrors.lud06}</p>
+                        ) : (
+                          <p className="mt-1 text-xs text-accent-600">
+                            Legacy LNURL format. Starts with &ldquo;lnurl1&rdquo;. Most users should use Lightning Address instead.
+                          </p>
+                        )}
                       </>
                     ) : (
                       <p className="text-primary-600 break-all">
@@ -487,20 +524,26 @@ export default function ProfilePage() {
                           type="text"
                           value={editForm.nip05 || ''}
                           onChange={(e) => handleInputChange('nip05', e.target.value)}
-                          className="w-full px-4 py-3 border border-accent-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
+                            fieldErrors.nip05 ? 'border-red-500' : 'border-accent-300'
+                          }`}
                           placeholder="user@domain.com"
                         />
-                        <p className="mt-1 text-xs text-accent-600">
-                          DNS-based identity verification. Example: alice@example.com.{' '}
-                          <a 
-                            href="https://github.com/nostr-protocol/nips/blob/master/05.md" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-accent-700 hover:text-accent-800 underline"
-                          >
-                            Learn more about NIP-05
-                          </a>
-                        </p>
+                        {fieldErrors.nip05 ? (
+                          <p className="mt-1 text-sm text-red-600">{fieldErrors.nip05}</p>
+                        ) : (
+                          <p className="mt-1 text-xs text-accent-600">
+                            DNS-based identity verification. Example: alice@example.com.{' '}
+                            <a 
+                              href="https://github.com/nostr-protocol/nips/blob/master/05.md" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-accent-700 hover:text-accent-800 underline"
+                            >
+                              Learn more about NIP-05
+                            </a>
+                          </p>
+                        )}
                       </>
                     ) : (
                       <div className="flex items-center gap-2">
