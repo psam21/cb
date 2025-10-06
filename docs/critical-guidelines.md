@@ -478,6 +478,32 @@ Unsigned event → Sign → Publish
 
 **Status: ✅ Fully aligned with Shop pattern (as of 2025-10-03)**
 
+### ✅ CORRECT: Profile Metadata Publishing
+
+```text
+useUserProfile.ts (Hook)
+  ↓ calls
+ProfileBusinessService.updateUserProfile() (Business Layer)
+  ↓ calls
+ProfileBusinessService.publishProfile() (Publishing)
+  ↓ calls
+GenericEventService.signEvent() + GenericRelayService.publishEvent() (Generic Layer)
+  ↓ returns
+Kind 0 metadata event → Publish to relays
+```
+
+**Critical Patterns:**
+
+- Kind 0 metadata events (user profile information)
+- Image upload + cropping workflow (react-easy-crop)
+- Field-level validation with inline error display
+- NIP-05 DNS-based verification (real-time status checking)
+- Multi-relay publishing with partial failure handling
+- Immediate publish after image upload (no explicit save needed)
+- State propagation via auth store to all components
+
+**Status: ✅ Production-ready (as of 2025-10-06)**
+
 ### ❌ WRONG: Manual Event Building (NEVER DO THIS)
 
 ```text

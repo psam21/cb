@@ -9,6 +9,7 @@ import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 import { ImageUpload } from '@/components/profile/ImageUpload';
 import { validateProfileFields } from '@/utils/profileValidation';
+import { verifyNIP05 } from '@/utils/nip05';
 
 // Dynamic import for RichTextEditor (client-only for Vercel compatibility)
 const RichTextEditor = dynamic(
@@ -51,11 +52,35 @@ export default function ProfilePage() {
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [isNip05Verified, setIsNip05Verified] = useState(false);
+  const [isVerifyingNip05, setIsVerifyingNip05] = useState(false);
 
   // Ensure we're on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Verify NIP-05 when profile loads or nip05 field changes
+  useEffect(() => {
+    const verifyNip05Status = async () => {
+      if (!profile?.nip05 || !user?.pubkey) {
+        setIsNip05Verified(false);
+        return;
+      }
+
+      setIsVerifyingNip05(true);
+      try {
+        const result = await verifyNIP05(profile.nip05, user.pubkey);
+        setIsNip05Verified(result !== null);
+      } catch (error) {
+        setIsNip05Verified(false);
+      } finally {
+        setIsVerifyingNip05(false);
+      }
+    };
+
+    verifyNip05Status();
+  }, [profile?.nip05, user?.pubkey]);
 
   // Show loading state during hydration
   if (!isClient) {
@@ -132,6 +157,27 @@ export default function ProfilePage() {
       }
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Failed to publish profile');
+    }
+  };
+
+  const handleReVerifyNip05 = async () => {
+    if (!editForm.nip05 || !user?.pubkey) return;
+
+    setIsVerifyingNip05(true);
+    try {
+      const result = await verifyNIP05(editForm.nip05, user.pubkey);
+      setIsNip05Verified(result !== null);
+      
+      if (result) {
+        alert('✅ NIP-05 verified successfully!');
+      } else {
+        alert('❌ NIP-05 verification failed. Please check your identifier and DNS setup.');
+      }
+    } catch (error) {
+      setIsNip05Verified(false);
+      alert('❌ NIP-05 verification failed. Please try again.');
+    } finally {
+      setIsVerifyingNip05(false);
     }
   };
 
@@ -520,15 +566,27 @@ export default function ProfilePage() {
                     </label>
                     {isEditing ? (
                       <>
-                        <input
-                          type="text"
-                          value={editForm.nip05 || ''}
-                          onChange={(e) => handleInputChange('nip05', e.target.value)}
-                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
-                            fieldErrors.nip05 ? 'border-red-500' : 'border-accent-300'
-                          }`}
-                          placeholder="user@domain.com"
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={editForm.nip05 || ''}
+                            onChange={(e) => handleInputChange('nip05', e.target.value)}
+                            className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
+                              fieldErrors.nip05 ? 'border-red-500' : 'border-accent-300'
+                            }`}
+                            placeholder="user@domain.com"
+                          />
+                          {editForm.nip05 && (
+                            <button
+                              type="button"
+                              onClick={handleReVerifyNip05}
+                              disabled={isVerifyingNip05}
+                              className="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                              {isVerifyingNip05 ? 'Verifying...' : 'Verify'}
+                            </button>
+                          )}
+                        </div>
                         {fieldErrors.nip05 ? (
                           <p className="mt-1 text-sm text-red-600">{fieldErrors.nip05}</p>
                         ) : (
@@ -548,12 +606,34 @@ export default function ProfilePage() {
                     ) : (
                       <div className="flex items-center gap-2">
                         <p className="text-primary-600">
-                          {profile?.nip05 || 'Not verified'}
+                          {profile?.nip05 || 'Not set'}
                         </p>
                         {profile?.nip05 && (
-                          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
+                          <>
+                            {isVerifyingNip05 ? (
+                              <div className="flex items-center gap-1 text-accent-600">
+                                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-xs">Verifying...</span>
+                              </div>
+                            ) : isNip05Verified ? (
+                              <div className="flex items-center gap-1" title="NIP-05 Verified">
+                                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-xs text-green-600 font-medium">Verified</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1" title="NIP-05 Not Verified">
+                                <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-xs text-yellow-600 font-medium">Not Verified</span>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     )}

@@ -77,6 +77,140 @@ This document identifies proven, production-tested implementations that should b
 
 ---
 
+### Profile Metadata Publishing Flow
+
+**Status**: ✅ Production-ready (as of 2025-10-06)  
+**Use As Reference For**: User profile editing, Kind 0 metadata events, image upload with cropping
+
+**Key Components**:
+
+- Page: `/src/app/profile/page.tsx`
+- Service: `/src/services/business/ProfileBusinessService.ts`
+- Hook: `/src/hooks/useUserProfile.ts`
+- Components: `/src/components/profile/ImageUpload.tsx`, `/src/components/profile/ImageCropper.tsx`
+- Validation: `/src/utils/profileValidation.ts`
+- NIP-05: `/src/utils/nip05.ts`
+
+**Critical Patterns to Replicate**:
+
+1. **Kind 0 Metadata Events**: Profile data as JSON-stringified content
+   - No tags required (Kind 0 is simple metadata)
+   - All fields in content object (display_name, about, picture, banner, etc.)
+   - Event creation through ProfileBusinessService → GenericEventService
+
+2. **Image Upload + Cropping Workflow**:
+   - Select image → Show cropper → Crop → Upload to Blossom → Publish profile
+   - Uses `react-easy-crop` for mobile-friendly cropping
+   - Aspect ratios: 1:1 (square) for profile, 3:1 (wide) for banner
+   - Canvas-based image processing to blob before upload
+   - Reuses `useMediaUpload` hook for Blossom uploads
+
+3. **Field-Level Validation**:
+   - Validation utilities return `{ isValid: boolean; error?: string }`
+   - Pre-publish validation blocks save if errors exist
+   - Inline error messages with red borders
+   - Character limits enforced (display_name: 100, about: 1000)
+   - URL validation, email format validation, date validation
+
+4. **NIP-05 Verification**:
+   - DNS-based identity verification
+   - Real-time verification on profile load
+   - Shows verified/unverified status with appropriate badges
+   - "Verify" button for manual re-checking
+   - Uses `verifyNIP05(identifier, pubkey)` utility
+
+5. **State Management Integration**:
+   - Updates auth store after successful publish
+   - Zustand persist middleware saves to localStorage
+   - Profile updates propagate to Header and all components
+   - Reactive state management via Zustand
+
+6. **Multi-Relay Publishing**:
+   - Publishes to all configured relays
+   - Tracks succeeded/failed relays separately
+   - Shows relay count in success message
+   - Allows partial success (some relays succeed, some fail)
+
+7. **Immediate Image Publishing**:
+   - Profile picture/banner upload triggers immediate publish
+   - No need to click "Save" after image upload
+   - Updates visible immediately across app
+
+**Service Layer Architecture**:
+
+```text
+Profile Page (UI)
+  ↓
+useUserProfile (Hook Layer)
+  ↓
+ProfileBusinessService.updateUserProfile() (Business Layer)
+  ↓
+ProfileBusinessService.publishProfile() (Publishing)
+  ↓
+GenericEventService.signEvent() + GenericRelayService.publishEvent() (Generic Layer)
+  ↓
+Nostr Relays
+```
+
+**Validation Pattern**:
+
+```typescript
+// Pre-publish validation
+const errors = validateProfileFields(editForm);
+if (Object.keys(errors).length > 0) {
+  setFieldErrors(errors);
+  setSaveError('Please fix the errors before publishing');
+  return;
+}
+```
+
+**NIP-05 Verification Pattern**:
+
+```typescript
+// Real-time verification
+useEffect(() => {
+  const verifyNip05Status = async () => {
+    if (!profile?.nip05 || !user?.pubkey) {
+      setIsNip05Verified(false);
+      return;
+    }
+    const result = await verifyNIP05(profile.nip05, user.pubkey);
+    setIsNip05Verified(result !== null);
+  };
+  verifyNip05Status();
+}, [profile?.nip05, user?.pubkey]);
+```
+
+**Image Cropping Pattern**:
+
+```typescript
+// Cropping workflow
+Select image → Show ImageCropper modal
+  ↓
+User adjusts crop + zoom
+  ↓
+Canvas processing to blob
+  ↓
+Upload blob via useMediaUpload
+  ↓
+Publish profile with new image URL
+```
+
+**Profile Alignment Checklist**:
+
+- [x] Kind 0 metadata event structure
+- [x] Image upload + cropping integration
+- [x] Field-level validation with inline errors
+- [x] NIP-05 DNS verification
+- [x] Auth store integration
+- [x] Multi-relay publishing with tracking
+- [x] Immediate image publishing
+- [x] State propagation across app
+- [x] SOA compliance (strict layer separation)
+- [x] Code reuse (GenericEventService, GenericRelayService, GenericBlossomService)
+
+---
+
 ## 📋 When to Use This Document
 
 ### Trigger Phrases:
