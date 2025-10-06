@@ -2,6 +2,7 @@ import { bech32 } from '@scure/base';
 import { logger } from '@/services/core/LoggingService';
 import { AppError } from '@/errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
+import { NostrSigner } from '@/types/nostr';
 
 export interface UserProfile {
   display_name: string;
@@ -12,6 +13,8 @@ export interface UserProfile {
   bot: boolean;
   birthday: string;
   nip05?: string;  // NIP-05 identifier (e.g., "alice@example.com")
+  lud06?: string;  // LNURL for lightning tips (legacy)
+  lud16?: string;  // Lightning address (modern, e.g., "user@domain.com")
 }
 
 export interface User {
@@ -101,6 +104,8 @@ export class ProfileBusinessService {
         bot: Boolean(content.bot),
         birthday: content.birthday || '',
         nip05: content.nip05 || undefined,
+        lud06: content.lud06 || undefined,
+        lud16: content.lud16 || undefined,
       };
 
       logger.debug('Parsed profile metadata', { 
@@ -109,6 +114,7 @@ export class ProfileBusinessService {
         hasPicture: !!profile.picture,
         hasWebsite: !!profile.website,
         hasNip05: !!profile.nip05,
+        hasLud16: !!profile.lud16,
       });
 
       return profile;
@@ -206,6 +212,8 @@ export class ProfileBusinessService {
       bot: profile.bot || false,
       birthday: profile.birthday || '',
       nip05: profile.nip05 || undefined,
+      lud06: profile.lud06 || undefined,
+      lud16: profile.lud16 || undefined,
     };
   }
 
@@ -249,6 +257,245 @@ export class ProfileBusinessService {
         pubkey: pubkey.substring(0, 8) + '...'
       });
       return null;
+    }
+  }
+
+  /**
+   * Create a Kind 0 metadata event from user profile
+   */
+  public async createProfileEvent(
+    profile: UserProfile,
+    signer: NostrSigner
+  ): Promise<{ success: boolean; event?: Omit<import('@/types/nostr').NostrEvent, 'id' | 'sig'>; error?: string }> {
+    try {
+      logger.info('Creating Kind 0 profile metadata event', {
+        service: 'ProfileBusinessService',
+        method: 'createProfileEvent',
+        hasDisplayName: !!profile.display_name,
+        hasPicture: !!profile.picture,
+        hasNip05: !!profile.nip05,
+      });
+
+      const pubkey = await signer.getPublicKey();
+      const now = Math.floor(Date.now() / 1000);
+
+      // Validate profile before creating event
+      const validation = this.validateProfile(profile);
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: `Profile validation failed: ${validation.errors.join(', ')}`,
+        };
+      }
+
+      // Create Kind 0 event content (JSON stringified profile metadata)
+      const content = JSON.stringify({
+        name: profile.display_name || '',
+        display_name: profile.display_name || '',
+        about: profile.about || '',
+        picture: profile.picture || '',
+        banner: profile.banner || '',
+        website: profile.website || '',
+        nip05: profile.nip05 || undefined,
+        lud06: profile.lud06 || undefined, // Legacy LNURL
+        lud16: profile.lud16 || undefined, // Lightning address
+        bot: profile.bot || false,
+        birthday: profile.birthday || '',
+      });
+
+      // Create Kind 0 event structure
+      const event: Omit<import('@/types/nostr').NostrEvent, 'id' | 'sig'> = {
+        kind: 0, // Kind 0 = user metadata
+        pubkey,
+        created_at: now,
+        tags: [], // Kind 0 events don't typically have tags
+        content,
+      };
+
+      logger.info('Kind 0 event created successfully', {
+        service: 'ProfileBusinessService',
+        method: 'createProfileEvent',
+        pubkey: pubkey.substring(0, 8) + '...',
+        contentLength: content.length,
+      });
+
+      return {
+        success: true,
+        event,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create profile event';
+      logger.error('Failed to create profile event', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ProfileBusinessService',
+        method: 'createProfileEvent',
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Publish profile to Nostr relays
+   */
+  public async publishProfile(
+    profile: UserProfile,
+    signer: NostrSigner
+  ): Promise<{
+    success: boolean;
+    eventId?: string;
+    publishedRelays: string[];
+    failedRelays: string[];
+    error?: string;
+  }> {
+    try {
+      logger.info('Publishing profile to relays', {
+        service: 'ProfileBusinessService',
+        method: 'publishProfile',
+        hasDisplayName: !!profile.display_name,
+      });
+
+      // Create Kind 0 event
+      const eventResult = await this.createProfileEvent(profile, signer);
+      if (!eventResult.success || !eventResult.event) {
+        return {
+          success: false,
+          publishedRelays: [],
+          failedRelays: [],
+          error: eventResult.error || 'Failed to create profile event',
+        };
+      }
+
+      // Sign the event
+      const { signEvent } = await import('@/services/generic/GenericEventService');
+      const signingResult = await signEvent(eventResult.event, signer);
+
+      if (!signingResult.success || !signingResult.signedEvent) {
+        return {
+          success: false,
+          publishedRelays: [],
+          failedRelays: [],
+          error: signingResult.error || 'Failed to sign profile event',
+        };
+      }
+
+      // Publish to relays
+      const { publishEvent } = await import('@/services/generic/GenericRelayService');
+      const publishResult = await publishEvent(signingResult.signedEvent, signer);
+
+      if (!publishResult.success) {
+        return {
+          success: false,
+          eventId: signingResult.signedEvent.id,
+          publishedRelays: publishResult.publishedRelays,
+          failedRelays: publishResult.failedRelays,
+          error: publishResult.error || 'Failed to publish to all relays',
+        };
+      }
+
+      logger.info('Profile published successfully', {
+        service: 'ProfileBusinessService',
+        method: 'publishProfile',
+        eventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays.length,
+        failedRelays: publishResult.failedRelays.length,
+      });
+
+      return {
+        success: true,
+        eventId: signingResult.signedEvent.id,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to publish profile';
+      logger.error('Failed to publish profile', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ProfileBusinessService',
+        method: 'publishProfile',
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        publishedRelays: [],
+        failedRelays: [],
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Update user profile - validates, creates event, signs, and publishes
+   * Main entry point for profile updates
+   */
+  public async updateUserProfile(
+    updates: Partial<UserProfile>,
+    currentProfile: UserProfile,
+    signer: NostrSigner
+  ): Promise<{ success: boolean; error?: string; eventId?: string; publishedRelays?: string[]; failedRelays?: string[] }> {
+    try {
+      logger.info('Updating user profile', {
+        service: 'ProfileBusinessService',
+        method: 'updateUserProfile',
+        updatedFields: Object.keys(updates),
+      });
+
+      // Merge updates with current profile
+      const updatedProfile: UserProfile = {
+        ...currentProfile,
+        ...updates,
+      };
+
+      // Validate merged profile
+      const validation = this.validateProfile(updatedProfile);
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: `Profile validation failed: ${validation.errors.join(', ')}`,
+        };
+      }
+
+      // Publish to Nostr
+      const publishResult = await this.publishProfile(updatedProfile, signer);
+
+      if (!publishResult.success) {
+        return {
+          success: false,
+          error: publishResult.error,
+          eventId: publishResult.eventId,
+          publishedRelays: publishResult.publishedRelays,
+          failedRelays: publishResult.failedRelays,
+        };
+      }
+
+      logger.info('User profile updated successfully', {
+        service: 'ProfileBusinessService',
+        method: 'updateUserProfile',
+        eventId: publishResult.eventId,
+        publishedRelays: publishResult.publishedRelays.length,
+      });
+
+      return {
+        success: true,
+        eventId: publishResult.eventId,
+        publishedRelays: publishResult.publishedRelays,
+        failedRelays: publishResult.failedRelays,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      logger.error('Failed to update profile', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ProfileBusinessService',
+        method: 'updateUserProfile',
+        error: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
     }
   }
 
