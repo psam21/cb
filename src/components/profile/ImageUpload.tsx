@@ -7,6 +7,7 @@ import React, { useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
+import { ImageCropper } from './ImageCropper';
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -14,6 +15,7 @@ interface ImageUploadProps {
   label: string;
   aspectRatio?: 'square' | 'banner'; // square for profile pic, banner for banner image
   maxSizeMB?: number;
+  enableCrop?: boolean; // Enable cropping feature
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -21,12 +23,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   onImageUploaded,
   label,
   aspectRatio = 'square',
-  maxSizeMB = 10
+  maxSizeMB = 10,
+  enableCrop = true
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   const { getSigner } = useNostrSigner();
   const { uploadFiles, uploadState } = useMediaUpload();
@@ -34,6 +39,32 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const isUploading = uploadState.isUploading;
   const uploadProgress = uploadState.progress?.overallProgress || 0;
   const uploadHookError = uploadState.error;
+
+  const uploadImage = useCallback(async (file: File) => {
+    try {
+      // Get signer
+      const signer = await getSigner();
+      if (!signer) {
+        setUploadError('No Nostr signer available. Please install a Nostr browser extension.');
+        return;
+      }
+
+      // Upload to Blossom
+      const result = await uploadFiles([file], signer);
+      
+      if (result.success && result.uploadedFiles.length > 0) {
+        const uploadedUrl = result.uploadedFiles[0].url;
+        onImageUploaded(uploadedUrl);
+        setPreview(null);
+      } else if (result.failedFiles.length > 0) {
+        setUploadError(result.failedFiles[0].error || 'Failed to upload image');
+      } else {
+        setUploadError('Failed to upload image');
+      }
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
+    }
+  }, [getSigner, onImageUploaded, uploadFiles]);
 
   const handleFileSelect = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -58,34 +89,45 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     // Show preview
     const reader = new FileReader();
     reader.onloadend = () => {
-      setPreview(reader.result as string);
+      const imageDataUrl = reader.result as string;
+      
+      if (enableCrop) {
+        // Show cropper
+        setImageToCrop(imageDataUrl);
+        setShowCropper(true);
+      } else {
+        // Upload directly without cropping
+        setPreview(imageDataUrl);
+        uploadImage(file);
+      }
     };
     reader.readAsDataURL(file);
+  }, [maxSizeMB, enableCrop, uploadImage]);
 
-    try {
-      // Get signer
-      const signer = await getSigner();
-      if (!signer) {
-        setUploadError('No Nostr signer available. Please install a Nostr browser extension.');
-        return;
-      }
+  const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
+    setShowCropper(false);
+    setImageToCrop(null);
 
-      // Upload to Blossom
-      const result = await uploadFiles([file], signer);
-      
-      if (result.success && result.uploadedFiles.length > 0) {
-        const uploadedUrl = result.uploadedFiles[0].url;
-        onImageUploaded(uploadedUrl);
-        setPreview(null);
-      } else if (result.failedFiles.length > 0) {
-        setUploadError(result.failedFiles[0].error || 'Failed to upload image');
-      } else {
-        setUploadError('Failed to upload image');
-      }
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
-    }
-  }, [getSigner, maxSizeMB, onImageUploaded, uploadFiles]);
+    // Convert blob to File
+    const croppedFile = new File([croppedBlob], 'cropped-image.jpg', {
+      type: 'image/jpeg',
+    });
+
+    // Show preview of cropped image
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(croppedFile);
+
+    // Upload the cropped image
+    await uploadImage(croppedFile);
+  }, [uploadImage]);
+
+  const handleCropCancel = useCallback(() => {
+    setShowCropper(false);
+    setImageToCrop(null);
+  }, []);
 
   const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -230,6 +272,16 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           ? 'Recommended: 1500x500px or 3:1 aspect ratio'
           : 'Recommended: Square image (1:1 aspect ratio)'}
       </p>
+
+      {/* Image Cropper Modal */}
+      {showCropper && imageToCrop && (
+        <ImageCropper
+          imageSrc={imageToCrop}
+          aspect={aspectRatio === 'banner' ? 3 : 1}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 };
