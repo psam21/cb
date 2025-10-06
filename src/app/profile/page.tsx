@@ -37,11 +37,8 @@ export default function ProfilePage() {
   const { getSigner } = useNostrSigner();
   const { 
     profile, 
-    stats, 
     isLoadingProfile, 
-    isLoadingStats, 
-    profileError, 
-    statsError,
+    profileError,
     publishProfile,
     isPublishing,
     publishError,
@@ -770,36 +767,6 @@ export default function ProfilePage() {
                   maxSizeMB={5}
                   showOverlayButton={true}
                 />
-              </div>
-            </div>
-
-            {/* Statistics */}
-            <div className="card">
-              <div className="p-6">
-                <h3 className="text-lg font-serif font-bold text-accent-800 mb-4">Shop Statistics</h3>
-                {isLoadingStats ? (
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-accent-600">Loading stats...</p>
-                  </div>
-                ) : statsError ? (
-                  <div className="text-center">
-                    <p className="text-sm text-red-600">{statsError}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-accent-600 font-medium">Products Created</span>
-                      <span className="font-bold text-accent-800 bg-accent-100 px-2 py-1 rounded">{stats?.productsCreated || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-accent-600 font-medium">Last Active</span>
-                      <span className="font-bold text-accent-800 bg-accent-100 px-2 py-1 rounded">
-                        {stats?.lastActive ? new Date(stats.lastActive).toLocaleDateString() : 'Never'}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
