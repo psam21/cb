@@ -222,7 +222,14 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
                 {/* Context tag if present */}
                 {conversation.context && (
-                  <div className="mt-1">
+                  <div className="mt-1 flex items-center gap-2">
+                    {conversation.context.imageUrl && (
+                      <img 
+                        src={conversation.context.imageUrl} 
+                        alt={conversation.context.title || 'Context'}
+                        className="w-8 h-8 rounded object-cover flex-shrink-0"
+                      />
+                    )}
                     <span className="inline-block text-xs px-2 py-0.5 bg-accent-100 text-accent-700 rounded">
                       {conversation.context.type === 'product' ? '🛍️' : '🏛️'} {conversation.context.title || conversation.context.id}
                     </span>
