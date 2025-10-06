@@ -33,6 +33,8 @@ function MessagesPageContent() {
   React.useEffect(() => {
     const recipientParam = searchParams?.get('recipient');
     const contextParam = searchParams?.get('context'); // Format: "product:123" or "heritage:456"
+    const contextTitleParam = searchParams?.get('contextTitle');
+    const contextImageParam = searchParams?.get('contextImage');
     
     if (recipientParam && !selectedPubkey) {
       logger.info('Auto-selecting conversation from URL', {
@@ -40,6 +42,8 @@ function MessagesPageContent() {
         method: 'useEffect[searchParams]',
         recipient: recipientParam,
         context: contextParam,
+        contextTitle: contextTitleParam,
+        contextImage: contextImageParam,
       });
       setSelectedPubkey(recipientParam);
       
@@ -47,7 +51,12 @@ function MessagesPageContent() {
       if (contextParam) {
         const [type, id] = contextParam.split(':');
         if ((type === 'product' || type === 'heritage') && id) {
-          setConversationContext({ type, id });
+          setConversationContext({
+            type,
+            id,
+            ...(contextTitleParam && { title: contextTitleParam }),
+            ...(contextImageParam && { imageUrl: contextImageParam }),
+          });
         }
       }
     }
