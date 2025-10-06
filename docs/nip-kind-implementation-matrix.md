@@ -7,7 +7,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 | Page/Feature | NIP-01 | NIP-05 | NIP-07 | NIP-17 | NIP-23 | NIP-33 | NIP-94 | Blossom | Kind 0 | Kind 1059 | Kind 30023 |
 |--------------|--------|--------|--------|--------|--------|--------|--------|---------|--------|-----------|------------|
 | **Sign In** | Basic events | - | Signer auth | - | - | - | - | - | Profile fetch | - | - |
-| **Profile** | Event structure | Display names | Read/write | - | - | - | - | - | Profile metadata | - | - |
+| **Profile** | Event structure | DNS verification | Read/write | - | - | - | - | Image upload | Profile metadata | - | - |
 | **Messages** | Event queries | Fallback names | Signing DMs | Gift wraps | - | - | - | - | Name resolution | Encrypted DMs | - |
 | **Shop** | Event publishing | - | Product signing | - | Product content | dTag identity | - | Image upload | - | - | Product events |
 | **My Shop** | Event queries | - | Edit/delete | - | Content updates | Replace events | - | Image upload | - | - | Product CRUD |
@@ -47,9 +47,14 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - Stores pubkey in auth state
 
 ### Profile Management
-- Displays **Kind 0** metadata
-- Falls back to **NIP-05** if no display_name
-- NIP-07 for profile updates
+- Publishes **Kind 0** metadata events to Nostr relays
+- Real-time **NIP-05** DNS verification with status badges
+- **NIP-07** browser extension for signing profile updates
+- **Blossom** CDN for profile picture and banner images
+- Image cropping with react-easy-crop (1:1 and 3:1 aspect ratios)
+- Field-level validation (display_name, about, website, birthday, lud16, lud06, nip05)
+- Multi-relay publishing with success/failure tracking
+- State propagation via auth store to all components
 
 ### Messaging System
 - **NIP-17** gift-wrapped DMs (double-wrapped encryption)
@@ -140,10 +145,11 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - IPFS fallback URLs
 
 ### Profile Enhancements
-- NIP-05 verification badges
-- Profile cache (7-day TTL)
-- WebSocket profile updates
-- Lightning addresses (LNURL)
+- ✅ **NIP-05 verification** - Real-time DNS verification with verified/unverified badges (implemented 2025-10-06)
+- ✅ **Lightning addresses** - lud16 (modern) and lud06 (LNURL) support (implemented 2025-10-06)
+- ✅ **Image cropping** - react-easy-crop for profile picture and banner (implemented 2025-10-06)
+- Profile cache (7-day TTL) - planned
+- WebSocket profile updates - planned
 
 ## References
 
@@ -156,4 +162,9 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 **Last Updated**: October 6, 2025  
 **Codebase Version**: Next.js 15.4.6  
-**Active NIPs**: 7 implemented, 4 planned
+**Active NIPs**: 7 implemented, 4 planned  
+**Recent Updates**:
+- 2025-10-06: Profile page - Added NIP-05 DNS verification, Lightning addresses (lud16/lud06), image cropping
+- 2025-10-06: Profile page - Blossom integration for profile picture and banner uploads
+
+```
