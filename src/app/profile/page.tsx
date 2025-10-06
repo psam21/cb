@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
+import { useMyShopProducts } from '@/hooks/useMyShopProducts';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 import { ImageUpload } from '@/components/profile/ImageUpload';
 import { validateProfileFields } from '@/utils/profileValidation';
 import { verifyNIP05 } from '@/utils/nip05';
+import { fetchHeritageByAuthor } from '@/services/business/HeritageContentService';
 
 // Dynamic import for RichTextEditor (client-only for Vercel compatibility)
 const RichTextEditor = dynamic(
@@ -54,6 +57,9 @@ export default function ProfilePage() {
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [isNip05Verified, setIsNip05Verified] = useState(false);
   const [isVerifyingNip05, setIsVerifyingNip05] = useState(false);
+  const [contributionsCount, setContributionsCount] = useState(0);
+  const [isLoadingContributions, setIsLoadingContributions] = useState(true);
+  const { products: myProducts } = useMyShopProducts(false);
 
   // Ensure we're on the client side
   useEffect(() => {
@@ -81,6 +87,27 @@ export default function ProfilePage() {
 
     verifyNip05Status();
   }, [profile?.nip05, user?.pubkey]);
+
+  // Load contributions count
+  useEffect(() => {
+    const loadContributionsCount = async () => {
+      if (!user?.pubkey) {
+        setIsLoadingContributions(false);
+        return;
+      }
+      try {
+        setIsLoadingContributions(true);
+        const contributions = await fetchHeritageByAuthor(user.pubkey);
+        setContributionsCount(contributions.length);
+      } catch (error) {
+        console.error('Error loading contributions count:', error);
+        setContributionsCount(0);
+      } finally {
+        setIsLoadingContributions(false);
+      }
+    };
+    loadContributionsCount();
+  }, [user?.pubkey]);
 
   // Show loading state during hydration
   if (!isClient) {
@@ -667,6 +694,63 @@ export default function ProfilePage() {
                         )}
                       </div>
                     )}
+                  </div>
+
+                  {/* Culture Bridge Profile Stats */}
+                  <div className="mt-8 pt-6 border-t border-accent-200">
+                    <h3 className="text-lg font-serif font-bold text-accent-800 mb-4">Culture Bridge Profile</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Contributions */}
+                      <Link 
+                        href="/my-contributions"
+                        className="block p-4 bg-gradient-to-br from-accent-50 to-primary-50 rounded-lg border border-accent-200 hover:border-accent-300 hover:shadow-md transition-all group"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-accent-700">Contributions</span>
+                          <svg className="w-5 h-5 text-accent-600 group-hover:text-accent-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        {isLoadingContributions ? (
+                          <div className="flex items-center justify-center py-2">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-600"></div>
+                          </div>
+                        ) : (
+                          <p className="text-3xl font-bold text-accent-800">{contributionsCount}</p>
+                        )}
+                        <p className="text-xs text-accent-600 mt-1">Heritage items shared</p>
+                      </Link>
+
+                      {/* Products */}
+                      <Link 
+                        href="/my-shop"
+                        className="block p-4 bg-gradient-to-br from-primary-50 to-accent-50 rounded-lg border border-primary-200 hover:border-primary-300 hover:shadow-md transition-all group"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-primary-700">Products</span>
+                          <svg className="w-5 h-5 text-primary-600 group-hover:text-primary-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                          </svg>
+                        </div>
+                        <p className="text-3xl font-bold text-primary-800">{myProducts?.length || 0}</p>
+                        <p className="text-xs text-primary-600 mt-1">Items in your shop</p>
+                      </Link>
+
+                      {/* Exhibitions */}
+                      <Link 
+                        href="/exhibitions"
+                        className="block p-4 bg-gradient-to-br from-accent-50 to-primary-50 rounded-lg border border-accent-200 hover:border-accent-300 hover:shadow-md transition-all group"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-accent-700">Exhibitions</span>
+                          <svg className="w-5 h-5 text-accent-600 group-hover:text-accent-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <p className="text-3xl font-bold text-accent-800">0</p>
+                        <p className="text-xs text-accent-600 mt-1">Curated collections</p>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
