@@ -599,19 +599,30 @@ export class MessagingBusinessService {
         service: 'MessagingBusinessService',
         method: 'getMessages',
         totalMessages: allMessages.length,
+        otherPubkey: otherPubkey.substring(0, 8),
+        userPubkey: userPubkey.substring(0, 8),
         messages: allMessages.map(m => ({
           id: m.id?.substring(0, 8),
           senderPubkey: m.senderPubkey?.substring(0, 8),
           recipientPubkey: m.recipientPubkey?.substring(0, 8),
           createdAt: m.createdAt,
           content: m.content?.substring(0, 30),
+          // Categorize for debugging
+          category: 
+            m.senderPubkey === otherPubkey && m.recipientPubkey === userPubkey ? 'RECEIVED' :
+            m.senderPubkey === userPubkey && m.recipientPubkey === otherPubkey ? 'SENT' :
+            m.senderPubkey === userPubkey && m.recipientPubkey === userPubkey ? 'SELF-COPY-BUG' :
+            'OTHER',
         })),
       });
 
       // Filter messages for this specific conversation
-      // Note: We need to handle both new (fixed) and old (buggy) message formats:
-      // - New format: sent messages have recipientPubkey = otherPubkey
-      // - Old format: sent messages have recipientPubkey = userPubkey (buggy self-copies)
+      // Simple filter: show messages where either:
+      // 1. We received it (sender = other person, recipient = us)
+      // 2. We sent it (sender = us, recipient = other person)
+      // 
+      // Note: Self-copies where recipientPubkey = userPubkey are excluded
+      // These are from buggy Culture Bridge dev phase - not worth recovering
       const conversationMessages = allMessages
         .filter(msg => {
           // Received messages: sender is other person, recipient is us
@@ -619,49 +630,15 @@ export class MessagingBusinessService {
             return true;
           }
           
-          // Sent messages (new format): sender is us, recipient is other person
+          // Sent messages: sender is us, recipient is other person
+          // This includes:
+          // - Messages from other clients (0xchat, etc.) - properly formed
+          // - Messages from Culture Bridge (current fixed version) - properly formed
           if (msg.senderPubkey === userPubkey && msg.recipientPubkey === otherPubkey) {
             return true;
           }
           
-          // Sent messages (old buggy format): sender is us, recipient is also us (self-copy bug)
-          // Smart recovery: Match these with received messages by timestamp correlation
-          if (msg.senderPubkey === userPubkey && msg.recipientPubkey === userPubkey) {
-            // Try to match with a received message from this conversation within ±5 seconds
-            const matchingReceived = allMessages.find(m => 
-              m.senderPubkey === otherPubkey && 
-              m.recipientPubkey === userPubkey &&
-              Math.abs(m.createdAt - msg.createdAt) <= 5
-            );
-            
-            if (matchingReceived) {
-              // Found a temporal match - this message likely belongs to this conversation
-              logger.info('✅ Recovered old sent message via timestamp matching', {
-                service: 'MessagingBusinessService',
-                method: 'getMessages',
-                messageId: msg.id?.substring(0, 8),
-                content: msg.content?.substring(0, 30),
-                matchedWith: matchingReceived.id?.substring(0, 8),
-                timeDiff: Math.abs(matchingReceived.createdAt - msg.createdAt),
-              });
-              
-              // Fix the recipient to show correct conversation context
-              msg.recipientPubkey = otherPubkey;
-              return true; // Include this message
-            }
-            
-            // No temporal match found - might be a message sent without a reply
-            // or to a different conversation. Exclude to avoid misplacement.
-            logger.debug('⚠️ Old sent message with no temporal match - excluding', {
-              service: 'MessagingBusinessService',
-              method: 'getMessages',
-              messageId: msg.id?.substring(0, 8),
-              content: msg.content?.substring(0, 30),
-              timestamp: msg.createdAt,
-            });
-            return false;
-          }
-          
+          // Exclude everything else (including buggy dev-era self-copies)
           return false;
         })
         .sort((a, b) => a.createdAt - b.createdAt); // Oldest first
@@ -669,6 +646,16 @@ export class MessagingBusinessService {
       // Mark messages as sent or received
       conversationMessages.forEach(msg => {
         msg.isSent = msg.senderPubkey === userPubkey;
+      });
+
+      logger.info('Messages after filtering for conversation', {
+        service: 'MessagingBusinessService',
+        method: 'getMessages',
+        totalBeforeFilter: allMessages.length,
+        totalAfterFilter: conversationMessages.length,
+        sentMessages: conversationMessages.filter(m => m.isSent).length,
+        receivedMessages: conversationMessages.filter(m => !m.isSent).length,
+        otherPubkey: otherPubkey.substring(0, 8),
       });
 
       // Cache the messages for future use
