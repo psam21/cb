@@ -6,6 +6,7 @@ const footerLinks = {
   resources: [
     { name: 'Why Nostr?', href: '/nostr' },
     { name: 'Get Involved', href: '/get-involved' },
+    { name: 'Donate', href: '/donate' },
     { name: 'Support', href: '/support' },
     { name: 'About Us', href: '/about' },
   ],
