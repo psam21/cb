@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Copy, Check, Heart, Globe, Users, BookOpen } from 'lucide-react';
+import Image from 'next/image';
 
 const LIGHTNING_ADDRESS = 'yellowbobcat7@primal.net';
 const NPUB = 'npub1sjtntkr698y6cpy42cu4lxvpc46rlw463u2j6a7ltuhxjryecxjs4xfet8';
@@ -27,11 +28,6 @@ const impactAreas = [
 
 export default function DonateContent() {
   const [copied, setCopied] = useState(false);
-  
-  // Generate QR code URL for Lightning address
-  // Using a more reliable QR code service that handles special characters better
-  const lightningUri = `lightning:${LIGHTNING_ADDRESS}`;
-  const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(lightningUri)}&size=300&margin=2&ecLevel=M`;
 
   const copyToClipboard = async () => {
     try {
@@ -142,9 +138,8 @@ export default function DonateContent() {
                 className="flex justify-center mb-8"
               >
                 <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-primary-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={qrCodeUrl}
+                  <Image
+                    src="/donate.png"
                     alt="Lightning Address QR Code"
                     width={300}
                     height={300}
