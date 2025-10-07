@@ -28,8 +28,10 @@ const impactAreas = [
 export default function DonateContent() {
   const [copied, setCopied] = useState(false);
   
-  // Generate QR code URL using QR Server API
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=lightning:${encodeURIComponent(LIGHTNING_ADDRESS)}&color=1e3a8a&bgcolor=ffffff`;
+  // Generate QR code URL for Lightning address
+  // Using a more reliable QR code service that handles special characters better
+  const lightningUri = `lightning:${LIGHTNING_ADDRESS}`;
+  const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(lightningUri)}&size=300&margin=2&ecLevel=M`;
 
   const copyToClipboard = async () => {
     try {
