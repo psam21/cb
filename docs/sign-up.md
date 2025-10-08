@@ -1,6 +1,6 @@
 # Sign-Up Flow Documentation
 
-**Document Version**: 1.0  
+**Document Version**: 2.0  
 **Last Updated**: October 8, 2025  
 **Status**: Specification - Implementation Pending
 
@@ -9,6 +9,20 @@
 ## Overview
 
 The Culture Bridge sign-up flow enables first-time users to create a Nostr identity and immediately join the decentralized network. This is a **100% self-sovereign authentication system** with no centralized account creation, email verification, or password management.
+
+### UX Optimization (v2.0)
+
+**Key Change**: This version auto-publishes a minimal Kind 0 profile immediately after key generation to ensure **every user has a profile**, even if they skip optional enrichment steps.
+
+**Rationale**:
+
+- **Problem**: Previous flow assumed users would manually create profiles in Step 4, risking skipped profiles
+- **Solution**: Auto-publish basic Kind 0 in Step 2 (background), then allow optional enrichment in Step 4
+- **Benefits**:
+  - Guarantees all users have discoverable profiles
+  - Reduces friction by combining backup + storage into single step
+  - Makes profile enrichment explicitly optional (better UX clarity)
+  - Faster onboarding with fewer mandatory steps
 
 ### Core Principles
 
@@ -44,35 +58,37 @@ The Culture Bridge sign-up flow enables first-time users to create a Nostr ident
 │    - Generate private key (nsec1...)                        │
 │    - Derive public key (npub1...)                           │
 │    - Display keys to user with security warning             │
+│    ⚡ AUTO-PUBLISH: Basic Kind 0 profile in background      │
+│       (ensures every user has a profile, even if minimal)   │
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
-│ 3. Secure Key Backup (MANDATORY)                            │
-│    - Download keys as encrypted text file                   │
-│    - Display QR codes for mobile backup                     │
-│    - User confirms backup via checkbox                      │
+│ 3. Backup + Storage (COMBINED STEP)                         │
+│    A) Backup Keys (MANDATORY)                               │
+│       - Download keys as encrypted text file                │
+│       - Display QR codes for mobile backup                  │
+│       - User confirms backup via checkbox                   │
+│                                                              │
+│    B) Storage Selection (MANDATORY)                         │
+│       - Option A: Store in browser localStorage             │
+│       - Option B: Use browser extension (recommended)       │
+│       - Option C: Manual backup only (advanced)             │
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
-│ 4. Profile Creation (Optional)                              │
-│    - Display name (recommended)                             │
-│    - Avatar image (optional)                                │
-│    - Bio/About (optional)                                   │
-│    - Creates Kind 0 metadata event                          │
+│ 4. Profile Enrichment (OPTIONAL)                            │
+│    - Display name (add/update)                              │
+│    - Avatar image (add/update)                              │
+│    - Bio/About (add/update)                                 │
+│    - UPDATES existing Kind 0 event from Step 2              │
+│    - User can skip this step entirely                       │
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
-│ 5. Key Storage Selection                                    │
-│    - Option A: Store in browser localStorage (convenience)  │
-│    - Option B: Use browser extension (security, recommended)│
-│    - Option C: Manual copy (advanced users)                 │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────────────────┐
-│ 6. Complete Sign-Up                                         │
-│    - Publish Kind 0 profile event to relays                 │
-│    - Store pubkey in auth store                             │
-│    - Redirect to /explore or /profile                       │
+│ 5. Final Confirmation                                       │
+│    - Review key security warnings                           │
+│    - "I understand and accept responsibility" checkbox      │
+│    - Redirect to /profile after confirmation                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -126,27 +142,34 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
   - Display generated nsec/npub
   - Security warning callout
   - Copy-to-clipboard functionality
+  - ⚡ Triggers background Kind 0 publish after generation
 
-- **Path**: `/src/components/auth/KeyBackupStep.tsx`
+- **Path**: `/src/components/auth/KeyBackupStorageStep.tsx` (COMBINED)
   - Download encrypted backup button
   - QR code generation (nsec + npub)
   - Backup confirmation checkbox
   - "I understand I'll lose my account if I lose my keys" acknowledgment
-
-- **Path**: `/src/components/auth/ProfileSetupStep.tsx`
-  - Display name input (max 100 chars)
-  - Avatar upload (Blossom integration)
-  - Bio textarea (max 1000 chars)
-  - Optional fields notice
-  - Image cropping preview (1:1 aspect ratio)
-
-- **Path**: `/src/components/auth/KeyStorageStep.tsx`
   - Storage option selector (localStorage vs extension vs manual)
   - Browser extension detection (check for `window.nostr`)
   - Security comparison table
   - Recommendations based on detected capabilities
 
+- **Path**: `/src/components/auth/ProfileSetupStep.tsx` (NOW OPTIONAL)
+  - Display name input (max 100 chars)
+  - Avatar upload (Blossom integration)
+  - Bio textarea (max 1000 chars)
+  - "Skip for now" button (prominent)
+  - Image cropping preview (1:1 aspect ratio)
+  - UPDATES existing Kind 0 event from Step 2
+
+- **Path**: `/src/components/auth/FinalConfirmationStep.tsx` (NEW)
+  - Security warnings review
+  - "I understand and accept responsibility" checkbox
+  - Configuration summary display
+  - Redirect to /profile on confirmation
+
 #### 4. **State Management Hook**
+
 - **Path**: `/src/hooks/useNostrSignUp.ts`
 - **Purpose**: Orchestrate sign-up workflow, state management
 - **Responsibilities**:
@@ -154,22 +177,25 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
   - Store form data (display name, bio, avatar)
   - Store generated keys (TEMPORARILY, until backup confirmed)
   - Call `AuthBusinessService` methods
+  - Trigger background Kind 0 publish after key generation
   - Handle errors and loading states
   - Clear sensitive data after completion
 
 #### 5. **Business Service** [NEW]
+
 - **Path**: `/src/services/business/AuthBusinessService.ts`
 - **Purpose**: Authentication and identity management orchestration
 - **Responsibilities**:
   - `generateNostrKeys()`: Create nsec/npub pair
-  - `createInitialProfile()`: Publish Kind 0 event with minimal profile
-  - `storeKeysLocally()`: Save to localStorage (encrypted with user passphrase)
-  - `exportKeysToFile()`: Generate encrypted backup file
-  - `generateKeyQRCodes()`: Create QR codes for mobile backup
-  - `validateProfileData()`: Business rules for profile fields
-  - Calls `NostrEventService` and `GenericEventService`
+  - `publishBasicProfile(pubkey: string)`: Auto-publish minimal Kind 0 after key generation
+  - `updateProfile(data)`: Update existing Kind 0 with enriched profile data
+  - `validateNIP05(identifier)`: Verify NIP-05 identifiers
+  - `encryptPrivateKey(nsec, passphrase)`: Encrypt keys for storage
+  - Delegates to `GenericEventService.createEvent()` for Kind 0 creation
+  - Delegates to `GenericBlossomService.upload()` for avatar uploads
 
 #### 6. **Utility Functions** [NEW]
+
 - **Path**: `/src/utils/keyManagement.ts`
 - **Purpose**: Client-side key cryptography utilities
 - **Responsibilities**:
@@ -303,16 +329,35 @@ Step 4: Validation
 ```
 
 **Publishing Flow**:
+
 ```
-ProfileSetupStep (form data)
+Step 2: KeyGenerationStep
   ↓
-useNostrSignUp.createProfile()
+  [User clicks "Generate Keys"]
   ↓
-AuthBusinessService.createInitialProfile()
+useNostrSignUp.generateKeys()
   ↓
-NostrEventService.createKind0Event() [NEW METHOD]
+AuthBusinessService.generateNostrKeys()
   ↓
-GenericEventService.signEvent() [MODIFIED to accept nsec]
+AuthBusinessService.publishBasicProfile(pubkey) ⚡ BACKGROUND
+  ↓
+NostrEventService.createKind0Event() [minimal profile]
+  ↓
+GenericEventService.signEvent() [with generated nsec]
+  ↓
+GenericRelayService.publishEvent()
+  
+[THEN LATER, if user enriches profile in Step 4...]
+
+Step 4: ProfileSetupStep (optional enrichment)
+  ↓
+useNostrSignUp.updateProfile()
+  ↓
+AuthBusinessService.updateProfile()
+  ↓
+NostrEventService.createKind0Event() [UPDATED profile]
+  ↓
+GenericEventService.signEvent()
   ↓
 GenericRelayService.publishEvent()
   ↓
@@ -412,35 +457,49 @@ Auth Store updates (user profile, isAuthenticated: true)
 ### Step-by-Step Wizard
 
 **Progress Indicator**: 5 steps total
+
 1. Welcome & Options (Generate vs Import)
-2. Key Generation (Display nsec/npub)
-3. Backup Confirmation (Download + QR codes)
-4. Profile Setup (Display name, avatar, bio)
-5. Storage Selection (localStorage vs extension vs manual)
+2. Key Generation (Display nsec/npub + Auto-publish basic Kind 0)
+3. Backup + Storage (Download QR codes + Select storage method)
+4. Profile Enrichment (Optional - Update existing Kind 0)
+5. Final Confirmation (Security acknowledgment)
 
 **Navigation**:
+
 - "Back" button available on steps 2-5 (returns to previous step)
 - "Next" button enabled only when step requirements met
-- "Skip" option for step 4 (profile setup) - creates account with no metadata
+- "Skip for now" button prominently displayed on Step 4 (profile enrichment is optional)
 - "Cancel" button available on all steps (returns to `/signin` with confirmation dialog)
 
 **Visual Design**:
+
 - Large, clear security warnings (red background, white text)
 - Green checkmarks for completed steps
 - Copy-to-clipboard icons next to nsec/npub
 - QR codes displayed side-by-side (private/public)
 - Download buttons with file icons
 - Browser extension logos (Alby, nos2x, Flamingo) if detected
+- Background publishing indicator in Step 2 (spinner or "Publishing your profile...")
+
+**Key Flow Changes**:
+
+- **Step 2**: After keys are generated, a minimal Kind 0 profile is automatically published in the background (ensures every user has a profile)
+- **Step 3**: Combines backup AND storage selection (reduces friction, fewer steps)
+- **Step 4**: Now explicitly optional - updates the existing Kind 0 from Step 2 (not creates new)
+- **Step 5**: Final confirmation before redirect to /profile
 
 ### Error Handling
 
 | Error Scenario | User Message | Recovery Action |
 |----------------|--------------|-----------------|
 | Key generation fails | "Failed to generate keys. Please refresh and try again." | Retry button |
-| Backup not confirmed | "You must back up your keys before continuing." | Disable "Next" until checkbox checked |
-| Profile upload fails | "Avatar upload failed. You can add it later in your profile." | Allow skip, continue without avatar |
+| Background profile publish fails (Step 2) | "Profile publishing in progress... May take a few moments." | Non-blocking - allow user to continue, retry in background |
+| Backup not confirmed (Step 3) | "You must back up your keys before continuing." | Disable "Next" until checkbox checked |
+| Storage selection not made (Step 3) | "Please select a storage method to continue." | Disable "Next" until option selected |
+| Avatar upload fails (Step 4) | "Avatar upload failed. You can add it later in your profile." | Allow skip, continue without avatar |
+| Profile update fails (Step 4) | "Profile update failed. Your basic profile is still published." | Show error but allow skip |
 | Relay publishing fails | "Profile published to {X} of {Y} relays. Some relays are unavailable." | Show partial success, allow continue |
-| Extension not detected | "No browser extension found. We recommend installing Alby for secure key storage." | Show extension installation guide |
+| Extension not detected (Step 3) | "No browser extension found. We recommend installing Alby for secure key storage." | Show extension installation guide |
 
 ### Accessibility (A11y)
 
@@ -605,44 +664,64 @@ Auth Store updates (user profile, isAuthenticated: true)
 ## Implementation Phases
 
 ### Phase 1: Core Sign-Up Flow (MVP)
-**Scope**: Basic key generation and profile creation
-- [ ] Create page route (`/src/app/signup/page.tsx`)
-- [ ] Create `SignUpFlow` component with step navigation
-- [ ] Create `useNostrSignUp` hook
-- [ ] Create `AuthBusinessService` with key generation
-- [ ] Implement localStorage storage (encrypted)
-- [ ] Basic profile setup (display name only)
 
-### Phase 2: Enhanced Security
-**Scope**: Backup mechanisms and warnings
-- [ ] Add `KeyBackupStep` component
+**Scope**: Basic key generation and automatic profile publishing
+
+- [ ] Create page route (`/src/app/signup/page.tsx`)
+- [ ] Create `SignUpFlow` component with step navigation (5 steps)
+- [ ] Create `KeyGenerationStep` component
+- [ ] Create `useNostrSignUp` hook
+- [ ] Create `AuthBusinessService` with:
+  - `generateNostrKeys()` method
+  - `publishBasicProfile()` method (auto-publish minimal Kind 0)
+- [ ] Implement background Kind 0 publishing after key generation
+- [ ] Add success notification after keys generated + profile published
+
+### Phase 2: Backup + Storage (COMBINED)
+
+**Scope**: Combined backup and storage selection step
+
+- [ ] Create `KeyBackupStorageStep` component (combines backup + storage)
 - [ ] Implement encrypted file download
 - [ ] Generate QR codes for keys
-- [ ] Add security warning modals
-- [ ] Implement backup confirmation checkbox
+- [ ] Add storage option selector (localStorage, extension, manual)
+- [ ] Detect browser extensions (`window.nostr`)
+- [ ] Add backup confirmation checkbox (mandatory)
+- [ ] Security warnings and best practices
 
-### Phase 3: Full Profile Setup
-**Scope**: Avatar, bio, and profile enrichment
+### Phase 3: Optional Profile Enrichment
+
+**Scope**: Update existing Kind 0 with avatar, bio, display name
+
+- [ ] Create `ProfileSetupStep` component (now optional)
 - [ ] Integrate `ImageUpload` + `ImageCropper`
 - [ ] Add bio textarea
 - [ ] Upload avatar to Blossom
-- [ ] Publish complete Kind 0 event
+- [ ] Implement `updateProfile()` method in `AuthBusinessService`
+- [ ] Add prominent "Skip for now" button
+- [ ] Update existing Kind 0 event (not create new one)
 
-### Phase 4: Storage Options
-**Scope**: Browser extension and manual backup
-- [ ] Add `KeyStorageStep` component
-- [ ] Detect browser extensions (`window.nostr`)
-- [ ] Guide extension installation
-- [ ] Support nsec import into extension
-- [ ] Manual backup option (no localStorage)
+### Phase 4: Final Confirmation
+
+**Scope**: Security acknowledgment and completion
+
+- [ ] Create `FinalConfirmationStep` component
+- [ ] Display configuration summary
+- [ ] Security warnings review
+- [ ] "I understand and accept responsibility" checkbox
+- [ ] Redirect to /profile after confirmation
+- [ ] Update auth store with user data
 
 ### Phase 5: Polish & Testing
+
 **Scope**: UX improvements and comprehensive testing
+
 - [ ] Add welcome modal post-sign-up
 - [ ] Implement onboarding checklist
 - [ ] Add keyboard navigation
 - [ ] Screen reader testing
 - [ ] Security audit
+- [ ] Analytics tracking for each step
 
 ---
 
