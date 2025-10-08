@@ -94,9 +94,10 @@ Generic Service (GenericRelayService.ts)
 **Responsibilities**:
 - Call `useNostrSigner()` for signer detection
 - Orchestrate authentication flow
-- Call AuthBusinessService for authentication
+- Call ProfileBusinessService.signInWithExtension()
 - Manage sign-in state (loading, error)
-- Update auth store via Business Service
+- Update auth store with user data
+- Initialize message cache (via MessagingBusinessService)
 - Handle error cases
 
 **Interface**:
@@ -118,46 +119,46 @@ export function useNostrSignIn(): UseNostrSignInReturn {
 
 ---
 
-### Phase 2: Create/Update Business Service
+### Phase 2: Extend ProfileBusinessService
 
-**Option A: Extend AuthBusinessService** (Recommended if sign-up creates it)
+**DECISION: Use Existing ProfileBusinessService** ✅
 
-**Add Methods**:
+ProfileBusinessService already exists and handles all profile/user operations:
+- ✅ `pubkeyToNpub()` - already implemented
+- ✅ `getUserProfile()` - already implemented  
+- ✅ Profile validation and parsing - already implemented
+
+**Add Single Method**:
 ```typescript
-class AuthBusinessService {
-  // Existing sign-up methods...
+class ProfileBusinessService {
+  // ... existing methods ...
   
   /**
    * Sign in existing user with NIP-07 extension
-   * Delegates to ProfileEventService for profile fetching
+   * Orchestrates authentication flow using existing methods
    */
-  async signInWithExtension(pubkey: string): Promise<UserData> {
-    // Validate pubkey
-    // Convert to npub (delegate to utils)
-    // Fetch profile (delegate to ProfileEventService)
-    // Initialize message cache (delegate to MessagingBusinessService)
-    // Return user data
-  }
-  
-  /**
-   * Convert pubkey to npub format
-   * Delegates to keyManagement utils
-   */
-  pubkeyToNpub(pubkey: string): string {
-    return keyManagement.pubkeyToNpub(pubkey);
+  async signInWithExtension(signer: NostrSigner): Promise<{
+    success: boolean;
+    user?: User;
+    error?: string;
+  }> {
+    // 1. Get pubkey from signer
+    // 2. Convert to npub (use existing pubkeyToNpub())
+    // 3. Fetch profile (use existing getUserProfile())
+    // 4. Format profile with defaults (use existing formatProfileForDisplay())
+    // 5. Return User object { pubkey, npub, profile }
   }
 }
 ```
 
-**Option B: Create Separate SignInBusinessService** (If auth concerns should be split)
+**Why ProfileBusinessService (not AuthBusinessService)**:
+- Profile operations are already centralized here
+- Avoid creating duplicate services for user/profile concerns
+- Sign-in is fundamentally about fetching a user's profile
+- Sign-up will also need profile operations (can use same service)
+- Follows single responsibility: ProfileBusinessService = all user/profile operations
 
-**Trade-offs**:
-- Option A: Single auth service (sign-up + sign-in together)
-- Option B: Separate concerns (may duplicate some logic)
-
-**Recommendation**: Use Option A - single `AuthBusinessService` for all authentication
-
-**Estimated Time**: 1 hour
+**Estimated Time**: 30 minutes
 
 ---
 
@@ -234,9 +235,9 @@ export default function SigninPage() {
 ## Implementation Checklist
 
 ### Pre-Implementation
-- [ ] Review sign-up flow implementation (if AuthBusinessService already exists)
-- [ ] Decide: Extend AuthBusinessService or create SignInBusinessService
-- [ ] Review existing ProfileEventService capabilities
+- [x] ~~Review sign-up flow implementation~~ Decision: Use ProfileBusinessService
+- [x] ~~Decide: Extend AuthBusinessService or create SignInBusinessService~~ Decision: Extend ProfileBusinessService
+- [x] Review existing ProfileBusinessService capabilities ✅
 
 ### Phase 1: Hook Layer
 - [ ] Create `/src/hooks/useNostrSignIn.ts`
@@ -246,11 +247,12 @@ export default function SigninPage() {
 - [ ] Unit test the hook
 
 ### Phase 2: Business Service
-- [ ] Add `signInWithExtension()` to AuthBusinessService
-- [ ] Add `pubkeyToNpub()` helper (delegates to utils)
-- [ ] Ensure delegation to Event Services (no direct Nostr calls)
+- [ ] Add `signInWithExtension()` to ProfileBusinessService
+- [ ] Method should use existing `pubkeyToNpub()` and `getUserProfile()`
+- [ ] Method should use existing `formatProfileForDisplay()` for defaults
+- [ ] Return standardized User object { pubkey, npub, profile }
 - [ ] Add JSDoc comments
-- [ ] Unit test new methods
+- [ ] Unit test new method
 
 ### Phase 3: Component Layer
 - [ ] Create `/src/components/auth/SignInFlow.tsx`
@@ -294,11 +296,9 @@ src/
 │       └── SignInFlow.tsx              (Component - UI + hook calls)
 ├── hooks/
 │   └── useNostrSignIn.ts               (Hook - orchestration)
-├── services/
-│   └── business/
-│       └── AuthBusinessService.ts      (Business - delegates to Event)
-└── utils/
-    └── keyManagement.ts                (Utils - pubkey/npub conversion)
+└── services/
+    └── business/
+        └── ProfileBusinessService.ts   (Business - extended with signInWithExtension)
 ```
 
 ---
@@ -329,8 +329,8 @@ src/
 ## Dependencies
 
 - **Blocks**: None (can be done independently)
-- **Blocked By**: None (but should align with sign-up AuthBusinessService)
-- **Related**: Sign-up flow implementation (share AuthBusinessService)
+- **Blocked By**: None (ProfileBusinessService already exists)
+- **Related**: Sign-up flow implementation (will also use ProfileBusinessService for profile operations)
 
 ---
 
@@ -339,7 +339,7 @@ src/
 ✅ Sign-in page only renders component (no business logic)  
 ✅ SignInFlow component only renders UI and calls hook  
 ✅ useNostrSignIn hook orchestrates authentication  
-✅ AuthBusinessService handles all auth business logic  
+✅ ProfileBusinessService.signInWithExtension() handles auth logic  
 ✅ No direct Business Service calls from Page/Component layers  
 ✅ All existing sign-in functionality works  
 ✅ Tests pass  
@@ -357,6 +357,8 @@ src/
 
 ## Notes
 
-- This refactoring should be done AFTER the sign-up flow is implemented, so we can reuse the AuthBusinessService
-- Consider creating a unified `/docs/authentication.md` document covering both sign-in and sign-up flows
+- **ProfileBusinessService is the right choice** - it already handles all user/profile operations
+- Sign-up flow will also use ProfileBusinessService for profile creation/publishing
+- This refactoring can be done independently (doesn't depend on sign-up implementation)
 - The refactored sign-in will be much simpler than sign-up (just authentication, no key generation/backup)
+- Consider creating a unified `/docs/authentication.md` document covering both sign-in and sign-up flows after both are implemented
