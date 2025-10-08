@@ -4,31 +4,19 @@
 **Last Updated**: October 8, 2025  
 **Status**: Specification - Implementation Pending
 
-- **Path**: `/src/components/auth/KeyBackupStorageStep.tsx` (COMBINED)
-  - Download encrypted backup button
-  - Backup confirmation checkbox
-  - "I understand I'll lose my account if I lose my keys" acknowledgment
-  - localStorage storage (encrypted, automatic)
-  - Security warnings and best practices
+## Overview
 
-- **Path**: `/src/components/auth/ProfileSetupStep.tsx` (FORM WITH MANDATORY/OPTIONAL FIELDS)
-  - Display name input (MANDATORY, max 100 chars)
-  - Avatar upload (OPTIONAL - Blossom integration)
-  - Bio textarea (OPTIONAL, max 1000 chars)
-  - All fields displayed in single form
-  - Image cropping preview (1:1 aspect ratio) for avatar
-  - UPDATES existing Kind 0 event from Step 2
-  - Cannot proceed without display name
 The Culture Bridge sign-up flow enables first-time users to create a Nostr identity and immediately join the decentralized network. This is a **100% self-sovereign authentication system** with no centralized account creation, email verification, or password management.
 
 ### UX Optimization (v2.0)
 
-**Key Change**: This version auto-publishes a minimal Kind 0 profile immediately after key generation to ensure **every user has a profile**, even if they skip optional enrichment steps.
+**Key Change**: This version implements a profile-first approach where users provide their profile information (name, avatar, bio) BEFORE key generation, then everything is published together in Step 2 with a complete Kind 0 event.
 
 **Rationale**:
 
-- **Problem**: Previous flow assumed users would manually create profiles in Step 4, risking skipped profiles
-- **Solution**: Auto-publish basic Kind 0 in Step 2 (background), then allow optional enrichment in Step 4
+- **Problem**: Previous flow required users to enter profile data after seeing their keys, creating cognitive overload
+- **Solution**: Collect profile data first (Step 1), generate keys second (Step 2), then publish complete profile immediately
+- **Benefit**: Better UX flow, ensures every user has a complete profile, avatar upload timing is correct
 - **Benefits**:
   - Guarantees all users have discoverable profiles
   - Reduces friction by combining backup + storage into single step
