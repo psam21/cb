@@ -6,11 +6,9 @@
 
 - **Path**: `/src/components/auth/KeyBackupStorageStep.tsx` (COMBINED)
   - Download encrypted backup button
-  - QR code generation (nsec + npub)
   - Backup confirmation checkbox
   - "I understand I'll lose my account if I lose my keys" acknowledgment
   - localStorage storage (encrypted, automatic)
-  - Confirmation checkbox for understanding storage method
   - Security warnings and best practices
 
 - **Path**: `/src/components/auth/ProfileSetupStep.tsx` (FORM WITH MANDATORY/OPTIONAL FIELDS)
@@ -56,51 +54,40 @@ The Culture Bridge sign-up flow enables first-time users to create a Nostr ident
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 1. User lands on /signup                                    │
+│ 1. Profile Setup (STEP 1 - SHOWN FIRST)                    │
 │    "Create Your Nostr Identity"                             │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-                 ├─ Option A: "Generate New Keys"
-                 │  └─> Key Generation Flow
-                 │
-                 └─ Option B: "I already have Nostr keys"
-                    └─> Import Flow (redirects to /signin)
-                    
-┌─────────────────────────────────────────────────────────────┐
-│ 2. Key Generation (Client-Side Only)                        │
-│    - Generate private key (nsec1...)                        │
-│    - Derive public key (npub1...)                           │
-│    - Display keys to user with security warning             │
-│    ⚡ AUTO-PUBLISH: Basic Kind 0 profile in background      │
-│       (ensures every user has a profile, even if minimal)   │
+│    - Display name (MANDATORY)                               │
+│    - Avatar image (OPTIONAL) - held as File in memory       │
+│    - Bio/About (OPTIONAL)                                   │
+│    - No key generation yet - just collect profile data      │
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
-│ 3. Backup + Local Storage Confirmation                      │
+│ 2. Key Generation + Profile Publishing (STEP 2)             │
+│    - Generate private key (nsec1...)                        │
+│    - Derive public key (npub1...)                           │
+│    - Display keys to user with security warning             │
+│    ⚡ UPLOAD AVATAR: If provided in Step 1, upload to Blossom│
+│    ⚡ PUBLISH COMPLETE KIND 0: With all profile fields      │
+│       (name, avatar URL, bio - not minimal profile)         │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────────────────────┐
+│ 3. Backup + Local Storage (STEP 3)                          │
 │    A) Backup Keys (MANDATORY)                               │
 │       - Download keys as encrypted text file                │
-│       - Display QR codes for mobile backup                  │
 │       - User confirms backup via checkbox                   │
 │                                                              │
 │    B) Local Storage (AUTOMATIC)                             │
 │       - Keys stored in browser localStorage (encrypted)     │
-│       - User confirms understanding of storage method       │
+│       - No confirmation checkbox (just happens)             │
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
-│ 4. Profile Enrichment Form                                  │
-│    - Display name (MANDATORY)                               │
-│    - Avatar image (OPTIONAL)                                │
-│    - Bio/About (OPTIONAL)                                   │
-│    - UPDATES existing Kind 0 event from Step 2              │
-│    - All fields shown in single form                        │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────────────────┐
-│ 5. Final Confirmation                                       │
+│ 4. Final Confirmation (STEP 4)                              │
 │    - Review key security warnings                           │
 │    - "I understand and accept responsibility" checkbox      │
-│    - Redirect to /profile after confirmation                │
+│    - Redirect to home or /profile after confirmation        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -158,11 +145,10 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 
 - **Path**: `/src/components/auth/KeyBackupStorageStep.tsx` (COMBINED)
   - Download encrypted backup button
-  - QR code generation (nsec + npub)
   - Backup confirmation checkbox
   - "I understand I'll lose my account if I lose my keys" acknowledgment
-  - Storage option selector (localStorage vs extension vs manual)
-  - Browser extension detection (check for `window.nostr`)
+  - localStorage storage (encrypted, automatic)
+  - Security warnings and best practices
   - Security comparison table
   - Recommendations based on detected capabilities
 
@@ -196,22 +182,21 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 #### 5. **Business Service** [NEW]
 
 - **Path**: `/src/services/business/AuthBusinessService.ts`
-- **Purpose**: Authentication and identity management orchestration
+- **Purpose**: Authentication and identity management orchestration (SOA-compliant)
 - **Responsibilities**:
-  - `generateNostrKeys()`: Create nsec/npub pair
-  - `publishBasicProfile(pubkey: string)`: Auto-publish minimal Kind 0 after key generation
-  - `updateProfile(data)`: Update existing Kind 0 with enriched profile data (name, avatar, bio)
-  - `validateNIP05(identifier)`: Verify NIP-05 identifiers
-  - `encryptPrivateKey(nsec, passphrase)`: Encrypt keys for storage
-  - Delegates to `GenericEventService.createEvent()` for Kind 0 creation
-  - Delegates to `GenericBlossomService.upload()` for avatar uploads
+  - `generateNostrKeys()`: Delegates to `keyManagement.ts` utilities (wraps nostr-tools)
+  - `uploadAvatar(file, nsec)`: Delegates to `GenericBlossomService.uploadFile()`
+  - `publishProfile(pubkey, profileData)`: Delegates to `NostrEventService.createKind0Event()` → `GenericEventService.createEvent()`
+  - `encryptPrivateKey(nsec, passphrase)`: Delegates to `EncryptionService` or utils
+  - **DOES NOT**: Implement key generation, event creation, or encryption directly
+  - **ONLY**: Orchestrates calls to existing services and utilities
 
 #### 6. **Utility Functions** [NEW]
 
 - **Path**: `/src/utils/keyManagement.ts`
-- **Purpose**: Client-side key cryptography utilities
+- **Purpose**: Client-side key cryptography utilities (wraps nostr-tools)
 - **Responsibilities**:
-  - Wrapper around `nostr-tools` key generation
+  - `generateKeys()`: Wrapper around `nostr-tools` key generation
   - nsec/npub encoding/decoding (nip19)
   - Key format validation
   - Secure random generation
@@ -221,7 +206,6 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 - **Purpose**: Key backup and export utilities
 - **Responsibilities**:
   - Generate encrypted text files (AES-256-GCM)
-  - Create QR codes (using `qrcode` library)
   - Format backup files (JSON structure with metadata)
   - Download trigger functions
 
@@ -233,8 +217,9 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 - **Conditional Rendering**: Show only if `!isAuthenticated` from auth store
 
 #### 2. **Sign-In Page** (optional enhancement)
+
 - **Path**: `/src/app/signin/page.tsx`
-- **Changes**: Add "Don't have keys? Sign Up" link to redirect to `/signup`
+- **Changes**: Add "Sign Up" link to redirect to `/signup`
 
 #### 3. **Auth Store**
 - **Path**: `/src/stores/useAuthStore.ts`
@@ -395,21 +380,6 @@ Auth Store updates (user profile, isAuthenticated: true)
 - Filename: `nostr-backup-{npub-first-8-chars}-{timestamp}.json`
 - MIME type: `application/json`
 
-#### QR Code Generation
-**Two QR Codes**:
-1. **Private Key QR** (nsec) - Red border, security warning
-   - Contains full `nsec1...` string
-   - High error correction level (L = 7%)
-   - User scans with mobile Nostr wallet
-
-2. **Public Key QR** (npub) - Green border
-   - Contains full `npub1...` string
-   - For sharing profile with others
-
-**Library**: `qrcode` npm package (already compatible with Next.js)
-- Generate data URLs for inline display
-- Option to download PNG files
-
 ---
 
 ## Security Architecture
@@ -456,12 +426,12 @@ Auth Store updates (user profile, isAuthenticated: true)
 
 ### Step-by-Step Wizard
 
-**Progress Indicator**: 5 steps total
+**Progress Indicator**: 4 steps total
 
-1. Welcome & Options (Generate vs Import)
-2. Key Generation (Display nsec/npub + Auto-publish basic Kind 0)
-3. Backup + Local Storage Confirmation (Download QR codes + Confirm localStorage)
-4. Profile Enrichment Form (Name MANDATORY, Avatar/Bio OPTIONAL)
+1. Profile Setup (Name MANDATORY, Avatar/Bio OPTIONAL - shown first)
+2. Key Generation (Display nsec/npub + Upload avatar + Publish complete Kind 0)
+3. Backup + Local Storage (Download encrypted file + Automatic localStorage)
+4. Final Confirmation (Security acknowledgment)
 5. Final Confirmation (Security acknowledgment)
 
 **Navigation**:
@@ -477,17 +447,16 @@ Auth Store updates (user profile, isAuthenticated: true)
 - Large, clear security warnings (red background, white text)
 - Green checkmarks for completed steps
 - Copy-to-clipboard icons next to nsec/npub
-- QR codes displayed side-by-side (private/public)
 - Download buttons with file icons
 - Background publishing indicator in Step 2 (spinner or "Publishing your profile...")
-- Required field indicators (asterisk) for display name in Step 4
+- Required field indicators (asterisk) for display name in Step 1
 
 **Key Flow Changes**:
 
-- **Step 2**: After keys are generated, a minimal Kind 0 profile is automatically published in the background (ensures every user has a profile)
-- **Step 3**: Backup + automatic localStorage storage (no choice of storage method, just confirmation)
-- **Step 4**: Single form with all profile fields - only display name is mandatory, all other fields optional
-- **Step 5**: Final confirmation before redirect to /profile
+- **Step 1**: Profile form (name mandatory, avatar/bio optional) - shown first before key generation
+- **Step 2**: Keys are generated, avatar uploaded (if provided), complete Kind 0 profile published (not minimal)
+- **Step 3**: Backup + automatic localStorage storage (no choice of storage method)
+- **Step 4**: Final confirmation before redirect to home or profile
 
 ### Error Handling
 
@@ -496,8 +465,7 @@ Auth Store updates (user profile, isAuthenticated: true)
 | Key generation fails | "Failed to generate keys. Please refresh and try again." | Retry button |
 | Background profile publish fails (Step 2) | "Profile publishing in progress... May take a few moments." | Non-blocking - allow user to continue, retry in background |
 | Backup not confirmed (Step 3) | "You must back up your keys before continuing." | Disable "Next" until checkbox checked |
-| Storage confirmation not checked (Step 3) | "Please confirm you understand the localStorage storage method." | Disable "Next" until checkbox checked |
-| Display name missing (Step 4) | "Display name is required to continue." | Disable "Next" until name entered |
+| Display name missing (Step 1) | "Display name is required to continue." | Disable "Next" until name entered |
 | Avatar upload fails (Step 4) | "Avatar upload failed. You can add it later in your profile." | Allow continue without avatar |
 | Profile update fails (Step 4) | "Profile update failed. Your basic profile is still published." | Show error but allow continue |
 | Relay publishing fails | "Profile published to {X} of {Y} relays. Some relays are unavailable." | Show partial success, allow continue |
@@ -656,9 +624,7 @@ Auth Store updates (user profile, isAuthenticated: true)
 
 ### New NPM Packages Required
 
-- `qrcode` (^1.5.3): QR code generation for key backup
-  - Install: `npm install qrcode @types/qrcode`
-  - Usage: Generate data URLs for nsec/npub QR codes
+None - all required dependencies already in project.
 
 ---
 
@@ -669,12 +635,15 @@ Auth Store updates (user profile, isAuthenticated: true)
 **Scope**: Basic key generation and automatic profile publishing
 
 - [ ] Create page route (`/src/app/signup/page.tsx`)
-- [ ] Create `SignUpFlow` component with step navigation (5 steps)
+- [ ] Create `SignUpFlow` component with step navigation (4 steps)
+- [ ] Create `ProfileSetupStep` component (Step 1, shown first)
 - [ ] Create `KeyGenerationStep` component
 - [ ] Create `useNostrSignUp` hook
 - [ ] Create `AuthBusinessService` with:
-  - `generateNostrKeys()` method
-  - `publishBasicProfile()` method (auto-publish minimal Kind 0)
+  - Delegates to `keyManagement.ts` for key generation
+  - Delegates to `NostrEventService` for event creation
+  - Delegates to `GenericBlossomService` for avatar uploads
+  - `signUpWithProfile()` method (complete Kind 0 with avatar)
 - [ ] Implement background Kind 0 publishing after key generation
 - [ ] Add success notification after keys generated + profile published
 
@@ -691,17 +660,17 @@ Auth Store updates (user profile, isAuthenticated: true)
 - [ ] Security warnings about localStorage limitations
 - [ ] Best practices display
 
-### Phase 3: Profile Enrichment Form
+### Phase 3: Profile Form Integration (Step 1)
 
-**Scope**: Single form with mandatory name + optional fields
+**Scope**: Profile form as first step, avatar held until Step 2
 
-- [ ] Create `ProfileSetupStep` component with full form
+- [ ] Create `ProfileSetupStep` component shown first
 - [ ] Display name input (MANDATORY, validation required)
 - [ ] Integrate `ImageUpload` + `ImageCropper` (OPTIONAL)
 - [ ] Add bio textarea (OPTIONAL)
-- [ ] Upload avatar to Blossom (if provided)
-- [ ] Implement `updateProfile()` method in `AuthBusinessService`
-- [ ] Update existing Kind 0 event (not create new one)
+- [ ] Hold avatar as File object in browser memory (no upload yet)
+- [ ] In Step 2: Upload avatar to Blossom after keys generated
+- [ ] In Step 2: Publish complete Kind 0 event with all fields
 - [ ] Form validation (name required, avatar/bio optional)
 
 ### Phase 4: Final Confirmation
@@ -825,7 +794,6 @@ Before merging sign-up implementation:
 - [ ] No nsec in console.log statements
 - [ ] localStorage values are encrypted
 - [ ] PBKDF2 iterations ≥ 100k
-- [ ] QR codes generate correctly
 - [ ] Backup file is encrypted
 - [ ] SOA layers respected
 - [ ] TypeScript types complete
