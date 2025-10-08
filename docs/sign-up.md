@@ -4,10 +4,24 @@
 **Last Updated**: October 8, 2025  
 **Status**: Specification - Implementation Pending
 
----
+- **Path**: `/src/components/auth/KeyBackupStorageStep.tsx` (COMBINED)
+  - Download encrypted backup button
+  - QR code generation (nsec + npub)
+  - Backup confirmation checkbox
+  - "I understand I'll lose my account if I lose my keys" acknowledgment
+  - localStorage storage (encrypted, automatic)
+  - Confirmation checkbox for understanding storage method
+  - Security warnings and best practices
 
-## Overview
-
+- **Path**: `/src/components/auth/ProfileSetupStep.tsx` (FORM WITH MANDATORY/OPTIONAL FIELDS)
+  - Display name input (MANDATORY, max 100 chars)
+  - Avatar upload (OPTIONAL - Blossom integration)
+  - Bio textarea (OPTIONAL, max 1000 chars)
+  - NIP-05 identifier (OPTIONAL)
+  - All fields displayed in single form
+  - Image cropping preview (1:1 aspect ratio) for avatar
+  - UPDATES existing Kind 0 event from Step 2
+  - Cannot proceed without display name
 The Culture Bridge sign-up flow enables first-time users to create a Nostr identity and immediately join the decentralized network. This is a **100% self-sovereign authentication system** with no centralized account creation, email verification, or password management.
 
 ### UX Optimization (v2.0)
@@ -63,25 +77,25 @@ The Culture Bridge sign-up flow enables first-time users to create a Nostr ident
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
-│ 3. Backup + Storage (COMBINED STEP)                         │
+│ 3. Backup + Local Storage Confirmation                      │
 │    A) Backup Keys (MANDATORY)                               │
 │       - Download keys as encrypted text file                │
 │       - Display QR codes for mobile backup                  │
 │       - User confirms backup via checkbox                   │
 │                                                              │
-│    B) Storage Selection (MANDATORY)                         │
-│       - Option A: Store in browser localStorage             │
-│       - Option B: Use browser extension (recommended)       │
-│       - Option C: Manual backup only (advanced)             │
+│    B) Local Storage (AUTOMATIC)                             │
+│       - Keys stored in browser localStorage (encrypted)     │
+│       - User confirms understanding of storage method       │
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
-│ 4. Profile Enrichment (OPTIONAL)                            │
-│    - Display name (add/update)                              │
-│    - Avatar image (add/update)                              │
-│    - Bio/About (add/update)                                 │
+│ 4. Profile Enrichment Form                                  │
+│    - Display name (MANDATORY)                               │
+│    - Avatar image (OPTIONAL)                                │
+│    - Bio/About (OPTIONAL)                                   │
+│    - NIP-05 identifier (OPTIONAL)                           │
 │    - UPDATES existing Kind 0 event from Step 2              │
-│    - User can skip this step entirely                       │
+│    - All fields shown in single form                        │
 └────────────────┬────────────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────────────┐
@@ -269,46 +283,34 @@ Step 4: Validation
 ```
 
 **Security Considerations**:
+
 - Keys generated in browser memory (never sent to server)
 - Use `crypto.getRandomValues()` for entropy (via nostr-tools)
 - Clear keys from memory after storage/export
 - No key derivation from weak passwords (full randomness)
 
-### 2. Key Storage Options
+### 2. Key Storage (localStorage Only)
 
-#### Option A: Browser localStorage (Convenience)
-- **Storage**: Encrypted with user-provided passphrase (AES-256-GCM)
+**Storage Method**: Browser localStorage with encryption
+
+- **Encryption**: User-provided passphrase (AES-256-GCM)
 - **Pros**: Auto-login, seamless UX
 - **Cons**: Vulnerable to XSS, browser data clearing
-- **Implementation**:
-  - Prompt user for strong passphrase (min 12 chars)
-  - Derive encryption key with PBKDF2 (100k iterations)
-  - Store encrypted nsec in `localStorage` under key `encrypted_nostr_key`
-  - Store salt and IV separately
-  - Store pubkey in plaintext (safe to expose)
+- **User Confirmation Required**: User must acknowledge understanding of localStorage limitations
 
-#### Option B: Browser Extension (Recommended)
-- **Storage**: NIP-07 signer (Alby, nos2x, Flamingo)
-- **Pros**: Secure key isolation, no app access to nsec
-- **Cons**: Requires extension installation
-- **Implementation**:
-  - Detect `window.nostr` API
-  - Guide user to install extension
-  - Import nsec into extension
-  - Redirect to `/signin` to authenticate via extension
+**Implementation**:
 
-#### Option C: Manual Backup Only (Advanced)
-- **Storage**: User downloads backup file, no browser storage
-- **Pros**: Maximum security (offline keys)
-- **Cons**: Manual login every session (paste nsec)
-- **Implementation**:
-  - Provide encrypted backup file download
-  - Show QR codes for mobile wallet import
-  - User must manually paste nsec on each login
+- Prompt user for strong passphrase (min 12 chars)
+- Derive encryption key with PBKDF2 (100k iterations)
+- Store encrypted nsec in `localStorage` under key `encrypted_nostr_key`
+- Store salt and IV separately
+- Store pubkey in plaintext (safe to expose)
+- User confirms via checkbox: "I understand my keys are stored locally in this browser"
 
 ### 3. Profile Creation (Kind 0 Event)
 
 **Metadata Structure** (Nostr Kind 0):
+
 ```json
 {
   "kind": 0,
@@ -460,15 +462,16 @@ Auth Store updates (user profile, isAuthenticated: true)
 
 1. Welcome & Options (Generate vs Import)
 2. Key Generation (Display nsec/npub + Auto-publish basic Kind 0)
-3. Backup + Storage (Download QR codes + Select storage method)
-4. Profile Enrichment (Optional - Update existing Kind 0)
+3. Backup + Local Storage Confirmation (Download QR codes + Confirm localStorage)
+4. Profile Enrichment Form (Name MANDATORY, Avatar/Bio/NIP-05 OPTIONAL)
 5. Final Confirmation (Security acknowledgment)
 
 **Navigation**:
 
 - "Back" button available on steps 2-5 (returns to previous step)
-- "Next" button enabled only when step requirements met
-- "Skip for now" button prominently displayed on Step 4 (profile enrichment is optional)
+- "Next" button enabled only when step requirements met:
+  - Step 3: Backup confirmed via checkbox
+  - Step 4: Display name entered (minimum requirement)
 - "Cancel" button available on all steps (returns to `/signin` with confirmation dialog)
 
 **Visual Design**:
@@ -478,14 +481,14 @@ Auth Store updates (user profile, isAuthenticated: true)
 - Copy-to-clipboard icons next to nsec/npub
 - QR codes displayed side-by-side (private/public)
 - Download buttons with file icons
-- Browser extension logos (Alby, nos2x, Flamingo) if detected
 - Background publishing indicator in Step 2 (spinner or "Publishing your profile...")
+- Required field indicators (asterisk) for display name in Step 4
 
 **Key Flow Changes**:
 
 - **Step 2**: After keys are generated, a minimal Kind 0 profile is automatically published in the background (ensures every user has a profile)
-- **Step 3**: Combines backup AND storage selection (reduces friction, fewer steps)
-- **Step 4**: Now explicitly optional - updates the existing Kind 0 from Step 2 (not creates new)
+- **Step 3**: Backup + automatic localStorage storage (no choice of storage method, just confirmation)
+- **Step 4**: Single form with all profile fields - only display name is mandatory, all other fields optional
 - **Step 5**: Final confirmation before redirect to /profile
 
 ### Error Handling
@@ -495,11 +498,11 @@ Auth Store updates (user profile, isAuthenticated: true)
 | Key generation fails | "Failed to generate keys. Please refresh and try again." | Retry button |
 | Background profile publish fails (Step 2) | "Profile publishing in progress... May take a few moments." | Non-blocking - allow user to continue, retry in background |
 | Backup not confirmed (Step 3) | "You must back up your keys before continuing." | Disable "Next" until checkbox checked |
-| Storage selection not made (Step 3) | "Please select a storage method to continue." | Disable "Next" until option selected |
-| Avatar upload fails (Step 4) | "Avatar upload failed. You can add it later in your profile." | Allow skip, continue without avatar |
-| Profile update fails (Step 4) | "Profile update failed. Your basic profile is still published." | Show error but allow skip |
+| Storage confirmation not checked (Step 3) | "Please confirm you understand the localStorage storage method." | Disable "Next" until checkbox checked |
+| Display name missing (Step 4) | "Display name is required to continue." | Disable "Next" until name entered |
+| Avatar upload fails (Step 4) | "Avatar upload failed. You can add it later in your profile." | Allow continue without avatar |
+| Profile update fails (Step 4) | "Profile update failed. Your basic profile is still published." | Show error but allow continue |
 | Relay publishing fails | "Profile published to {X} of {Y} relays. Some relays are unavailable." | Show partial success, allow continue |
-| Extension not detected (Step 3) | "No browser extension found. We recommend installing Alby for secure key storage." | Show extension installation guide |
 
 ### Accessibility (A11y)
 
@@ -677,29 +680,32 @@ Auth Store updates (user profile, isAuthenticated: true)
 - [ ] Implement background Kind 0 publishing after key generation
 - [ ] Add success notification after keys generated + profile published
 
-### Phase 2: Backup + Storage (COMBINED)
+### Phase 2: Backup + Local Storage Confirmation
 
-**Scope**: Combined backup and storage selection step
+**Scope**: Backup and localStorage confirmation step
 
-- [ ] Create `KeyBackupStorageStep` component (combines backup + storage)
+- [ ] Create `KeyBackupStorageStep` component
 - [ ] Implement encrypted file download
 - [ ] Generate QR codes for keys
-- [ ] Add storage option selector (localStorage, extension, manual)
-- [ ] Detect browser extensions (`window.nostr`)
 - [ ] Add backup confirmation checkbox (mandatory)
-- [ ] Security warnings and best practices
+- [ ] Implement localStorage storage (encrypted, automatic)
+- [ ] Add localStorage understanding confirmation checkbox
+- [ ] Security warnings about localStorage limitations
+- [ ] Best practices display
 
-### Phase 3: Optional Profile Enrichment
+### Phase 3: Profile Enrichment Form
 
-**Scope**: Update existing Kind 0 with avatar, bio, display name
+**Scope**: Single form with mandatory name + optional fields
 
-- [ ] Create `ProfileSetupStep` component (now optional)
-- [ ] Integrate `ImageUpload` + `ImageCropper`
-- [ ] Add bio textarea
-- [ ] Upload avatar to Blossom
+- [ ] Create `ProfileSetupStep` component with full form
+- [ ] Display name input (MANDATORY, validation required)
+- [ ] Integrate `ImageUpload` + `ImageCropper` (OPTIONAL)
+- [ ] Add bio textarea (OPTIONAL)
+- [ ] Add NIP-05 identifier field (OPTIONAL)
+- [ ] Upload avatar to Blossom (if provided)
 - [ ] Implement `updateProfile()` method in `AuthBusinessService`
-- [ ] Add prominent "Skip for now" button
 - [ ] Update existing Kind 0 event (not create new one)
+- [ ] Form validation (name required, others optional)
 
 ### Phase 4: Final Confirmation
 
@@ -738,11 +744,14 @@ Auth Store updates (user profile, isAuthenticated: true)
 - **Risk**: Users who skip backup will lose accounts
 
 ### Profile Completion
-- **Target**: >60% of users add display name
+
+- **Target**: 100% of users have display name (mandatory field)
 - **Target**: >30% of users add avatar
+- **Target**: >40% of users add bio
 - **Measure**: Kind 0 event content analysis
 
 ### Extension Adoption
+
 - **Target**: >40% of users migrate to browser extension within 30 days
 - **Measure**: Track localStorage vs extension usage
 
