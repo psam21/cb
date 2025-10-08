@@ -17,7 +17,6 @@
   - Display name input (MANDATORY, max 100 chars)
   - Avatar upload (OPTIONAL - Blossom integration)
   - Bio textarea (OPTIONAL, max 1000 chars)
-  - NIP-05 identifier (OPTIONAL)
   - All fields displayed in single form
   - Image cropping preview (1:1 aspect ratio) for avatar
   - UPDATES existing Kind 0 event from Step 2
@@ -93,7 +92,6 @@ The Culture Bridge sign-up flow enables first-time users to create a Nostr ident
 │    - Display name (MANDATORY)                               │
 │    - Avatar image (OPTIONAL)                                │
 │    - Bio/About (OPTIONAL)                                   │
-│    - NIP-05 identifier (OPTIONAL)                           │
 │    - UPDATES existing Kind 0 event from Step 2              │
 │    - All fields shown in single form                        │
 └────────────────┬────────────────────────────────────────────┘
@@ -202,7 +200,7 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 - **Responsibilities**:
   - `generateNostrKeys()`: Create nsec/npub pair
   - `publishBasicProfile(pubkey: string)`: Auto-publish minimal Kind 0 after key generation
-  - `updateProfile(data)`: Update existing Kind 0 with enriched profile data
+  - `updateProfile(data)`: Update existing Kind 0 with enriched profile data (name, avatar, bio)
   - `validateNIP05(identifier)`: Verify NIP-05 identifiers
   - `encryptPrivateKey(nsec, passphrase)`: Encrypt keys for storage
   - Delegates to `GenericEventService.createEvent()` for Kind 0 creation
@@ -463,7 +461,7 @@ Auth Store updates (user profile, isAuthenticated: true)
 1. Welcome & Options (Generate vs Import)
 2. Key Generation (Display nsec/npub + Auto-publish basic Kind 0)
 3. Backup + Local Storage Confirmation (Download QR codes + Confirm localStorage)
-4. Profile Enrichment Form (Name MANDATORY, Avatar/Bio/NIP-05 OPTIONAL)
+4. Profile Enrichment Form (Name MANDATORY, Avatar/Bio OPTIONAL)
 5. Final Confirmation (Security acknowledgment)
 
 **Navigation**:
@@ -701,11 +699,10 @@ Auth Store updates (user profile, isAuthenticated: true)
 - [ ] Display name input (MANDATORY, validation required)
 - [ ] Integrate `ImageUpload` + `ImageCropper` (OPTIONAL)
 - [ ] Add bio textarea (OPTIONAL)
-- [ ] Add NIP-05 identifier field (OPTIONAL)
 - [ ] Upload avatar to Blossom (if provided)
 - [ ] Implement `updateProfile()` method in `AuthBusinessService`
 - [ ] Update existing Kind 0 event (not create new one)
-- [ ] Form validation (name required, others optional)
+- [ ] Form validation (name required, avatar/bio optional)
 
 ### Phase 4: Final Confirmation
 
