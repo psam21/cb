@@ -41,6 +41,97 @@ export class ProfileBusinessService {
   }
 
   /**
+   * Sign in existing user with NIP-07 extension
+   * Orchestrates authentication flow using existing methods
+   * @param signer NostrSigner from NIP-07 extension
+   * @returns User object with pubkey, npub, and profile
+   */
+  public async signInWithExtension(signer: NostrSigner): Promise<{
+    success: boolean;
+    user?: User;
+    error?: string;
+  }> {
+    try {
+      logger.info('Starting sign-in with extension', {
+        service: 'ProfileBusinessService',
+        method: 'signInWithExtension',
+      });
+
+      // 1. Get pubkey from signer
+      const pubkey = await signer.getPublicKey();
+      logger.info('Public key received from signer', {
+        pubkey: pubkey.substring(0, 8) + '...',
+      });
+
+      // 2. Convert to npub
+      const npub = this.pubkeyToNpub(pubkey);
+
+      // 3. Fetch profile from relays (with defaults if not found)
+      let profile: UserProfile;
+      try {
+        const fetchedProfile = await this.getUserProfile(pubkey);
+        if (fetchedProfile) {
+          profile = this.formatProfileForDisplay(fetchedProfile);
+        } else {
+          // Use defaults if no profile found
+          profile = this.formatProfileForDisplay({
+            display_name: '',
+            about: '',
+            picture: '',
+            website: '',
+            banner: '',
+            bot: false,
+            birthday: '',
+          });
+        }
+      } catch (profileError) {
+        logger.warn('Failed to fetch profile, using defaults', {
+          error: profileError instanceof Error ? profileError.message : 'Unknown error',
+        });
+        // Use defaults on error
+        profile = this.formatProfileForDisplay({
+          display_name: '',
+          about: '',
+          picture: '',
+          website: '',
+          banner: '',
+          bot: false,
+          birthday: '',
+        });
+      }
+
+      // 4. Return User object
+      const user: User = {
+        pubkey,
+        npub,
+        profile,
+      };
+
+      logger.info('Sign-in completed successfully', {
+        pubkey: pubkey.substring(0, 8) + '...',
+        npub: npub.substring(0, 12) + '...',
+        display_name: profile.display_name,
+      });
+
+      return {
+        success: true,
+        user,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Sign-in failed';
+      logger.error('Sign-in with extension failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'ProfileBusinessService',
+        method: 'signInWithExtension',
+      });
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
    * Convert pubkey to npub (bech32 encoded)
    */
   public pubkeyToNpub(pubkey: string): string {
