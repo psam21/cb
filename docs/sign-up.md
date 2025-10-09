@@ -1,82 +1,49 @@
-# Sign-Up Flow Documentation
+# Sign-Up Flow Specification
 
-**Document Version**: 2.0  
-**Last Updated**: October 8, 2025  
-**Status**: Specification - Implementation Pending
+**Status**: Implementation Ready  
+**Architecture**: SOA-Compliant (6-layer pattern)  
+**Dependencies**: 
+- ProfileBusinessService (exists - will be extended for sign-in first)
+- Sign-in refactoring should be completed first (see `tech-debt-signin-soa-violation.md`)
 
-## Overview
-
-The Culture Bridge sign-up flow enables first-time users to create a Nostr identity and immediately join the decentralized network. This is a **100% self-sovereign authentication system** with no centralized account creation, email verification, or password management.
-
-### UX Optimization (v2.0)
-
-**Key Change**: This version implements a profile-first approach where users provide their profile information (name, avatar, bio) BEFORE key generation, then everything is published together in Step 2 with a complete Kind 0 event.
-
-**Rationale**:
-
-- **Problem**: Previous flow required users to enter profile data after seeing their keys, creating cognitive overload
-- **Solution**: Collect profile data first (Step 1), generate keys second (Step 2), then publish complete profile immediately
-- **Benefit**: Better UX flow, ensures every user has a complete profile, avatar upload timing is correct
-- **Benefits**:
-  - Guarantees all users have discoverable profiles
-  - Reduces friction by combining backup + storage into single step
-  - Makes profile enrichment explicitly optional (better UX clarity)
-  - Faster onboarding with fewer mandatory steps
-
-### Core Principles
-
-1. **Self-Sovereign Identity**: Users generate and control their own Nostr keys (private/public key pairs)
-2. **Zero Server-Side Storage**: The application NEVER stores, transmits, or has access to private keys
-3. **Interoperability**: Keys work across ALL Nostr applications (Damus, Snort, Primal, etc.)
-4. **Client-Side Key Management**: All cryptographic operations happen in the browser
-5. **No Recovery Mechanism**: Lost keys = lost identity (user responsibility)
-
-### Distinction from Sign-In
-
-- **Sign-In** (`/signin`): For users with existing Nostr keys (NIP-07 browser extensions like Alby, nos2x)
-- **Sign-Up** (`/signup`): For new users without keys (generates fresh key pair)
+**Related**: Sign-in and sign-up will both use ProfileBusinessService for user/profile operations
 
 ---
 
-## User Flow Overview
+## Implementation Overview
+
+4-step sign-up flow for new Nostr users. Profile data collected first (Step 1), then keys generated and complete Kind 0 published (Step 2), backup/storage (Step 3), confirmation (Step 4).
+
+**Key Points**:
+- Name is mandatory
+- Avatar and bio are optional
+- Avatar held as File object until keys exist (Step 2)
+- Only localStorage storage (encrypted)
+- No QR codes, no NIP-05
+- Complete Kind 0 published in Step 2 (not minimal)
+
+---
+
+## User Flow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Profile Setup (STEP 1 - SHOWN FIRST)                    │
-│    "Create Your Nostr Identity"                             │
-│    - Display name (MANDATORY)                               │
-│    - Avatar image (OPTIONAL) - held as File in memory       │
-│    - Bio/About (OPTIONAL)                                   │
-│    - No key generation yet - just collect profile data      │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────────────────┐
-│ 2. Key Generation + Profile Publishing (STEP 2)             │
-│    - Generate private key (nsec1...)                        │
-│    - Derive public key (npub1...)                           │
-│    - Display keys to user with security warning             │
-│    ⚡ UPLOAD AVATAR: If provided in Step 1, upload to Blossom│
-│    ⚡ PUBLISH COMPLETE KIND 0: With all profile fields      │
-│       (name, avatar URL, bio - not minimal profile)         │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────────────────┐
-│ 3. Backup + Local Storage (STEP 3)                          │
-│    A) Backup Keys (MANDATORY)                               │
-│       - Download keys as encrypted text file                │
-│       - User confirms backup via checkbox                   │
-│                                                              │
-│    B) Local Storage (AUTOMATIC)                             │
-│       - Keys stored in browser localStorage (encrypted)     │
-│       - No confirmation checkbox (just happens)             │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────────────────┐
-│ 4. Final Confirmation (STEP 4)                              │
-│    - Review key security warnings                           │
-│    - "I understand and accept responsibility" checkbox      │
-│    - Redirect to home or /profile after confirmation        │
-└─────────────────────────────────────────────────────────────┘
+Step 1: Profile Setup (SHOWN FIRST)
+  - Display name (MANDATORY)
+  - Avatar (OPTIONAL - held as File)
+  - Bio (OPTIONAL)
+  ↓
+Step 2: Key Generation + Publishing
+  - Generate nsec/npub
+  - Upload avatar to Blossom (if provided)
+  - Publish complete Kind 0 event
+  ↓
+Step 3: Backup + Storage
+  - Download encrypted backup file
+  - Automatic localStorage (encrypted)
+  ↓
+Step 4: Final Confirmation
+  - Security acknowledgment
+  - Redirect to home/profile
 ```
 
 ---
@@ -140,15 +107,15 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
   - Security comparison table
   - Recommendations based on detected capabilities
 
-- **Path**: `/src/components/auth/ProfileSetupStep.tsx` (NOW OPTIONAL)
-  - Display name input (max 100 chars)
-  - Avatar upload (Blossom integration)
-  - Bio textarea (max 1000 chars)
-  - "Skip for now" button (prominent)
+- **Path**: `/src/components/auth/ProfileSetupStep.tsx`
+  - Display name input (MANDATORY, max 100 chars)
+  - Avatar upload (Blossom integration, OPTIONAL)
+  - Bio textarea (OPTIONAL, max 1000 chars)
   - Image cropping preview (1:1 aspect ratio)
-  - UPDATES existing Kind 0 event from Step 2
+  - Shown as STEP 1 (before key generation)
+  - Avatar held as File until Step 2
 
-- **Path**: `/src/components/auth/FinalConfirmationStep.tsx` (NEW)
+- **Path**: `/src/components/auth/FinalConfirmationStep.tsx`
   - Security warnings review
   - "I understand and accept responsibility" checkbox
   - Configuration summary display
@@ -159,15 +126,15 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 - **Path**: `/src/hooks/useNostrSignUp.ts`
 - **Purpose**: Orchestrate sign-up workflow, state management
 - **Responsibilities**:
-  - Track current step (1-5)
+  - Track current step (1-4)
   - Store form data (display name, bio, avatar)
   - Store generated keys (TEMPORARILY, until backup confirmed)
   - Call `AuthBusinessService` methods
-  - Trigger background Kind 0 publish after key generation
+  - Publish complete Kind 0 in Step 2 (with profile data from Step 1)
   - Handle errors and loading states
   - Clear sensitive data after completion
 
-#### 5. **Business Service** [NEW]
+#### 5. **Business Service**
 
 - **Path**: `/src/services/business/AuthBusinessService.ts`
 - **Purpose**: Authentication and identity management orchestration (SOA-compliant)
@@ -204,7 +171,7 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 - **Changes**: Add "Sign Up" button next to "Sign In" (when user is NOT authenticated)
 - **Conditional Rendering**: Show only if `!isAuthenticated` from auth store
 
-#### 2. **Sign-In Page** (optional enhancement)
+#### 2. **Sign-In Page**
 
 - **Path**: `/src/app/signin/page.tsx`
 - **Changes**: Add "Sign Up" link to redirect to `/signup`
@@ -294,7 +261,6 @@ Step 4: Validation
     "about": "User bio (optional)",
     "picture": "https://blossom.example.com/<hash>",
     "banner": "",
-    "nip05": "",
     "lud16": "",
     "website": ""
   })
@@ -420,7 +386,6 @@ Auth Store updates (user profile, isAuthenticated: true)
 2. Key Generation (Display nsec/npub + Upload avatar + Publish complete Kind 0)
 3. Backup + Local Storage (Download encrypted file + Automatic localStorage)
 4. Final Confirmation (Security acknowledgment)
-5. Final Confirmation (Security acknowledgment)
 
 **Navigation**:
 
@@ -525,17 +490,9 @@ Auth Store updates (user profile, isAuthenticated: true)
    - Display: "Welcome to Culture Bridge, {display_name}!"
    - Explain: "Your Nostr identity is now active across the entire network"
    - Show: Quick tutorial (Explore, Shop, Heritage, Messages)
-   - CTA: "Complete your profile" or "Start exploring"
+   - CTA: "Start exploring"
 
-2. **Onboarding Checklist** (Optional)
-   - [ ] Add a profile banner
-   - [ ] Write a detailed bio
-   - [ ] Add NIP-05 verification
-   - [ ] Add Lightning address (lud16)
-   - [ ] Create your first shop product
-   - [ ] Contribute a heritage story
-
-3. **First Session Recommendations**
+2. **First Session Recommendations**
    - Redirect to `/explore` to see public content
    - Show tooltip on "Profile" menu item: "Complete your profile"
    - Show tooltip on "Messages": "Connect with other users"
@@ -571,8 +528,6 @@ Auth Store updates (user profile, isAuthenticated: true)
 - [ ] **Backup Mechanisms**
   - [ ] Encrypted file downloads successfully
   - [ ] File can be decrypted with passphrase
-  - [ ] QR codes scan correctly with mobile wallets
-  - [ ] QR codes contain correct nsec/npub
 
 - [ ] **Profile Creation**
   - [ ] Kind 0 event publishes to relays
@@ -616,11 +571,11 @@ None - all required dependencies already in project.
 
 ---
 
-## Implementation Phases
+## Implementation Checklist
 
-### Phase 1: Core Sign-Up Flow (MVP)
+### Core Sign-Up Flow
 
-**Scope**: Basic key generation and automatic profile publishing
+**Scope**: Complete 4-step sign-up with profile-first approach
 
 - [ ] Create page route (`/src/app/signup/page.tsx`)
 - [ ] Create `SignUpFlow` component with step navigation (4 steps)
@@ -635,20 +590,18 @@ None - all required dependencies already in project.
 - [ ] Implement background Kind 0 publishing after key generation
 - [ ] Add success notification after keys generated + profile published
 
-### Phase 2: Backup + Local Storage Confirmation
+### Backup + Local Storage
 
-**Scope**: Backup and localStorage confirmation step
+**Scope**: Backup and localStorage storage
 
 - [ ] Create `KeyBackupStorageStep` component
 - [ ] Implement encrypted file download
-- [ ] Generate QR codes for keys
 - [ ] Add backup confirmation checkbox (mandatory)
 - [ ] Implement localStorage storage (encrypted, automatic)
-- [ ] Add localStorage understanding confirmation checkbox
 - [ ] Security warnings about localStorage limitations
 - [ ] Best practices display
 
-### Phase 3: Profile Form Integration (Step 1)
+### Profile Form (Step 1)
 
 **Scope**: Profile form as first step, avatar held until Step 2
 
@@ -661,7 +614,7 @@ None - all required dependencies already in project.
 - [ ] In Step 2: Publish complete Kind 0 event with all fields
 - [ ] Form validation (name required, avatar/bio optional)
 
-### Phase 4: Final Confirmation
+### Final Confirmation
 
 **Scope**: Security acknowledgment and completion
 
@@ -708,30 +661,6 @@ None - all required dependencies already in project.
 
 - **Target**: >40% of users migrate to browser extension within 30 days
 - **Measure**: Track localStorage vs extension usage
-
----
-
-## Open Questions / Future Enhancements
-
-1. **Multi-Device Sync**
-   - How do users access same identity on multiple devices?
-   - Solution: QR code transfer or encrypted cloud backup (future NIP)
-
-2. **Account Recovery**
-   - Can we implement social recovery (NIP-26 delegation)?
-   - Trade-off: Complexity vs security vs UX
-
-3. **Key Rotation**
-   - Should we support key rotation (change nsec, keep npub)?
-   - Nostr limitation: No native key rotation support
-
-4. **Passphrase Strength**
-   - Should we enforce minimum passphrase entropy?
-   - Solution: zxcvbn library for password strength estimation
-
-5. **Biometric Unlock**
-   - Can we use WebAuthn for biometric localStorage decryption?
-   - Benefit: Strong security + great UX
 
 ---
 
@@ -791,5 +720,5 @@ Before merging sign-up implementation:
 
 ---
 
-**Document Status**: Ready for implementation planning  
-**Next Steps**: Break down Phase 1 into development tasks, assign to sprint
+**Document Status**: Complete specification ready for implementation  
+**Implementation**: Single complete build - no phases or MVPs

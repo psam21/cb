@@ -328,9 +328,11 @@ src/
 
 ## Dependencies
 
-- **Blocks**: None (can be done independently)
+- **Blocks**: Sign-up implementation (sign-up will reuse ProfileBusinessService patterns)
 - **Blocked By**: None (ProfileBusinessService already exists)
-- **Related**: Sign-up flow implementation (will also use ProfileBusinessService for profile operations)
+- **Related**: 
+  - `docs/sign-up.md` - Sign-up specification (will use same ProfileBusinessService)
+  - Both auth flows share ProfileBusinessService for user/profile operations
 
 ---
 
