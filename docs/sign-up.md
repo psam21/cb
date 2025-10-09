@@ -3,10 +3,14 @@
 **Status**: Implementation Ready  
 **Architecture**: SOA-Compliant (6-layer pattern)  
 **Dependencies**: 
-- ProfileBusinessService (exists - will be extended for sign-in first)
 - Sign-in refactoring should be completed first (see `tech-debt-signin-soa-violation.md`)
+- ProfileBusinessService (exists - shared with sign-in for profile operations)
+- Sign-up creates AuthBusinessService (NEW) for key management orchestration
 
-**Related**: Sign-in and sign-up will both use ProfileBusinessService for user/profile operations
+**Related**: 
+- Sign-in uses ProfileBusinessService directly (fetch existing profile)
+- Sign-up uses AuthBusinessService → ProfileBusinessService (publish new profile)
+- ProfileBusinessService is SHARED by both authentication flows
 
 ---
 
@@ -460,25 +464,29 @@ Auth Store updates (user profile, isAuthenticated: true)
 
 ### Existing Services to Leverage
 
-1. **ProfileBusinessService**
-   - Method: `updateUserProfile()` (modify to support initial profile creation)
-   - Purpose: Publish Kind 0 metadata event
-   - Modifications: Add `createFromLocalKeys(nsec, profileData)` method
+1. **ProfileBusinessService** (SHARED with sign-in)
+   - Methods: `validateProfile()`, `createProfileEvent()`, `publishProfile()`
+   - Purpose: Create and publish Kind 0 metadata event
+   - Modifications: None required (already compatible)
+   - Usage: AuthBusinessService delegates profile publishing to ProfileBusinessService
 
 2. **GenericBlossomService**
    - Method: `uploadFile()` (for avatar upload)
    - Purpose: Upload avatar to Blossom CDN
    - Modifications: Support temporary signer (created from nsec during sign-up)
+   - Usage: AuthBusinessService delegates avatar upload to GenericBlossomService
 
 3. **GenericEventService**
    - Method: `signEvent()` (modify to accept nsec string)
    - Purpose: Sign Kind 0 event during sign-up
    - Modifications: Add overload for nsec-based signing (pre-extension)
+   - Usage: Called by ProfileBusinessService.publishProfile()
 
 4. **Auth Store**
    - Methods: `setUser()`, `setAuthenticated()`
    - Purpose: Store pubkey and profile after sign-up
    - Modifications: Add `setNewUser(true)` flag
+   - Usage: Called by useNostrSignUp hook after successful sign-up
 
 ---
 
@@ -625,7 +633,7 @@ None - all required dependencies already in project.
 - [ ] Redirect to /profile after confirmation
 - [ ] Update auth store with user data
 
-### Phase 5: Polish & Testing
+### Polish & Testing
 
 **Scope**: UX improvements and comprehensive testing
 

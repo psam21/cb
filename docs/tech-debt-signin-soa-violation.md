@@ -11,6 +11,10 @@
 
 The current sign-in implementation (`/src/app/signin/page.tsx`) violates Culture Bridge's strict 6-layer Service-Oriented Architecture (SOA) pattern by having the Page component directly call Business Services, skipping the Component and Hook layers.
 
+## Problem Statement
+
+The current sign-in implementation (`/src/app/signin/page.tsx`) violates Culture Bridge's strict 6-layer Service-Oriented Architecture (SOA) pattern by having the Page component directly call Business Services, skipping the Component and Hook layers.
+
 ### Current Architecture (VIOLATED)
 
 ```
@@ -30,7 +34,57 @@ Component (SignInFlow.tsx)
   ↓
 Hook (useNostrSignIn.ts)
   ↓
-Business Service (AuthBusinessService.ts)
+Business Service (ProfileBusinessService.ts - EXTENDED with signInWithExtension)
+  ↓
+Event Service (NostrEventService.ts)
+  ↓
+Generic Service (GenericRelayService.ts)
+```
+
+### Architecture Reusability
+
+**ProfileBusinessService is SHARED by both authentication flows:**
+
+```
+Sign-In Flow:
+  useNostrSignIn → ProfileBusinessService.signInWithExtension()
+                   (fetch existing profile)
+
+Sign-Up Flow:
+  useNostrSignUp → AuthBusinessService.signUpWithProfile()
+                   └→ ProfileBusinessService.publishProfile()
+                      (publish new profile)
+```
+
+**Why Separate Hooks?**
+- Different UX: Sign-in = 1 click, Sign-up = 4-step wizard
+- Different state: Sign-in = simple loading, Sign-up = multi-step form
+- Different concerns: Sign-in = fetch, Sign-up = create + publish
+- Single Responsibility: Each hook has ONE clear purpose
+
+**Why Separate Business Services?**
+- **ProfileBusinessService** (SHARED): Profile operations (Kind 0 CRUD)
+  - Used by: Sign-in, Sign-up, Profile page
+- **AuthBusinessService** (SIGN-UP ONLY): Key management + sign-up orchestration
+  - Used by: Sign-up only
+  - Delegates to ProfileBusinessService for profile publishing
+
+**Maximum Reusability:**
+- ProfileBusinessService methods shared across ALL profile operations
+- Sign-in reuses: `getUserProfile()`, `pubkeyToNpub()`, `formatProfileForDisplay()`
+- Sign-up reuses: `validateProfile()`, `createProfileEvent()`, `publishProfile()`
+- Profile page reuses: `updateUserProfile()`
+
+### Required Architecture (SOA Compliant)
+
+```
+Page (signin/page.tsx)
+  ↓
+Component (SignInFlow.tsx)
+  ↓
+Hook (useNostrSignIn.ts)
+  ↓
+Business Service (ProfileBusinessService.ts)
   ↓
 Event Service (NostrEventService.ts)
   ↓
@@ -111,7 +165,7 @@ interface UseNostrSignInReturn {
 }
 
 export function useNostrSignIn(): UseNostrSignInReturn {
-  // Implementation calls AuthBusinessService
+  // Implementation calls ProfileBusinessService.signInWithExtension()
 }
 ```
 
@@ -155,8 +209,8 @@ class ProfileBusinessService {
 - Profile operations are already centralized here
 - Avoid creating duplicate services for user/profile concerns
 - Sign-in is fundamentally about fetching a user's profile
-- Sign-up will also need profile operations (can use same service)
-- Follows single responsibility: ProfileBusinessService = all user/profile operations
+- Sign-up creates separate AuthBusinessService for key generation and initial setup
+- Follows single responsibility: ProfileBusinessService = existing user/profile operations, AuthBusinessService = new user creation
 
 **Estimated Time**: 30 minutes
 
@@ -278,7 +332,7 @@ export default function SigninPage() {
 
 ### Documentation
 - [ ] Update sign-in flow documentation (if exists)
-- [ ] Document AuthBusinessService methods
+- [ ] Document ProfileBusinessService.signInWithExtension() method
 - [ ] Add comments to hook
 - [ ] Update architecture diagrams
 
@@ -319,7 +373,6 @@ src/
 | Risk | Mitigation |
 |------|------------|
 | Breaking existing sign-in flow | Thorough testing before deployment |
-| AuthBusinessService doesn't exist yet | Create it as part of sign-up implementation first |
 | Message cache initialization fails | Maintain non-blocking error handling |
 | Profile fetch fails | Keep default profile fallback |
 | Multiple signer extensions installed | Use existing useNostrSigner hook logic |
@@ -328,11 +381,13 @@ src/
 
 ## Dependencies
 
-- **Blocks**: Sign-up implementation (sign-up will reuse ProfileBusinessService patterns)
+- **Blocks**: Sign-up implementation (sign-up will reuse ProfileBusinessService.publishProfile() patterns)
 - **Blocked By**: None (ProfileBusinessService already exists)
 - **Related**: 
-  - `docs/sign-up.md` - Sign-up specification (will use same ProfileBusinessService)
-  - Both auth flows share ProfileBusinessService for user/profile operations
+  - `docs/sign-up.md` - Sign-up specification
+  - Both flows share ProfileBusinessService for profile operations
+  - Sign-up uses AuthBusinessService → ProfileBusinessService
+  - Sign-in uses ProfileBusinessService directly
 
 ---
 
