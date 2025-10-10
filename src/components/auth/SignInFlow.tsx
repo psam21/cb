@@ -23,6 +23,7 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
     signInWithNsec, 
     nsecInput, 
     setNsecInput,
+    clearError,
     isSigningIn, 
     signinError, 
     isAvailable, 
@@ -32,9 +33,23 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
   const [mode, setMode] = useState<SignInMode>('extension');
   const [showNsec, setShowNsec] = useState(false);
 
+  // Clear error when switching modes
+  const handleModeSwitch = (newMode: SignInMode) => {
+    setMode(newMode);
+    clearError();
+  };
+
+  // Clear error when user starts typing
+  const handleNsecInputChange = (value: string) => {
+    setNsecInput(value);
+    if (signinError) {
+      clearError();
+    }
+  };
+
   const handleExtensionSignIn = async () => {
     const success = await signIn();
-    // Only trigger onSuccess callback if sign-in actually succeeded
+    // Optional callback for parent components (navigation handled by hook)
     if (success && onSuccess) {
       onSuccess();
     }
@@ -42,7 +57,7 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
 
   const handleNsecSignIn = async () => {
     const success = await signInWithNsec(nsecInput);
-    // Only trigger onSuccess callback if sign-in actually succeeded
+    // Optional callback for parent components (navigation handled by hook)
     if (success && onSuccess) {
       onSuccess();
     }
@@ -71,22 +86,24 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
       {/* Mode Selection Tabs */}
       <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
         <button
-          onClick={() => setMode('extension')}
+          onClick={() => handleModeSwitch('extension')}
+          disabled={isSigningIn}
           className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
             mode === 'extension'
               ? 'bg-white text-primary-600 shadow-sm'
               : 'text-gray-600 hover:text-gray-800'
-          }`}
+          } ${isSigningIn ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           Browser Extension
         </button>
         <button
-          onClick={() => setMode('nsec')}
+          onClick={() => handleModeSwitch('nsec')}
+          disabled={isSigningIn}
           className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
             mode === 'nsec'
               ? 'bg-white text-primary-600 shadow-sm'
               : 'text-gray-600 hover:text-gray-800'
-          }`}
+          } ${isSigningIn ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           Enter Key
         </button>
@@ -133,7 +150,7 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
             </div>
           )}
 
-          {isAvailable && (
+          {!isLoading && isAvailable && (
             <div className="space-y-4">
               <button
                 onClick={handleExtensionSignIn}
@@ -170,7 +187,7 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
               <input
                 type={showNsec ? 'text' : 'password'}
                 value={nsecInput}
-                onChange={(e) => setNsecInput(e.target.value)}
+                onChange={(e) => handleNsecInputChange(e.target.value)}
                 placeholder="nsec1..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent pr-12"
                 disabled={isSigningIn}

@@ -11,6 +11,7 @@ export interface UseNostrSignInReturn {
   signInWithNsec: (nsec: string) => Promise<boolean>;
   nsecInput: string;
   setNsecInput: (value: string) => void;
+  clearError: () => void;
   isSigningIn: boolean;
   signinError: string | null;
   isAvailable: boolean;
@@ -158,6 +159,7 @@ export function useNostrSignIn(): UseNostrSignInReturn {
     signInWithNsec,
     nsecInput,
     setNsecInput,
+    clearError: () => setSigninError(null),
     isSigningIn,
     signinError,
     isAvailable,
