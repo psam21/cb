@@ -127,10 +127,10 @@ export default function ProfileSetupStep({
       <div className="space-y-6">
         {/* Display Name */}
         <div>
-          <label htmlFor="displayName" className="block text-lg font-semibold text-gray-900 mb-2">
+          <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
             Display Name <span className="text-red-500">*</span>
           </label>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-500 mb-2">
             This is how others will see you on the platform. Choose a name that represents you.
           </p>
           <input
@@ -139,10 +139,10 @@ export default function ProfileSetupStep({
             value={displayName}
             onChange={handleDisplayNameChange}
             maxLength={100}
-            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
               displayNameError
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+                ? 'border-red-500'
+                : 'border-gray-300'
             }`}
             placeholder="Your name"
           />
@@ -156,10 +156,10 @@ export default function ProfileSetupStep({
 
         {/* Bio */}
         <div>
-          <label htmlFor="bio" className="block text-lg font-semibold text-gray-900 mb-2">
+          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">
             Bio (Optional)
           </label>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-500 mb-2">
             Tell others about yourself, your interests, or your cultural background.
           </p>
           <textarea
@@ -168,13 +168,13 @@ export default function ProfileSetupStep({
             onChange={handleBioChange}
             maxLength={1000}
             rows={4}
-          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
-            bioError
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-              : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-          }`}
-          placeholder="Tell us about yourself..."
-        />
+            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              bioError
+                ? 'border-red-500'
+                : 'border-gray-300'
+            }`}
+            placeholder="Tell us about yourself..."
+          />
         {bioError && (
           <p className="mt-1 text-sm text-red-600">{bioError}</p>
         )}
@@ -185,10 +185,10 @@ export default function ProfileSetupStep({
 
       {/* Avatar */}
       <div>
-        <label className="block text-lg font-semibold text-gray-900 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
           Profile Picture (Optional)
         </label>
-        <p className="text-sm text-gray-600 mb-3">
+        <p className="text-sm text-gray-500 mb-2">
           Upload a square image for best results. You can crop it after generating your keys.
         </p>
         
