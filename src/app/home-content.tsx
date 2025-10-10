@@ -13,11 +13,11 @@ import StatBlock from '../components/primitives/StatBlock';
 import { useExploreHeritage } from '@/hooks/useExploreHeritage';
 
 export default function HomeContent() {
-  // Fetch latest 3 heritage contributions for home page
+  // Fetch latest 4 heritage contributions for home page
   const { heritageItems, isLoading, error } = useExploreHeritage();
   
-  // Get latest 3 items (not featured, just latest)
-  const latestContributions = heritageItems.slice(0, 3);
+  // Get latest 4 items (not featured, just latest)
+  const latestContributions = heritageItems.slice(0, 4);
   
   return (
     <div className="min-h-screen">
@@ -145,10 +145,10 @@ export default function HomeContent() {
             </div>
           )}
 
-          {/* Content - Show latest 3 contributions */}
+          {/* Content - Show latest 4 contributions */}
           {!isLoading && !error && latestContributions.length > 0 && (
             <>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 {latestContributions.map((item, index) => (
                   <Link
                     key={item.id}
