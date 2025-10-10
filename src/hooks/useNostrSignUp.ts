@@ -30,9 +30,9 @@ interface GeneratedKeys {
 }
 
 /**
- * Sign-up step numbers
+ * Sign-up step numbers (now 3 steps)
  */
-type SignUpStep = 1 | 2 | 3 | 4;
+type SignUpStep = 1 | 2 | 3;
 
 /**
  * Hook return type
@@ -59,17 +59,14 @@ interface UseNostrSignUpReturn {
   setAvatarFile: (file: File | null) => void;
   
   // Step actions
-  nextStep: () => void;
+  generateKeysAndMoveToBackup: () => Promise<void>; // Renamed - auto-generates and moves to step 2
   previousStep: () => void;
   goToStep: (step: SignUpStep) => void;
   
-  // Key generation (Step 2)
-  generateKeys: () => Promise<void>;
-  
-  // Backup creation (Step 3)
+  // Backup creation (Step 2)
   createBackup: () => void;
   
-  // Completion (Step 4)
+  // Completion (Step 3)
   completeSignUp: () => void;
 }
 
@@ -114,11 +111,6 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
   }, []);
   
   // Step navigation
-  const nextStep = useCallback(() => {
-    setCurrentStep(prev => Math.min(4, prev + 1) as SignUpStep);
-    setError(null);
-  }, []);
-  
   const previousStep = useCallback(() => {
     setCurrentStep(prev => Math.max(1, prev - 1) as SignUpStep);
     setError(null);
@@ -129,8 +121,8 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
     setError(null);
   }, []);
   
-  // Generate keys (Step 2)
-  const generateKeys = useCallback(async () => {
+  // Generate keys and move to backup step (automatic from Step 1 → Step 2)
+  const generateKeysAndMoveToBackup = useCallback(async () => {
     try {
       setError(null);
       setIsGeneratingKeys(true);
@@ -186,7 +178,8 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       setIsPublishingProfile(false);
       setIsGeneratingKeys(false);
       
-      // Success - allow moving to next step
+      // Success - move to backup step automatically
+      setCurrentStep(2);
     } catch (err) {
       console.error('Key generation/publishing failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate keys and publish profile');
@@ -253,12 +246,11 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
     setAvatarFile,
     
     // Navigation
-    nextStep,
     previousStep,
     goToStep,
     
     // Actions
-    generateKeys,
+    generateKeysAndMoveToBackup,
     createBackup,
     completeSignUp,
   };

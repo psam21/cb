@@ -100,7 +100,7 @@ NEXT STEPS:
 
 3. Sign in again using your browser extension (NIP-07)
 
-4. Delete this file OR store it in a highly secure location
+4. Store it in a highly secure location
 
 ────────────────────────────────────────────────────────────────────────────────
 

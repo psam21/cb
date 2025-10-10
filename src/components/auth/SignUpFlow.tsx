@@ -2,10 +2,9 @@
  * SignUpFlow Component
  * 
  * Multi-step wizard for Nostr sign-up
- * - Step 1: Profile Setup (display name, bio, avatar)
- * - Step 2: Key Generation (generate keys, publish profile)
- * - Step 3: Key Backup (download backup file)
- * - Step 4: Final Confirmation (review and complete)
+ * - Step 1: Profile Setup (display name, bio, avatar) → Auto-generates keys on "Next"
+ * - Step 2: Key Backup (download backup file)
+ * - Step 3: Final Confirmation (review and complete)
  * 
  * @module components/auth/SignUpFlow
  */
@@ -15,7 +14,6 @@
 import React from 'react';
 import { useNostrSignUp } from '@/hooks/useNostrSignUp';
 import ProfileSetupStep from './ProfileSetupStep';
-import KeyGenerationStep from './KeyGenerationStep';
 import KeyBackupStep from './KeyBackupStep';
 import FinalConfirmationStep from './FinalConfirmationStep';
 
@@ -33,17 +31,16 @@ export const SignUpFlow: React.FC = () => {
     setDisplayName,
     setBio,
     setAvatarFile,
-    generateKeys,
+    generateKeysAndMoveToBackup,
     createBackup,
     completeSignUp,
-    nextStep,
     previousStep,
+    goToStep,
   } = useNostrSignUp();
 
-  // Step titles for progress indicator
+  // Step titles for progress indicator (3 steps)
   const stepTitles = [
-    'Profile Setup',
-    'Generate Keys',
+    'Create Profile',
     'Backup Keys',
     'Complete',
   ];
@@ -124,7 +121,7 @@ export const SignUpFlow: React.FC = () => {
 
         {/* Step Content */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-12">
-          {/* Step 1: Profile Setup */}
+          {/* Step 1: Profile Setup (auto-generates keys on Next) */}
           {currentStep === 1 && (
             <ProfileSetupStep
               displayName={formData.displayName}
@@ -133,42 +130,29 @@ export const SignUpFlow: React.FC = () => {
               onDisplayNameChange={setDisplayName}
               onBioChange={setBio}
               onAvatarChange={setAvatarFile}
-              onNext={nextStep}
-            />
-          )}
-
-          {/* Step 2: Key Generation */}
-          {currentStep === 2 && (
-            <KeyGenerationStep
-              displayName={formData.displayName}
-              bio={formData.bio}
-              avatarFile={formData.avatarFile}
-              generatedKeys={generatedKeys}
+              onNext={generateKeysAndMoveToBackup}
               isGeneratingKeys={isGeneratingKeys}
               isUploadingAvatar={isUploadingAvatar}
               isPublishingProfile={isPublishingProfile}
               error={error}
-              onGenerateKeys={generateKeys}
-              onNext={nextStep}
-              onBack={previousStep}
             />
           )}
 
-          {/* Step 3: Key Backup */}
-          {currentStep === 3 && generatedKeys && (
+          {/* Step 2: Key Backup */}
+          {currentStep === 2 && generatedKeys && (
             <KeyBackupStep
               displayName={formData.displayName}
               npub={generatedKeys.npub}
               isCreatingBackup={isCreatingBackup}
               error={error}
               onCreateBackup={createBackup}
-              onNext={nextStep}
+              onNext={() => goToStep(3)}
               onBack={previousStep}
             />
           )}
 
-          {/* Step 4: Final Confirmation */}
-          {currentStep === 4 && generatedKeys && (
+          {/* Step 3: Final Confirmation */}
+          {currentStep === 3 && generatedKeys && (
             <FinalConfirmationStep
               displayName={formData.displayName}
               bio={formData.bio}
