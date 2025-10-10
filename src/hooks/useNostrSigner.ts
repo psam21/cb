@@ -104,6 +104,7 @@ export const useNostrSigner = () => {
 
   // Helper to get signer when needed
   const getSigner = async (): Promise<NostrSigner> => {
+    // First check for cached signer
     if (signer) {
       logger.info('Getting cached Nostr signer instance', {
         service: 'useNostrSigner',
@@ -112,12 +113,43 @@ export const useNostrSigner = () => {
       return signer;
     }
     
+    // Check for browser extension signer
     if (typeof window !== 'undefined' && window.nostr) {
       logger.info('Getting Nostr signer instance from window', {
         service: 'useNostrSigner',
         method: 'getSigner',
       });
       return window.nostr;
+    }
+    
+    // Check for nsec (direct key access) and create temporary signer
+    const nsec = useAuthStore.getState().nsec;
+    if (nsec) {
+      logger.info('Creating temporary signer from nsec', {
+        service: 'useNostrSigner',
+        method: 'getSigner',
+        hasNsec: true,
+      });
+      
+      // Decode nsec to get secret key
+      const { nip19 } = await import('nostr-tools');
+      const { getPublicKey, finalizeEvent } = await import('nostr-tools/pure');
+      
+      const decoded = nip19.decode(nsec);
+      if (decoded.type !== 'nsec') {
+        throw new Error('Invalid nsec format');
+      }
+      
+      const secretKey = decoded.data;
+      
+      // Create temporary signer
+      const temporarySigner: NostrSigner = {
+        getPublicKey: async () => getPublicKey(secretKey),
+        signEvent: async (event) => finalizeEvent(event, secretKey),
+        getRelays: async () => ({}), // No extension relays
+      };
+      
+      return temporarySigner;
     }
     
     throw new Error('No signer available');
