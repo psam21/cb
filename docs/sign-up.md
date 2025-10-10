@@ -89,90 +89,126 @@ Generic Services (GenericEventService, GenericRelayService, GenericBlossomServic
 - **Path**: `/src/components/auth/SignUpFlow.tsx`
 - **Purpose**: Multi-step sign-up wizard UI
 - **Responsibilities**:
-  - Step navigation (Key Generation → Backup → Profile → Storage)
+  - Step navigation: **Step 1 (Profile) → Step 2 (Keys) → Step 3 (Backup) → Step 4 (Confirm)**
   - Form validation (client-side only)
   - Calls `useNostrSignUp` hook
-  - Displays security warnings
-  - Progress indicator
+  - Displays security warnings at each step
+  - Progress indicator (1/4, 2/4, 3/4, 4/4)
   - NO direct service calls
+  - NO business logic
 
 #### 3. **Sub-Components**
-- **Path**: `/src/components/auth/KeyGenerationStep.tsx`
-  - Generate keys button
-  - Display generated nsec/npub
-  - Security warning callout
-  - Copy-to-clipboard functionality
-  - ⚡ Triggers background Kind 0 publish after generation
 
-- **Path**: `/src/components/auth/KeyBackupStorageStep.tsx` (COMBINED)
-  - Download encrypted backup button
-  - Backup confirmation checkbox
-  - "I understand I'll lose my account if I lose my keys" acknowledgment
-  - localStorage storage (encrypted, automatic)
-  - Security warnings and best practices
-  - Security comparison table
-  - Recommendations based on detected capabilities
-
+**Step 1: Profile Setup**
 - **Path**: `/src/components/auth/ProfileSetupStep.tsx`
   - Display name input (MANDATORY, max 100 chars)
-  - Avatar upload (Blossom integration, OPTIONAL)
   - Bio textarea (OPTIONAL, max 1000 chars)
+  - Avatar upload (OPTIONAL, Blossom integration)
   - Image cropping preview (1:1 aspect ratio)
-  - Shown as STEP 1 (before key generation)
-  - Avatar held as File until Step 2
+  - Reuses existing `ImageUpload` + `ImageCropper` from `/src/components/profile/`
+  - Avatar held as File until Step 2 (when keys are generated and signer created)
+  - "Next" button validates display name before proceeding
 
+**Step 2: Key Generation**
+- **Path**: `/src/components/auth/KeyGenerationStep.tsx`
+  - "Generate Keys" button (calls `AuthBusinessService.generateNostrKeys()`)
+  - Display generated nsec/npub (with visibility toggle)
+  - Copy-to-clipboard buttons for both keys
+  - Security warning callout: "NEVER share your nsec"
+  - Upload avatar (if provided in Step 1) using temporary signer
+  - Publish Kind 0 event (profile + avatar URL) to relays
+  - "Next" button enabled after successful publish
+
+**Step 3: Backup Keys**
+- **Path**: `/src/components/auth/KeyBackupStep.tsx`
+  - Download backup button (plain text file: `{name}_culturebridge.txt`)
+  - Backup confirmation checkbox: "I have securely saved my backup file"
+  - Security warnings: "Without this backup, you will lose access to your account"
+  - Option to import to browser extension immediately
+  - "Next" button enabled only after backup confirmation
+
+**Step 4: Final Confirmation**
 - **Path**: `/src/components/auth/FinalConfirmationStep.tsx`
+  - Summary display: name, npub, profile published confirmation
   - Security warnings review
   - "I understand and accept responsibility" checkbox
-  - Configuration summary display
-  - Redirect to /profile on confirmation
+  - "Complete Sign-Up" button
+  - On completion: Clear nsec from Zustand, redirect to sign-in page
+  - Instructions: "Sign in with your browser extension"
 
 #### 4. **State Management Hook**
 
 - **Path**: `/src/hooks/useNostrSignUp.ts`
-- **Purpose**: Orchestrate sign-up workflow, state management
+- **Purpose**: Orchestrate sign-up workflow and state management
 - **Responsibilities**:
-  - Track current step (1-4)
-  - Store form data (display name, bio, avatar)
-  - Store generated keys (TEMPORARILY, until backup confirmed)
-  - Call `AuthBusinessService` methods
-  - Publish complete Kind 0 in Step 2 (with profile data from Step 1)
-  - Handle errors and loading states
-  - Clear sensitive data after completion
+  - Track current step: 1 (Profile) → 2 (Keys) → 3 (Backup) → 4 (Confirm)
+  - Store form data: `displayName` (required), `bio` (optional), `avatarFile` (optional)
+  - Store generated keys: `npub`, `nsec` (via `useAuthStore.setNsec()`)
+  - Call `AuthBusinessService` methods:
+    - `generateNostrKeys()` - Step 2
+    - `uploadAvatar(file, signer)` - Step 2 (if avatar provided)
+    - `publishProfile(profile, signer)` - Step 2 (after avatar upload)
+    - `createBackupFile(displayName, npub, nsec)` - Step 3
+  - Handle errors and loading states for each step
+  - Clear nsec from auth store on completion (Step 4)
+  - Navigation: `nextStep()`, `previousStep()`, `goToStep(n)`
 
-#### 5. **Business Service**
+#### 5. **Business Service** [NEW]
 
 - **Path**: `/src/services/business/AuthBusinessService.ts`
-- **Purpose**: Authentication and identity management orchestration (SOA-compliant)
+- **Purpose**: Authentication and key management orchestration (SOA-compliant)
 - **Responsibilities**:
-  - `generateNostrKeys()`: Delegates to `utils/keyManagement.ts` (wraps nostr-tools)
-  - `uploadAvatar(file, signer)`: Delegates to `GenericBlossomService.uploadFile()`
-  - `publishProfile(profile, signer)`: Delegates to `ProfileBusinessService.publishProfile()`
-  - `createBackupFile(displayName, npub, nsec)`: Delegates to `utils/keyExport.ts` (plain text format)
-  - **DOES NOT**: Implement key generation, event creation, or encryption
-  - **ONLY**: Orchestrates calls to existing services and utilities
-  - **Creates temporary NostrSigner from nsec stored in Zustand**
-  - **Stores nsec in auth store (in-memory only) via `useAuthStore.setNsec(nsec)`**
-  - **NOTE**: nsec held in memory for avatar upload and profile publishing, cleared on logout/refresh
+  - `generateNostrKeys()`: Returns `{ nsec, npub, pubkey }`
+    - Delegates to `utils/keyManagement.ts` (wraps nostr-tools)
+    - Stores nsec in Zustand via `useAuthStore.setNsec(nsec)`
+    - Returns keys to hook for UI display
+  
+  - `uploadAvatar(file, signer)`: Returns blossom URL
+    - Delegates to `GenericBlossomService.uploadFile(file, signer)`
+    - Returns `https://cdn.satellite.earth/<hash>`
+  
+  - `publishProfile(profile, signer)`: Publishes Kind 0 event
+    - Delegates to `ProfileBusinessService.publishProfile(profile, signer)`
+    - SHARED method (same as sign-in profile updates)
+    - Publishes to multiple relays on the network
+  
+  - `createBackupFile(displayName, npub, nsec)`: Triggers download
+    - Delegates to `utils/keyExport.ts`
+    - Generates `{displayName}_culturebridge.txt`
+    - Plain text format with warnings
+  
+- **Creates temporary NostrSigner**:
+  - Uses nsec from `useAuthStore.getState().nsec`
+  - Implements NostrSigner interface for signing events
+  - Used for avatar upload and profile publishing
+
+- **DOES NOT**: Implement key generation, event creation, or encryption
+- **ONLY**: Orchestrates calls to existing services and utilities
 
 #### 6. **Utility Functions** [NEW]
 
 - **Path**: `/src/utils/keyManagement.ts`
-- **Purpose**: Client-side key cryptography utilities (wraps nostr-tools)
+- **Purpose**: Client-side key cryptography (wraps nostr-tools)
 - **Responsibilities**:
-  - `generateKeys()`: Wrapper around `nostr-tools` key generation
-  - nsec/npub encoding/decoding (nip19)
-  - Key format validation
-  - Secure random generation
-  - No business logic (pure utility functions)
+  - `generateKeys()`: Returns `{ nsec, npub, pubkey }`
+    - Uses `nostr-tools` generateSecretKey() and getPublicKey()
+    - Uses nip19.nsecEncode() and nip19.npubEncode()
+    - Validates key lengths (nsec: 63 chars, npub: 63 chars)
+  - `decodeNsec(nsec)`: Converts nsec to hex secret key
+  - `decodeNpub(npub)`: Converts npub to hex pubkey
+  - **NO business logic** - pure utility functions
+  - **NO storage** - only generation and encoding/decoding
 
 - **Path**: `/src/utils/keyExport.ts`
-- **Purpose**: Key backup and export utilities
+- **Purpose**: Backup file generation
 - **Responsibilities**:
-  - Format plain text backup file with npub, nsec, and warning messages
-  - Generate filename: `{display_name}_culturebridge.txt`
-  - Download trigger functions
-  - Include Culture Bridge URL and security warnings
+  - `createBackupFile(displayName, npub, nsec)`: Triggers download
+    - Formats plain text with warnings
+    - Filename: `{displayName}_culturebridge.txt`
+    - Content: Warning message, npub, nsec, Culture Bridge URL
+    - Creates download via `<a>` tag with `download` attribute
+  - **NO encryption** - plain text only
+  - **NO storage** - only download trigger
 
 ### Files to Modify
 
@@ -187,12 +223,14 @@ Generic Services (GenericEventService, GenericRelayService, GenericBlossomServic
 - **Changes**: Add "Sign Up" link/button to redirect to `/signup`
 - **Note**: Sign-in page already refactored to SOA-compliant architecture
 
-#### 3. **Auth Store**
+#### 3. **Auth Store** [MODIFIED]
 - **Path**: `/src/stores/useAuthStore.ts`
 - **Changes**: 
-  - Add `isNewUser` flag (true if just completed sign-up)
-  - Add `signUpProgress` state (track completion percentage)
-  - Add `setNewUser()` action
+  - ✅ ALREADY ADDED: `nsec: string | null` field (in-memory only)
+  - ✅ ALREADY ADDED: `setNsec(nsec)` action
+  - ✅ ALREADY CONFIGURED: nsec excluded from persist (never saved to localStorage)
+  - ✅ ALREADY CONFIGURED: nsec cleared on logout and reset
+- **No additional changes needed** - auth store is ready for sign-up flow
   - Persist `isNewUser` temporarily (clear after first session)
 
 ---
