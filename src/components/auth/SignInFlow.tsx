@@ -181,12 +181,6 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
       {/* Nsec Mode */}
       {mode === 'nsec' && (
         <div className="space-y-4">
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-            <p className="text-blue-800 text-sm">
-              <strong>For mobile users:</strong> Enter your private key (nsec) to sign in without a browser extension.
-            </p>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Private Key (nsec)
