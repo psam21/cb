@@ -117,7 +117,8 @@ Generic Services (GenericEventService, GenericRelayService, GenericBlossomServic
   - Security warning callout: "NEVER share your nsec"
   - Upload avatar (if provided in Step 1) using temporary signer
   - Publish Kind 0 event (profile + avatar URL) to relays
-  - "Next" button enabled after successful publish
+  - Publish Kind 1 event (welcome note) silently to verify signer works for text notes
+  - "Next" button enabled after successful publishes
 
 **Step 3: Backup Keys**
 - **Path**: `/src/components/auth/KeyBackupStep.tsx`
@@ -148,6 +149,7 @@ Generic Services (GenericEventService, GenericRelayService, GenericBlossomServic
     - `generateNostrKeys()` - Step 2
     - `uploadAvatar(file, signer)` - Step 2 (if avatar provided)
     - `publishProfile(profile, signer)` - Step 2 (after avatar upload)
+    - `publishWelcomeNote(signer)` - Step 2 (after profile publish, silent)
     - `createBackupFile(displayName, npub, nsec)` - Step 3
   - Handle errors and loading states for each step
   - Clear nsec from auth store on completion (Step 4)
@@ -171,6 +173,13 @@ Generic Services (GenericEventService, GenericRelayService, GenericBlossomServic
     - Delegates to `ProfileBusinessService.publishProfile(profile, signer)`
     - SHARED method (same as sign-in profile updates)
     - Publishes to multiple relays on the network
+  
+  - `publishWelcomeNote(signer)`: Publishes Kind 1 event (silent verification)
+    - Creates Kind 1 text note with welcome message
+    - Verifies temporary signer works for both Kind 0 and Kind 1 events
+    - Published silently (no UI notification)
+    - Content: "🌍✨ Kicking off something truly beautiful — preserving our Culture and Heritage on Nostr for generations to come! 👶🌱 🚀📚 With Culture Bridge, I'm setting out to protect and share our community's timeless stories 📜🏛️ 🌈📖 Can't wait to celebrate the wisdom, traditions, and heritage that unite us all 🤝💫"
+    - Tags: `#community #storytelling #traditions #culture #heritage #humanity #inclusivity #art #music #history #Culture-Bridge #CultureBridge #nostr`
   
   - `createBackupFile(displayName, npub, nsec)`: Triggers download
     - Delegates to `utils/keyExport.ts`
@@ -339,12 +348,21 @@ ProfileBusinessService.createProfileEvent() [creates Kind 0 event]
 GenericEventService.signEvent() [signs with temporarySigner]
   ↓
 GenericRelayService.publishEvent() [publishes to relays]
+  ↓
+AuthBusinessService.publishWelcomeNote(temporarySigner) ⚡ BACKGROUND (SILENT)
+  ↓
+Creates Kind 1 text note with welcome message + hashtags
+  ↓
+GenericEventService.signEvent() [signs with temporarySigner]
+  ↓
+GenericRelayService.publishEvent() [publishes to relays]
 
 Note: 
 - temporarySigner is created from nsec stored in Zustand
 - Implements NostrSigner interface
 - ProfileBusinessService.publishProfile() is SHARED with sign-in
 - No NostrEventService needed (ProfileBusinessService handles Kind 0 directly)
+- Welcome note (Kind 1) verifies signer works for text notes, not shown to user
 ```
 
 **Avatar Upload**:
