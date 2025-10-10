@@ -25,7 +25,229 @@ The `/explore` page is the **public discovery hub** for heritage contributions p
 
 ---
 
-## SOA Architecture
+## SOA Architecture (Service-Oriented Architecture)
+
+### Overview
+Culture Bridge follows a **strict Service-Oriented Architecture (SOA)** pattern with clear separation of concerns across four distinct layers. Each layer has a single, well-defined responsibility and communicates only with adjacent layers.
+
+### Architecture Principles
+
+**1. Unidirectional Data Flow**
+```
+User Action → Component → Hook → Business Service → Generic Service → Relay Network
+                ↓           ↓          ↓                ↓                ↓
+            UI Update ← State ← Data ← Parsed Events ← Raw Events
+```
+
+**2. Layer Responsibilities**
+
+| Layer | Responsibility | What It Does | What It DOESN'T Do |
+|-------|---------------|--------------|-------------------|
+| **Page** | Routing & SEO | Metadata, route params | Business logic, state |
+| **Component** | UI Rendering | Display data, user input | Data fetching, processing |
+| **Hook** | State & Orchestration | Manage state, call services | Relay queries, parsing |
+| **Service** | Business Logic | Parse events, validate data | UI concerns, state |
+
+**3. Communication Rules**
+- ✅ **Allowed**: Page → Component → Hook → Service
+- ❌ **Forbidden**: Component → Service (skip hook)
+- ❌ **Forbidden**: Hook → Component (use return values)
+- ❌ **Forbidden**: Service → Hook (use callbacks/promises)
+
+**4. Data Flow Pattern**
+```typescript
+// ✅ CORRECT SOA Flow
+Page (metadata only)
+  → Component (renders UI)
+    → Hook (manages state, calls service)
+      → Service (queries relays, parses data)
+        → Returns data
+      ← Hook processes data
+    ← Component receives via hook return
+  ← Page renders component
+
+// ❌ WRONG - Component calling service directly
+Component → Service ❌ (skips hook layer)
+
+// ❌ WRONG - Hook manipulating DOM
+Hook → document.getElementById() ❌ (UI concern)
+```
+
+### SOA Implementation for /explore
+
+**Why SOA?**
+1. **Testability**: Each layer tested independently
+2. **Reusability**: Hooks can be used by multiple components
+3. **Maintainability**: Changes isolated to single layer
+4. **Scalability**: Easy to add features without breaking existing code
+
+**Layer Isolation Example**:
+```typescript
+// If we need to change relay query logic:
+// ✅ Only modify: GenericHeritageService
+// ✅ Hook and Component unchanged
+
+// If we need to change card layout:
+// ✅ Only modify: ExploreContent component
+// ✅ Hook and Service unchanged
+
+// If we need to add caching:
+// ✅ Only modify: useExploreHeritage hook
+// ✅ Component and Service unchanged
+```
+
+---
+
+### Real-World Example: User Visits /explore
+
+**Step-by-step SOA flow**:
+
+1. **User Action**: User navigates to `/explore`
+
+2. **Page Layer** (`src/app/explore/page.tsx`):
+```typescript
+export default function ExplorePage() {
+  return <ExploreContent />;  // Just render component
+}
+```
+- Provides SEO metadata
+- Renders component
+- **Does NOT**: Fetch data, manage state
+
+3. **Component Layer** (`src/components/pages/ExploreContent.tsx`):
+```typescript
+export default function ExploreContent() {
+  const { heritageItems, isLoading, error } = useExploreHeritage();
+  
+  if (isLoading) return <Skeleton />;
+  if (error) return <Error message={error} />;
+  
+  return (
+    <div>
+      <FeaturedCards items={heritageItems.slice(0, 2)} />
+      <AllCulturesGrid items={heritageItems.slice(2)} />
+    </div>
+  );
+}
+```
+- Calls hook to get data
+- Renders UI based on state
+- Handles loading/error states
+- **Does NOT**: Query relays, parse events
+
+4. **Hook Layer** (`src/hooks/useExploreHeritage.ts`):
+```typescript
+export function useExploreHeritage() {
+  const [items, setItems] = useState<HeritageExploreItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      // Call service
+      const events = await GenericHeritageService.fetchPublicHeritage();
+      
+      // Process data for UI
+      const mapped = events.map(event => ({
+        id: event.id,
+        name: getTag(event, 'title'),
+        description: getTag(event, 'summary'),
+        image: getFirstImageUrl(event),
+        // ... map all fields
+      }));
+      
+      // Sort for UI
+      const sorted = mapped.sort((a, b) => b.publishedAt - a.publishedAt);
+      
+      setItems(sorted);
+      setIsLoading(false);
+    };
+    
+    fetchData();
+  }, []);
+  
+  return { heritageItems: items, isLoading, error: null };
+}
+```
+- Manages state (loading, data, errors)
+- Calls service to fetch data
+- Maps service data to UI format
+- Handles sorting/filtering
+- **Does NOT**: Make relay queries, render UI
+
+5. **Service Layer** (`src/services/generic/GenericHeritageService.ts`):
+```typescript
+export class GenericHeritageService {
+  static async fetchPublicHeritage(limit = 50): Promise<HeritageEvent[]> {
+    // Query relays
+    const filter = {
+      kinds: [30023],
+      "#t": ["culture-bridge-heritage"],
+      limit
+    };
+    
+    const events = await GenericRelayService.queryRelays(filter);
+    
+    // Parse and validate
+    const parsed = events.map(event => {
+      if (!hasRequiredTags(event)) {
+        logger.warn('Invalid event', { eventId: event.id });
+        return null;
+      }
+      
+      return {
+        id: event.id,
+        pubkey: event.pubkey,
+        tags: event.tags,
+        content: event.content,
+        created_at: event.created_at,
+      };
+    }).filter(Boolean);
+    
+    return parsed;
+  }
+}
+```
+- Queries Nostr relays
+- Parses raw events
+- Validates data
+- Returns structured data
+- **Does NOT**: Manage UI state, render components
+
+**Complete Flow Diagram**:
+```
+User clicks /explore
+    ↓
+[Page] Renders <ExploreContent />
+    ↓
+[Component] Calls useExploreHeritage()
+    ↓
+[Hook] Calls GenericHeritageService.fetchPublicHeritage()
+    ↓
+[Service] Queries relays with filter { kinds: [30023], #t: ["..."] }
+    ↓
+[Relays] Return raw Nostr events
+    ↓
+[Service] Parses & validates events → HeritageEvent[]
+    ↓
+[Hook] Maps to UI format → HeritageExploreItem[]
+[Hook] Sorts by date, sets state
+    ↓
+[Component] Receives { heritageItems, isLoading, error }
+[Component] Renders featured + grid cards
+    ↓
+[Page] Displays final UI
+    ↓
+User sees heritage content!
+```
+
+**Why This Matters**:
+- **Change card design?** → Only edit Component
+- **Add caching?** → Only edit Hook
+- **Switch relay library?** → Only edit Service
+- **Add new data field?** → Service parses it, Hook maps it, Component displays it
+- **Each layer isolated** → No cascading changes
+
+---
 
 ### Layer 1: Page (Presentation)
 **File**: `src/app/explore/page.tsx`
