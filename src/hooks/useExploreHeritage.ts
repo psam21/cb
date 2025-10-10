@@ -175,8 +175,12 @@ export function useExploreHeritage() {
       // Map to UI format
       const newItems = events.map(mapToExploreItem);
       
-      // Append to existing items
-      setHeritageItems(prev => [...prev, ...newItems]);
+      // Append to existing items (with deduplication by dTag)
+      setHeritageItems(prev => {
+        const existingDTags = new Set(prev.map(item => item.dTag));
+        const uniqueNewItems = newItems.filter(item => !existingDTags.has(item.dTag));
+        return [...prev, ...uniqueNewItems];
+      });
       
       // If we got less than 6 events, there's no more to load
       setHasMore(events.length === 6);
