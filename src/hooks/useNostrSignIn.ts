@@ -92,14 +92,7 @@ export function useNostrSignIn(): UseNostrSignInReturn {
   const signInWithNsec = async (nsec: string) => {
     logger.info('Nsec sign-in initiated', { service: 'useNostrSignIn' });
 
-    // Basic validation
-    if (!nsec || !nsec.trim()) {
-      const errorMsg = 'Please enter your private key';
-      setSigninError(errorMsg);
-      logger.warn('Nsec sign-in failed: empty input');
-      return;
-    }
-
+    // Validate format (empty check handled by button disabled state)
     if (!nsec.startsWith('nsec1')) {
       const errorMsg = 'Invalid private key format. Private keys should start with "nsec1"';
       setSigninError(errorMsg);
