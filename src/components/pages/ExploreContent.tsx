@@ -195,7 +195,7 @@ export default function ExploreContent() {
               {featured.length > 0 && (
                 <div className="mb-12">
                   <h3 className="text-xl font-serif font-bold text-primary-800 mb-6">
-                    Featured Cultures
+                    Featured Culture Contributions
                   </h3>
                   <div className="grid md:grid-cols-2 gap-8">
                     {featured.map((item, index) => (
@@ -295,7 +295,7 @@ export default function ExploreContent() {
               {grid.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-xl font-serif font-bold text-primary-800 mb-6">
-                    All Cultures
+                    All Culture Contributions
                   </h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {grid.map((item, index) => (
