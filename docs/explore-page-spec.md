@@ -796,27 +796,6 @@ export const metadata = {
 
 ---
 
-## Analytics & Logging
-
-### Events to Track
-- `explore_page_view` - User visits /explore
-- `explore_search` - User searches
-- `explore_filter` - User applies filter
-- `heritage_card_click` - User clicks card
-- `heritage_relay_error` - Relay fetch fails
-
-### Logger Context
-```typescript
-logger.info('Fetched heritage items', {
-  service: 'ExploreContent',
-  count: heritageItems.length,
-  featured: 2,
-  allCultures: heritageItems.length - 2,
-});
-```
-
----
-
 ## Dependencies
 
 ### New Dependencies
