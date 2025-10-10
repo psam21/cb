@@ -280,7 +280,7 @@ export default function ExploreContent() {
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">{item.relativeTime}</span>
                             <span className="text-primary-800 font-medium group-hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
-                              Explore Culture
+                              Explore Contribution
                               <ArrowRight className="w-4 h-4 ml-2" />
                             </span>
                           </div>
@@ -357,7 +357,7 @@ export default function ExploreContent() {
                             )}
                           </div>
                           <span className="text-primary-800 font-medium group-hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
-                            Explore Culture
+                            Explore Contribution
                             <ArrowRight className="w-4 h-4 ml-2" />
                           </span>
                         </div>

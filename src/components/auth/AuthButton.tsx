@@ -52,7 +52,7 @@ export default function AuthButton() {
       <div className="flex items-center space-x-2">
         <Link
           href="/signin"
-          className="px-4 py-2 bg-white text-primary-800 rounded-full font-medium hover:bg-gray-100 transition-colors duration-200 whitespace-nowrap border border-primary-200"
+          className="px-4 py-2 bg-primary-100 text-primary-800 rounded-full font-medium hover:bg-primary-200 transition-colors duration-200 whitespace-nowrap border border-primary-300"
         >
           Sign In
         </Link>
