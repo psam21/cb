@@ -55,14 +55,6 @@ export default function KeyBackupStep({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">Backup Your Keys</h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Download a backup file containing your keys. Keep it safe - you&apos;ll need it to recover your account.
-        </p>
-      </div>
-
       {/* Why Backup Section */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <h3 className="text-sm font-semibold text-yellow-900 mb-2">Why is this important?</h3>

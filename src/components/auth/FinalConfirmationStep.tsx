@@ -49,14 +49,6 @@ export default function FinalConfirmationStep({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">You&apos;re All Set!</h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Review your profile and complete your sign-up to start using Culture Bridge.
-        </p>
-      </div>
-
       {/* Profile Summary */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Profile</h3>

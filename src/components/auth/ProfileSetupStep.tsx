@@ -123,51 +123,51 @@ export default function ProfileSetupStep({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">Create Your Profile</h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Let&apos;s start by setting up your public profile. This information will be visible to others on Nostr.
-        </p>
-      </div>
+      {/* Form Section */}
+      <div className="space-y-6">
+        {/* Display Name */}
+        <div>
+          <label htmlFor="displayName" className="block text-lg font-semibold text-gray-900 mb-2">
+            Display Name <span className="text-red-500">*</span>
+          </label>
+          <p className="text-sm text-gray-600 mb-3">
+            This is how others will see you on the platform. Choose a name that represents you.
+          </p>
+          <input
+            type="text"
+            id="displayName"
+            value={displayName}
+            onChange={handleDisplayNameChange}
+            maxLength={100}
+            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+              displayNameError
+                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+            }`}
+            placeholder="Your name"
+          />
+          {displayNameError && (
+            <p className="mt-1 text-sm text-red-600">{displayNameError}</p>
+          )}
+          <p className="mt-1 text-sm text-gray-500">
+            {displayName.length}/100 characters
+          </p>
+        </div>
 
-      {/* Display Name */}
-      <div>
-        <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-          Display Name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="displayName"
-          value={displayName}
-          onChange={handleDisplayNameChange}
-          maxLength={100}
-          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
-            displayNameError
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-              : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-          }`}
-          placeholder="Your name"
-        />
-        {displayNameError && (
-          <p className="mt-1 text-sm text-red-600">{displayNameError}</p>
-        )}
-        <p className="mt-1 text-sm text-gray-500">
-          {displayName.length}/100 characters
-        </p>
-      </div>
-
-      {/* Bio */}
-      <div>
-        <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
-          Bio (Optional)
-        </label>
-        <textarea
-          id="bio"
-          value={bio}
-          onChange={handleBioChange}
-          maxLength={1000}
-          rows={4}
+        {/* Bio */}
+        <div>
+          <label htmlFor="bio" className="block text-lg font-semibold text-gray-900 mb-2">
+            Bio (Optional)
+          </label>
+          <p className="text-sm text-gray-600 mb-3">
+            Tell others about yourself, your interests, or your cultural background.
+          </p>
+          <textarea
+            id="bio"
+            value={bio}
+            onChange={handleBioChange}
+            maxLength={1000}
+            rows={4}
           className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
             bioError
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
@@ -185,10 +185,10 @@ export default function ProfileSetupStep({
 
       {/* Avatar */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-lg font-semibold text-gray-900 mb-2">
           Profile Picture (Optional)
         </label>
-        <p className="text-sm text-gray-500 mb-3">
+        <p className="text-sm text-gray-600 mb-3">
           Upload a square image for best results. You can crop it after generating your keys.
         </p>
         
@@ -230,6 +230,7 @@ export default function ProfileSetupStep({
             </p>
           </div>
         )}
+      </div>
       </div>
 
       {/* Next Button */}

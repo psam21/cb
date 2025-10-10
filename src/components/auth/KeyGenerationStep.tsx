@@ -85,14 +85,6 @@ export default function KeyGenerationStep({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">Generate Your Keys</h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Create your unique Nostr identity. Your keys are generated locally and never leave your device.
-        </p>
-      </div>
-
       {/* Generate Keys Section */}
       {!generatedKeys && (
         <div className="bg-accent-50 border border-accent-200 rounded-lg p-6">
