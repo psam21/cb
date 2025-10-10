@@ -30,9 +30,9 @@ interface GeneratedKeys {
 }
 
 /**
- * Sign-up step numbers (now 3 steps)
+ * Sign-up step numbers (now 2 steps)
  */
-type SignUpStep = 1 | 2 | 3;
+type SignUpStep = 1 | 2;
 
 /**
  * Hook return type
@@ -59,14 +59,14 @@ interface UseNostrSignUpReturn {
   setAvatarFile: (file: File | null) => void;
   
   // Step actions
-  generateKeysAndMoveToBackup: () => Promise<void>; // Renamed - auto-generates and moves to step 2
+  generateKeysAndMoveToBackup: () => Promise<void>; // Auto-generates and moves to step 2
   previousStep: () => void;
   goToStep: (step: SignUpStep) => void;
   
   // Backup creation (Step 2)
   createBackup: () => void;
   
-  // Completion (Step 3)
+  // Completion (after Step 2)
   completeSignUp: () => void;
 }
 

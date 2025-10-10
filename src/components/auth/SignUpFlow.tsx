@@ -3,26 +3,27 @@
  * 
  * Multi-step wizard for Nostr sign-up
  * - Step 1: Profile Setup (display name, bio, avatar) → Auto-generates keys on "Next"
- * - Step 2: Key Backup (download backup file)
- * - Step 3: Final Confirmation (review and complete)
+ * - Step 2: Key Backup (download backup file, confirm) → Success Modal → Home
  * 
  * @module components/auth/SignUpFlow
  */
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useNostrSignUp } from '@/hooks/useNostrSignUp';
 import ProfileSetupStep from './ProfileSetupStep';
 import KeyBackupStep from './KeyBackupStep';
-import FinalConfirmationStep from './FinalConfirmationStep';
 
 export const SignUpFlow: React.FC = () => {
+  const router = useRouter();
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
   const {
     currentStep,
     formData,
     generatedKeys,
-    avatarUrl,
     isGeneratingKeys,
     isUploadingAvatar,
     isPublishingProfile,
@@ -35,15 +36,24 @@ export const SignUpFlow: React.FC = () => {
     createBackup,
     completeSignUp,
     previousStep,
-    goToStep,
   } = useNostrSignUp();
 
-  // Step titles for progress indicator (3 steps)
+  // Step titles for progress indicator (2 steps)
   const stepTitles = [
     'Create Profile',
     'Backup Keys',
-    'Complete',
   ];
+
+  // Handle completion - show modal then redirect
+  const handleComplete = () => {
+    setShowSuccessModal(true);
+  };
+
+  // Handle modal close - complete signup and redirect
+  const handleModalClose = () => {
+    completeSignUp();
+    router.push('/');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -146,19 +156,7 @@ export const SignUpFlow: React.FC = () => {
               isCreatingBackup={isCreatingBackup}
               error={error}
               onCreateBackup={createBackup}
-              onNext={() => goToStep(3)}
-              onBack={previousStep}
-            />
-          )}
-
-          {/* Step 3: Final Confirmation */}
-          {currentStep === 3 && generatedKeys && (
-            <FinalConfirmationStep
-              displayName={formData.displayName}
-              bio={formData.bio}
-              avatarUrl={avatarUrl}
-              npub={generatedKeys.npub}
-              onComplete={completeSignUp}
+              onNext={handleComplete}
               onBack={previousStep}
             />
           )}
@@ -175,6 +173,37 @@ export const SignUpFlow: React.FC = () => {
         </div>
         </div>
       </section>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-3xl font-serif font-bold text-primary-800 mb-3">
+                Welcome to Culture Bridge!
+              </h2>
+              <p className="text-lg text-gray-600 mb-4">
+                Your Nostr identity has been created successfully. You&apos;re now part of the decentralized web.
+              </p>
+              <p className="text-sm text-gray-500">
+                Start exploring indigenous heritage, connecting with communities, and preserving cultural knowledge for future generations.
+              </p>
+            </div>
+            
+            <button
+              onClick={handleModalClose}
+              className="w-full px-8 py-4 bg-gradient-to-br from-accent-400 to-accent-600 text-white font-semibold rounded-lg hover:from-accent-500 hover:to-accent-700 transition-all duration-200 shadow-lg"
+            >
+              Awesome!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
