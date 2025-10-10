@@ -331,6 +331,93 @@ export class AuthBusinessService {
   }
 
   /**
+   * Sign in with nsec (private key)
+   * 
+   * For mobile users or those without browser extension.
+   * Validates nsec, stores in Zustand (in-memory), fetches profile.
+   * 
+   * @param nsec - User's private key (nsec1...)
+   * @returns Sign-in result with user data
+   * @throws Error if nsec is invalid or profile fetch fails
+   */
+  public async signInWithNsec(nsec: string): Promise<{
+    success: boolean;
+    user?: {
+      pubkey: string;
+      npub: string;
+      profile: UserProfile;
+    };
+    error?: string;
+  }> {
+    try {
+      logger.info('Sign-in with nsec initiated', {
+        service: 'AuthBusinessService',
+        method: 'signInWithNsec',
+      });
+
+      // Validate nsec format
+      if (!nsec || !nsec.startsWith('nsec1')) {
+        throw new Error('Invalid nsec format. Must start with nsec1...');
+      }
+
+      // Decode nsec to validate and get pubkey
+      let pubkey: string;
+      try {
+        const decoded = nip19.decode(nsec);
+        if (decoded.type !== 'nsec') {
+          throw new Error('Invalid nsec format');
+        }
+        
+        // Derive pubkey from secret key
+        const { getPublicKey } = await import('nostr-tools/pure');
+        pubkey = getPublicKey(decoded.data);
+      } catch (error) {
+        throw new Error('Invalid nsec. Please check your private key.');
+      }
+
+      // Store nsec in Zustand (in-memory only, not persisted)
+      useAuthStore.getState().setNsec(nsec);
+
+      logger.info('Nsec validated and stored', {
+        pubkey: pubkey.substring(0, 8) + '...',
+      });
+
+      // Create temporary signer for profile fetch
+      const signer = this.createTemporarySigner();
+
+      // Fetch user profile using ProfileBusinessService
+      const profileResult = await this.profileService.signInWithExtension(signer);
+
+      if (!profileResult.success || !profileResult.user) {
+        // Clear nsec on failure
+        useAuthStore.getState().setNsec(null);
+        throw new Error(profileResult.error || 'Failed to fetch profile');
+      }
+
+      logger.info('Sign-in with nsec successful', {
+        pubkey: pubkey.substring(0, 8) + '...',
+        display_name: profileResult.user.profile.display_name,
+      });
+
+      return {
+        success: true,
+        user: profileResult.user,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Sign-in with nsec failed';
+      logger.error('Sign-in with nsec failed', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'AuthBusinessService',
+        method: 'signInWithNsec',
+      });
+      
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
    * Clear nsec from Zustand
    * 
    * Called after sign-up completion to remove nsec from memory.

@@ -3,10 +3,14 @@ import { useRouter } from 'next/navigation';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { profileService } from '@/services/business/ProfileBusinessService';
+import { authBusinessService } from '@/services/business/AuthBusinessService';
 import { logger } from '@/services/core/LoggingService';
 
 export interface UseNostrSignInReturn {
   signIn: () => Promise<void>;
+  signInWithNsec: (nsec: string) => Promise<void>;
+  nsecInput: string;
+  setNsecInput: (value: string) => void;
   isSigningIn: boolean;
   signinError: string | null;
   isAvailable: boolean;
@@ -16,6 +20,7 @@ export interface UseNostrSignInReturn {
 /**
  * Hook for sign-in orchestration
  * Follows SOA pattern: Hook → Business Service
+ * Supports both browser extension (NIP-07) and direct nsec login
  */
 export function useNostrSignIn(): UseNostrSignInReturn {
   const router = useRouter();
@@ -23,6 +28,7 @@ export function useNostrSignIn(): UseNostrSignInReturn {
   const { setUser, setAuthenticated } = useAuthStore();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signinError, setSigninError] = useState<string | null>(null);
+  const [nsecInput, setNsecInput] = useState('');
 
   const signIn = async () => {
     logger.info('Sign-in initiated', { service: 'useNostrSignIn' });
@@ -83,8 +89,78 @@ export function useNostrSignIn(): UseNostrSignInReturn {
     }
   };
 
+  const signInWithNsec = async (nsec: string) => {
+    logger.info('Nsec sign-in initiated', { service: 'useNostrSignIn' });
+
+    // Basic validation
+    if (!nsec || !nsec.trim()) {
+      const errorMsg = 'Please enter your private key';
+      setSigninError(errorMsg);
+      logger.warn('Nsec sign-in failed: empty input');
+      return;
+    }
+
+    if (!nsec.startsWith('nsec1')) {
+      const errorMsg = 'Invalid private key format. Private keys should start with "nsec1"';
+      setSigninError(errorMsg);
+      logger.warn('Nsec sign-in failed: invalid format', { prefix: nsec.substring(0, 5) });
+      return;
+    }
+
+    setIsSigningIn(true);
+    setSigninError(null);
+
+    try {
+      // Call AuthBusinessService to orchestrate nsec sign-in
+      const result = await authBusinessService.signInWithNsec(nsec);
+
+      if (!result.success || !result.user) {
+        setSigninError(result.error || 'Sign-in failed');
+        logger.error('Nsec sign-in failed', new Error(result.error || 'Unknown error'));
+        return;
+      }
+
+      // Update auth store with user data
+      setUser(result.user);
+      setAuthenticated(true);
+
+      logger.info('User authenticated successfully with nsec', {
+        pubkey: result.user.pubkey.substring(0, 8) + '...',
+        display_name: result.user.profile.display_name,
+      });
+
+      // Initialize message cache (non-blocking)
+      try {
+        const { messagingBusinessService } = await import('@/services/business/MessagingBusinessService');
+        await messagingBusinessService.initializeCache(result.user.pubkey);
+        logger.info('Message cache initialized', { service: 'useNostrSignIn' });
+      } catch (cacheError) {
+        logger.warn('Failed to initialize message cache', {
+          error: cacheError instanceof Error ? cacheError.message : 'Unknown error',
+          service: 'useNostrSignIn',
+        });
+        // Don't fail sign-in if cache initialization fails
+      }
+
+      // Small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Navigate to home
+      router.push('/');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Sign-in failed';
+      setSigninError(errorMessage);
+      logger.error('Nsec sign-in error', error instanceof Error ? error : new Error(errorMessage));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
   return {
     signIn,
+    signInWithNsec,
+    nsecInput,
+    setNsecInput,
     isSigningIn,
     signinError,
     isAvailable,
