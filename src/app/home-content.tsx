@@ -4,15 +4,21 @@ import Image from 'next/image';
 // Removed blur import - using placeholder
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, MapPin, ImageIcon as ImageIconLucide, BookOpen } from 'lucide-react';
 import {
-  cultures as featuredCultures,
   statMetrics as stats,
   featureList as features,
 } from '../data/home';
 import StatBlock from '../components/primitives/StatBlock';
+import { useExploreHeritage } from '@/hooks/useExploreHeritage';
 
 export default function HomeContent() {
+  // Fetch latest 3 heritage contributions for home page
+  const { heritageItems, isLoading, error } = useExploreHeritage();
+  
+  // Get latest 3 items (not featured, just latest)
+  const latestContributions = heritageItems.slice(0, 3);
+  
   return (
     <div className="min-h-screen">
       {/* Stats Section (refactored with primitives) */}
@@ -125,75 +131,114 @@ export default function HomeContent() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredCultures.map((culture, index) => (
-              <motion.div
-                key={culture.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="culture-card group"
-              >
-                <div className="relative aspect-video overflow-hidden">
-                  <Image
-                    src={culture.image}
-                    alt={`Landscape representative of ${culture.name} culture`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    priority={index < 2}
-                    placeholder="blur"
-                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                  />
-                  <div className="absolute top-3 right-3 bg-accent-600 text-white px-2 py-1 rounded-md text-xs font-medium">
-                    Nostr Verified
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-serif font-bold text-primary-800 mb-2">
-                    {culture.name}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{culture.location}</p>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
+          )}
 
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>{culture.contributors} contributors</span>
-                    <span>{culture.stories} stories</span>
-                  </div>
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="text-center py-12 text-gray-600">
+              <p>Unable to load contributions. Please try again later.</p>
+            </div>
+          )}
 
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {culture.tags.slice(0, 2).map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-1 bg-primary-50 text-primary-700 rounded-md text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {culture.tags.length > 2 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
-                        +{culture.tags.length - 2} more
-                      </span>
-                    )}
-                  </div>
-
+          {/* Content - Show latest 3 contributions */}
+          {!isLoading && !error && latestContributions.length > 0 && (
+            <>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                {latestContributions.map((item, index) => (
                   <Link
-                    href={`/explore/${culture.id}`}
-                    className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2"
+                    key={item.id}
+                    href={`/heritage/${item.dTag}`}
+                    className="block"
                   >
-                    Explore Culture
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                      className="culture-card group cursor-pointer"
+                    >
+                      <div className="relative aspect-video overflow-hidden">
+                        <Image
+                          src={item.image}
+                          alt={`Cultural scene representing ${item.name}`}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          priority={index < 2}
+                        />
+                      </div>
+                      <div className="p-6">
+                        <h3 className="text-xl font-serif font-bold text-primary-800 mb-2">
+                          {item.name}
+                        </h3>
+                        <p className="text-gray-600 mb-4 flex items-center">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          {item.location}
+                        </p>
 
-          <div className="text-center mt-12">
-            <Link href="/explore" className="btn-secondary">
-              View All Cultures
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Link>
-          </div>
+                        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                          <div className="flex items-center space-x-3">
+                            <span className="flex items-center">
+                              <ImageIconLucide className="w-4 h-4 mr-1" />
+                              {item.mediaCount}
+                            </span>
+                            <span className="flex items-center">
+                              <BookOpen className="w-4 h-4 mr-1" />
+                              {item.category}
+                            </span>
+                          </div>
+                          <span>{item.relativeTime}</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {item.tags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-1 bg-primary-50 text-primary-700 rounded-md text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {item.tags.length > 2 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
+                              +{item.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+
+                        <span className="text-primary-800 font-medium group-hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
+                          Explore Culture
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </span>
+                      </div>
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="text-center mt-12">
+                <Link href="/explore" className="btn-secondary">
+                  View All Cultures
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+              </div>
+            </>
+          )}
+
+          {/* Empty State - Show if no contributions */}
+          {!isLoading && !error && latestContributions.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-600 mb-6">No contributions yet. Be the first to share your culture!</p>
+              <Link href="/contribute" className="btn-primary">
+                Contribute Heritage
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
