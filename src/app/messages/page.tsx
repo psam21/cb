@@ -17,6 +17,7 @@ import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
 import { useMessageSending } from '@/hooks/useMessageSending';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { logger } from '@/services/core/LoggingService';
 
 function MessagesPageContent() {
@@ -62,17 +63,49 @@ function MessagesPageContent() {
     }
   }, [searchParams, selectedPubkey]);
 
-  // Load user pubkey
+  // Load user pubkey and authenticate if needed
   React.useEffect(() => {
-    if (signer) {
-      signer.getPublicKey().then(setCurrentUserPubkey).catch(err => {
+    if (signer && !currentUserPubkey) {
+      signer.getPublicKey().then(async (pubkey) => {
+        setCurrentUserPubkey(pubkey);
+        
+        // If we have a signer but no authenticated user, auto-sign in
+        const { user, isAuthenticated } = useAuthStore.getState();
+        if (!isAuthenticated || !user) {
+          logger.info('Signer available but not authenticated, auto-signing in', {
+            service: 'MessagesPage',
+            method: 'useEffect[signer]',
+          });
+          
+          try {
+            const { profileService } = await import('@/services/business/ProfileBusinessService');
+            const result = await profileService.signInWithExtension(signer);
+            
+            if (result.success && result.user) {
+              useAuthStore.getState().setUser(result.user);
+              useAuthStore.getState().setAuthenticated(true);
+              
+              logger.info('Auto sign-in successful', {
+                service: 'MessagesPage',
+                method: 'useEffect[signer]',
+                pubkey: result.user.pubkey.substring(0, 8) + '...',
+              });
+            }
+          } catch (error) {
+            logger.error('Auto sign-in failed', error instanceof Error ? error : new Error('Unknown error'), {
+              service: 'MessagesPage',
+              method: 'useEffect[signer]',
+            });
+          }
+        }
+      }).catch(err => {
         logger.error('Failed to get public key', err instanceof Error ? err : new Error('Unknown error'), {
           service: 'MessagesPage',
           method: 'useEffect[signer]',
         });
       });
     }
-  }, [signer]);
+  }, [signer, currentUserPubkey]);
 
   // Conversations hook
   const {

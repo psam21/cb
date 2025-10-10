@@ -78,6 +78,7 @@ export const useNostrSigner = () => {
 
   // Unified signer management: handles both browser extension and nsec
   // Priority: Browser Extension > Nsec > None
+  // Also listens for extension becoming available after page load
   useEffect(() => {
     const initializeSigner = async () => {
       logger.info('Initializing signer', {
@@ -152,7 +153,43 @@ export const useNostrSigner = () => {
     };
 
     initializeSigner();
-  }, [nsec, setSigner, setSignerAvailable]); // Re-run when nsec changes
+    
+    // Poll for extension becoming available (user approves after page load)
+    // This handles the case where user clicks "Contact Seller" → gets prompt → approves extension
+    const checkForExtension = () => {
+      if (typeof window !== 'undefined' && window.nostr && !signer) {
+        logger.info('Extension became available, re-initializing', {
+          service: 'useNostrSigner',
+          method: 'checkForExtension',
+        });
+        initializeSigner();
+      }
+    };
+    
+    // Check every 1 second for extension (stops once found)
+    const intervalId = setInterval(checkForExtension, 1000);
+    
+    // Also check when window regains focus (user might approve in popup)
+    const handleFocus = () => {
+      logger.info('Window focused, checking for extension', {
+        service: 'useNostrSigner',
+        method: 'handleFocus',
+      });
+      checkForExtension();
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleFocus);
+    }
+    
+    // Cleanup
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, [nsec, setSigner, setSignerAvailable, signer]); // Added signer to deps
 
   return { 
     isAvailable, 
