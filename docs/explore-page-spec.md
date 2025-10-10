@@ -315,7 +315,7 @@ HeritageContentService → GenericRelayService → Relays
 
 **Methods**:
 ```typescript
-async fetchPublicHeritage(limit?: number): Promise<HeritageEvent[]>
+async fetchPublicHeritage(limit = 8): Promise<HeritageEvent[]>
 ```
 
 ---
@@ -357,7 +357,7 @@ Renders cards with real data
 {
   kinds: [30023],
   "#t": ["culture-bridge-heritage"],
-  limit: 50  // Fetch latest 50 contributions
+  limit: 8  // Fetch 2 featured + 6 for grid = 8 total
 }
 ```
 
@@ -623,11 +623,12 @@ return `${Math.floor(diff / 2592000)} months ago`;
 - [ ] Update links from `/explore/${id}` to `/heritage/${dTag}`
 - [ ] Ensure detail page queries by dTag
 
-### Phase 5: Testing ✅
+### Testing ✅
 - [ ] Test with 0 events (empty state)
-- [ ] Test with 1 event (no featured section)
-- [ ] Test with 2 events (featured only)
-- [ ] Test with 10+ events (featured + grid)
+- [ ] Test with 1 event (shows in featured, grid empty)
+- [ ] Test with 2 events (both featured, grid empty)
+- [ ] Test with 8 events (2 featured + 6 grid, all slots filled)
+- [ ] Test with 5 events (2 featured + 3 grid)
 - [ ] Test search filtering
 - [ ] Test responsive layout
 - [ ] Test loading states
@@ -669,8 +670,8 @@ const byCategory = byRegion.filter(item =>
 ## Performance Considerations
 
 ### Relay Query Optimization
-- **Limit**: Fetch 50 most recent events initially
-- **Pagination**: Load more on scroll/button click (future)
+- **Limit**: Fetch 8 events (2 featured + 6 grid)
+- **Pagination**: Not needed for initial version (fixed display)
 - **Caching**: Consider relay response caching (1 minute)
 
 ### Image Loading
@@ -698,11 +699,6 @@ const byCategory = byRegion.filter(item =>
 - [ ] Most media
 - [ ] Alphabetical
 - [ ] By region
-
-### Pagination
-- [ ] "Load More" button (fetch next 50)
-- [ ] Infinite scroll option
-- [ ] URL state for page number
 
 ### Detail View Integration
 - [ ] Link to `/heritage/[dTag]` detail page
@@ -867,8 +863,8 @@ None - uses existing infrastructure
 
 ## Questions for Review
 
-1. **Pagination**: Should we implement "Load More" in v1 or start with fixed 50 limit?
-2. **Featured Logic**: Always show 2 latest, or implement editorial curation?
+1. **Display Count**: Confirmed 2 featured + 6 grid = 8 total items ✅
+2. **Featured Logic**: Always show 2 latest as featured ✅
 3. **Empty State**: Should we seed with example heritage content?
 4. **Filtering**: Implement region/category filters in v1 or defer to v2?
 5. **Stats**: Show "1 contributor" or hide contributor count entirely (since always 1)?
