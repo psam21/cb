@@ -195,7 +195,7 @@ export async function fetchPublicHeritage(
     // Build relay filter
     const filter: Record<string, unknown> = {
       kinds: [30023],
-      '#t': ['culture-bridge-heritage'],
+      '#t': ['culture-bridge-heritage-contribution'], // Must match tag used in event creation
       limit,
     };
     

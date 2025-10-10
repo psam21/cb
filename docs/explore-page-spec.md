@@ -16,7 +16,7 @@ The `/explore` page is the **public discovery hub** for heritage contributions p
 - No relay connectivity
 
 ### Target (Real Relay Data)
-- ✅ Query **Kind 30023** events with `#t` tag `culture-bridge-heritage`
+- ✅ Query **Kind 30023** events with `#t` tag `culture-bridge-heritage-contribution`
 - ✅ Show **2 most recent** contributions as "Featured Cultures"
 - ✅ Show **remaining contributions** in "All Cultures" section
 - ✅ Maintain existing card layout and visual hierarchy
@@ -181,7 +181,7 @@ export class GenericHeritageService {
     // Query relays
     const filter = {
       kinds: [30023],
-      "#t": ["culture-bridge-heritage"],
+      "#t": ["culture-bridge-heritage-contribution"],
       limit
     };
     
@@ -311,7 +311,7 @@ HeritageContentService → GenericRelayService → Relays
 ```
 **Responsibilities**:
 - Query relays for Kind 30023 events
-- Filter: `#t` tag = `culture-bridge-heritage`
+- Filter: `#t` tag = `culture-bridge-heritage-contribution`
 - Parse event structure
 - Extract metadata (title, summary, category, location, tags)
 - Extract imeta media arrays
@@ -427,7 +427,7 @@ If hasMore=false, button hides
    static async fetchPublicHeritage(limit = 8, until?: number) {
      const filter: Filter = {
        kinds: [30023],
-       "#t": ["culture-bridge-heritage"],
+       "#t": ["culture-bridge-heritage-contribution"],
        limit,
        ...(until && { until })  // Add pagination filter
      };
@@ -455,14 +455,14 @@ If hasMore=false, button hides
 // Initial load
 {
   kinds: [30023],
-  "#t": ["culture-bridge-heritage"],
+  "#t": ["culture-bridge-heritage-contribution"],
   limit: 8  // Fetch 2 featured + 6 for grid = 8 total
 }
 
 // Load More (subsequent pages)
 {
   kinds: [30023],
-  "#t": ["culture-bridge-heritage"],
+  "#t": ["culture-bridge-heritage-contribution"],
   limit: 6,  // Fetch 6 more items
   until: lastEventTimestamp  // Start from last loaded event
 }
@@ -477,7 +477,7 @@ If hasMore=false, button hides
   "kind": 30023,
   "tags": [
     ["d", "contribution-1728561234-abc123"],
-    ["t", "culture-bridge-heritage"],
+    ["t", "culture-bridge-heritage-contribution"],
     ["title", "The Art of Storytelling in the Andes"],
     ["summary", "Ancient Andean storytelling traditions that preserve history..."],
     ["published_at", "1728561234"],
@@ -511,7 +511,7 @@ If hasMore=false, button hides
 | Tag | Purpose | Example |
 |-----|---------|---------|
 | `d` | Unique identifier (dTag) | `contribution-1728561234-abc123` |
-| `t` | System category | `culture-bridge-heritage` |
+| `t` | System category | `culture-bridge-heritage-contribution` |
 | `title` | Display title | `The Art of Storytelling in the Andes` |
 | `summary` | Short description | `Ancient Andean storytelling traditions...` |
 | `published_at` | Publication timestamp | `1728561234` |
@@ -724,7 +724,7 @@ return `${Math.floor(diff / 2592000)} months ago`;
 
 ### Phase 1: Service Layer ✅
 - [ ] Create `GenericHeritageService.fetchPublicHeritage()`
-- [ ] Query relays for Kind 30023 with `#t=culture-bridge-heritage`
+- [ ] Query relays for Kind 30023 with `#t=culture-bridge-heritage-contribution`
 - [ ] Parse event tags (title, summary, category, location, region, custom-tag)
 - [ ] Extract imeta media arrays
 - [ ] Return `HeritageEvent[]`
