@@ -54,11 +54,11 @@ export default function KeyBackupStep({
   const canProceed = hasDownloaded && hasConfirmed;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Backup Your Keys</h2>
-        <p className="mt-2 text-gray-600">
+      <div className="text-center">
+        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">Backup Your Keys</h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Download a backup file containing your keys. Keep it safe - you&apos;ll need it to recover your account.
         </p>
       </div>
@@ -93,7 +93,7 @@ export default function KeyBackupStep({
           type="button"
           onClick={handleDownload}
           disabled={isCreatingBackup}
-          className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          className="w-full px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
         >
           {isCreatingBackup ? (
             'Creating backup...'
@@ -162,15 +162,15 @@ export default function KeyBackupStep({
 
       {/* Confirmation Checkbox */}
       {hasDownloaded && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-accent-50 border border-accent-200 rounded-lg p-4">
           <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
               checked={hasConfirmed}
               onChange={(e) => setHasConfirmed(e.target.checked)}
-              className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
-            <span className="ml-3 text-sm text-blue-900">
+            <span className="ml-3 text-sm text-accent-900">
               I confirm that I have downloaded and securely stored my backup file. I understand that if I lose my keys, I will lose access to this account permanently, and no one can recover it for me.
             </span>
           </label>
@@ -190,7 +190,7 @@ export default function KeyBackupStep({
           type="button"
           onClick={onNext}
           disabled={!canProceed}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Continue to Final Step
         </button>

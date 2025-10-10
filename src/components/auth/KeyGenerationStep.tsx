@@ -84,23 +84,23 @@ export default function KeyGenerationStep({
   const isLoading = isGeneratingKeys || isUploadingAvatar || isPublishingProfile;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Generate Your Keys</h2>
-        <p className="mt-2 text-gray-600">
+      <div className="text-center">
+        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">Generate Your Keys</h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Create your unique Nostr identity. Your keys are generated locally and never leave your device.
         </p>
       </div>
 
       {/* Generate Keys Section */}
       {!generatedKeys && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Ready to Create Your Identity</h3>
-          <p className="text-sm text-blue-700 mb-4">
+        <div className="bg-accent-50 border border-accent-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-accent-900 mb-2">Ready to Create Your Identity</h3>
+          <p className="text-sm text-accent-700 mb-4">
             Click the button below to generate your Nostr keys. This will:
           </p>
-          <ul className="text-sm text-blue-700 mb-6 space-y-1 list-disc list-inside">
+          <ul className="text-sm text-accent-700 mb-6 space-y-1 list-disc list-inside">
             <li>Generate a cryptographic key pair (public and private keys)</li>
             {avatarFile && <li>Upload your profile picture</li>}
             <li>Publish your profile to the Nostr network</li>
@@ -111,7 +111,7 @@ export default function KeyGenerationStep({
             type="button"
             onClick={onGenerateKeys}
             disabled={isLoading}
-            className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? loadingMessage : 'Generate My Keys'}
           </button>
@@ -216,7 +216,7 @@ export default function KeyGenerationStep({
             <button
               type="button"
               onClick={onNext}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
             >
               Continue to Backup
             </button>

@@ -49,11 +49,27 @@ export const SignUpFlow: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <section className="section-padding bg-gradient-to-br from-accent-400 to-accent-600 text-white">
+        <div className="container-width">
+          <div className="text-center max-w-3xl mx-auto">
+            <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">
+              Create Your <span className="text-white">Nostr Identity</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-accent-100 leading-relaxed mb-6">
+              Join the Culture Bridge community and start preserving indigenous heritage on the decentralized web.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <section className="section-padding bg-white">
+        <div className="container-width max-w-4xl mx-auto">
         {/* Progress Indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-12">
+          <div className="flex items-center justify-between max-w-3xl mx-auto">
             {stepTitles.map((title, index) => {
               const stepNumber = index + 1;
               const isActive = stepNumber === currentStep;
@@ -65,10 +81,10 @@ export const SignUpFlow: React.FC = () => {
                   <div className="flex flex-col items-center">
                     <div
                       className={`
-                        flex items-center justify-center w-10 h-10 rounded-full border-2 font-semibold
-                        ${isActive ? 'border-blue-600 bg-blue-600 text-white' : ''}
-                        ${isCompleted ? 'border-green-600 bg-green-600 text-white' : ''}
-                        ${!isActive && !isCompleted ? 'border-gray-300 bg-white text-gray-400' : ''}
+                        flex items-center justify-center w-12 h-12 rounded-full font-semibold text-lg transition-all duration-300
+                        ${isActive ? 'bg-gradient-to-br from-accent-400 to-accent-600 text-white shadow-lg scale-110' : ''}
+                        ${isCompleted ? 'bg-primary-600 text-white' : ''}
+                        ${!isActive && !isCompleted ? 'bg-gray-200 text-gray-400' : ''}
                       `}
                     >
                       {isCompleted ? (
@@ -81,9 +97,9 @@ export const SignUpFlow: React.FC = () => {
                     </div>
                     <p
                       className={`
-                        mt-2 text-xs sm:text-sm font-medium
-                        ${isActive ? 'text-blue-600' : ''}
-                        ${isCompleted ? 'text-green-600' : ''}
+                        mt-3 text-xs sm:text-sm font-medium
+                        ${isActive ? 'text-primary-800 font-semibold' : ''}
+                        ${isCompleted ? 'text-primary-600' : ''}
                         ${!isActive && !isCompleted ? 'text-gray-400' : ''}
                       `}
                     >
@@ -95,8 +111,8 @@ export const SignUpFlow: React.FC = () => {
                   {index < stepTitles.length - 1 && (
                     <div
                       className={`
-                        flex-1 h-0.5 mx-2
-                        ${stepNumber < currentStep ? 'bg-green-600' : 'bg-gray-300'}
+                        flex-1 h-1 mx-2 rounded transition-all duration-300
+                        ${stepNumber < currentStep ? 'bg-primary-600' : 'bg-gray-200'}
                       `}
                     />
                   )}
@@ -107,7 +123,7 @@ export const SignUpFlow: React.FC = () => {
         </div>
 
         {/* Step Content */}
-        <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-12">
           {/* Step 1: Profile Setup */}
           {currentStep === 1 && (
             <ProfileSetupStep
@@ -168,12 +184,13 @@ export const SignUpFlow: React.FC = () => {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Need help?{' '}
-            <a href="/support" className="text-blue-600 hover:text-blue-700 font-medium">
+            <a href="/support" className="text-primary-600 hover:text-primary-700 font-medium">
               Contact Support
             </a>
           </p>
         </div>
-      </div>
+        </div>
+      </section>
     </div>
   );
 };

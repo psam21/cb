@@ -122,11 +122,11 @@ export default function ProfileSetupStep({
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Create Your Profile</h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">Create Your Profile</h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Let&apos;s start by setting up your public profile. This information will be visible to others on Nostr.
         </p>
       </div>
@@ -145,7 +145,7 @@ export default function ProfileSetupStep({
           className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
             displayNameError
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-              : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
+              : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
           }`}
           placeholder="Your name"
         />
@@ -171,7 +171,7 @@ export default function ProfileSetupStep({
           className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
             bioError
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-              : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
+              : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
           }`}
           placeholder="Tell us about yourself..."
         />
@@ -237,7 +237,7 @@ export default function ProfileSetupStep({
         <button
           onClick={handleNext}
           disabled={!displayName.trim() || !!displayNameError || !!bioError}
-          className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           Next →
         </button>

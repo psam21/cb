@@ -48,11 +48,11 @@ export default function FinalConfirmationStep({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">You&apos;re All Set!</h2>
-        <p className="mt-2 text-gray-600">
+      <div className="text-center">
+        <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-800 mb-4">You&apos;re All Set!</h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Review your profile and complete your sign-up to start using Culture Bridge.
         </p>
       </div>
@@ -111,9 +111,9 @@ export default function FinalConfirmationStep({
       </div>
 
       {/* What's Next */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-blue-900 mb-2">What&apos;s Next?</h3>
-        <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+      <div className="bg-accent-50 border border-accent-200 rounded-lg p-4">
+        <h3 className="text-sm font-semibold text-accent-900 mb-2">What&apos;s Next?</h3>
+        <ul className="text-sm text-accent-700 space-y-1 list-disc list-inside">
           <li>Explore indigenous heritage content from around the world</li>
           <li>Connect with elders and community members</li>
           <li>Share your own stories and cultural knowledge</li>
@@ -137,7 +137,7 @@ export default function FinalConfirmationStep({
             type="checkbox"
             checked={hasAccepted}
             onChange={(e) => setHasAccepted(e.target.checked)}
-            className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <span className="ml-3 text-sm text-gray-700">
             I understand that Culture Bridge is a decentralized platform built on Nostr. I am responsible for managing my own keys and there is no password recovery. I have safely stored my backup file and understand that losing my keys means losing access to this account permanently.
@@ -158,7 +158,7 @@ export default function FinalConfirmationStep({
           type="button"
           onClick={handleComplete}
           disabled={!hasAccepted}
-          className="px-8 py-3 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Complete Sign-Up & Start Exploring
         </button>
