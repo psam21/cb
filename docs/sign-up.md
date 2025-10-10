@@ -37,9 +37,11 @@ Step 1: Profile Setup (SHOWN FIRST)
   - Bio (OPTIONAL)
   ↓
 Step 2: Key Generation + Publishing
-  - Generate nsec/npub
-  - Upload avatar to Blossom (if provided)
-  - Publish complete Kind 0 event
+  - Generate keys using GenericNostrService
+  - Store npub in Zustand state
+  - **Store nsec in Zustand (in-memory, never persisted)**
+  - Create temporary NostrSigner from nsec
+  - Display generated nsec/npub
   ↓
 Step 3: Backup + Storage
   - Download encrypted backup file
@@ -67,9 +69,9 @@ Hook (useNostrSignUp.ts)
   ↓
 Business Service (AuthBusinessService.ts) [NEW]
   ↓
-Nostr Event Service (NostrEventService.ts) [EXISTING]
+ProfileBusinessService (SHARED with sign-in) [EXISTING]
   ↓
-Generic Services (GenericEventService, GenericRelayService, EncryptionService)
+Generic Services (GenericEventService, GenericRelayService, GenericBlossomService)
 ```
 
 ### Files to Create
@@ -143,12 +145,15 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 - **Path**: `/src/services/business/AuthBusinessService.ts`
 - **Purpose**: Authentication and identity management orchestration (SOA-compliant)
 - **Responsibilities**:
-  - `generateNostrKeys()`: Delegates to `keyManagement.ts` utilities (wraps nostr-tools)
-  - `uploadAvatar(file, nsec)`: Delegates to `GenericBlossomService.uploadFile()`
-  - `publishProfile(pubkey, profileData)`: Delegates to `NostrEventService.createKind0Event()` → `GenericEventService.createEvent()`
-  - `encryptPrivateKey(nsec, passphrase)`: Delegates to `EncryptionService` or utils
-  - **DOES NOT**: Implement key generation, event creation, or encryption directly
+  - `generateNostrKeys()`: Delegates to `utils/keyManagement.ts` (wraps nostr-tools)
+  - `uploadAvatar(file, signer)`: Delegates to `GenericBlossomService.uploadFile()`
+  - `publishProfile(profile, signer)`: Delegates to `ProfileBusinessService.publishProfile()`
+  - `createBackupFile(displayName, npub, nsec)`: Delegates to `utils/keyExport.ts` (plain text format)
+  - **DOES NOT**: Implement key generation, event creation, or encryption
   - **ONLY**: Orchestrates calls to existing services and utilities
+  - **Creates temporary NostrSigner from nsec stored in Zustand**
+  - **Stores nsec in auth store (in-memory only) via `useAuthStore.setNsec(nsec)`**
+  - **NOTE**: nsec held in memory for avatar upload and profile publishing, cleared on logout/refresh
 
 #### 6. **Utility Functions** [NEW]
 
@@ -164,9 +169,10 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 - **Path**: `/src/utils/keyExport.ts`
 - **Purpose**: Key backup and export utilities
 - **Responsibilities**:
-  - Generate encrypted text files (AES-256-GCM)
-  - Format backup files (JSON structure with metadata)
+  - Format plain text backup file with npub, nsec, and warning messages
+  - Generate filename: `{display_name}_culturebridge.txt`
   - Download trigger functions
+  - Include Culture Bridge URL and security warnings
 
 ### Files to Modify
 
@@ -178,7 +184,8 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
 #### 2. **Sign-In Page**
 
 - **Path**: `/src/app/signin/page.tsx`
-- **Changes**: Add "Sign Up" link to redirect to `/signup`
+- **Changes**: Add "Sign Up" link/button to redirect to `/signup`
+- **Note**: Sign-in page already refactored to SOA-compliant architecture
 
 #### 3. **Auth Store**
 - **Path**: `/src/stores/useAuthStore.ts`
@@ -187,13 +194,6 @@ Generic Services (GenericEventService, GenericRelayService, EncryptionService)
   - Add `signUpProgress` state (track completion percentage)
   - Add `setNewUser()` action
   - Persist `isNewUser` temporarily (clear after first session)
-
-#### 4. **Generic Event Service** (minor addition)
-- **Path**: `/src/services/generic/GenericEventService.ts`
-- **Changes**: Add `createKind0FromLocalKeys()` method
-  - Accepts nsec string instead of NostrSigner
-  - Used ONLY during sign-up before user has signer
-  - Removed after profile is published and user switches to signer
 
 ---
 
@@ -231,23 +231,33 @@ Step 4: Validation
 - Clear keys from memory after storage/export
 - No key derivation from weak passwords (full randomness)
 
-### 2. Key Storage (localStorage Only)
+### 2. Key Storage
 
-**Storage Method**: Browser localStorage with encryption
+**Storage Method**: Browser localStorage via Zustand persist middleware
 
-- **Encryption**: User-provided passphrase (AES-256-GCM)
-- **Pros**: Auto-login, seamless UX
-- **Cons**: Vulnerable to XSS, browser data clearing
-- **User Confirmation Required**: User must acknowledge understanding of localStorage limitations
+**What Gets Stored (persisted to localStorage)**:
+- User profile data (pubkey, npub, profile) - same as sign-in
+- `isAuthenticated` flag
+
+**What Gets Stored (in-memory only, NOT persisted)**:
+- `nsec` - held in Zustand state during sign-up flow
+- Used for creating temporary signer for avatar upload and profile publishing
+- Cleared on page refresh or logout
+- Never displayed in UI
 
 **Implementation**:
+- Use same Zustand persist middleware as sign-in (existing pattern)
+- Store only non-sensitive user data in localStorage
+- Store nsec in AuthState (excluded from partialize function)
+- After successful sign-up, user MUST either:
+  1. Download backup file (contains nsec) for manual storage, OR
+  2. Import nsec into browser extension immediately
+- If user loses backup file AND clears browser data, they lose access permanently
 
-- Prompt user for strong passphrase (min 12 chars)
-- Derive encryption key with PBKDF2 (100k iterations)
-- Store encrypted nsec in `localStorage` under key `encrypted_nostr_key`
-- Store salt and IV separately
-- Store pubkey in plaintext (safe to expose)
-- User confirms via checkbox: "I understand my keys are stored locally in this browser"
+**Security**:
+- No encryption needed (nsec never stored in browser)
+- Same storage pattern as existing sign-in flow
+- User responsible for securing backup file
 
 ### 3. Profile Creation (Kind 0 Event)
 
@@ -282,61 +292,76 @@ useNostrSignUp.generateKeys()
   ↓
 AuthBusinessService.generateNostrKeys()
   ↓
-AuthBusinessService.publishBasicProfile(pubkey) ⚡ BACKGROUND
+AuthBusinessService.publishProfile(profile) ⚡ BACKGROUND
   ↓
-NostrEventService.createKind0Event() [minimal profile]
+ProfileBusinessService.publishProfile(profile, temporarySigner)
   ↓
-GenericEventService.signEvent() [with generated nsec]
+ProfileBusinessService.createProfileEvent() [creates Kind 0 event]
   ↓
-GenericRelayService.publishEvent()
-  
-[THEN LATER, if user enriches profile in Step 4...]
+GenericEventService.signEvent() [signs with temporarySigner]
+  ↓
+GenericRelayService.publishEvent() [publishes to relays]
 
-Step 4: ProfileSetupStep (optional enrichment)
-  ↓
-useNostrSignUp.updateProfile()
-  ↓
-AuthBusinessService.updateProfile()
-  ↓
-NostrEventService.createKind0Event() [UPDATED profile]
-  ↓
-GenericEventService.signEvent()
-  ↓
-GenericRelayService.publishEvent()
-  ↓
-Auth Store updates (user profile, isAuthenticated: true)
+Note: 
+- temporarySigner is created from nsec stored in Zustand
+- Implements NostrSigner interface
+- ProfileBusinessService.publishProfile() is SHARED with sign-in
+- No NostrEventService needed (ProfileBusinessService handles Kind 0 directly)
 ```
 
 **Avatar Upload**:
 - Reuse existing `ImageUpload` + `ImageCropper` components from `/src/components/profile/`
 - 1:1 aspect ratio for profile picture
 - Upload to Blossom via `GenericBlossomService.uploadFile()`
-- Requires temporary signer created from generated nsec (before user has extension)
+- Requires temporary signer created from nsec stored in Zustand
+- AuthBusinessService orchestrates: generate keys → store nsec in Zustand → create signer → upload avatar → publish profile
 
 ### 4. Key Backup Mechanisms
 
-#### Encrypted Backup File
-**Format**: JSON structure
-```json
-{
-  "version": "1.0",
-  "created_at": "2025-10-08T12:34:56Z",
-  "encryption": "AES-256-GCM",
-  "kdf": "PBKDF2",
-  "iterations": 100000,
-  "salt": "<base64>",
-  "iv": "<base64>",
-  "encrypted_nsec": "<base64>",
-  "npub": "npub1...",
-  "app": "Culture Bridge",
-  "warning": "Store this file securely. Losing it means losing your Nostr identity."
-}
+#### Plain Text Backup File
+
+**Format**: Simple text file with clear warning
+
+```text
+CULTURE BRIDGE - NOSTR IDENTITY BACKUP
+=======================================
+
+⚠️ WARNING: NEVER SHARE THIS FILE WITH ANYONE! ⚠️
+
+This file contains your Nostr identity - think of it like your ID and password combined.
+If someone gets access to this file, they can impersonate you on the Nostr network.
+
+Keep this file safe and private!
+
+---
+
+Your Public Key (npub):
+npub1...
+
+Your Private Key (nsec):
+nsec1...
+
+Culture Bridge URL:
+https://culturebridge.vercel.app
+
+---
+
+IMPORTANT SECURITY NOTES:
+- Your nsec is like a password that can NEVER be changed
+- Anyone with your nsec can post as you on ALL Nostr apps
+- Store this file in a secure location (encrypted drive, password manager, etc.)
+- Never send this file via email, chat, or upload it anywhere
+- If you lose this file AND your browser data, you lose your identity permanently
+
+For support (DO NOT share your keys):
+Visit: https://culturebridge.vercel.app/support
 ```
 
 **File Download**:
 - Trigger via `<a>` tag with `download` attribute
-- Filename: `nostr-backup-{npub-first-8-chars}-{timestamp}.json`
-- MIME type: `application/json`
+- Filename: `{display_name}_culturebridge.txt`
+- MIME type: `text/plain`
+- No encryption (user responsible for secure storage)
 
 ---
 
@@ -366,11 +391,11 @@ Auth Store updates (user profile, isAuthenticated: true)
    - Warn user to clear clipboard manually
    - Never log keys to console (even in development)
 
-3. **Key Storage**
-   - If localStorage: MUST be encrypted with user passphrase
-   - Use PBKDF2 with 100k+ iterations for key derivation
-   - Store salt and IV separately from encrypted data
-   - Clear encryption passphrase from memory after use
+3. **Key Backup**
+   - Backup file contains plain text nsec (user responsible for security)
+   - Clear warnings in backup file about never sharing nsec
+   - User must download and secure backup file themselves
+   - No cloud storage or transmission of backup file
 
 4. **User Education**
    - Display warning: "Your private key IS your account. There is no password reset."
@@ -471,18 +496,13 @@ Auth Store updates (user profile, isAuthenticated: true)
    - Usage: AuthBusinessService delegates profile publishing to ProfileBusinessService
 
 2. **GenericBlossomService**
-   - Method: `uploadFile()` (for avatar upload)
-   - Purpose: Upload avatar to Blossom CDN
-   - Modifications: Support temporary signer (created from nsec during sign-up)
-   - Usage: AuthBusinessService delegates avatar upload to GenericBlossomService
+   - Method: `uploadFile()`
+   - Purpose: Upload avatar to Blossom CDN during sign-up
+   - Modifications: None required (already accepts NostrSigner)
+   - Usage: AuthBusinessService creates temporary signer from generated nsec, passes to uploadFile()
+   - Note: Temporary signer implements NostrSigner interface using generated keys
 
-3. **GenericEventService**
-   - Method: `signEvent()` (modify to accept nsec string)
-   - Purpose: Sign Kind 0 event during sign-up
-   - Modifications: Add overload for nsec-based signing (pre-extension)
-   - Usage: Called by ProfileBusinessService.publishProfile()
-
-4. **Auth Store**
+3. **Auth Store**
    - Methods: `setUser()`, `setAuthenticated()`
    - Purpose: Store pubkey and profile after sign-up
    - Modifications: Add `setNewUser(true)` flag
@@ -496,7 +516,7 @@ Auth Store updates (user profile, isAuthenticated: true)
 
 1. **Welcome Modal**
    - Display: "Welcome to Culture Bridge, {display_name}!"
-   - Explain: "Your Nostr identity is now active across the entire network"
+   - Explain: "Your Nostr identity is now active across the multiple relays on the network."
    - Show: Quick tutorial (Explore, Shop, Heritage, Messages)
    - CTA: "Start exploring"
 
@@ -591,11 +611,12 @@ None - all required dependencies already in project.
 - [ ] Create `KeyGenerationStep` component
 - [ ] Create `useNostrSignUp` hook
 - [ ] Create `AuthBusinessService` with:
-  - Delegates to `keyManagement.ts` for key generation
-  - Delegates to `NostrEventService` for event creation
-  - Delegates to `GenericBlossomService` for avatar uploads
-  - `signUpWithProfile()` method (complete Kind 0 with avatar)
-- [ ] Implement background Kind 0 publishing after key generation
+  - Delegates to `utils/keyManagement.ts` for key generation
+  - Delegates to `ProfileBusinessService.publishProfile()` for profile publishing
+  - Delegates to `GenericBlossomService.uploadFile()` for avatar uploads
+  - Creates temporary NostrSigner from generated nsec
+  - `signUpWithProfile()` method (orchestrates: keys → avatar → profile)
+- [ ] Implement background profile publishing after key generation
 - [ ] Add success notification after keys generated + profile published
 
 ### Backup + Local Storage
@@ -648,27 +669,16 @@ None - all required dependencies already in project.
 
 ## Success Metrics
 
-### Completion Rate
-- **Target**: >80% of users who start sign-up complete all steps
-- **Measure**: Track step completion in analytics
-- **Failure Points**: Identify where users drop off (likely backup step)
+**Definition**: Feature is successful when user confirms it works.
 
-### Key Backup Rate
-- **Target**: >95% of users download backup or save to extension
-- **Measure**: Track backup confirmation checkbox
-- **Risk**: Users who skip backup will lose accounts
+- ✅ User can complete sign-up flow (all 4 steps)
+- ✅ Keys are generated successfully
+- ✅ Profile is published to relays (user confirms event ID exists)
+- ✅ User can sign in after sign-up
+- ✅ No errors in browser console
+- ✅ User says "it's working"
 
-### Profile Completion
-
-- **Target**: 100% of users have display name (mandatory field)
-- **Target**: >30% of users add avatar
-- **Target**: >40% of users add bio
-- **Measure**: Kind 0 event content analysis
-
-### Extension Adoption
-
-- **Target**: >40% of users migrate to browser extension within 30 days
-- **Measure**: Track localStorage vs extension usage
+**Anything else is irrelevant until the feature works.**
 
 ---
 
@@ -701,14 +711,14 @@ Page → Component → Hook → Business Service → Event Service → Generic S
 
 ⚠️ **NEVER**:
 - Log private keys (even in development)
-- Store plaintext nsec in localStorage
+- Store plaintext nsec in localStorage or browser storage
 - Transmit nsec over network
 - Expose nsec in error messages
 - Keep nsec in memory longer than necessary
 
 ✅ **ALWAYS**:
-- Encrypt before localStorage storage
-- Clear sensitive data after use
+- Generate backup file with clear warnings
+- Clear sensitive data from memory after use
 - Validate keys after generation
 - Warn users about key loss
 - Use secure random generation
@@ -717,9 +727,9 @@ Page → Component → Hook → Business Service → Event Service → Generic S
 
 Before merging sign-up implementation:
 - [ ] No nsec in console.log statements
-- [ ] localStorage values are encrypted
-- [ ] PBKDF2 iterations ≥ 100k
-- [ ] Backup file is encrypted
+- [ ] No nsec stored in localStorage (only user profile data)
+- [ ] Backup file has security warnings
+- [ ] User must download backup file before completing sign-up
 - [ ] SOA layers respected
 - [ ] TypeScript types complete
 - [ ] Error handling comprehensive

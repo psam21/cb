@@ -22,6 +22,9 @@ export interface AuthState {
   } | null;
   isAuthenticated: boolean;
   
+  // Private key (sign-up only, in-memory, never persisted)
+  nsec: string | null;
+  
   // Actions
   setSignerAvailable: (available: boolean) => void;
   setLoading: (loading: boolean) => void;
@@ -29,6 +32,7 @@ export interface AuthState {
   setSigner: (signer: NostrSigner | null) => void;
   setUser: (user: { pubkey: string; npub: string; profile: UserProfile } | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
+  setNsec: (nsec: string | null) => void;
   logout: () => void;
   
   // Utility actions
@@ -53,6 +57,7 @@ export const useAuthStore = create<AuthState>()(
       
       user: null,
       isAuthenticated: false,
+      nsec: null,
       
       // Actions
       setSignerAvailable: (available) => set({ isAvailable: available }),
@@ -70,6 +75,8 @@ export const useAuthStore = create<AuthState>()(
       
       setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
       
+      setNsec: (nsec) => set({ nsec }),
+      
       logout: () => {
         // Clear message cache
         (async () => {
@@ -86,6 +93,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           isAuthenticated: false,
           signer: null,
+          nsec: null,
           error: null,
         });
         
@@ -164,7 +172,8 @@ export const useAuthStore = create<AuthState>()(
         error: null,
         signer: null,
         user: null,
-        isAuthenticated: false
+        isAuthenticated: false,
+        nsec: null
       }),
       
       getAuthStatus: () => {
@@ -181,7 +190,8 @@ export const useAuthStore = create<AuthState>()(
         name: 'auth-store',
         partialize: (state: AuthState) => ({
           // Persist user data and authentication state
-          // Don't persist sensitive data like signer or keys
+          // Don't persist sensitive data like signer, nsec, or keys
+          // nsec is NEVER persisted - only held in memory during sign-up
           user: state.user,
           isAuthenticated: state.isAuthenticated,
           isAvailable: state.isAvailable,
