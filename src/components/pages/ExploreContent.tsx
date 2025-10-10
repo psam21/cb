@@ -199,14 +199,18 @@ export default function ExploreContent() {
                   </h3>
                   <div className="grid md:grid-cols-2 gap-8">
                     {featured.map((item, index) => (
-                      <motion.div
+                      <Link
                         key={item.id}
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="culture-card group p-0 overflow-hidden"
+                        href={`/heritage/${item.dTag}`}
+                        className="block"
                       >
-                        <div className="relative aspect-video">
+                        <motion.div
+                          initial={{ opacity: 0, y: 30 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.6, delay: index * 0.1 }}
+                          className="culture-card group p-0 overflow-hidden cursor-pointer"
+                        >
+                          <div className="relative aspect-video">
                           <Image
                             src={item.image}
                             alt={`Cultural scene representing ${item.name}`}
@@ -275,17 +279,14 @@ export default function ExploreContent() {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">{item.relativeTime}</span>
-                            <Link
-                              href={`/heritage/${item.dTag}`}
-                              className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2"
-                              aria-label={`Explore culture: ${item.name}`}
-                            >
+                            <span className="text-primary-800 font-medium group-hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
                               Explore Culture
                               <ArrowRight className="w-4 h-4 ml-2" />
-                            </Link>
+                            </span>
                           </div>
                         </div>
                       </motion.div>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -299,14 +300,18 @@ export default function ExploreContent() {
                   </h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {grid.map((item, index) => (
-                      <motion.div
+                      <Link
                         key={item.id}
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="culture-card group"
+                        href={`/heritage/${item.dTag}`}
+                        className="block"
                       >
-                        <div className="relative aspect-video overflow-hidden">
+                        <motion.div
+                          initial={{ opacity: 0, y: 30 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.6, delay: index * 0.1 }}
+                          className="culture-card group cursor-pointer"
+                        >
+                          <div className="relative aspect-video overflow-hidden">
                           <Image
                             src={item.image}
                             alt={`Cultural scene representing ${item.name}`}
@@ -351,16 +356,13 @@ export default function ExploreContent() {
                               </span>
                             )}
                           </div>
-                          <Link
-                            href={`/heritage/${item.dTag}`}
-                            className="text-primary-800 font-medium hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2"
-                            aria-label={`Explore culture: ${item.name}`}
-                          >
+                          <span className="text-primary-800 font-medium group-hover:text-accent-600 transition-colors duration-200 flex items-center w-full justify-center py-2">
                             Explore Culture
                             <ArrowRight className="w-4 h-4 ml-2" />
-                          </Link>
+                          </span>
                         </div>
                       </motion.div>
+                      </Link>
                     ))}
                   </div>
                 </div>
