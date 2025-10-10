@@ -33,17 +33,17 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
   const [showNsec, setShowNsec] = useState(false);
 
   const handleExtensionSignIn = async () => {
-    await signIn();
-    // Hook handles navigation, but allow override
-    if (onSuccess) {
+    const success = await signIn();
+    // Only trigger onSuccess callback if sign-in actually succeeded
+    if (success && onSuccess) {
       onSuccess();
     }
   };
 
   const handleNsecSignIn = async () => {
-    await signInWithNsec(nsecInput);
-    // Hook handles navigation, but allow override
-    if (onSuccess) {
+    const success = await signInWithNsec(nsecInput);
+    // Only trigger onSuccess callback if sign-in actually succeeded
+    if (success && onSuccess) {
       onSuccess();
     }
   };

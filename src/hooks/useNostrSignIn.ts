@@ -7,8 +7,8 @@ import { authBusinessService } from '@/services/business/AuthBusinessService';
 import { logger } from '@/services/core/LoggingService';
 
 export interface UseNostrSignInReturn {
-  signIn: () => Promise<void>;
-  signInWithNsec: (nsec: string) => Promise<void>;
+  signIn: () => Promise<boolean>;
+  signInWithNsec: (nsec: string) => Promise<boolean>;
   nsecInput: string;
   setNsecInput: (value: string) => void;
   isSigningIn: boolean;
@@ -30,14 +30,14 @@ export function useNostrSignIn(): UseNostrSignInReturn {
   const [signinError, setSigninError] = useState<string | null>(null);
   const [nsecInput, setNsecInput] = useState('');
 
-  const signIn = async () => {
+  const signIn = async (): Promise<boolean> => {
     logger.info('Sign-in initiated', { service: 'useNostrSignIn' });
 
     if (!isAvailable || !signer) {
       const errorMsg = 'No Nostr signer available. Please install a Nostr browser extension.';
       logger.warn('Sign-in failed: no signer', { isAvailable, hasSigner: !!signer });
       setSigninError(errorMsg);
-      return;
+      return false;
     }
 
     setIsSigningIn(true);
@@ -50,7 +50,7 @@ export function useNostrSignIn(): UseNostrSignInReturn {
       if (!result.success || !result.user) {
         setSigninError(result.error || 'Sign-in failed');
         logger.error('Sign-in failed', new Error(result.error || 'Unknown error'));
-        return;
+        return false;
       }
 
       // Update auth store with user data
@@ -80,16 +80,18 @@ export function useNostrSignIn(): UseNostrSignInReturn {
 
       // Navigate to home
       router.push('/');
+      return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign-in failed';
       setSigninError(errorMessage);
       logger.error('Sign-in error', error instanceof Error ? error : new Error(errorMessage));
+      return false;
     } finally {
       setIsSigningIn(false);
     }
   };
 
-  const signInWithNsec = async (nsec: string) => {
+  const signInWithNsec = async (nsec: string): Promise<boolean> => {
     logger.info('Nsec sign-in initiated', { service: 'useNostrSignIn' });
 
     // Validate format (empty check handled by button disabled state)
@@ -97,7 +99,7 @@ export function useNostrSignIn(): UseNostrSignInReturn {
       const errorMsg = 'Invalid private key format. Private keys should start with "nsec1"';
       setSigninError(errorMsg);
       logger.warn('Nsec sign-in failed: invalid format', { prefix: nsec.substring(0, 5) });
-      return;
+      return false;
     }
 
     setIsSigningIn(true);
@@ -110,7 +112,7 @@ export function useNostrSignIn(): UseNostrSignInReturn {
       if (!result.success || !result.user) {
         setSigninError(result.error || 'Sign-in failed');
         logger.error('Nsec sign-in failed', new Error(result.error || 'Unknown error'));
-        return;
+        return false;
       }
 
       // Update auth store with user data
@@ -140,10 +142,12 @@ export function useNostrSignIn(): UseNostrSignInReturn {
 
       // Navigate to home
       router.push('/');
+      return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign-in failed';
       setSigninError(errorMessage);
       logger.error('Nsec sign-in error', error instanceof Error ? error : new Error(errorMessage));
+      return false;
     } finally {
       setIsSigningIn(false);
     }
