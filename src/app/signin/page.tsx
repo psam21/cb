@@ -17,7 +17,7 @@ export default function SigninPage() {
 
   return (
     <div className="min-h-screen hero-section">
-      <div className="max-w-md w-full mx-4">
+      <div className="max-w-lg w-full mx-4">
         <SignInFlow 
           onCancel={handleCancel}
         />

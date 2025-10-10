@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useNostrSignIn } from '@/hooks/useNostrSignIn';
 
@@ -30,8 +30,16 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
     isLoading 
   } = useNostrSignIn();
 
+  // Default to 'nsec' mode if no extension detected, 'extension' if available
   const [mode, setMode] = useState<SignInMode>('extension');
   const [showNsec, setShowNsec] = useState(false);
+
+  // Auto-switch to nsec mode if no extension is available (after loading completes)
+  useEffect(() => {
+    if (!isLoading && !isAvailable) {
+      setMode('nsec');
+    }
+  }, [isLoading, isAvailable]);
 
   // Clear error when switching modes
   const handleModeSwitch = (newMode: SignInMode) => {
@@ -79,7 +87,7 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
         </div>
         <h1 className="text-3xl font-serif font-bold text-primary-800 mb-2">Sign In</h1>
         <p className="text-gray-600">
-          Connect with your Nostr identity to access your profile and shop
+          Connect with your Nostr identity
         </p>
       </div>
 
@@ -245,13 +253,6 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
           >
             Back to Home
           </button>
-        </div>
-        <div className="text-center mt-4">
-          <p className="text-xs text-gray-500">
-            By signing in, you agree to our Terms of Service and Privacy Policy.
-            <br />
-            Your data remains under your control via Nostr.
-          </p>
         </div>
       </div>
     </div>
