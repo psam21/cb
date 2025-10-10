@@ -289,6 +289,7 @@ useExploreHeritage Hook → HeritageContentService (Generic)
 - Extract media from imeta tags
 - Map to UI-friendly format
 - Handle loading, error states
+- Implement pagination with "Load More"
 
 **Returns**:
 ```typescript
@@ -297,6 +298,9 @@ useExploreHeritage Hook → HeritageContentService (Generic)
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  loadMore: () => Promise<void>;
+  isLoadingMore: boolean;
+  hasMore: boolean;
 }
 ```
 
@@ -315,13 +319,21 @@ HeritageContentService → GenericRelayService → Relays
 
 **Methods**:
 ```typescript
-async fetchPublicHeritage(limit = 8): Promise<HeritageEvent[]>
+async fetchPublicHeritage(
+  limit = 8, 
+  until?: number  // Unix timestamp for pagination
+): Promise<HeritageEvent[]>
 ```
+
+**Pagination Logic**:
+- **Initial load**: `limit=8, until=undefined` → Fetch 2 featured + 6 grid = 8 total
+- **Load More**: `limit=6, until=lastEventTimestamp` → Fetch 6 more items
 
 ---
 
 ## Data Flow
 
+### Initial Load
 ```
 User visits /explore
     ↓
@@ -329,13 +341,13 @@ ExploreContent renders
     ↓
 useExploreHeritage hook mounts
     ↓
-Calls GenericHeritageService.fetchPublicHeritage()
+Calls GenericHeritageService.fetchPublicHeritage(limit=8)
     ↓
 GenericHeritageService queries relays
     ↓
-Filters by: kind=30023, #t=culture-bridge-heritage
+Filters by: kind=30023, #t=culture-bridge-heritage, limit=8
     ↓
-Parses events → HeritageEvent[]
+Parses events → HeritageEvent[] (8 items)
     ↓
 Hook maps to HeritageExploreItem[]
     ↓
@@ -343,9 +355,33 @@ Sorts by created_at DESC
     ↓
 Component receives data:
     - Featured: items[0], items[1]  (2 latest)
-    - All Cultures: items.slice(2)   (rest)
+    - All Cultures: items.slice(2)   (6 items)
+    - hasMore: true (if 8 events returned)
     ↓
-Renders cards with real data
+Renders cards with "Load More" button
+```
+
+### Load More Flow
+```
+User clicks "Load More"
+    ↓
+Component calls loadMore()
+    ↓
+Hook sets isLoadingMore = true
+    ↓
+Calls fetchPublicHeritage(limit=6, until=lastEventTimestamp)
+    ↓
+GenericHeritageService queries relays with 'until' filter
+    ↓
+Receives 6 more events (or less if no more available)
+    ↓
+Hook appends new items to existing array
+    ↓
+Updates hasMore = (newEvents.length === 6)
+    ↓
+Component re-renders with more items
+    ↓
+If hasMore=false, button hides
 ```
 
 ---
@@ -354,10 +390,19 @@ Renders cards with real data
 
 ### Filter for Relay Query
 ```typescript
+// Initial load
 {
   kinds: [30023],
   "#t": ["culture-bridge-heritage"],
   limit: 8  // Fetch 2 featured + 6 for grid = 8 total
+}
+
+// Load More (subsequent pages)
+{
+  kinds: [30023],
+  "#t": ["culture-bridge-heritage"],
+  limit: 6,  // Fetch 6 more items
+  until: lastEventTimestamp  // Start from last loaded event
 }
 ```
 
@@ -588,6 +633,29 @@ return `${Math.floor(diff / 2592000)} months ago`;
 </div>
 ```
 
+### Load More Button
+```tsx
+{/* Show after grid, only if hasMore */}
+{hasMore && (
+  <div className="flex justify-center mt-12">
+    <button
+      onClick={loadMore}
+      disabled={isLoadingMore}
+      className="px-8 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
+    >
+      {isLoadingMore ? (
+        <>
+          <Spinner className="inline mr-2" />
+          Loading More...
+        </>
+      ) : (
+        'Load More Cultures'
+      )}
+    </button>
+  </div>
+)}
+```
+
 ---
 
 ## Implementation Checklist
@@ -601,18 +669,25 @@ return `${Math.floor(diff / 2592000)} months ago`;
 
 ### Phase 2: Hook Layer ✅
 - [ ] Create `useExploreHeritage.ts`
-- [ ] Call service on mount
+- [ ] Call service on mount (initial load: 8 items)
+- [ ] Implement `loadMore()` function (fetch 6 more items)
+- [ ] Track `hasMore` state based on returned events
+- [ ] Track `isLoadingMore` state separately from initial load
 - [ ] Map events to `HeritageExploreItem[]`
 - [ ] Sort by `created_at` DESC
 - [ ] Calculate `relativeTime` strings
 - [ ] Parse media into categories (images, audio, videos)
 - [ ] Handle loading/error states
+- [ ] Return `{ heritageItems, isLoading, error, loadMore, isLoadingMore, hasMore }`
 
 ### Phase 3: Component Layer ✅
 - [ ] Update `ExploreContent.tsx` to use hook
 - [ ] Remove static data imports
 - [ ] Implement featured cards: `items.slice(0, 2)`
 - [ ] Implement all cultures grid: `items.slice(2)`
+- [ ] Add "Load More" button below grid
+- [ ] Show loading spinner in button when `isLoadingMore`
+- [ ] Hide button when `!hasMore`
 - [ ] Add loading skeletons
 - [ ] Add empty state
 - [ ] Add error state with retry
@@ -627,11 +702,15 @@ return `${Math.floor(diff / 2592000)} months ago`;
 - [ ] Test with 0 events (empty state)
 - [ ] Test with 1 event (shows in featured, grid empty)
 - [ ] Test with 2 events (both featured, grid empty)
-- [ ] Test with 8 events (2 featured + 6 grid, all slots filled)
 - [ ] Test with 5 events (2 featured + 3 grid)
+- [ ] Test with 8 events (2 featured + 6 grid, no "Load More")
+- [ ] Test with 9+ events ("Load More" button appears)
+- [ ] Test "Load More" functionality (fetches 6 more)
+- [ ] Test multiple "Load More" clicks
+- [ ] Test when no more events available (button hides)
 - [ ] Test search filtering
 - [ ] Test responsive layout
-- [ ] Test loading states
+- [ ] Test loading states (initial + load more)
 - [ ] Test error recovery
 
 ---
@@ -670,9 +749,11 @@ const byCategory = byRegion.filter(item =>
 ## Performance Considerations
 
 ### Relay Query Optimization
-- **Limit**: Fetch 8 events (2 featured + 6 grid)
-- **Pagination**: Not needed for initial version (fixed display)
+- **Initial Load**: Fetch 8 events (2 featured + 6 grid)
+- **Load More**: Fetch 6 additional events per click
+- **Pagination**: Use `until` parameter with last event timestamp
 - **Caching**: Consider relay response caching (1 minute)
+- **Deduplication**: Filter out duplicate events by `id`
 
 ### Image Loading
 - Use Next.js `<Image>` with blur placeholders
