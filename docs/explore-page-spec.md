@@ -384,6 +384,68 @@ Component re-renders with more items
 If hasMore=false, button hides
 ```
 
+### Pagination SOA Compliance ✅
+
+**Layer Separation**:
+
+1. **Component Layer** (UI Only)
+   ```typescript
+   // ✅ CORRECT: Component only renders UI and calls hook function
+   {hasMore && (
+     <button onClick={loadMore} disabled={isLoadingMore}>
+       {isLoadingMore ? 'Loading...' : 'Load More'}
+     </button>
+   )}
+   
+   // ❌ WRONG: Component managing pagination state
+   const [page, setPage] = useState(1);  // NO! This is hook's job
+   ```
+
+2. **Hook Layer** (State & Orchestration)
+   ```typescript
+   // ✅ CORRECT: Hook manages pagination state
+   const [heritageItems, setHeritageItems] = useState([]);
+   const [isLoadingMore, setIsLoadingMore] = useState(false);
+   const [hasMore, setHasMore] = useState(true);
+   
+   const loadMore = async () => {
+     setIsLoadingMore(true);
+     const lastTimestamp = heritageItems[heritageItems.length - 1]?.publishedAt;
+     const newItems = await GenericHeritageService.fetchPublicHeritage(6, lastTimestamp);
+     setHeritageItems([...heritageItems, ...newItems]);
+     setHasMore(newItems.length === 6);
+     setIsLoadingMore(false);
+   };
+   
+   // ❌ WRONG: Hook making relay queries directly
+   const events = await pool.querySync(relays, filters);  // NO! Use service
+   ```
+
+3. **Service Layer** (Relay Queries)
+   ```typescript
+   // ✅ CORRECT: Service handles relay communication
+   static async fetchPublicHeritage(limit = 8, until?: number) {
+     const filter: Filter = {
+       kinds: [30023],
+       "#t": ["culture-bridge-heritage"],
+       limit,
+       ...(until && { until })  // Add pagination filter
+     };
+     return await GenericRelayService.queryEvents(filter);
+   }
+   
+   // ❌ WRONG: Service managing UI state
+   setIsLoading(true);  // NO! Services are stateless
+   ```
+
+**Key SOA Rules for Pagination**:
+- ✅ Component: Renders button, shows loading state from hook
+- ✅ Hook: Manages `isLoadingMore`, `hasMore`, `lastTimestamp`
+- ✅ Service: Accepts `until` parameter, queries relays
+- ❌ Component NEVER calls service directly
+- ❌ Service NEVER manages state
+- ❌ Hook NEVER makes raw relay queries
+
 ---
 
 ## Event Structure (Kind 30023 Heritage)
