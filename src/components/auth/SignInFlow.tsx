@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useNostrSignIn } from '@/hooks/useNostrSignIn';
 
 export interface SignInFlowProps {
@@ -100,7 +101,13 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
       )}
 
       <div className="mt-8 pt-6 border-t border-gray-200">
-        <div className="text-center">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-gray-600">
+            Don&apos;t have a Nostr identity yet?{' '}
+            <Link href="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
+              Sign up here
+            </Link>
+          </p>
           <button
             onClick={handleCancel}
             className="btn-outline-sm w-full"

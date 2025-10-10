@@ -49,12 +49,20 @@ export default function AuthButton() {
   // Show sign in button if not authenticated
   if (!isAuthenticated || !user) {
     return (
-      <Link
-        href="/signin"
-        className="px-4 py-2 bg-accent-600 text-white rounded-full font-medium hover:bg-accent-700 transition-colors duration-200 whitespace-nowrap"
-      >
-        Sign In
-      </Link>
+      <div className="flex items-center space-x-2">
+        <Link
+          href="/signin"
+          className="px-4 py-2 bg-white text-primary-800 rounded-full font-medium hover:bg-gray-100 transition-colors duration-200 whitespace-nowrap border border-primary-200"
+        >
+          Sign In
+        </Link>
+        <Link
+          href="/signup"
+          className="px-4 py-2 bg-accent-600 text-white rounded-full font-medium hover:bg-accent-700 transition-colors duration-200 whitespace-nowrap"
+        >
+          Sign Up
+        </Link>
+      </div>
     );
   }
 

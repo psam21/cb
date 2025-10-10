@@ -22,7 +22,8 @@
 - Name is mandatory
 - Avatar and bio are optional
 - Avatar held as File object until keys exist (Step 2)
-- Only localStorage storage (encrypted)
+- nsec stored in-memory only (Zustand, never persisted to localStorage)
+- User downloads plain text backup file (user responsible for securing it)
 - No QR codes, no NIP-05
 - Complete Kind 0 published in Step 2 (not minimal)
 
@@ -43,9 +44,10 @@ Step 2: Key Generation + Publishing
   - Create temporary NostrSigner from nsec
   - Display generated nsec/npub
   ↓
-Step 3: Backup + Storage
-  - Download encrypted backup file
-  - Automatic localStorage (encrypted)
+Step 3: Backup Keys
+  - Download plain text backup file
+  - User confirms backup downloaded
+  - nsec cleared from memory after completion
   ↓
 Step 4: Final Confirmation
   - Security acknowledgment
@@ -125,8 +127,10 @@ Generic Services (GenericEventService, GenericRelayService, GenericBlossomServic
   - Download backup button (plain text file: `{name}_culturebridge.txt`)
   - Backup confirmation checkbox: "I have securely saved my backup file"
   - Security warnings: "Without this backup, you will lose access to your account"
-  - Option to import to browser extension immediately
+  - Best practices for secure storage (password manager, encrypted drive, etc.)
   - "Next" button enabled only after backup confirmation
+  - NO encryption of backup file (plain text - user responsible for security)
+  - NO localStorage storage of nsec (in-memory only during sign-up)
 
 **Step 4: Final Confirmation**
 - **Path**: `/src/components/auth/FinalConfirmationStep.tsx`
@@ -134,8 +138,8 @@ Generic Services (GenericEventService, GenericRelayService, GenericBlossomServic
   - Security warnings review
   - "I understand and accept responsibility" checkbox
   - "Complete Sign-Up" button
-  - On completion: Clear nsec from Zustand, redirect to sign-in page
-  - Instructions: "Sign in with your browser extension"
+  - On completion: Clear nsec from Zustand, redirect to home page
+  - User must use browser extension or backup file to sign in later
 
 #### 4. **State Management Hook**
 
@@ -280,7 +284,7 @@ Step 4: Validation
 
 ### 2. Key Storage
 
-**Storage Method**: Browser localStorage via Zustand persist middleware
+**Storage Method**: In-memory only during sign-up, then cleared
 
 **What Gets Stored (persisted to localStorage)**:
 - User profile data (pubkey, npub, profile) - same as sign-in
@@ -294,17 +298,19 @@ Step 4: Validation
 
 **Implementation**:
 - Use same Zustand persist middleware as sign-in (existing pattern)
-- Store only non-sensitive user data in localStorage
-- Store nsec in AuthState (excluded from partialize function)
-- After successful sign-up, user MUST either:
-  1. Download backup file (contains nsec) for manual storage, OR
-  2. Import nsec into browser extension immediately
-- If user loses backup file AND clears browser data, they lose access permanently
+- Store only non-sensitive user data in localStorage (pubkey, npub, profile)
+- Store nsec in AuthState temporarily (excluded from partialize function, in-memory only)
+- nsec cleared from memory after sign-up completion
+- After successful sign-up, user MUST:
+  1. Download plain text backup file (contains nsec) for manual storage, AND
+  2. Secure the backup file in a password manager, encrypted drive, etc.
+- To sign in later, user must use browser extension or import backup file
 
 **Security**:
-- No encryption needed (nsec never stored in browser)
-- Same storage pattern as existing sign-in flow
-- User responsible for securing backup file
+- No encryption needed (nsec never stored in browser storage)
+- nsec exists in memory only during sign-up flow
+- Plain text backup file (user responsible for securing it)
+- Same storage pattern as existing sign-in flow for profile data
 
 ### 3. Profile Creation (Kind 0 Event)
 
@@ -427,7 +433,7 @@ Visit: https://culturebridge.vercel.app/support
 
 | Threat | Mitigation |
 |--------|------------|
-| **XSS Attack** | Never store plaintext nsec in localStorage; use encryption + HttpOnly cookies (not applicable for client-side apps) |
+| **XSS Attack** | Never store plaintext nsec in localStorage; nsec only in memory during sign-up, cleared after completion |
 | **Key Logging** | Warn users about keyloggers; recommend browser extensions for key isolation |
 | **Phishing** | Educate users that NO legitimate Nostr app asks for nsec via form submission |
 | **Lost Keys** | Mandatory backup confirmation; display multiple warnings; no recovery mechanism |
@@ -448,10 +454,11 @@ Visit: https://culturebridge.vercel.app/support
    - Never log keys to console (even in development)
 
 3. **Key Backup**
-   - Backup file contains plain text nsec (user responsible for security)
+   - Backup file contains plain text nsec (NO encryption - user responsible for security)
    - Clear warnings in backup file about never sharing nsec
    - User must download and secure backup file themselves
    - No cloud storage or transmission of backup file
+   - Recommend storing in password manager or encrypted drive
 
 4. **User Education**
    - Display warning: "Your private key IS your account. There is no password reset."
@@ -468,17 +475,18 @@ Visit: https://culturebridge.vercel.app/support
 **Progress Indicator**: 4 steps total
 
 1. Profile Setup (Name MANDATORY, Avatar/Bio OPTIONAL - shown first)
-2. Key Generation (Display nsec/npub + Upload avatar + Publish complete Kind 0)
-3. Backup + Local Storage (Download encrypted file + Automatic localStorage)
-4. Final Confirmation (Security acknowledgment)
+2. Key Generation (Display nsec/npub + Upload avatar + Publish complete Kind 0 + Publish Kind 1 welcome note)
+3. Backup Keys (Download plain text file + User confirmation)
+4. Final Confirmation (Security acknowledgment + Clear nsec from memory)
 
 **Navigation**:
 
-- "Back" button available on steps 2-5 (returns to previous step)
+- "Back" button available on steps 2-4 (returns to previous step)
 - "Next" button enabled only when step requirements met:
+  - Step 1: Display name entered (minimum requirement)
+  - Step 2: Keys generated and profile published
   - Step 3: Backup confirmed via checkbox
-  - Step 4: Display name entered (minimum requirement)
-- "Cancel" button available on all steps (returns to `/signin` with confirmation dialog)
+- "Cancel" button available on all steps (returns to home with confirmation dialog)
 
 **Visual Design**:
 
@@ -492,9 +500,9 @@ Visit: https://culturebridge.vercel.app/support
 **Key Flow Changes**:
 
 - **Step 1**: Profile form (name mandatory, avatar/bio optional) - shown first before key generation
-- **Step 2**: Keys are generated, avatar uploaded (if provided), complete Kind 0 profile published (not minimal)
-- **Step 3**: Backup + automatic localStorage storage (no choice of storage method)
-- **Step 4**: Final confirmation before redirect to home or profile
+- **Step 2**: Keys are generated, avatar uploaded (if provided), complete Kind 0 profile published (not minimal), Kind 1 welcome note published
+- **Step 3**: Plain text backup file download (no encryption, user responsible for securing it)
+- **Step 4**: Final confirmation before clearing nsec from memory and redirecting to home
 
 ### Error Handling
 
@@ -504,8 +512,8 @@ Visit: https://culturebridge.vercel.app/support
 | Background profile publish fails (Step 2) | "Profile publishing in progress... May take a few moments." | Non-blocking - allow user to continue, retry in background |
 | Backup not confirmed (Step 3) | "You must back up your keys before continuing." | Disable "Next" until checkbox checked |
 | Display name missing (Step 1) | "Display name is required to continue." | Disable "Next" until name entered |
-| Avatar upload fails (Step 4) | "Avatar upload failed. You can add it later in your profile." | Allow continue without avatar |
-| Profile update fails (Step 4) | "Profile update failed. Your basic profile is still published." | Show error but allow continue |
+| Avatar upload fails (Step 2) | "Avatar upload failed. You can add it later in your profile." | Allow continue without avatar |
+| Profile update fails (Step 2) | "Profile update failed. Your basic profile is still published." | Show error but allow continue |
 | Relay publishing fails | "Profile published to {X} of {Y} relays. Some relays are unavailable." | Show partial success, allow continue |
 
 ### Accessibility (A11y)
@@ -584,18 +592,12 @@ Visit: https://culturebridge.vercel.app/support
 
 ### Browser Extension Migration
 
-**If user chose localStorage but later installs extension**:
+**If user later installs browser extension**:
 
 1. Detect extension installation (check `window.nostr` on page load)
-2. Show migration prompt: "We detected a Nostr extension. Move your keys for better security?"
-3. If accepted:
-   - Guide user to export nsec from localStorage
-   - Import nsec into extension
-   - Clear nsec from localStorage
-   - Update auth flow to use extension
-4. If declined:
-   - Show "Don't ask again" option
-   - Continue using localStorage
+2. Show prompt: "We detected a Nostr extension. Import your backup file to sign in securely."
+3. User imports backup file into extension manually
+4. User can now sign in with extension (same flow as existing sign-in)
 
 ---
 
@@ -610,8 +612,8 @@ Visit: https://culturebridge.vercel.app/support
   - [ ] Multiple generations produce unique keys
 
 - [ ] **Backup Mechanisms**
-  - [ ] Encrypted file downloads successfully
-  - [ ] File can be decrypted with passphrase
+  - [ ] Plain text file downloads successfully
+  - [ ] File contains correct nsec and npub
 
 - [ ] **Profile Creation**
   - [ ] Kind 0 event publishes to relays
@@ -620,9 +622,9 @@ Visit: https://culturebridge.vercel.app/support
   - [ ] Profile visible to other Nostr clients
 
 - [ ] **Key Storage**
-  - [ ] localStorage encryption/decryption works
-  - [ ] Extension import succeeds
-  - [ ] Manual backup allows login
+  - [ ] nsec cleared from memory after sign-up completion
+  - [ ] nsec NOT persisted to localStorage (verify with browser DevTools)
+  - [ ] User can import backup file into browser extension later
 
 - [ ] **Edge Cases**
   - [ ] Network offline during publishing (graceful failure)
@@ -634,8 +636,8 @@ Visit: https://culturebridge.vercel.app/support
 
 - [ ] nsec never appears in network requests
 - [ ] nsec never appears in browser console
-- [ ] localStorage encryption uses strong algorithm (AES-256-GCM)
-- [ ] PBKDF2 iterations ≥ 100,000
+- [ ] nsec never persisted to localStorage (verify in DevTools)
+- [ ] nsec cleared from Zustand after sign-up completion
 - [ ] Keys cleared from memory after use
 - [ ] No keys in browser history or autocomplete
 
@@ -675,16 +677,16 @@ None - all required dependencies already in project.
 - [ ] Implement background profile publishing after key generation
 - [ ] Add success notification after keys generated + profile published
 
-### Backup + Local Storage
+### Backup Keys
 
-**Scope**: Backup and localStorage storage
+**Scope**: Plain text backup file download and user confirmation
 
-- [ ] Create `KeyBackupStorageStep` component
-- [ ] Implement encrypted file download
-- [ ] Add backup confirmation checkbox (mandatory)
-- [ ] Implement localStorage storage (encrypted, automatic)
-- [ ] Security warnings about localStorage limitations
-- [ ] Best practices display
+- [x] Create `KeyBackupStep` component
+- [x] Implement plain text file download
+- [x] Add backup confirmation checkbox (mandatory)
+- [x] Security warnings about securing backup file
+- [x] Best practices display (password manager, encrypted drive, etc.)
+- [x] No localStorage storage of nsec
 
 ### Profile Form (Step 1)
 
@@ -767,26 +769,28 @@ Page → Component → Hook → Business Service → Event Service → Generic S
 
 ⚠️ **NEVER**:
 - Log private keys (even in development)
-- Store plaintext nsec in localStorage or browser storage
+- Store nsec in localStorage or any browser storage
+- Persist nsec (in-memory only during sign-up, then cleared)
 - Transmit nsec over network
 - Expose nsec in error messages
 - Keep nsec in memory longer than necessary
 
 ✅ **ALWAYS**:
-- Generate backup file with clear warnings
-- Clear sensitive data from memory after use
+- Generate plain text backup file with clear warnings
+- Clear nsec from memory after sign-up completion
 - Validate keys after generation
-- Warn users about key loss
-- Use secure random generation
+- Warn users about key loss (no recovery possible)
+- Use secure random generation (crypto.getRandomValues)
 
 ### Code Review Checklist
 
 Before merging sign-up implementation:
 - [ ] No nsec in console.log statements
-- [ ] No nsec stored in localStorage (only user profile data)
-- [ ] Backup file has security warnings
+- [ ] No nsec persisted to localStorage (only pubkey, npub, profile data persisted)
+- [ ] nsec cleared from Zustand memory after sign-up completion
+- [ ] Plain text backup file has security warnings
 - [ ] User must download backup file before completing sign-up
-- [ ] SOA layers respected
+- [ ] SOA layers respected (Page → Component → Hook → Business → Service)
 - [ ] TypeScript types complete
 - [ ] Error handling comprehensive
 - [ ] Accessibility tested
