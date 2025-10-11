@@ -4,18 +4,19 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 ## Matrix
 
-| Page/Feature | NIP-01 | NIP-05 | NIP-07 | NIP-09 | NIP-17 | NIP-23 | NIP-33 | NIP-44 | NIP-94 | Blossom | Kind 0 | Kind 5 | Kind 14 | Kind 1059 | Kind 10063 | Kind 24242 | Kind 30023 | Status |
-|--------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|---------|--------|--------|---------|-----------|------------|------------|------------|--------|
-| **Sign In** | ✅ Basic events | ❌ | ✅ Signer auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Profile fetch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Production** |
-| **Profile** | ✅ Event structure | ✅ DNS verification | ✅ Read/write | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Image upload | ✅ Profile metadata | ❌ | ❌ | ❌ | ❌ | ✅ Upload auth | ❌ | **Production** |
-| **Messages** | ✅ Event queries | ✅ Fallback names | ✅ Signing DMs | ❌ | ✅ Gift wraps | ❌ | ❌ | ✅ Encryption | ❌ | ❌ | ✅ Name resolution | ❌ | ✅ Rumor events | ✅ Encrypted DMs | ❌ | ❌ | ❌ | **Production** |
-| **Shop** | ✅ Event publishing | ❌ | ✅ Product signing | ✅ Delete products | ❌ | ✅ Product content | ✅ dTag identity | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product events | **Production** |
-| **My Shop** | ✅ Event queries | ❌ | ✅ Edit/delete | ✅ Delete products | ❌ | ✅ Content updates | ✅ Replace events | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product CRUD | **Production** |
-| **Heritage** | ✅ Event publishing | ❌ | ✅ Content signing | ✅ Delete content | ❌ | ✅ Story content | ✅ dTag identity | ❌ | ✅ imeta tags | ✅ Media upload | ❌ | ✅ Content deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Heritage events | **Production** |
-| **My Contributions** | ✅ Event queries | ❌ | ✅ Read access | ❌ | ❌ | ✅ Content fetch | ✅ Filter by dTag | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ User content | **Production** |
-| **Explore** | ✅ Event queries | ❌ | ❌ | ❌ | ❌ | ✅ Content display | ✅ Query by tags | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Public content | **Production** |
-| **Elder Voices** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
-| **Exhibitions** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
+| Page/Feature | NIP-01 | NIP-05 | NIP-07 | NIP-09 | NIP-17 | NIP-23 | NIP-33 | NIP-44 | NIP-94 | Blossom | Kind 0 | Kind 1 | Kind 5 | Kind 14 | Kind 1059 | Kind 10063 | Kind 24242 | Kind 30023 | Status |
+|--------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|---------|--------|--------|--------|---------|-----------|------------|------------|------------|--------|
+| **Sign Up** | ✅ Basic events | ❌ | ✅ Signer auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Avatar upload | ✅ Profile create | ✅ Welcome note | ❌ | ❌ | ❌ | ❌ | ✅ Upload auth | ❌ | **Production** |
+| **Sign In** | ✅ Basic events | ❌ | ✅ Signer auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Profile fetch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Production** |
+| **Profile** | ✅ Event structure | ✅ DNS verification | ✅ Read/write | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Image upload | ✅ Profile metadata | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Upload auth | ❌ | **Production** |
+| **Messages** | ✅ Event queries | ✅ Fallback names | ✅ Signing DMs | ❌ | ✅ Gift wraps | ❌ | ❌ | ✅ Encryption | ❌ | ❌ | ✅ Name resolution | ❌ | ❌ | ✅ Rumor events | ✅ Encrypted DMs | ❌ | ❌ | ❌ | **Production** |
+| **Shop** | ✅ Event publishing | ❌ | ✅ Product signing | ✅ Delete products | ❌ | ✅ Product content | ✅ dTag identity | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product events | **Production** |
+| **My Shop** | ✅ Event queries | ❌ | ✅ Edit/delete | ✅ Delete products | ❌ | ✅ Content updates | ✅ Replace events | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product CRUD | **Production** |
+| **Heritage** | ✅ Event publishing | ❌ | ✅ Content signing | ✅ Delete content | ❌ | ✅ Story content | ✅ dTag identity | ❌ | ✅ imeta tags | ✅ Media upload | ❌ | ❌ | ✅ Content deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Heritage events | **Production** |
+| **My Contributions** | ✅ Event queries | ❌ | ✅ Read access | ❌ | ❌ | ✅ Content fetch | ✅ Filter by dTag | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ User content | **Production** |
+| **Explore** | ✅ Event queries | ❌ | ❌ | ❌ | ❌ | ✅ Content display | ✅ Query by tags | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Public content | **Production** |
+| **Elder Voices** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
+| **Exhibitions** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
 
 ## NIP Descriptions
 
@@ -38,6 +39,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 ## Kind Descriptions (Implemented)
 
 - **Kind 0**: User metadata - profile info (name, display_name, about, picture, banner, website, nip05, lud16, lud06, bot, birthday) ✅
+- **Kind 1**: Short text note - public posts, welcome messages, status updates ✅
 - **Kind 5**: Event deletion - NIP-09 deletion events that reference events to delete ✅
 - **Kind 14**: Rumor - unsigned event wrapped in NIP-17 gift-wrapped messages (internal to encryption flow) ✅
 - **Kind 1059**: Gift wrap - encrypted outer layer for NIP-17 DMs (double-wrapped encryption with ephemeral keys) ✅
@@ -47,12 +49,24 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 ## Feature Implementation Details
 
+### Sign Up Workflow
+
+- Generates Nostr keypair (nsec/npub) via `nostr-tools`
+- Publishes **Kind 0** profile metadata to configured relays
+- Publishes **Kind 1** welcome note for verification (silent)
+- **Blossom** avatar upload with **Kind 24242** authorization
+- Creates encrypted backup file with profile and keys
+- Clears nsec from memory after backup creation
+- Uses temporary signer during sign-up flow
+
 ### Authentication (Sign In)
+
 - Uses **NIP-07** browser extensions (Alby, nos2x)
 - Fetches **Kind 0** profile on login
 - Stores pubkey in auth state
 
 ### Profile Management
+
 - Publishes **Kind 0** metadata events to Nostr relays
 - Real-time **NIP-05** DNS verification with status badges
 - **NIP-07** browser extension for signing profile updates
@@ -63,6 +77,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - State propagation via auth store to all components
 
 ### Messaging System
+
 - **NIP-17** gift-wrapped DMs (double-wrapped encryption)
 - **NIP-44** encryption (ChaCha20 + HMAC-SHA256) for message payloads
 - **Kind 14** rumor events (unsigned, encrypted in seal)
@@ -73,6 +88,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - IndexedDB cache with AES-GCM encryption
 
 ### Shop Products
+
 - **Kind 30023** parameterized replaceable events
 - **NIP-33** dTag for product identity (`product-{timestamp}-{random}`)
 - **NIP-23** markdown content structure
@@ -86,6 +102,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - User tags: Custom product categorization
 
 ### Heritage Content
+
 - **Kind 30023** for stories/artifacts
 - **NIP-33** dTag persistence (`contribution-{timestamp}-{random}`)
 - **NIP-23** markdown formatting
@@ -99,6 +116,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - Categories via `#t` tags
 
 ### Content Discovery (Explore/My Contributions)
+
 - **NIP-01** relay queries with filters
 - Filter by `kinds: [30023]`
 - Filter by `#t` tags (categories: `culture-bridge-shop`, `culture-bridge-heritage`)
@@ -107,7 +125,9 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - Authenticated queries for My Contributions
 
 ### Static Content Pages
+
 **Elder Voices** and **Exhibitions** use static data from `/src/data/`:
+
 - No Nostr event queries
 - Pre-configured data objects
 - No relay communication
@@ -119,6 +139,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 ### Event Creation
 
 - All **Kind 30023** events use `GenericEventService.createNIP23Event()`
+- **Kind 1** events created directly for welcome notes (sign-up verification)
 - Consistent **NIP-33** dTag strategy (`${type}-${timestamp}-${randomHex}`)
 - Event IDs change on updates, dTag persists (parameterized replaceable)
 - Auto-tag with `culture-bridge-${category}` for filtering (e.g., `culture-bridge-shop`, `culture-bridge-heritage`)
@@ -198,6 +219,14 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - Used internally by NIP-17 for gift-wrapped message encryption
 - Implemented via nostr-tools library and NIP-07 signer extensions
 
+### NIP-04 Legacy Support
+
+- **NIP-04** interface available in NostrSigner type definition
+- Not actively used in production features
+- Maintained for potential backward compatibility with legacy DMs
+- Modern features use **NIP-44** exclusively
+- Extensions may provide nip04 methods, but app defaults to NIP-44
+
 ### Cache Encryption
 
 - Uses pubkey for key derivation (not nsec, due to NIP-07 security model)
@@ -210,9 +239,21 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 ### Planned NIPs
 
-- **NIP-04**: Legacy DM encryption (backward compatibility)
-- **NIP-11**: Relay capability discovery
-- **NIP-46**: Remote signer protocol (mobile apps)
+- **NIP-11**: Relay capability discovery (relay metadata discovery)
+- **NIP-46**: Remote signer protocol (mobile apps, Nostr Connect)
+- **NIP-65**: Relay list metadata (user's preferred relay list)
+
+### Relay Support
+
+Current relay configurations include support for additional NIPs not yet utilized:
+
+- **NIP-02**: Contact list and petnames
+- **NIP-11**: Relay information document (metadata)
+- **NIP-15**: End of stored events notice
+- **NIP-22**: Event created_at limits
+- **NIP-28**: Public chat
+- **NIP-40**: Expiration timestamp
+- **NIP-59**: Gift wrap (infrastructure present)
 
 ### Media Enhancements
 
@@ -244,12 +285,15 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 ---
 
-**Last Updated**: October 7, 2025  
+**Last Updated**: October 11, 2025  
 **Codebase Version**: Next.js 15.4.6  
 **Active NIPs**: 9 implemented (NIP-01, NIP-05, NIP-07, NIP-09, NIP-17, NIP-23, NIP-33, NIP-44, NIP-94 + Blossom)  
-**Active Event Kinds**: 7 kinds (Kind 0, Kind 5, Kind 14, Kind 1059, Kind 10063, Kind 24242, Kind 30023)  
+**Active Event Kinds**: 8 kinds (Kind 0, Kind 1, Kind 5, Kind 14, Kind 1059, Kind 10063, Kind 24242, Kind 30023)  
 **Recent Updates**:
 
+- 2025-10-11: Documentation - Added Kind 1 (welcome note), Sign Up workflow details, NIP-04 legacy support notes
+- 2025-10-11: Documentation - Updated relay configurations showing additional NIP support infrastructure
+- 2025-10-11: Matrix - Added Sign Up row with full implementation details (Kind 0, Kind 1, Blossom)
 - 2025-10-07: Messages - Added conversation context with image thumbnails for product/heritage references
 - 2025-10-07: Documentation - Added NIP-09 (deletion), NIP-44 (encryption), Kind 5, Kind 14, Kind 10063, Kind 24242 to implementation matrix
 - 2025-10-06: SOA Compliance - Refactored profile page to follow strict Service-Oriented Architecture (hook layer abstraction)
