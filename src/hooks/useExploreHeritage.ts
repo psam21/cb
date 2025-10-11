@@ -77,7 +77,8 @@ function mapToExploreItem(event: HeritageEvent): HeritageExploreItem {
     id: event.id,
     dTag: event.dTag,
     name: event.title,
-    location: event.location || 'Unknown Location',
+    // Use region as location since that's what's in the event tags
+    location: event.region || event.location || 'Unknown Location',
     region: event.region || 'Unknown Region',
     image,
     contributors: 1, // Each event has single author
