@@ -79,6 +79,7 @@ export const useNostrSigner = () => {
   // Unified signer management: handles both browser extension and nsec
   // Priority: Nsec > Browser Extension > None
   // Also listens for extension becoming available after page load
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const initializeSigner = async () => {
       logger.info('Initializing signer', {
@@ -189,7 +190,10 @@ export const useNostrSigner = () => {
         window.removeEventListener('focus', handleFocus);
       }
     };
-  }, [nsec, setSigner, setSignerAvailable, signer]); // Added signer to deps
+    // Note: `signer` intentionally excluded from deps to prevent infinite loop
+    // We only want to re-initialize when `nsec` changes, not when `signer` changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nsec, setSigner, setSignerAvailable]);
 
   return { 
     isAvailable, 
