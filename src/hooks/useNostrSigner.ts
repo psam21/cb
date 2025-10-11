@@ -25,28 +25,10 @@ export const useNostrSigner = () => {
 
   // Helper to get signer when needed
   const getSigner = async (): Promise<NostrSigner> => {
-    // First check for cached signer
-    if (signer) {
-      logger.info('Getting cached Nostr signer instance', {
-        service: 'useNostrSigner',
-        method: 'getSigner',
-      });
-      return signer;
-    }
-    
-    // Check for browser extension signer
-    if (typeof window !== 'undefined' && window.nostr) {
-      logger.info('Getting Nostr signer instance from window', {
-        service: 'useNostrSigner',
-        method: 'getSigner',
-      });
-      return window.nostr;
-    }
-    
-    // Check for nsec (direct key access) and create temporary signer
-    const nsec = useAuthStore.getState().nsec;
-    if (nsec) {
-      logger.info('Creating temporary signer from nsec', {
+    // First priority: Check for nsec (persisted from sign-up)
+    const nsecFromStore = useAuthStore.getState().nsec;
+    if (nsecFromStore) {
+      logger.info('Creating signer from persisted nsec', {
         service: 'useNostrSigner',
         method: 'getSigner',
         hasNsec: true,
@@ -56,28 +38,46 @@ export const useNostrSigner = () => {
       const { nip19 } = await import('nostr-tools');
       const { getPublicKey, finalizeEvent } = await import('nostr-tools/pure');
       
-      const decoded = nip19.decode(nsec);
+      const decoded = nip19.decode(nsecFromStore);
       if (decoded.type !== 'nsec') {
         throw new Error('Invalid nsec format');
       }
       
       const secretKey = decoded.data;
       
-      // Create temporary signer
-      const temporarySigner: NostrSigner = {
+      // Create signer from nsec
+      const nsecSigner: NostrSigner = {
         getPublicKey: async () => getPublicKey(secretKey),
         signEvent: async (event) => finalizeEvent(event, secretKey),
         getRelays: async () => ({}), // No extension relays
       };
       
-      return temporarySigner;
+      return nsecSigner;
+    }
+    
+    // Second priority: Check for cached signer
+    if (signer) {
+      logger.info('Getting cached Nostr signer instance', {
+        service: 'useNostrSigner',
+        method: 'getSigner',
+      });
+      return signer;
+    }
+    
+    // Third priority: Check for browser extension signer
+    if (typeof window !== 'undefined' && window.nostr) {
+      logger.info('Getting Nostr signer instance from browser extension', {
+        service: 'useNostrSigner',
+        method: 'getSigner',
+      });
+      return window.nostr;
     }
     
     throw new Error('No signer available');
   };
 
   // Unified signer management: handles both browser extension and nsec
-  // Priority: Browser Extension > Nsec > None
+  // Priority: Nsec > Browser Extension > None
   // Also listens for extension becoming available after page load
   useEffect(() => {
     const initializeSigner = async () => {
@@ -88,21 +88,10 @@ export const useNostrSigner = () => {
         hasNsec: !!nsec,
       });
 
-      // Priority 1: Browser extension (if available)
-      if (typeof window !== 'undefined' && window.nostr) {
-        setSigner(window.nostr);
-        setSignerAvailable(true);
-        logger.info('Using browser extension signer', {
-          service: 'useNostrSigner',
-          method: 'initializeSigner',
-        });
-        return;
-      }
-
-      // Priority 2: Nsec (if available)
+      // Priority 1: Nsec (persisted from sign-up - maintain consistent identity)
       if (nsec) {
         try {
-          logger.info('Creating temporary signer from nsec', {
+          logger.info('Creating signer from persisted nsec', {
             service: 'useNostrSigner',
             method: 'initializeSigner',
           });
@@ -117,22 +106,22 @@ export const useNostrSigner = () => {
           
           const secretKey = decoded.data;
           
-          // Create and store temporary signer
-          const temporarySigner: NostrSigner = {
+          // Create and store signer
+          const nsecSigner: NostrSigner = {
             getPublicKey: async () => getPublicKey(secretKey),
             signEvent: async (event) => finalizeEvent(event, secretKey),
             getRelays: async () => ({}),
           };
           
-          setSigner(temporarySigner);
+          setSigner(nsecSigner);
           setSignerAvailable(true);
           
-          logger.info('Temporary signer created for nsec user', {
+          logger.info('Signer created for nsec user', {
             service: 'useNostrSigner',
             method: 'initializeSigner',
           });
         } catch (error) {
-          logger.error('Failed to create temporary signer from nsec', 
+          logger.error('Failed to create signer from nsec', 
             error instanceof Error ? error : new Error('Unknown error'), {
             service: 'useNostrSigner',
             method: 'initializeSigner',
@@ -140,6 +129,17 @@ export const useNostrSigner = () => {
           setSigner(null);
           setSignerAvailable(false);
         }
+        return;
+      }
+
+      // Priority 2: Browser extension (if available)
+      if (typeof window !== 'undefined' && window.nostr) {
+        setSigner(window.nostr);
+        setSignerAvailable(true);
+        logger.info('Using browser extension signer', {
+          service: 'useNostrSigner',
+          method: 'initializeSigner',
+        });
         return;
       }
 

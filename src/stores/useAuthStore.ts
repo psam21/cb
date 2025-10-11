@@ -189,12 +189,13 @@ export const useAuthStore = create<AuthState>()(
       {
         name: 'auth-store',
         partialize: (state: AuthState) => ({
-          // Persist user data and authentication state
-          // Don't persist sensitive data like signer, nsec, or keys
-          // nsec is NEVER persisted - only held in memory during sign-up
+          // Persist user data, authentication state, and nsec
+          // nsec is persisted to allow seamless app usage without browser extension
+          // User can sign events using their persisted nsec throughout their journey
           user: state.user,
           isAuthenticated: state.isAuthenticated,
           isAvailable: state.isAvailable,
+          nsec: state.nsec, // Persist nsec for signing events
         })
       }
     ),

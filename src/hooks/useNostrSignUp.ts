@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { authBusinessService } from '@/services/business/AuthBusinessService';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 /**
  * Sign-up form data
@@ -178,6 +179,23 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       setIsPublishingProfile(false);
       setIsGeneratingKeys(false);
       
+      // Authenticate user in auth store
+      useAuthStore.getState().setUser({
+        pubkey: keys.pubkey,
+        npub: keys.npub,
+        profile: {
+          display_name: formData.displayName,
+          about: formData.bio || '',
+          picture: uploadedAvatarUrl || '',
+          website: '',
+          banner: '',
+          bot: false,
+          birthday: '',
+        },
+      });
+      
+      console.log('User authenticated after sign-up');
+      
       // Success - move to backup step automatically
       setCurrentStep(2);
     } catch (err) {
@@ -214,14 +232,14 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
     }
   }, [formData.displayName, generatedKeys]);
   
-  // Complete sign-up (Step 4)
+  // Complete sign-up
   const completeSignUp = useCallback(() => {
-    console.log('Sign-up complete - clearing nsec from memory');
+    console.log('Sign-up complete - nsec persisted for seamless app usage');
     
-    // Clear nsec from Zustand (user must use backup or extension now)
-    authBusinessService.clearNsec();
+    // Note: nsec is now persisted in Zustand and will be available throughout the app
+    // User can sign events using their nsec without needing a browser extension
     
-    // Redirect to sign-in page happens in component
+    // Redirect to home page happens in component
   }, []);
   
   return {
