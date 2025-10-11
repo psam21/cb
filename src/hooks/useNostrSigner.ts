@@ -35,7 +35,7 @@ export const useNostrSigner = () => {
       });
       
       // Decode nsec to get secret key
-      const { nip19 } = await import('nostr-tools');
+      const { nip19, nip44 } = await import('nostr-tools');
       const { getPublicKey, finalizeEvent } = await import('nostr-tools/pure');
       
       const decoded = nip19.decode(nsecFromStore);
@@ -45,11 +45,21 @@ export const useNostrSigner = () => {
       
       const secretKey = decoded.data;
       
-      // Create signer from nsec
+      // Create signer from nsec with NIP-44 support
       const nsecSigner: NostrSigner = {
         getPublicKey: async () => getPublicKey(secretKey),
         signEvent: async (event) => finalizeEvent(event, secretKey),
         getRelays: async () => ({}), // No extension relays
+        nip44: {
+          encrypt: async (peer: string, plaintext: string) => {
+            const conversationKey = nip44.v2.utils.getConversationKey(secretKey, peer);
+            return nip44.v2.encrypt(plaintext, conversationKey);
+          },
+          decrypt: async (peer: string, ciphertext: string) => {
+            const conversationKey = nip44.v2.utils.getConversationKey(secretKey, peer);
+            return nip44.v2.decrypt(ciphertext, conversationKey);
+          },
+        },
       };
       
       return nsecSigner;
@@ -97,7 +107,7 @@ export const useNostrSigner = () => {
             method: 'initializeSigner',
           });
 
-          const { nip19 } = await import('nostr-tools');
+          const { nip19, nip44 } = await import('nostr-tools');
           const { getPublicKey, finalizeEvent } = await import('nostr-tools/pure');
           
           const decoded = nip19.decode(nsec);
@@ -107,17 +117,27 @@ export const useNostrSigner = () => {
           
           const secretKey = decoded.data;
           
-          // Create and store signer
+          // Create and store signer with NIP-44 support
           const nsecSigner: NostrSigner = {
             getPublicKey: async () => getPublicKey(secretKey),
             signEvent: async (event) => finalizeEvent(event, secretKey),
             getRelays: async () => ({}),
+            nip44: {
+              encrypt: async (peer: string, plaintext: string) => {
+                const conversationKey = nip44.v2.utils.getConversationKey(secretKey, peer);
+                return nip44.v2.encrypt(plaintext, conversationKey);
+              },
+              decrypt: async (peer: string, ciphertext: string) => {
+                const conversationKey = nip44.v2.utils.getConversationKey(secretKey, peer);
+                return nip44.v2.decrypt(ciphertext, conversationKey);
+              },
+            },
           };
           
           setSigner(nsecSigner);
           setSignerAvailable(true);
           
-          logger.info('Signer created for nsec user', {
+          logger.info('Signer created for nsec user with NIP-44 support', {
             service: 'useNostrSigner',
             method: 'initializeSigner',
           });
