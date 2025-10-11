@@ -155,41 +155,12 @@ export const useNostrSigner = () => {
 
     initializeSigner();
     
-    // Poll for extension becoming available (user approves after page load)
-    // This handles the case where user clicks "Contact Seller" → gets prompt → approves extension
-    const checkForExtension = () => {
-      if (typeof window !== 'undefined' && window.nostr && !signer) {
-        logger.info('Extension became available, re-initializing', {
-          service: 'useNostrSigner',
-          method: 'checkForExtension',
-        });
-        initializeSigner();
-      }
-    };
+    // No need for polling - signer initialization happens once on mount
+    // and re-runs only when nsec changes (due to sign-in/sign-up/logout)
+    // Extension detection happens synchronously above
     
-    // Check every 1 second for extension (stops once found)
-    const intervalId = setInterval(checkForExtension, 1000);
-    
-    // Also check when window regains focus (user might approve in popup)
-    const handleFocus = () => {
-      logger.info('Window focused, checking for extension', {
-        service: 'useNostrSigner',
-        method: 'handleFocus',
-      });
-      checkForExtension();
-    };
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('focus', handleFocus);
-    }
-    
-    // Cleanup
-    return () => {
-      clearInterval(intervalId);
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('focus', handleFocus);
-      }
-    };
+    // Cleanup (nothing to clean up now)
+    return () => {};
     // Note: `signer` intentionally excluded from deps to prevent infinite loop
     // We only want to re-initialize when `nsec` changes, not when `signer` changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
