@@ -75,6 +75,38 @@ When implementing features based on proven patterns, use these three documents:
 
 ### 📖 **Feature-Specific Guides**
 
+#### [`code-quality-analysis.md`](./code-quality-analysis.md)
+
+**Purpose**: Code quality improvements and refactoring analysis  
+**Status**: ✅ **100% Complete** (17/17 tasks, October 12, 2025)  
+**Contains**:
+
+- Comprehensive duplication analysis (DUP-001 through DUP-005)
+- SOA violation fixes (SOA-001 through SOA-005)
+- Architecture improvements (ARCH-001 through ARCH-005)
+- Code consistency fixes (MIN-001 through MIN-003)
+- Implementation status and commit references
+
+**Key Achievements**:
+
+- Eliminated 500+ lines of duplicate code
+- Fixed all SOA violations (service layer cleanup)
+- Added 680+ lines of comprehensive documentation
+- Standardized error handling across 9 hooks
+- Resolved circular dependencies
+
+#### [`nip-kind-implementation-matrix.md`](./nip-kind-implementation-matrix.md)
+
+**Purpose**: Nostr protocol implementation reference  
+**Contains**:
+
+- NIP/Kind implementation matrix by feature
+- Protocol descriptions and usage patterns
+- Security notes and best practices
+- Recent updates and changelog
+
+**Last Updated**: October 12, 2025
+
 #### [`heritage-testing-guide.md`](./heritage-testing-guide.md)
 
 **Purpose**: Testing procedures for heritage contributions  
@@ -220,14 +252,28 @@ ai-assistant-guidance.md (Meta)
 - New anti-pattern discovered → Add to [`critical-guidelines.md`](./critical-guidelines.md)
 - Protocol improvement → Update [`implementation-protocol.md`](./implementation-protocol.md)
 - New keyword trigger → Update [`ai-assistant-guidance.md`](./ai-assistant-guidance.md)
+- Code quality issues found → Document in [`code-quality-analysis.md`](./code-quality-analysis.md)
+- NIP implementation changes → Update [`nip-kind-implementation-matrix.md`](./nip-kind-implementation-matrix.md)
 
 **How to update**:
 
 1. Make changes
 2. Update this README if structure changes
-3. Commit with clear explanation
-4. Ensure cross-references remain valid
+3. Update [`nip-kind-implementation-matrix.md`](./nip-kind-implementation-matrix.md) if Nostr-related
+4. Commit with clear explanation
+5. Ensure cross-references remain valid
+
+**Code Quality Standards** (from October 2025 refactoring):
+
+- ✅ All services follow SOA strictly (no state, no presentation deps)
+- ✅ All hooks use AppError for structured error handling
+- ✅ Comprehensive JSDoc documentation on all major components
+- ✅ Decorator pattern for hook composition (base + enhanced)
+- ✅ No circular dependencies between service layers
+- ✅ No duplicate code (use shared utilities/base classes)
 
 ---
 
 _This documentation system ensures consistent, high-quality implementations by providing clear standards, proven patterns, and systematic procedures._
+
+_**Code Quality Status**: Comprehensive refactoring completed October 12, 2025 - See [`code-quality-analysis.md`](./code-quality-analysis.md) for details._

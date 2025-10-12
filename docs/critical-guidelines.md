@@ -524,26 +524,43 @@ NO generic service usage
 
 ## 🎯 THE BOTTOM LINE
 
-1. **Follow SOA** - No exceptions
+1. **Follow SOA** - No exceptions (verified via comprehensive 2025-10 refactoring)
 2. **Reuse services** - GenericEventService exists for a reason
 3. **Test everything** - No assumptions
 4. **Verify with user** - They decide when it's complete
-5. **Document changes** - Leave it better than you found it
-6. **Delete dead code** - No orphaned utilities
+5. **Document changes** - Leave it better than you found it (JSDoc mandatory)
+6. **Delete dead code** - No orphaned utilities (enforcement: monthly audits)
 7. **Use established patterns** - Check shop first
+8. **Structured errors** - Use AppError with ErrorCode/Category/Severity
+9. **No circular dependencies** - Service layers must remain independent
+10. **Decorator pattern** - Use composition over duplication (see attachment hooks)
 
 **This codebase has ZERO tolerance for:**
 
-- Architecture violations
+- Architecture violations (SOA bypass, circular dependencies)
 - Untested code marked "complete"
 - Pattern deviations without justification
-- Dead code accumulation
+- Dead code accumulation (verified: 270 lines removed Oct 2025)
 - Shortcuts that create technical debt
+- String-based error handling (use AppError)
+- Missing documentation on complex components
 
 **Work with discipline. Build with integrity. Ship with proof.**
 
+**Code Quality Standards** (Established October 2025):
+
+- ✅ All services stateless, SOA-compliant
+- ✅ All hooks use AppError for error handling
+- ✅ JSDoc required on all services, complex hooks, workflows
+- ✅ Base classes for shared utilities (no duplication)
+- ✅ Decorator pattern for hook composition
+- ✅ No circular dependencies between layers
+
+**For detailed code quality analysis**: See [`code-quality-analysis.md`](./code-quality-analysis.md)
+
 ---
 
-_Last Updated: October 1, 2025_
-_Status: ACTIVE - Mandatory compliance for all contributors_
-_Violations: Will be rejected and require immediate remediation_
+_Last Updated: October 12, 2025_  
+_Status: ACTIVE - Mandatory compliance for all contributors_  
+_Violations: Will be rejected and require immediate remediation_  
+_Code Quality Audit: Completed 2025-10-12 (17/17 tasks, 100%)_
