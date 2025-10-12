@@ -4,9 +4,11 @@ import type { HeritageCustomFields } from '../../types/heritage-content';
 import type { ContentMediaItem, ContentMediaSource, ContentMediaType } from '@/types/content-media';
 import { logger } from '@/services/core/LoggingService';
 import type { HeritageNostrEvent, HeritageContributionData } from '@/types/heritage';
+import { validateHeritageData } from '@/types/heritage';
 import { queryEvents } from '../generic/GenericRelayService';
 import { nostrEventService } from '../nostr/NostrEventService';
 import type { NostrSigner } from '@/types/nostr';
+import { uploadSequentialWithConsent } from '@/services/generic/GenericBlossomService';
 
 export interface HeritageContribution {
   id: string;
@@ -272,13 +274,21 @@ export interface CreateHeritageResult {
 }
 
 /**
- * Create a new heritage contribution with event creation and publishing
- * Orchestrates: validation → event creation → publishing
+ * Create a new heritage contribution with file upload, event creation and publishing
+ * Orchestrates: validation → upload → event creation → publishing
+ * 
+ * @param heritageData - Heritage contribution data (attachments can be empty, will be populated from files)
+ * @param attachmentFiles - File objects to upload (empty array if no files)
+ * @param signer - Nostr signer for signing events and uploads
+ * @param existingDTag - Optional dTag for updates (undefined for new contributions)
+ * @param onProgress - Optional callback for progress updates
  */
 export async function createHeritageContribution(
   heritageData: HeritageContributionData,
+  attachmentFiles: File[],
   signer: NostrSigner,
-  existingDTag?: string
+  existingDTag?: string,
+  onProgress?: (progress: HeritagePublishingProgress) => void
 ): Promise<CreateHeritageResult> {
   try {
     logger.info('Starting heritage contribution creation', {
@@ -286,10 +296,134 @@ export async function createHeritageContribution(
       method: 'createHeritageContribution',
       title: heritageData.title,
       isEdit: !!existingDTag,
+      attachmentFilesCount: attachmentFiles.length,
     });
 
+    // Step 1: Validate heritage data
+    onProgress?.({
+      step: 'validating',
+      progress: 10,
+      message: 'Validating contribution...',
+      details: 'Checking required fields',
+    });
+
+    const validation = validateHeritageData(heritageData);
+    if (!validation.valid) {
+      const errorMsg = Object.values(validation.errors).join(', ');
+      logger.error('Heritage validation failed', new Error(errorMsg), {
+        service: 'HeritageContentService',
+        method: 'createHeritageContribution',
+        errors: validation.errors,
+      });
+      return {
+        success: false,
+        error: errorMsg,
+      };
+    }
+
+    // Step 2: Upload attachment files (if any)
+    const uploadedAttachments: Array<{
+      type: 'image' | 'video' | 'audio';
+      url: string;
+      hash: string;
+      name: string;
+      id: string;
+      size: number;
+      mimeType: string;
+    }> = [];
+
+    if (attachmentFiles.length > 0) {
+      onProgress?.({
+        step: 'uploading',
+        progress: 30,
+        message: 'Uploading media files...',
+        details: `Uploading ${attachmentFiles.length} file(s)`,
+      });
+
+      logger.info('Uploading attachment files', {
+        service: 'HeritageContentService',
+        method: 'createHeritageContribution',
+        fileCount: attachmentFiles.length,
+      });
+
+      const uploadResult = await uploadSequentialWithConsent(
+        attachmentFiles,
+        signer,
+        (uploadProgress) => {
+          // Map upload progress (0-1) to publishing progress (30-70)
+          const progressPercent = 30 + (40 * uploadProgress.overallProgress);
+          onProgress?.({
+            step: 'uploading',
+            progress: progressPercent,
+            message: uploadProgress.nextAction,
+            details: `File ${uploadProgress.currentFileIndex + 1} of ${uploadProgress.totalFiles}`,
+            attachmentProgress: {
+              current: uploadProgress.currentFileIndex + 1,
+              total: uploadProgress.totalFiles,
+              currentFile: uploadProgress.currentFile.name,
+            },
+          });
+        }
+      );
+
+      // Check for cancellation or failure
+      if (uploadResult.userCancelled) {
+        return {
+          success: false,
+          error: 'User cancelled upload',
+        };
+      }
+
+      if (uploadResult.successCount === 0) {
+        return {
+          success: false,
+          error: 'All media uploads failed',
+        };
+      }
+
+      // Map uploaded files to attachment format
+      for (let i = 0; i < uploadResult.uploadedFiles.length; i++) {
+        const uploadedFile = uploadResult.uploadedFiles[i];
+        const originalFile = attachmentFiles[i];
+        
+        // Determine media type from MIME type
+        const mimeType = originalFile.type;
+        let type: 'image' | 'video' | 'audio' = 'image';
+        if (mimeType.startsWith('video/')) type = 'video';
+        else if (mimeType.startsWith('audio/')) type = 'audio';
+
+        uploadedAttachments.push({
+          type,
+          url: uploadedFile.url,
+          hash: uploadedFile.hash,
+          name: originalFile.name,
+          id: `${uploadedFile.hash}-${Date.now()}`, // Generate unique ID
+          size: originalFile.size,
+          mimeType,
+        });
+      }
+
+      logger.info('Media uploaded successfully', {
+        service: 'HeritageContentService',
+        method: 'createHeritageContribution',
+        uploadedCount: uploadResult.successCount,
+        failedCount: uploadResult.failureCount,
+      });
+    }
+
+    // Step 3: Merge uploaded attachments with existing attachments in heritageData
+    const allAttachments = uploadedAttachments.map(att => ({
+      id: att.id,
+      url: att.url,
+      type: att.type,
+      hash: att.hash,
+      name: att.name,
+      size: att.size,
+      mimeType: att.mimeType,
+    }));
+
     // Map GenericAttachment to simplified format for event service
-    const mappedAttachments = heritageData.attachments
+    const mappedAttachments = allAttachments
       .filter(att => att.url) // Only include attachments with URLs
       .map(att => ({
         url: att.url!,
@@ -298,7 +432,14 @@ export async function createHeritageContribution(
         name: att.name,
       }));
 
-    // Step 1: Create Nostr event using event service
+    // Step 4: Create Nostr event using event service
+    onProgress?.({
+      step: 'publishing',
+      progress: 70,
+      message: 'Creating Nostr event...',
+      details: 'Signing and creating event',
+    });
+
     logger.info('Creating heritage event', {
       service: 'HeritageContentService',
       method: 'createHeritageContribution',
@@ -315,7 +456,14 @@ export async function createHeritageContribution(
       existingDTag
     );
 
-    // Step 2: Publish to relays
+    // Step 5: Publish to relays
+    onProgress?.({
+      step: 'publishing',
+      progress: 85,
+      message: 'Publishing to relays...',
+      details: 'Broadcasting event',
+    });
+
     logger.info('Publishing event to relays', {
       service: 'HeritageContentService',
       method: 'createHeritageContribution',
@@ -347,7 +495,14 @@ export async function createHeritageContribution(
       };
     }
 
-    // Step 3: Create contribution object from published event
+    // Step 6: Create contribution object from published event
+    onProgress?.({
+      step: 'complete',
+      progress: 100,
+      message: 'Heritage contribution published!',
+      details: `Successfully published to ${publishResult.publishedRelays.length} relays`,
+    });
+
     const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
     if (!dTag) {
       throw new Error('Created event missing required d tag');

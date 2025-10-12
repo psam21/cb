@@ -235,12 +235,18 @@ export const HeritageContributionForm = ({
       contributorRole: formData.contributorRole,
       knowledgeKeeperContact: formData.knowledgeKeeper,
       tags: formData.tags,
-      attachments: attachments,
+      attachments: [], // Attachments will be populated from files during upload
     };
     
-    // Publish to Nostr (pass dTag if editing)
+    // Extract File objects from attachments
+    const attachmentFiles = attachments
+      .map(att => att.originalFile)
+      .filter((file): file is File => file !== undefined);
+    
+    // Publish to Nostr (pass files and dTag if editing)
     const publishResult = await publishHeritage(
-      heritageData, 
+      heritageData,
+      attachmentFiles,
       defaultValues?.dTag // Pass existing dTag for updates
     );
     
