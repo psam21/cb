@@ -16,6 +16,8 @@ type SignInMode = 'extension' | 'nsec';
  * Renders UI only, delegates logic to useNostrSignIn hook
  * Follows SOA pattern: Component → Hook
  * Supports both browser extension (NIP-07) and direct nsec login
+ * 
+ * Navigation handled by parent page component via onSuccess callback
  */
 export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
   const { 
@@ -57,7 +59,6 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
 
   const handleExtensionSignIn = async () => {
     const success = await signIn();
-    // Optional callback for parent components (navigation handled by hook)
     if (success && onSuccess) {
       onSuccess();
     }
@@ -65,7 +66,6 @@ export function SignInFlow({ onSuccess, onCancel }: SignInFlowProps) {
 
   const handleNsecSignIn = async () => {
     const success = await signInWithNsec(nsecInput);
-    // Optional callback for parent components (navigation handled by hook)
     if (success && onSuccess) {
       onSuccess();
     }

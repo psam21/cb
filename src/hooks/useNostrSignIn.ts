@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { profileService } from '@/services/business/ProfileBusinessService';
@@ -23,9 +22,10 @@ export interface UseNostrSignInReturn {
  * Hook for sign-in orchestration
  * Follows SOA pattern: Hook → Business Service
  * Supports both browser extension (NIP-07) and direct nsec login
+ * 
+ * Returns boolean success status - navigation handled by page component
  */
 export function useNostrSignIn(): UseNostrSignInReturn {
-  const router = useRouter();
   const { isAvailable, isLoading, signer } = useNostrSigner();
   const { setUser, setAuthenticated } = useAuthStore();
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -70,8 +70,6 @@ export function useNostrSignIn(): UseNostrSignInReturn {
       // Small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Navigate to home
-      router.push('/');
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign-in failed';
@@ -136,8 +134,6 @@ export function useNostrSignIn(): UseNostrSignInReturn {
       // Small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Navigate to home
-      router.push('/');
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign-in failed';
