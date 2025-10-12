@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { NostrSigner } from '@/types/nostr';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { createNsecSigner } from '@/utils/signerFactory';
 
 // Extend Window interface to include nostr
 declare global {
@@ -23,18 +24,36 @@ export const useNostrSigner = () => {
     setSigner,
   } = useAuthStore();
 
+  // Memoize nsec signer creation to avoid recreating on every render
+  // Only recreates when nsec changes (sign-in, sign-up, or logout)
+  const nsecSigner = useMemo(() => {
+    if (!nsec) return null;
+    
+    logger.info('Creating memoized signer from nsec', {
+      service: 'useNostrSigner',
+      method: 'useMemo',
+    });
+
+    // Return promise that will be resolved in useEffect
+    return createNsecSigner(nsec);
+  }, [nsec]);
+
   // Helper to get signer when needed
   const getSigner = async (): Promise<NostrSigner> => {
     // First priority: Check for nsec (persisted from sign-up)
     const nsecFromStore = useAuthStore.getState().nsec;
     if (nsecFromStore) {
-      logger.info('Creating signer from persisted nsec', {
+      logger.info('Getting signer from memoized nsec signer', {
         service: 'useNostrSigner',
         method: 'getSigner',
         hasNsec: true,
       });
       
-      const { createNsecSigner } = await import('@/utils/signerFactory');
+      // Use memoized signer if available, otherwise create new one
+      if (nsecSigner) {
+        return await nsecSigner;
+      }
+      
       return await createNsecSigner(nsecFromStore);
     }
     
@@ -73,25 +92,24 @@ export const useNostrSigner = () => {
       });
 
       // Priority 1: Nsec (persisted from sign-up - maintain consistent identity)
-      if (nsec) {
+      if (nsec && nsecSigner) {
         try {
-          logger.info('Creating signer from persisted nsec', {
+          logger.info('Using memoized signer from nsec', {
             service: 'useNostrSigner',
             method: 'initializeSigner',
           });
 
-          const { createNsecSigner } = await import('@/utils/signerFactory');
-          const nsecSigner = await createNsecSigner(nsec);
+          const resolvedSigner = await nsecSigner;
           
-          setSigner(nsecSigner);
+          setSigner(resolvedSigner);
           setSignerAvailable(true);
           
-          logger.info('Signer created for nsec user with NIP-44 support', {
+          logger.info('Signer initialized for nsec user with NIP-44 support', {
             service: 'useNostrSigner',
             method: 'initializeSigner',
           });
         } catch (error) {
-          logger.error('Failed to create signer from nsec', 
+          logger.error('Failed to initialize signer from nsec', 
             error instanceof Error ? error : new Error('Unknown error'), {
             service: 'useNostrSigner',
             method: 'initializeSigner',
@@ -125,15 +143,15 @@ export const useNostrSigner = () => {
     initializeSigner();
     
     // No need for polling - signer initialization happens once on mount
-    // and re-runs only when nsec changes (due to sign-in/sign-up/logout)
+    // and re-runs only when nsec or nsecSigner changes (due to sign-in/sign-up/logout)
     // Extension detection happens synchronously above
     
     // Cleanup (nothing to clean up now)
     return () => {};
     // Note: `signer` intentionally excluded from deps to prevent infinite loop
-    // We only want to re-initialize when `nsec` changes, not when `signer` changes
+    // We only want to re-initialize when `nsec` or `nsecSigner` changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nsec, setSigner, setSignerAvailable]);
+  }, [nsec, nsecSigner, setSigner, setSignerAvailable]);
 
   return { 
     isAvailable, 
