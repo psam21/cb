@@ -13,6 +13,8 @@ import { logger } from '@/services/core/LoggingService';
 import { messagingBusinessService } from '@/services/business/MessagingBusinessService';
 import { Conversation, Message } from '@/types/messaging';
 import { useNostrSigner } from './useNostrSigner';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 export const useConversations = () => {
   const { signer } = useNostrSigner();
@@ -29,7 +31,14 @@ export const useConversations = () => {
         service: 'useConversations',
         method: 'loadConversations',
       });
-      setError('No signer detected. Please sign in.');
+      const error = new AppError(
+        'No signer detected. Please sign in.',
+        ErrorCode.SIGNER_NOT_DETECTED,
+        HttpStatus.UNAUTHORIZED,
+        ErrorCategory.AUTHENTICATION,
+        ErrorSeverity.MEDIUM
+      );
+      setError(error.message);
       setIsLoading(false);
       return;
     }
@@ -53,12 +62,20 @@ export const useConversations = () => {
 
       setConversations(conversationList);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load conversations';
-      logger.error('Failed to load conversations', err instanceof Error ? err : new Error(errorMessage), {
+      const appError = err instanceof AppError 
+        ? err 
+        : new AppError(
+            err instanceof Error ? err.message : 'Failed to load conversations',
+            ErrorCode.NOSTR_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.EXTERNAL_SERVICE,
+            ErrorSeverity.MEDIUM
+          );
+      logger.error('Failed to load conversations', appError, {
         service: 'useConversations',
         method: 'loadConversations',
       });
-      setError(errorMessage);
+      setError(appError.message);
     } finally {
       setIsLoading(false);
     }

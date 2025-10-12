@@ -16,6 +16,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { fetchPublicHeritage, type HeritageEvent } from '@/services/generic/GenericHeritageService';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 /**
  * Heritage item for explore page (UI-friendly format)
@@ -137,14 +139,22 @@ export function useExploreHeritage() {
         hasMore: events.length === 8,
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load heritage';
+      const appError = err instanceof AppError 
+        ? err 
+        : new AppError(
+            err instanceof Error ? err.message : 'Failed to load heritage',
+            ErrorCode.NOSTR_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.EXTERNAL_SERVICE,
+            ErrorSeverity.MEDIUM
+          );
       
-      logger.error('Error loading initial heritage items', err instanceof Error ? err : new Error(errorMessage), {
+      logger.error('Error loading initial heritage items', appError, {
         service: 'useExploreHeritage',
         method: 'loadInitial',
       });
       
-      setError(errorMessage);
+      setError(appError.message);
     } finally {
       setIsLoading(false);
     }

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { contentDetailService } from '@/services/business/ContentDetailService';
 import type { ContentDetail, ContentDetailResult, ContentType } from '@/types/content-detail';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 export interface UseContentDetailOptions {
   enabled?: boolean;
@@ -30,8 +32,15 @@ export const useContentDetail = <TCustomFields = Record<string, unknown>>(
 
   const handleResult = useCallback((result: ContentDetailResult<TCustomFields>) => {
     if (!result.success || !result.content) {
+      const error = new AppError(
+        result.error ?? 'Content not found',
+        ErrorCode.RESOURCE_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+        ErrorCategory.RESOURCE,
+        ErrorSeverity.LOW
+      );
       setData(null);
-      setError(result.error ?? 'Content not found');
+      setError(error.message);
       setStatus(result.status);
       return;
     }
@@ -52,8 +61,16 @@ export const useContentDetail = <TCustomFields = Record<string, unknown>>(
       const result = await contentDetailService.getContentDetail<TCustomFields>(contentType, id);
       handleResult(result);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load content detail';
-      setError(errorMessage);
+      const appError = err instanceof AppError 
+        ? err 
+        : new AppError(
+            err instanceof Error ? err.message : 'Failed to load content detail',
+            ErrorCode.INTERNAL_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.INTERNAL,
+            ErrorSeverity.MEDIUM
+          );
+      setError(appError.message);
       setData(null);
       setStatus(500);
     } finally {

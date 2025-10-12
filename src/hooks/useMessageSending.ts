@@ -13,6 +13,8 @@ import { logger } from '@/services/core/LoggingService';
 import { messagingBusinessService } from '@/services/business/MessagingBusinessService';
 import { Message, ConversationContext } from '@/types/messaging';
 import { useNostrSigner } from './useNostrSigner';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 interface SendMessageOptions {
   /** Callback for optimistic UI update */
@@ -104,7 +106,13 @@ export const useMessageSending = () => {
         );
 
         if (!result.success || !result.message) {
-          throw new Error(result.error || 'Failed to send message');
+          throw new AppError(
+            result.error || 'Failed to send message',
+            ErrorCode.NOSTR_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.EXTERNAL_SERVICE,
+            ErrorSeverity.MEDIUM
+          );
         }
 
         logger.info('Message sent successfully', {

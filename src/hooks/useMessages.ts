@@ -13,6 +13,8 @@ import { logger } from '@/services/core/LoggingService';
 import { messagingBusinessService } from '@/services/business/MessagingBusinessService';
 import { Message } from '@/types/messaging';
 import { useNostrSigner } from './useNostrSigner';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 interface UseMessagesProps {
   /** Public key of the other user in the conversation */
@@ -36,7 +38,14 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
         service: 'useMessages',
         method: 'loadMessages',
       });
-      setError('No signer detected. Please sign in.');
+      const error = new AppError(
+        'No signer detected. Please sign in.',
+        ErrorCode.SIGNER_NOT_DETECTED,
+        HttpStatus.UNAUTHORIZED,
+        ErrorCategory.AUTHENTICATION,
+        ErrorSeverity.MEDIUM
+      );
+      setError(error.message);
       setIsLoading(false);
       return;
     }
@@ -141,13 +150,21 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
         return mergedMessages;
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load messages';
-      logger.error('Failed to load messages', err instanceof Error ? err : new Error(errorMessage), {
+      const appError = err instanceof AppError 
+        ? err 
+        : new AppError(
+            err instanceof Error ? err.message : 'Failed to load messages',
+            ErrorCode.NOSTR_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.EXTERNAL_SERVICE,
+            ErrorSeverity.MEDIUM
+          );
+      logger.error('Failed to load messages', appError, {
         service: 'useMessages',
         method: 'loadMessages',
         otherPubkey,
       });
-      setError(errorMessage);
+      setError(appError.message);
     } finally {
       setIsLoading(false);
     }

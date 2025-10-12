@@ -5,6 +5,8 @@ import { profileService } from '@/services/business/ProfileBusinessService';
 import { authBusinessService } from '@/services/business/AuthBusinessService';
 import { logger } from '@/services/core/LoggingService';
 import { createNsecSigner } from '@/utils/signerFactory';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 export interface UseNostrSignInReturn {
   signIn: () => Promise<boolean>;
@@ -36,9 +38,15 @@ export function useNostrSignIn(): UseNostrSignInReturn {
     logger.info('Sign-in initiated', { service: 'useNostrSignIn' });
 
     if (!isAvailable || !signer) {
-      const errorMsg = 'No Nostr signer available. Please install a Nostr browser extension.';
+      const error = new AppError(
+        'No Nostr signer available. Please install a Nostr browser extension.',
+        ErrorCode.SIGNER_NOT_DETECTED,
+        HttpStatus.UNAUTHORIZED,
+        ErrorCategory.AUTHENTICATION,
+        ErrorSeverity.MEDIUM
+      );
       logger.warn('Sign-in failed: no signer', { isAvailable, hasSigner: !!signer });
-      setSigninError(errorMsg);
+      setSigninError(error.message);
       return false;
     }
 
@@ -86,8 +94,14 @@ export function useNostrSignIn(): UseNostrSignInReturn {
 
     // Validate format (empty check handled by button disabled state)
     if (!nsec.startsWith('nsec1')) {
-      const errorMsg = 'Invalid private key format. Private keys should start with "nsec1"';
-      setSigninError(errorMsg);
+      const error = new AppError(
+        'Invalid private key format. Private keys should start with "nsec1"',
+        ErrorCode.INVALID_FORMAT,
+        HttpStatus.BAD_REQUEST,
+        ErrorCategory.VALIDATION,
+        ErrorSeverity.LOW
+      );
+      setSigninError(error.message);
       logger.warn('Nsec sign-in failed: invalid format', { prefix: nsec.substring(0, 5) });
       return false;
     }
@@ -101,9 +115,15 @@ export function useNostrSignIn(): UseNostrSignInReturn {
       try {
         signer = await createNsecSigner(nsec);
       } catch (error) {
-        const errorMsg = 'Invalid private key. Please check your nsec.';
-        setSigninError(errorMsg);
-        logger.error('Signer creation failed', error instanceof Error ? error : new Error(errorMsg));
+        const appError = new AppError(
+          'Invalid private key. Please check your nsec.',
+          ErrorCode.INVALID_CREDENTIALS,
+          HttpStatus.BAD_REQUEST,
+          ErrorCategory.AUTHENTICATION,
+          ErrorSeverity.MEDIUM
+        );
+        setSigninError(appError.message);
+        logger.error('Signer creation failed', error instanceof Error ? error : appError);
         return false;
       }
 
@@ -136,9 +156,17 @@ export function useNostrSignIn(): UseNostrSignInReturn {
 
       return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Sign-in failed';
-      setSigninError(errorMessage);
-      logger.error('Nsec sign-in error', error instanceof Error ? error : new Error(errorMessage));
+      const appError = error instanceof AppError 
+        ? error 
+        : new AppError(
+            error instanceof Error ? error.message : 'Sign-in failed',
+            ErrorCode.SIGNER_AUTH_FAILED,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.AUTHENTICATION,
+            ErrorSeverity.HIGH
+          );
+      setSigninError(appError.message);
+      logger.error('Nsec sign-in error', appError);
       return false;
     } finally {
       setIsSigningIn(false);

@@ -5,6 +5,8 @@ import { logger } from '@/services/core/LoggingService';
 import { NostrSigner } from '@/types/nostr';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { createNsecSigner } from '@/utils/signerFactory';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 // Extend Window interface to include nostr
 declare global {
@@ -75,7 +77,13 @@ export const useNostrSigner = () => {
       return window.nostr;
     }
     
-    throw new Error('No signer available');
+    throw new AppError(
+      'No signer available',
+      ErrorCode.SIGNER_NOT_DETECTED,
+      HttpStatus.UNAUTHORIZED,
+      ErrorCategory.AUTHENTICATION,
+      ErrorSeverity.MEDIUM
+    );
   };
 
   // Unified signer management: handles both browser extension and nsec

@@ -12,6 +12,8 @@ import { authBusinessService } from '@/services/business/AuthBusinessService';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { createNsecSigner } from '@/utils/signerFactory';
+import { AppError } from '@/errors/AppError';
+import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
 
 /**
  * Sign-up form data
@@ -207,7 +209,16 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       setCurrentStep(2);
     } catch (err) {
       console.error('Key generation/publishing failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate keys and publish profile');
+      const appError = err instanceof AppError 
+        ? err 
+        : new AppError(
+            err instanceof Error ? err.message : 'Failed to generate keys and publish profile',
+            ErrorCode.NOSTR_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.AUTHENTICATION,
+            ErrorSeverity.HIGH
+          );
+      setError(appError.message);
       setIsGeneratingKeys(false);
       setIsUploadingAvatar(false);
       setIsPublishingProfile(false);
@@ -221,7 +232,13 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       setIsCreatingBackup(true);
       
       if (!generatedKeys) {
-        throw new Error('No keys generated. Please go back to Step 2.');
+        throw new AppError(
+          'No keys generated. Please go back to Step 2.',
+          ErrorCode.VALIDATION_ERROR,
+          HttpStatus.BAD_REQUEST,
+          ErrorCategory.VALIDATION,
+          ErrorSeverity.MEDIUM
+        );
       }
       
       console.log('Creating backup file...');
@@ -235,7 +252,16 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       setIsCreatingBackup(false);
     } catch (err) {
       console.error('Backup creation failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create backup file');
+      const appError = err instanceof AppError 
+        ? err 
+        : new AppError(
+            err instanceof Error ? err.message : 'Failed to create backup file',
+            ErrorCode.INTERNAL_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.INTERNAL,
+            ErrorSeverity.MEDIUM
+          );
+      setError(appError.message);
       setIsCreatingBackup(false);
     }
   }, [formData.displayName, generatedKeys]);
