@@ -368,6 +368,41 @@ export class AuthBusinessService {
       };
     }
   }
+
+  /**
+   * Complete sign-in process with post-authentication setup
+   * 
+   * Initializes message cache after successful authentication.
+   * Non-blocking operation - errors are logged but don't fail sign-in.
+   * 
+   * @param pubkey - User's public key for cache initialization
+   * @returns Promise that resolves when cache initialization is attempted
+   */
+  public async completeSignIn(pubkey: string): Promise<void> {
+    try {
+      logger.info('Completing sign-in with cache initialization', {
+        service: 'AuthBusinessService',
+        method: 'completeSignIn',
+        pubkey: pubkey.substring(0, 8) + '...',
+      });
+
+      // Initialize message cache (non-blocking)
+      const { messagingBusinessService } = await import('@/services/business/MessagingBusinessService');
+      await messagingBusinessService.initializeCache(pubkey);
+      
+      logger.info('Message cache initialized successfully', {
+        service: 'AuthBusinessService',
+        method: 'completeSignIn',
+      });
+    } catch (error) {
+      // Log warning but don't throw - cache initialization failure shouldn't block sign-in
+      logger.warn('Failed to initialize message cache during sign-in', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        service: 'AuthBusinessService',
+        method: 'completeSignIn',
+      });
+    }
+  }
 }
 
 // Export singleton instance

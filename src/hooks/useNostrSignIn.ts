@@ -63,18 +63,8 @@ export function useNostrSignIn(): UseNostrSignInReturn {
         display_name: result.user.profile.display_name,
       });
 
-      // Initialize message cache (non-blocking)
-      try {
-        const { messagingBusinessService } = await import('@/services/business/MessagingBusinessService');
-        await messagingBusinessService.initializeCache(result.user.pubkey);
-        logger.info('Message cache initialized', { service: 'useNostrSignIn' });
-      } catch (cacheError) {
-        logger.warn('Failed to initialize message cache', {
-          error: cacheError instanceof Error ? cacheError.message : 'Unknown error',
-          service: 'useNostrSignIn',
-        });
-        // Don't fail sign-in if cache initialization fails
-      }
+      // Complete sign-in with post-authentication setup (message cache)
+      await authBusinessService.completeSignIn(result.user.pubkey);
 
       // Small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -128,18 +118,8 @@ export function useNostrSignIn(): UseNostrSignInReturn {
         display_name: result.user.profile.display_name,
       });
 
-      // Initialize message cache (non-blocking)
-      try {
-        const { messagingBusinessService } = await import('@/services/business/MessagingBusinessService');
-        await messagingBusinessService.initializeCache(result.user.pubkey);
-        logger.info('Message cache initialized', { service: 'useNostrSignIn' });
-      } catch (cacheError) {
-        logger.warn('Failed to initialize message cache', {
-          error: cacheError instanceof Error ? cacheError.message : 'Unknown error',
-          service: 'useNostrSignIn',
-        });
-        // Don't fail sign-in if cache initialization fails
-      }
+      // Complete sign-in with post-authentication setup (message cache)
+      await authBusinessService.completeSignIn(result.user.pubkey);
 
       // Small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 100));
