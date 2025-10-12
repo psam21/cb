@@ -9,6 +9,7 @@
 
 import { generateKeys } from '@/utils/keyManagement';
 import { createBackupFile } from '@/utils/keyExport';
+import { createNsecSigner } from '@/utils/signerFactory';
 import { GenericBlossomService } from '@/services/generic/GenericBlossomService';
 import { ProfileBusinessService, UserProfile } from '@/services/business/ProfileBusinessService';
 import { GenericEventService } from '@/services/generic/GenericEventService';
@@ -16,7 +17,7 @@ import { GenericRelayService } from '@/services/generic/GenericRelayService';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { NostrSigner } from '@/types/nostr';
 import { logger } from '@/services/core/LoggingService';
-import { nip19 } from 'nostr-tools';
+import { nip19, getPublicKey } from 'nostr-tools';
 
 /**
  * Result of key generation
@@ -54,10 +55,10 @@ export class AuthBusinessService {
   }
 
   /**
-   * Generate Nostr keys and store nsec in Zustand
+   * Generate Nostr keys
    * 
    * Delegates to keyManagement utility for key generation.
-   * Stores nsec in auth store (persisted to localStorage via Zustand).
+   * Caller (hook) is responsible for storing nsec in Zustand.
    * 
    * @returns Generated keys (nsec, npub, pubkey)
    * @throws Error if key generation fails
@@ -71,9 +72,6 @@ export class AuthBusinessService {
 
       // Delegate to utility (pure function, no side effects)
       const keys = generateKeys();
-
-      // Store nsec in Zustand (persisted to localStorage)
-      useAuthStore.getState().setNsec(keys.nsec);
 
       logger.info('Keys generated successfully', {
         npub: keys.npub,
@@ -97,13 +95,13 @@ export class AuthBusinessService {
    * Upload avatar image to Blossom server
    * 
    * Delegates to GenericBlossomService for file upload.
-   * Uses temporary signer created from nsec in Zustand.
    * 
    * @param file - Image file to upload
+   * @param nsec - User's private key (nsec1...)
    * @returns Blossom URL (https://cdn.satellite.earth/<hash>)
-   * @throws Error if upload fails or no nsec in store
+   * @throws Error if upload fails
    */
-  public async uploadAvatar(file: File): Promise<string> {
+  public async uploadAvatar(file: File, nsec: string): Promise<string> {
     try {
       logger.info('Uploading avatar to Blossom', {
         service: 'AuthBusinessService',
@@ -112,8 +110,8 @@ export class AuthBusinessService {
         fileSize: file.size,
       });
 
-      // Create temporary signer from nsec in Zustand
-      const signer = this.createTemporarySigner();
+      // Create signer from nsec
+      const signer = await this.createSignerFromNsec(nsec);
 
       // Delegate to GenericBlossomService
       const result = await this.blossomService.uploadFile(file, signer);
@@ -140,13 +138,13 @@ export class AuthBusinessService {
    * Publish user profile (Kind 0 event)
    * 
    * Delegates to ProfileBusinessService for profile publishing.
-   * Uses temporary signer created from nsec in Zustand.
    * 
    * @param profile - User profile data
+   * @param nsec - User's private key (nsec1...)
    * @returns true if published successfully
-   * @throws Error if publishing fails or no nsec in store
+   * @throws Error if publishing fails
    */
-  public async publishProfile(profile: UserProfile): Promise<boolean> {
+  public async publishProfile(profile: UserProfile, nsec: string): Promise<boolean> {
     try {
       logger.info('Publishing profile (Kind 0)', {
         service: 'AuthBusinessService',
@@ -154,8 +152,8 @@ export class AuthBusinessService {
         displayName: profile.display_name,
       });
 
-      // Create temporary signer from nsec in Zustand
-      const signer = this.createTemporarySigner();
+      // Create signer from nsec
+      const signer = await this.createSignerFromNsec(nsec);
 
       // Delegate to ProfileBusinessService (SHARED method, same as sign-in)
       await this.profileService.publishProfile(profile, signer);
@@ -175,22 +173,23 @@ export class AuthBusinessService {
   /**
    * Publish welcome note (Kind 1 event) - Silent verification
    * 
-   * Creates and publishes a welcome text note to verify the temporary signer
+   * Creates and publishes a welcome text note to verify the signer
    * works for both Kind 0 (profile) and Kind 1 (text note) events.
    * This is a silent operation - no UI notification shown to user.
    * 
+   * @param nsec - User's private key (nsec1...)
    * @returns true if published successfully
-   * @throws Error if publishing fails or no nsec in store
+   * @throws Error if publishing fails
    */
-  public async publishWelcomeNote(): Promise<boolean> {
+  public async publishWelcomeNote(nsec: string): Promise<boolean> {
     try {
       logger.info('Publishing welcome note (Kind 1) - Silent verification', {
         service: 'AuthBusinessService',
         method: 'publishWelcomeNote',
       });
 
-      // Create temporary signer from nsec in Zustand
-      const signer = this.createTemporarySigner();
+      // Create signer from nsec
+      const signer = await this.createSignerFromNsec(nsec);
       const pubkey = await signer.getPublicKey();
 
       // Welcome message content
@@ -250,25 +249,18 @@ export class AuthBusinessService {
    * Create and download backup file
    * 
    * Delegates to keyExport utility for backup file generation.
-   * Uses nsec from Zustand and provided user data.
    * 
    * @param displayName - User's display name (for filename)
    * @param npub - User's public key
-   * @throws Error if no nsec in store
+   * @param nsec - User's private key
    */
-  public createBackupFile(displayName: string, npub: string): void {
+  public createBackupFile(displayName: string, npub: string, nsec: string): void {
     try {
       logger.info('Creating backup file', {
         service: 'AuthBusinessService',
         method: 'createBackupFile',
         displayName,
       });
-
-      // Get nsec from Zustand
-      const nsec = useAuthStore.getState().nsec;
-      if (!nsec) {
-        throw new Error('No secret key found. Please generate keys first.');
-      }
 
       // Delegate to utility
       createBackupFile(displayName, npub, nsec);
@@ -284,57 +276,24 @@ export class AuthBusinessService {
   }
 
   /**
-   * Create temporary NostrSigner from nsec in Zustand
+   * Create NostrSigner from nsec
    * 
-   * Creates a signer implementation for signing events during sign-up.
-   * Uses the nsec stored in Zustand (persisted to localStorage).
+   * Creates a signer implementation with NIP-44 support.
    * 
+   * @param nsec - User's private key (nsec1...)
    * @returns NostrSigner implementation
-   * @throws Error if no nsec in store
+   * @throws Error if nsec format is invalid
    * @private
    */
-  private createTemporarySigner(): NostrSigner {
-    const nsec = useAuthStore.getState().nsec;
-    if (!nsec) {
-      throw new Error('No secret key found. Please generate keys first.');
-    }
-
-    // Decode nsec to get secret key bytes
-    const decoded = nip19.decode(nsec);
-    if (decoded.type !== 'nsec') {
-      throw new Error('Invalid secret key format');
-    }
-
-    const secretKey = decoded.data;
-
-    // Create NostrSigner implementation
-    const signer: NostrSigner = {
-      getPublicKey: async () => {
-        // Derive public key from secret key
-        const { getPublicKey } = await import('nostr-tools/pure');
-        return getPublicKey(secretKey);
-      },
-      
-      signEvent: async (event) => {
-        // Sign event with secret key
-        const { finalizeEvent } = await import('nostr-tools/pure');
-        return finalizeEvent(event, secretKey);
-      },
-      
-      getRelays: async () => {
-        // Return empty relays object (not using extension relays)
-        return {};
-      },
-    };
-
-    return signer;
+  private async createSignerFromNsec(nsec: string): Promise<NostrSigner> {
+    return await createNsecSigner(nsec);
   }
 
   /**
    * Sign in with nsec (private key)
    * 
    * For mobile users or those without browser extension.
-   * Validates nsec, stores in Zustand (persisted to localStorage), fetches profile.
+   * Validates nsec and fetches profile. Caller (hook) stores nsec in Zustand.
    * 
    * @param nsec - User's private key (nsec1...)
    * @returns Sign-in result with user data
@@ -369,28 +328,22 @@ export class AuthBusinessService {
         }
         
         // Derive pubkey from secret key
-        const { getPublicKey } = await import('nostr-tools/pure');
         pubkey = getPublicKey(decoded.data);
       } catch (error) {
         throw new Error('Invalid nsec. Please check your private key.');
       }
 
-      // Store nsec in Zustand (persisted to localStorage)
-      useAuthStore.getState().setNsec(nsec);
-
-      logger.info('Nsec validated and stored', {
+      logger.info('Nsec validated', {
         pubkey: pubkey.substring(0, 8) + '...',
       });
 
-      // Create temporary signer for profile fetch
-      const signer = this.createTemporarySigner();
+      // Create signer for profile fetch
+      const signer = await this.createSignerFromNsec(nsec);
 
       // Fetch user profile using ProfileBusinessService
       const profileResult = await this.profileService.signInWithExtension(signer);
 
       if (!profileResult.success || !profileResult.user) {
-        // Clear nsec on failure
-        useAuthStore.getState().setNsec(null);
         throw new Error(profileResult.error || 'Failed to fetch profile');
       }
 

@@ -116,6 +116,9 @@ export function useNostrSignIn(): UseNostrSignInReturn {
         return false;
       }
 
+      // Store nsec in Zustand (hook responsibility, not service)
+      useAuthStore.getState().setNsec(nsec);
+
       // Update auth store with user data
       setUser(result.user);
       setAuthenticated(true);

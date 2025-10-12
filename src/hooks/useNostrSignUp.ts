@@ -134,6 +134,9 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       const keys = authBusinessService.generateNostrKeys();
       setGeneratedKeys(keys);
       
+      // Store nsec in Zustand (hook responsibility, not service)
+      useAuthStore.getState().setNsec(keys.nsec);
+      
       console.log('Keys generated:', { npub: keys.npub });
       
       // 2. Upload avatar if provided
@@ -143,7 +146,7 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
         setIsUploadingAvatar(true);
         
         try {
-          uploadedAvatarUrl = await authBusinessService.uploadAvatar(formData.avatarFile);
+          uploadedAvatarUrl = await authBusinessService.uploadAvatar(formData.avatarFile, keys.nsec);
           setAvatarUrl(uploadedAvatarUrl);
           console.log('Avatar uploaded:', uploadedAvatarUrl);
         } catch (avatarError) {
@@ -168,12 +171,12 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
         birthday: '',
       };
       
-      await authBusinessService.publishProfile(profile);
+      await authBusinessService.publishProfile(profile, keys.nsec);
       console.log('Profile published successfully');
       
       // 4. Publish welcome note (Kind 1) - Silent verification
       console.log('Publishing welcome note (silent)...');
-      await authBusinessService.publishWelcomeNote();
+      await authBusinessService.publishWelcomeNote(keys.nsec);
       console.log('Welcome note published (silent)');
       
       setIsPublishingProfile(false);
@@ -220,7 +223,8 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       console.log('Creating backup file...');
       authBusinessService.createBackupFile(
         formData.displayName,
-        generatedKeys.npub
+        generatedKeys.npub,
+        generatedKeys.nsec
       );
       
       console.log('Backup file downloaded successfully');
