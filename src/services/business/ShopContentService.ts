@@ -1,4 +1,5 @@
-import { contentDetailService, type ContentDetailProvider } from './ContentDetailService';
+import { contentDetailService } from './ContentDetailService';
+import { BaseContentProvider } from './BaseContentProvider';
 import { fetchProductById, type ShopProduct, type ProductAttachment } from './ShopBusinessService';
 import type { ContentDetailResult, ContentMeta } from '@/types/content-detail';
 import type { ShopCustomFields } from '@/types/shop-content';
@@ -110,41 +111,16 @@ function buildMeta(product: ShopProduct, formattedPrice: string): ContentMeta[] 
   return meta;
 }
 
-function tryGetNpub(pubkey: string): string | undefined {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { profileService } = require('./ProfileBusinessService');
-    return profileService.pubkeyToNpub(pubkey);
-  } catch (error) {
-    logger.warn('Failed to convert pubkey to npub', {
-      service: 'ShopContentService',
-      method: 'tryGetNpub',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    return undefined;
-  }
-}
-
-async function tryGetAuthorDisplayName(pubkey: string): Promise<string | undefined> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { profileService } = require('./ProfileBusinessService');
-    const profile = await profileService.getUserProfile(pubkey);
-    return profile?.display_name || undefined;
-  } catch (error) {
-    logger.warn('Failed to fetch author display name', {
-      service: 'ShopContentService',
-      method: 'tryGetAuthorDisplayName',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    return undefined;
-  }
-}
-
-class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
+class ShopContentService extends BaseContentProvider<ShopCustomFields> {
   private static instance: ShopContentService;
 
-  private constructor() {}
+  private constructor() {
+    super();
+  }
+
+  protected getServiceName(): string {
+    return 'ShopContentService';
+  }
 
   public static getInstance(): ShopContentService {
     if (!ShopContentService.instance) {
@@ -168,8 +144,8 @@ class ShopContentService implements ContentDetailProvider<ShopCustomFields> {
     const formattedPrice = formatPrice(product.price, product.currency);
     const meta = buildMeta(product, formattedPrice);
 
-    const npub = product.author ? tryGetNpub(product.author) : undefined;
-    const displayName = product.author ? await tryGetAuthorDisplayName(product.author) : undefined;
+    const npub = product.author ? this.tryGetNpub(product.author) : undefined;
+    const displayName = product.author ? await this.tryGetAuthorDisplayName(product.author) : undefined;
 
     // For messaging, we use the author's pubkey (seller)
     // If there's a separate contact npub, we'd need to decode it

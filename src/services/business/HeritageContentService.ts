@@ -1,4 +1,5 @@
-import { contentDetailService, type ContentDetailProvider } from './ContentDetailService';
+import { contentDetailService } from './ContentDetailService';
+import { BaseContentProvider } from './BaseContentProvider';
 import type { ContentDetailResult, ContentMeta } from '@/types/content-detail';
 import type { HeritageCustomFields } from '../../types/heritage-content';
 import type { ContentMediaItem, ContentMediaSource, ContentMediaType } from '@/types/content-media';
@@ -231,37 +232,6 @@ function buildMeta(contribution: HeritageContribution): ContentMeta[] {
   }
 
   return meta;
-}
-
-function tryGetNpub(pubkey: string): string | undefined {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { profileService } = require('./ProfileBusinessService');
-    return profileService.pubkeyToNpub(pubkey);
-  } catch (error) {
-    logger.warn('Failed to convert pubkey to npub', {
-      service: 'HeritageContentService',
-      method: 'tryGetNpub',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    return undefined;
-  }
-}
-
-async function tryGetAuthorDisplayName(pubkey: string): Promise<string | undefined> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { profileService } = require('./ProfileBusinessService');
-    const profile = await profileService.getUserProfile(pubkey);
-    return profile?.display_name || undefined;
-  } catch (error) {
-    logger.warn('Failed to fetch author display name', {
-      service: 'HeritageContentService',
-      method: 'tryGetAuthorDisplayName',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    return undefined;
-  }
 }
 
 export interface CreateHeritageResult {
@@ -683,10 +653,16 @@ export async function fetchHeritageById(id: string): Promise<HeritageContributio
   }
 }
 
-class HeritageContentService implements ContentDetailProvider<HeritageCustomFields> {
+class HeritageContentService extends BaseContentProvider<HeritageCustomFields> {
   private static instance: HeritageContentService;
 
-  private constructor() {}
+  private constructor() {
+    super();
+  }
+
+  protected getServiceName(): string {
+    return 'HeritageContentService';
+  }
 
   public static getInstance(): HeritageContentService {
     if (!HeritageContentService.instance) {
@@ -706,8 +682,8 @@ class HeritageContentService implements ContentDetailProvider<HeritageCustomFiel
         };
       }
 
-      const npub = tryGetNpub(contribution.pubkey);
-      const authorDisplayName = await tryGetAuthorDisplayName(contribution.pubkey);
+      const npub = this.tryGetNpub(contribution.pubkey);
+      const authorDisplayName = await this.tryGetAuthorDisplayName(contribution.pubkey);
 
       // For messaging, we use the author's pubkey (contributor)
       const contributorPubkey = contribution.pubkey;
