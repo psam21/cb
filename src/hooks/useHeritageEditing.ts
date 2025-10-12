@@ -1,164 +1,58 @@
-import { useState, useCallback } from 'react';
-import { useNostrSigner } from './useNostrSigner';
-import { useAuthStore } from '@/stores/useAuthStore';
-import { updateHeritageWithAttachments } from '@/services/business/HeritageContentService';
+import { 
+  updateHeritageWithAttachments, 
+  UpdateHeritageResult, 
+  HeritagePublishingProgress 
+} from '@/services/business/HeritageContentService';
 import type { HeritageContributionData } from '@/types/heritage';
-import { logger } from '@/services/core/LoggingService';
-
-/**
- * Heritage editing progress state
- */
-export interface HeritageEditingProgress {
-  step: 'idle' | 'validating' | 'uploading' | 'publishing' | 'complete' | 'error';
-  progress: number;
-  message: string;
-  details?: string;
-}
+import { useContentEditing, type SimpleUpdateFunction } from './useContentEditing';
 
 /**
  * Hook for editing heritage contributions
- * Follows the same pattern as useProductEditing for Shop
  * 
- * Handles:
- * - State management for update process
- * - Calling HeritageContentService.updateHeritageWithAttachments()
+ * Uses generic useContentEditing hook to handle common editing patterns:
+ * - Signer validation
+ * - State management (isUpdating, updateError, updateProgress)
  * - Progress tracking
  * - Error handling
+ * - Logging
  */
 export function useHeritageEditing() {
-  const { signer, isAvailable } = useNostrSigner();
-  const { user } = useAuthStore();
-  const [isUpdating, setUpdating] = useState(false);
-  const [updateError, setUpdateError] = useState<string | null>(null);
-  const [updateProgress, setUpdateProgress] = useState<HeritageEditingProgress | null>(null);
+  // Wrap the service function to match SimpleUpdateFunction signature
+  const updateFn: SimpleUpdateFunction<HeritageContributionData, UpdateHeritageResult, HeritagePublishingProgress> = async (
+    contentId,
+    updatedData,
+    attachmentFiles,
+    signer,
+    onProgress,
+    selectiveOps
+  ) => {
+    return await updateHeritageWithAttachments(
+      contentId,
+      updatedData,
+      attachmentFiles,
+      signer,
+      onProgress,
+      selectiveOps
+    );
+  };
 
-  const updateContributionData = useCallback(async (
-    contributionId: string,
-    updatedData: Partial<HeritageContributionData>,
-    attachmentFiles: File[],
-    selectiveOps?: { removedAttachments: string[]; keptAttachments: string[] }
-  ): Promise<{ success: boolean; error?: string; eventId?: string; dTag?: string }> => {
-    if (!signer || !isAvailable) {
-      const error = 'Nostr signer not available';
-      logger.error('Cannot update contribution: No signer', new Error(error), {
-        service: 'useHeritageEditing',
-        method: 'updateContributionData',
-        contributionId,
-      });
-      return { success: false, error };
-    }
-
-    if (!user?.pubkey) {
-      const error = 'User pubkey not available';
-      logger.error('Cannot update contribution: No pubkey', new Error(error), {
-        service: 'useHeritageEditing',
-        method: 'updateContributionData',
-        contributionId,
-      });
-      return { success: false, error };
-    }
-
-    logger.info('Starting contribution update', {
-      service: 'useHeritageEditing',
-      method: 'updateContributionData',
-      contributionId,
-      title: updatedData.title,
-      newAttachmentCount: attachmentFiles.length,
-      hasSelectiveOps: !!selectiveOps,
-    });
-
-    setUpdating(true);
-    setUpdateError(null);
-    setUpdateProgress({
-      step: 'validating',
-      progress: 0,
-      message: 'Starting update...',
-    });
-
-    try {
-      const result = await updateHeritageWithAttachments(
-        contributionId,
-        updatedData,
-        attachmentFiles,
-        signer,
-        (progress) => {
-          // Update progress state with service progress
-          setUpdateProgress(progress);
-        },
-        selectiveOps
-      );
-
-      if (result.success && result.contribution) {
-        setUpdateProgress({
-          step: 'complete',
-          progress: 100,
-          message: 'Contribution updated successfully!',
-          details: `Published to ${result.publishedRelays?.length || 0} relays`,
-        });
-
-        logger.info('Contribution updated successfully', {
-          service: 'useHeritageEditing',
-          method: 'updateContributionData',
-          contributionId,
-          newEventId: result.eventId,
-          publishedRelays: result.publishedRelays?.length || 0,
-        });
-
-        // Keep the success state briefly before clearing
-        setTimeout(() => {
-          setUpdating(false);
-          setUpdateProgress(null);
-        }, 2000);
-
-        return { success: true, eventId: result.eventId, dTag: result.contribution?.dTag };
-      } else {
-        const error = result.error || 'Update failed';
-        setUpdateError(error);
-        setUpdateProgress({
-          step: 'error',
-          progress: 0,
-          message: error,
-        });
-        
-        logger.error('Contribution update failed', new Error(error), {
-          service: 'useHeritageEditing',
-          method: 'updateContributionData',
-          contributionId,
-        });
-
-        setUpdating(false);
-        return { success: false, error };
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error during update';
-      setUpdateError(errorMessage);
-      setUpdateProgress({
-        step: 'error',
-        progress: 0,
-        message: errorMessage,
-      });
-
-      logger.error('Contribution update exception', error instanceof Error ? error : new Error(errorMessage), {
-        service: 'useHeritageEditing',
-        method: 'updateContributionData',
-        contributionId,
-      });
-
-      setUpdating(false);
-      return { success: false, error: errorMessage };
-    }
-  }, [signer, isAvailable, user]);
-
-  const clearUpdateError = useCallback(() => {
-    setUpdateError(null);
-    setUpdateProgress(null);
-  }, []);
+  const {
+    isUpdating,
+    updateError,
+    updateProgress,
+    updateContent,
+    clearUpdateError,
+  } = useContentEditing<HeritageContributionData, UpdateHeritageResult, HeritagePublishingProgress>(
+    'useHeritageEditing',
+    updateFn,
+    false // Heritage update doesn't require pubkey parameter
+  );
 
   return {
     isUpdating,
     updateError,
     updateProgress,
-    updateContributionData,
+    updateContributionData: updateContent,
     clearUpdateError,
   };
 }

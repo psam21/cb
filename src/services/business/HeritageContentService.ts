@@ -926,6 +926,7 @@ export interface UpdateHeritageResult {
   publishedRelays?: string[];
   failedRelays?: string[];
   error?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -936,6 +937,7 @@ export interface HeritagePublishingProgress {
   progress: number;
   message: string;
   details?: string;
+  [key: string]: unknown;
 }
 
 /**

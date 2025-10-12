@@ -26,6 +26,7 @@ export interface HeritagePublishingProgress {
     total: number;
     currentFile?: string;
   };
+  [key: string]: unknown;
 }
 
 /**

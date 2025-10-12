@@ -275,7 +275,7 @@ export const useMultiAttachmentWorkflow = (): UseMultiAttachmentWorkflowReturn =
           canProceed: false,
         }));
 
-        const updateResult = await productEditing.updateProductWithAttachmentsData(
+        const updateResult = await productEditing.updateProductData(
           productId,
           productData,
           attachmentManager.state.attachments.map(a => a.originalFile!).filter(Boolean)

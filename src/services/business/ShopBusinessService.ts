@@ -67,6 +67,7 @@ export interface CreateProductResult {
   eventId?: string;
   publishedRelays?: string[];
   failedRelays?: string[];
+  [key: string]: unknown;
 }
 
 export interface ShopPublishingProgress {
@@ -82,6 +83,7 @@ export interface ShopPublishingProgress {
     uploadedFiles: string[];
     failedFiles: string[];
   };
+  [key: string]: unknown;
 }
 
 // New interfaces for multiple attachment support
