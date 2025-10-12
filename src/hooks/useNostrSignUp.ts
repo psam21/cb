@@ -11,6 +11,7 @@ import { useState, useCallback } from 'react';
 import { authBusinessService } from '@/services/business/AuthBusinessService';
 import { UserProfile } from '@/services/business/ProfileBusinessService';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { createNsecSigner } from '@/utils/signerFactory';
 
 /**
  * Sign-up form data
@@ -138,6 +139,9 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       useAuthStore.getState().setNsec(keys.nsec);
       
       console.log('Keys generated:', { npub: keys.npub });
+
+      // Create signer once for all operations (hook responsibility)
+      const signer = await createNsecSigner(keys.nsec);
       
       // 2. Upload avatar if provided
       let uploadedAvatarUrl: string | null = null;
@@ -146,7 +150,7 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
         setIsUploadingAvatar(true);
         
         try {
-          uploadedAvatarUrl = await authBusinessService.uploadAvatar(formData.avatarFile, keys.nsec);
+          uploadedAvatarUrl = await authBusinessService.uploadAvatar(formData.avatarFile, signer);
           setAvatarUrl(uploadedAvatarUrl);
           console.log('Avatar uploaded:', uploadedAvatarUrl);
         } catch (avatarError) {
@@ -171,12 +175,12 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
         birthday: '',
       };
       
-      await authBusinessService.publishProfile(profile, keys.nsec);
+      await authBusinessService.publishProfile(profile, signer);
       console.log('Profile published successfully');
       
       // 4. Publish welcome note (Kind 1) - Silent verification
       console.log('Publishing welcome note (silent)...');
-      await authBusinessService.publishWelcomeNote(keys.nsec);
+      await authBusinessService.publishWelcomeNote(signer);
       console.log('Welcome note published (silent)');
       
       setIsPublishingProfile(false);

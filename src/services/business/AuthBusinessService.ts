@@ -9,14 +9,12 @@
 
 import { generateKeys } from '@/utils/keyManagement';
 import { createBackupFile } from '@/utils/keyExport';
-import { createNsecSigner } from '@/utils/signerFactory';
 import { GenericBlossomService } from '@/services/generic/GenericBlossomService';
 import { ProfileBusinessService, UserProfile } from '@/services/business/ProfileBusinessService';
 import { GenericEventService } from '@/services/generic/GenericEventService';
 import { GenericRelayService } from '@/services/generic/GenericRelayService';
 import { NostrSigner } from '@/types/nostr';
 import { logger } from '@/services/core/LoggingService';
-import { nip19, getPublicKey } from 'nostr-tools';
 
 /**
  * Result of key generation
@@ -96,11 +94,11 @@ export class AuthBusinessService {
    * Delegates to GenericBlossomService for file upload.
    * 
    * @param file - Image file to upload
-   * @param nsec - User's private key (nsec1...)
+   * @param signer - Nostr signer for authentication
    * @returns Blossom URL (https://cdn.satellite.earth/<hash>)
    * @throws Error if upload fails
    */
-  public async uploadAvatar(file: File, nsec: string): Promise<string> {
+  public async uploadAvatar(file: File, signer: NostrSigner): Promise<string> {
     try {
       logger.info('Uploading avatar to Blossom', {
         service: 'AuthBusinessService',
@@ -108,9 +106,6 @@ export class AuthBusinessService {
         fileName: file.name,
         fileSize: file.size,
       });
-
-      // Create signer from nsec
-      const signer = await this.createSignerFromNsec(nsec);
 
       // Delegate to GenericBlossomService
       const result = await this.blossomService.uploadFile(file, signer);
@@ -139,20 +134,17 @@ export class AuthBusinessService {
    * Delegates to ProfileBusinessService for profile publishing.
    * 
    * @param profile - User profile data
-   * @param nsec - User's private key (nsec1...)
+   * @param signer - Nostr signer for event signing
    * @returns true if published successfully
    * @throws Error if publishing fails
    */
-  public async publishProfile(profile: UserProfile, nsec: string): Promise<boolean> {
+  public async publishProfile(profile: UserProfile, signer: NostrSigner): Promise<boolean> {
     try {
       logger.info('Publishing profile (Kind 0)', {
         service: 'AuthBusinessService',
         method: 'publishProfile',
         displayName: profile.display_name,
       });
-
-      // Create signer from nsec
-      const signer = await this.createSignerFromNsec(nsec);
 
       // Delegate to ProfileBusinessService (SHARED method, same as sign-in)
       await this.profileService.publishProfile(profile, signer);
@@ -176,19 +168,17 @@ export class AuthBusinessService {
    * works for both Kind 0 (profile) and Kind 1 (text note) events.
    * This is a silent operation - no UI notification shown to user.
    * 
-   * @param nsec - User's private key (nsec1...)
+   * @param signer - Nostr signer for event signing
    * @returns true if published successfully
    * @throws Error if publishing fails
    */
-  public async publishWelcomeNote(nsec: string): Promise<boolean> {
+  public async publishWelcomeNote(signer: NostrSigner): Promise<boolean> {
     try {
       logger.info('Publishing welcome note (Kind 1) - Silent verification', {
         service: 'AuthBusinessService',
         method: 'publishWelcomeNote',
       });
 
-      // Create signer from nsec
-      const signer = await this.createSignerFromNsec(nsec);
       const pubkey = await signer.getPublicKey();
 
       // Welcome message content
@@ -275,30 +265,16 @@ export class AuthBusinessService {
   }
 
   /**
-   * Create NostrSigner from nsec
-   * 
-   * Creates a signer implementation with NIP-44 support.
-   * 
-   * @param nsec - User's private key (nsec1...)
-   * @returns NostrSigner implementation
-   * @throws Error if nsec format is invalid
-   * @private
-   */
-  private async createSignerFromNsec(nsec: string): Promise<NostrSigner> {
-    return await createNsecSigner(nsec);
-  }
-
-  /**
    * Sign in with nsec (private key)
    * 
    * For mobile users or those without browser extension.
    * Validates nsec and fetches profile. Caller (hook) stores nsec in Zustand.
    * 
-   * @param nsec - User's private key (nsec1...)
+   * @param signer - Nostr signer created from nsec
    * @returns Sign-in result with user data
-   * @throws Error if nsec is invalid or profile fetch fails
+   * @throws Error if profile fetch fails
    */
-  public async signInWithNsec(nsec: string): Promise<{
+  public async signInWithNsec(signer: NostrSigner): Promise<{
     success: boolean;
     user?: {
       pubkey: string;
@@ -313,31 +289,12 @@ export class AuthBusinessService {
         method: 'signInWithNsec',
       });
 
-      // Validate nsec format
-      if (!nsec || !nsec.startsWith('nsec1')) {
-        throw new Error('Invalid nsec format. Must start with nsec1...');
-      }
+      // Get pubkey from signer
+      const pubkey = await signer.getPublicKey();
 
-      // Decode nsec to validate and get pubkey
-      let pubkey: string;
-      try {
-        const decoded = nip19.decode(nsec);
-        if (decoded.type !== 'nsec') {
-          throw new Error('Invalid nsec format');
-        }
-        
-        // Derive pubkey from secret key
-        pubkey = getPublicKey(decoded.data);
-      } catch (error) {
-        throw new Error('Invalid nsec. Please check your private key.');
-      }
-
-      logger.info('Nsec validated', {
+      logger.info('Signer validated', {
         pubkey: pubkey.substring(0, 8) + '...',
       });
-
-      // Create signer for profile fetch
-      const signer = await this.createSignerFromNsec(nsec);
 
       // Fetch user profile using ProfileBusinessService
       const profileResult = await this.profileService.signInWithExtension(signer);

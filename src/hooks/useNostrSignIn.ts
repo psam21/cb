@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { profileService } from '@/services/business/ProfileBusinessService';
 import { authBusinessService } from '@/services/business/AuthBusinessService';
 import { logger } from '@/services/core/LoggingService';
+import { createNsecSigner } from '@/utils/signerFactory';
 
 export interface UseNostrSignInReturn {
   signIn: () => Promise<boolean>;
@@ -97,8 +98,19 @@ export function useNostrSignIn(): UseNostrSignInReturn {
     setSigninError(null);
 
     try {
+      // Create signer from nsec (hook responsibility)
+      let signer;
+      try {
+        signer = await createNsecSigner(nsec);
+      } catch (error) {
+        const errorMsg = 'Invalid private key. Please check your nsec.';
+        setSigninError(errorMsg);
+        logger.error('Signer creation failed', error instanceof Error ? error : new Error(errorMsg));
+        return false;
+      }
+
       // Call AuthBusinessService to orchestrate nsec sign-in
-      const result = await authBusinessService.signInWithNsec(nsec);
+      const result = await authBusinessService.signInWithNsec(signer);
 
       if (!result.success || !result.user) {
         setSigninError(result.error || 'Sign-in failed');
