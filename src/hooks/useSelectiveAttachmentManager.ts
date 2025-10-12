@@ -1,6 +1,100 @@
 /**
- * Specialized Hook for Selective Attachment Management
- * Provides optimized workflows for selective add/remove/reorder operations
+ * @fileoverview Selective Attachment Manager Hook
+ * 
+ * **Architecture Pattern: ENHANCED WRAPPER (Decorator Pattern)**
+ * 
+ * This hook WRAPS `useAttachmentManager` and adds selective editing capabilities.
+ * It provides fine-grained control over individual attachments with selection,
+ * replace, reorder, and batch operations - essential for editing workflows.
+ * 
+ * **Role & Responsibilities:**
+ * - ✅ Wraps `useAttachmentManager` (inherits base functionality)
+ * - ✅ Adds selection management (select, deselect, select all, ranges)
+ * - ✅ Adds selective operations (replace single, reorder, remove selected)
+ * - ✅ Adds batch operation queue (stage operations, execute together)
+ * - ✅ Optimized for editing existing content with attachments
+ * 
+ * **When to Use:**
+ * Use `useSelectiveAttachmentManager` when you need:
+ * - Editing existing content with attachments (product edit, heritage edit)
+ * - Replace individual attachments while keeping others
+ * - Reorder attachments via drag-and-drop
+ * - Select multiple attachments for batch operations
+ * - Stage operations and execute them together
+ * 
+ * **Example - Edit Workflow:**
+ * ```typescript
+ * // Editing a product with existing images
+ * const attachmentManager = useSelectiveAttachmentManager<ProductAttachment>({
+ *   maxAttachments: 5
+ * });
+ * 
+ * // Replace a specific image
+ * await attachmentManager.replaceAttachment('img-123', newFile);
+ * 
+ * // Reorder images
+ * attachmentManager.reorderAttachments(0, 2); // Move first to third position
+ * 
+ * // Select and remove multiple
+ * attachmentManager.selectAttachment('img-1');
+ * attachmentManager.selectAttachment('img-2');
+ * attachmentManager.removeSelected();
+ * 
+ * // Batch operations
+ * attachmentManager.addToBatch(replaceOp);
+ * attachmentManager.addToBatch(reorderOp);
+ * await attachmentManager.executeBatch(); // Execute all at once
+ * ```
+ * 
+ * **Pattern: Decorator Pattern**
+ * - WRAPS `useAttachmentManager` (base layer)
+ * - EXTENDS functionality with selective operations
+ * - Used by `useGenericAttachmentWorkflow` for single-item editing
+ * 
+ * **Comparison with useAttachmentManager:**
+ * 
+ * | Feature | useAttachmentManager | useSelectiveAttachmentManager |
+ * |---------|---------------------|------------------------------|
+ * | **Pattern** | Base implementation | Decorator/Wrapper |
+ * | **Operations** | Add, remove, validate | + Replace, reorder, batch queue |
+ * | **Selection** | ❌ No selection | ✅ Full selection management |
+ * | **Use Case** | Bulk uploads | Editing existing content |
+ * | **Workflow** | Simple batch upload | Multi-step editing wizard |
+ * | **State** | Direct state | Wraps base state + adds batch queue |
+ * 
+ * **Selective Operations:**
+ * - `replaceAttachment(id, file)` - Replace single attachment by ID
+ * - `reorderAttachments(from, to)` - Change position of attachments
+ * - `removeSelected()` - Remove all selected attachments
+ * - `addToBatch(op)` - Stage operation for later execution
+ * - `executeBatch()` - Execute all staged operations together
+ * 
+ * **Selection Management:**
+ * - `selectAttachment(id)` / `deselectAttachment(id)` - Toggle single
+ * - `selectAll()` / `deselectAll()` - Bulk selection
+ * - `toggleSelection(id)` - Toggle selection state
+ * - `selectRange(start, end)` - Select contiguous range
+ * - `getSelectedAttachments()` - Get current selection
+ * 
+ * **Used By:**
+ * - `useGenericAttachmentWorkflow` (single content item editing workflow)
+ * 
+ * **Architecture:**
+ * ```
+ * useGenericAttachmentWorkflow
+ *          ↓
+ *   useSelectiveAttachmentManager (WRAPPER - this file)
+ *          ↓
+ *   useAttachmentManager (BASE)
+ *          ↓
+ *   MediaBusinessService
+ *          ↓
+ *   GenericMediaService
+ * ```
+ * 
+ * @module hooks/useSelectiveAttachmentManager
+ * @see {@link useAttachmentManager} For the base implementation
+ * @see {@link useGenericAttachmentWorkflow} For single-item editing workflows
  */
 
 import { useState, useCallback, useMemo } from 'react';

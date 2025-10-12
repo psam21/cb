@@ -1,6 +1,72 @@
 /**
- * Generic Hook for managing attachment state and operations
- * Provides a comprehensive interface for attachment management workflows across any content type
+ * @fileoverview Base Attachment Manager Hook
+ * 
+ * **Architecture Pattern: BASE LAYER**
+ * 
+ * This hook provides the foundational attachment management capabilities for batch operations.
+ * It handles core operations like adding, removing, validating, and uploading multiple files.
+ * 
+ * **Role & Responsibilities:**
+ * - ✅ Core attachment state management (attachments, operations, validation)
+ * - ✅ Batch file operations (add multiple, validate all, upload sequence)
+ * - ✅ Integration with MediaBusinessService for validation/upload
+ * - ✅ Progress tracking for batch uploads
+ * - ✅ Generic type support for any attachment type
+ * 
+ * **When to Use:**
+ * Use `useAttachmentManager` when you need:
+ * - Batch file uploads (multiple files at once)
+ * - Basic add/remove/validate operations
+ * - Simple attachment workflows without selective editing
+ * - Building custom attachment workflows (base layer)
+ * 
+ * **Example - Batch Upload Workflow:**
+ * ```typescript
+ * const attachmentManager = useAttachmentManager({
+ *   maxAttachments: 5,
+ *   autoUpload: false
+ * });
+ * 
+ * // Add multiple files
+ * await attachmentManager.addFiles(selectedFiles);
+ * 
+ * // Upload all at once
+ * await attachmentManager.uploadAll();
+ * ```
+ * 
+ * **Pattern: Decorator Pattern**
+ * - This is the BASE implementation
+ * - `useSelectiveAttachmentManager` WRAPS this hook and adds selective operations
+ * - Used by `useMultiAttachmentWorkflow` for batch product publishing
+ * 
+ * **Comparison with useSelectiveAttachmentManager:**
+ * 
+ * | Feature | useAttachmentManager | useSelectiveAttachmentManager |
+ * |---------|---------------------|------------------------------|
+ * | **Purpose** | Base batch operations | Enhanced selective editing |
+ * | **Operations** | Add, remove, validate, upload | + Replace, reorder, batch ops |
+ * | **Selection** | No selection support | Full selection management |
+ * | **Use Case** | Bulk uploads | Editing existing items |
+ * | **Complexity** | Simple, direct | Advanced, feature-rich |
+ * 
+ * **Used By:**
+ * - `useMultiAttachmentWorkflow` (multiple content items workflow)
+ * - `useSelectiveAttachmentManager` (wraps and extends this hook)
+ * 
+ * **Architecture:**
+ * ```
+ * useMultiAttachmentWorkflow
+ *          ↓
+ *   useAttachmentManager (BASE - this file)
+ *          ↓
+ *   MediaBusinessService
+ *          ↓
+ *   GenericMediaService
+ * ```
+ * 
+ * @module hooks/useAttachmentManager
+ * @see {@link useSelectiveAttachmentManager} For selective editing workflows
+ * @see {@link useMultiAttachmentWorkflow} For multi-item publishing workflows
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
