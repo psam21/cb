@@ -6,6 +6,7 @@ import { createNIP23Event, signEvent as genericSignEvent } from '../generic/Gene
 import { publishEvent as genericPublishEvent, RelayPublishingResult } from '../generic/GenericRelayService';
 import { EncryptionService } from '../generic/EncryptionService';
 import { getPublicKey, finalizeEvent, generateSecretKey } from 'nostr-tools';
+import { ProductAttachment } from '../../types/attachments';
 
 export interface ProductEventData {
   title: string;
@@ -16,7 +17,7 @@ export interface ProductEventData {
   imageHash?: string;
   imageFile?: File;
   // NEW: Multiple attachments support
-  attachments?: import('../business/ShopBusinessService').ProductAttachment[];
+  attachments?: ProductAttachment[];
   tags: string[];
   category: string;
   condition: 'new' | 'used' | 'refurbished';
@@ -564,8 +565,8 @@ export class NostrEventService {
   /**
    * Extract multiple attachments from event tags
    */
-  private extractAttachmentsFromEvent(event: NIP23Event): import('../business/ShopBusinessService').ProductAttachment[] {
-    const attachments: import('../business/ShopBusinessService').ProductAttachment[] = [];
+  private extractAttachmentsFromEvent(event: NIP23Event): ProductAttachment[] {
+    const attachments: ProductAttachment[] = [];
     
     // Debug: Log all event tags to see what we're working with
     logger.debug('Extracting attachments from event tags', {
@@ -599,7 +600,7 @@ export class NostrEventService {
             }
           }
           
-          const attachment: import('../business/ShopBusinessService').ProductAttachment = {
+          const attachment: ProductAttachment = {
             id: `imeta-${imetaData.x || Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             hash: imetaData.x || '',
             url: imetaData.url || '',
@@ -678,7 +679,7 @@ export class NostrEventService {
   /**
    * Create attachment tags for multiple attachments
    */
-  private createAttachmentTags(attachments: import('../business/ShopBusinessService').ProductAttachment[]): string[][] {
+  private createAttachmentTags(attachments: ProductAttachment[]): string[][] {
     const tags: string[][] = [];
     
     logger.debug('Creating attachment tags for multiple attachments', {

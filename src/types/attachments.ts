@@ -222,13 +222,20 @@ export interface GenericAttachmentManager<T extends GenericAttachment = GenericA
 
 /**
  * Shop product attachment
+ * Used for actual product listings with Blossom file storage
  */
-export interface ProductAttachment extends GenericAttachment {
+export interface ProductAttachment {
+  id: string; // unique identifier for this attachment
+  hash: string; // Blossom file hash
+  url: string; // Full URL to the file
   type: 'image' | 'video' | 'audio';
-  isPrimary: boolean;
-  displayOrder: number;
-  productId?: string;
-  category?: string;
+  name: string; // Original filename
+  size: number; // File size in bytes
+  mimeType: string;
+  metadata?: {
+    dimensions?: { width: number; height: number };
+    duration?: number; // for video/audio in seconds
+  };
 }
 
 /**

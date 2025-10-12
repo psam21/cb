@@ -10,27 +10,16 @@ import { constructUserBlossomUrl, getSharedBlossomUrl, BLOSSOM_CONFIG } from '..
 import { 
   AttachmentOperation, 
   AttachmentOperationType,
-  AttachmentValidationResult
+  AttachmentValidationResult,
+  ProductAttachment
 } from '../../types/attachments';
 import { mediaBusinessService } from './MediaBusinessService';
 import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
 // eventLoggingService removed - now handled automatically in GenericRelayService
 
-// Multiple attachment support interface
-export interface ProductAttachment {
-  id: string; // unique identifier for this attachment
-  hash: string; // Blossom file hash
-  url: string; // Full URL to the file
-  type: 'image' | 'video' | 'audio';
-  name: string; // Original filename
-  size: number; // File size in bytes
-  mimeType: string;
-  metadata?: {
-    dimensions?: { width: number; height: number };
-    duration?: number; // for video/audio in seconds
-  };
-}
+// Re-export ProductAttachment for backward compatibility
+export type { ProductAttachment };
 
 export interface ShopProduct {
   id: string;
