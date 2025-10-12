@@ -1,6 +1,42 @@
 /**
  * Media Business Service for attachment management logic
  * Handles business rules and lifecycle management for attachments
+ * 
+ * @architecture Business Layer Service
+ * 
+ * RESPONSIBILITIES:
+ * - Apply business rules (max attachments, file size limits, allowed types)
+ * - Validate operations against domain-specific constraints
+ * - Orchestrate generic services (GenericMediaService + GenericBlossomService)
+ * - Track lifecycle events (for logging/debugging)
+ * - Provide business-level attachment configuration
+ * 
+ * WHAT THIS SERVICE DOES:
+ * - Enforce business constraints on file operations
+ * - Coordinate validation → upload workflow
+ * - Apply domain-specific rules (e.g., shop allows 5 images, heritage allows 10)
+ * - Provide business context to generic operations
+ * 
+ * WHAT THIS SERVICE DOES NOT DO:
+ * - Perform actual file validation (delegates to GenericMediaService)
+ * - Upload files to storage (delegates to GenericBlossomService)
+ * - Store state (stateless after SOA-004 fix)
+ * 
+ * RELATIONSHIP WITH OTHER SERVICES:
+ * - Called by: Domain hooks (useAttachmentManager, useShopPublishing, etc.)
+ * - Calls: GenericMediaService (validation), GenericBlossomService (upload)
+ * - Layer: Business (orchestrates Generic layer services)
+ * 
+ * COMPARISON WITH GenericMediaService:
+ * - GenericMediaService: "Can this file be processed?" (technical validation)
+ * - MediaBusinessService: "Should this file be allowed?" (business rules)
+ * 
+ * @example
+ * // Business service applies rules, then delegates to generic services
+ * const validation = mediaBusinessService.validateAttachmentOperation(op, existing);
+ * // ↓ Checks business rules (max count, allowed types)
+ * // ↓ Then calls genericMediaService for technical validation
+ * // ↓ Then calls blossomService for upload
  */
 
 import { logger } from '../core/LoggingService';
@@ -45,6 +81,10 @@ export interface MediaBusinessServiceConfig {
 
 /**
  * Media Business Service for attachment management
+ * 
+ * @architecture Business Layer - Domain-specific orchestration
+ * @singleton Stateless service (state removed in SOA-004)
+ * @layer Business (orchestrates Generic layer services)
  */
 export class MediaBusinessService {
   private static instance: MediaBusinessService;

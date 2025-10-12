@@ -1,6 +1,73 @@
 /**
  * Hook for managing complete multi-attachment workflows
  * Combines attachment management, media upload, and product operations
+ * 
+ * @architecture Presentation Layer - Multi-Item Workflow Hook
+ * 
+ * PURPOSE:
+ * Orchestrates workflows involving MULTIPLE content items or complex
+ * multi-service operations in a single form/workflow.
+ * 
+ * USE CASES:
+ * ✅ Bulk product upload (multiple products in one form)
+ * ✅ Batch operations on different content types
+ * ✅ Complex workflows coordinating multiple services
+ * ✅ Forms managing multiple distinct items simultaneously
+ * 
+ * WHEN TO USE THIS HOOK:
+ * - Managing MULTIPLE content items in one workflow
+ * - Batch upload/edit operations
+ * - Coordinating multiple specialized hooks
+ * - Complex state management across different item types
+ * 
+ * WHEN NOT TO USE (use useGenericAttachmentWorkflow instead):
+ * - Single content item with multi-step process
+ * - Simple wizard/stepper UI for one item
+ * - Just need attachment management for one entity
+ * 
+ * COMPARISON:
+ * 
+ * useMultiAttachmentWorkflow:
+ * - Multiple content items (batch operations)
+ * - Coordinates multiple specialized hooks
+ * - Example: Upload 5 products at once
+ * - Example: Edit multiple items in one form
+ * - Complexity: Multiple items × Multiple steps
+ * 
+ * useGenericAttachmentWorkflow:
+ * - Single content item
+ * - Step-by-step workflow for one item
+ * - Example: Create 1 product through wizard
+ * - Complexity: Single item × Multiple steps
+ * 
+ * ARCHITECTURE:
+ * This hook is a COORDINATOR that brings together:
+ * - useAttachmentManager (file selection and validation)
+ * - useMediaUpload (upload to Blossom servers)
+ * - useShopPublishing (publish products to Nostr)
+ * - useProductEditing (edit existing products)
+ * 
+ * WORKFLOW STEPS:
+ * 1. 'selecting' - User selects files
+ * 2. 'validating' - Validate files against rules
+ * 3. 'uploading' - Upload to storage (Blossom)
+ * 4. 'creating' or 'editing' - Publish/update Nostr events
+ * 5. 'complete' - Workflow finished
+ * 
+ * STATE MANAGEMENT:
+ * - Aggregates state from multiple sub-hooks
+ * - Tracks overall workflow progress
+ * - Manages transitions between steps
+ * - Error handling across all operations
+ * 
+ * @layer Presentation (React hook for complex workflows)
+ * @pattern Coordinator (orchestrates multiple specialized hooks)
+ * 
+ * @example
+ * // Batch product upload
+ * const workflow = useMultiAttachmentWorkflow();
+ * await workflow.startProductCreation(productData, files, signer);
+ * // ↓ Coordinates: attachment → upload → publish
  */
 
 import { useState, useCallback } from 'react';

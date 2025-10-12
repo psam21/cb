@@ -1,6 +1,71 @@
 /**
  * Generic Multi-Attachment Workflow Hook
  * Provides reusable workflows for any content type with multiple attachments
+ * 
+ * @architecture Presentation Layer - Workflow Orchestration Hook
+ * 
+ * PURPOSE:
+ * Orchestrates multi-step workflows involving attachment management
+ * for a SINGLE content type (e.g., creating one product with images).
+ * 
+ * USE CASES:
+ * ✅ Creating/editing a product with multiple images
+ * ✅ Publishing heritage contribution with media
+ * ✅ Multi-step forms with attachment upload
+ * ✅ Workflows with validation → upload → publish steps
+ * 
+ * WHEN TO USE THIS HOOK:
+ * - You have a multi-step process (wizard, stepper UI)
+ * - Process involves ONE content item with multiple attachments
+ * - Need workflow state management (steps, progress, errors)
+ * - Want step-by-step user guidance
+ * 
+ * WHEN NOT TO USE (use useMultiAttachmentWorkflow instead):
+ * - Managing attachments for MULTIPLE content items in one form
+ * - Batch operations (e.g., uploading 5 products at once)
+ * - No workflow steps, just simple attachment management
+ * 
+ * COMPARISON:
+ * 
+ * useGenericAttachmentWorkflow:
+ * - Single content item (1 product)
+ * - Multi-step workflow (step 1: details, step 2: images, step 3: review)
+ * - Progress tracking per step
+ * - Example: Product creation wizard
+ * 
+ * useMultiAttachmentWorkflow:
+ * - Multiple content items (5 products)
+ * - Single or multi-step
+ * - Batch operations on different items
+ * - Example: Bulk product upload form
+ * 
+ * FEATURES:
+ * - Step-by-step workflow execution
+ * - Attachment manager integration (via useSelectiveAttachmentManager)
+ * - Progress tracking and reporting
+ * - Error handling per step
+ * - Pause/resume/cancel workflow
+ * - Step validation gates
+ * 
+ * STATE MANAGEMENT:
+ * - Workflow state (current step, progress, errors)
+ * - Attachment state (managed by useSelectiveAttachmentManager)
+ * - Integration with business services (MediaBusinessService)
+ * 
+ * @layer Presentation (React hook for UI workflows)
+ * @pattern Workflow Orchestration (coordinates multiple steps)
+ * 
+ * @example
+ * // Product creation with 3 steps
+ * const workflow = useGenericAttachmentWorkflow({
+ *   workflowName: 'Create Product',
+ *   contentType: 'shop',
+ *   steps: [
+ *     { id: 'details', name: 'Product Details' },
+ *     { id: 'images', name: 'Upload Images' },
+ *     { id: 'review', name: 'Review & Publish' }
+ *   ]
+ * });
  */
 
 import { useState, useCallback, useRef } from 'react';

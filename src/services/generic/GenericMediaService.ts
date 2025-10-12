@@ -1,6 +1,37 @@
 /**
  * Generic Media Service for centralized media file operations
  * Handles validation, metadata extraction, and file organization following SOA patterns
+ * 
+ * @architecture Generic Layer Service
+ * 
+ * RESPONSIBILITIES:
+ * - File validation (type, size, format)
+ * - Metadata extraction (dimensions, duration, hash)
+ * - Attachment operations processing (add, remove, reorder, replace)
+ * - Generic file utilities (format size, detect type)
+ * 
+ * WHAT THIS SERVICE DOES:
+ * - Pure technical operations on files and attachments
+ * - No business rules or domain logic
+ * - Reusable across all content types (shop, heritage, etc.)
+ * - Stateless validation and transformation
+ * 
+ * WHAT THIS SERVICE DOES NOT DO:
+ * - Apply business rules (max attachments, allowed types per domain)
+ * - Upload files to storage (see GenericBlossomService)
+ * - Make domain-specific decisions
+ * 
+ * RELATIONSHIP WITH OTHER SERVICES:
+ * - Called by: MediaBusinessService (applies business rules, then calls this)
+ * - Uses: MEDIA_CONFIG for validation rules
+ * - Works with: GenericBlossomService (this validates, that uploads)
+ * 
+ * @example
+ * // Validate files
+ * const result = await genericMediaService.validateFilesForSelectiveOperations(files, existing);
+ * 
+ * // Process attachment operations
+ * const processed = await genericMediaService.processAttachmentOperations(operations, attachments);
  */
 
 import { logger } from '../core/LoggingService';
@@ -65,7 +96,10 @@ export interface MediaValidationResult {
 
 /**
  * Generic Media Service for centralized media operations
- * Follows SOA patterns - reusable across different domains
+ * 
+ * @architecture Generic Layer - Reusable technical operations
+ * @singleton Stateless service, safe for concurrent use
+ * @layer Generic (called by Business layer)
  */
 export class GenericMediaService {
   private static instance: GenericMediaService;

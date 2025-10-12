@@ -1,6 +1,56 @@
 /**
  * Generic Nostr relay service for centralized relay operations
  * Handles all relay publishing and querying operations following CultureBridge patterns
+ * 
+ * @architecture Generic Layer - Relay Connection Management
+ * 
+ * RESPONSIBILITIES:
+ * - Manage WebSocket connections to Nostr relays
+ * - Publish events to multiple relays with retry logic
+ * - Query events from relays with aggregation
+ * - Track relay health and connection state
+ * - Provide relay publishing/querying infrastructure
+ * 
+ * WHAT THIS SERVICE DOES:
+ * - Maintain persistent relay connections (singleton pattern)
+ * - Handle WebSocket lifecycle (connect, reconnect, close)
+ * - Execute multi-relay publishing with verification
+ * - Aggregate query results from multiple relays
+ * - Track relay performance and health
+ * 
+ * WHAT THIS SERVICE DOES NOT DO:
+ * - Create Nostr events (see NostrEventService)
+ * - Apply business logic to events
+ * - Make domain-specific decisions
+ * 
+ * RELATIONSHIP WITH NostrEventService:
+ * - NostrEventService: FACADE - High-level event creation and publishing
+ * - GenericRelayService: IMPLEMENTATION - Low-level relay operations
+ * 
+ * DELEGATION PATTERN:
+ * NostrEventService delegates all relay operations to this service:
+ * 1. NostrEventService.publishEvent(event) 
+ *    → Creates event structure
+ *    → Calls genericRelayService.publishEventToRelays(event)
+ * 2. NostrEventService.queryEvents(filters)
+ *    → Prepares filters
+ *    → Calls genericRelayService.queryFromRelays(filters)
+ * 
+ * STATE CONSISTENCY:
+ * ⚠️ This is a SINGLETON with connection state
+ * - Connections shared across all callers
+ * - State persists for application lifetime
+ * - Thread-safe for concurrent publishing
+ * - Health checks maintain connection quality
+ * 
+ * @singleton Stateful (maintains relay connections)
+ * @layer Generic (infrastructure for relay operations)
+ * 
+ * @example
+ * // NostrEventService delegates to this service
+ * const result = await genericRelayService.publishEventToRelays(event, signer);
+ * // ↓ Manages connections, retries, verification
+ * // ↓ Returns aggregated results
  */
 import { logger } from '../core/LoggingService';
 import { AppError } from '../../errors/AppError';
@@ -61,6 +111,11 @@ export interface RelayConnection {
 
 /**
  * Generic Nostr relay service for centralized relay operations
+ * 
+ * @architecture Generic Layer - Infrastructure Service
+ * @singleton Stateful (maintains WebSocket connections)
+ * @pattern Delegation (NostrEventService → GenericRelayService)
+ * @layer Generic (provides relay infrastructure to all layers)
  */
 export class GenericRelayService {
   private static instance: GenericRelayService;

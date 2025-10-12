@@ -1,3 +1,55 @@
+/**
+ * Nostr Event Service - Facade for Nostr event operations
+ * 
+ * @architecture Nostr Layer - Event Creation and Publishing Facade
+ * 
+ * RESPONSIBILITIES:
+ * - Create properly formatted Nostr events (NIP-23, NIP-04, custom kinds)
+ * - Sign events using NostrSigner
+ * - Delegate relay operations to GenericRelayService
+ * - Provide high-level publishing interface
+ * 
+ * WHAT THIS SERVICE DOES:
+ * - Create event structures (Kind 30023 products, Kind 30024 heritage, etc.)
+ * - Prepare tags, content, and metadata
+ * - Sign events with signer
+ * - Coordinate publishing workflow
+ * 
+ * WHAT THIS SERVICE DOES NOT DO:
+ * - Manage relay connections (delegates to GenericRelayService)
+ * - Handle WebSocket lifecycle (delegates to GenericRelayService)
+ * - Apply business rules (done by business layer services)
+ * 
+ * FACADE PATTERN:
+ * This service is a FACADE over GenericRelayService and GenericEventService:
+ * 
+ * NostrEventService (Facade):
+ * - High-level: createProductEvent(), publishEvent(), queryEvents()
+ * - Domain-friendly API for creating/publishing Nostr events
+ * - Delegates low-level operations to generic services
+ * 
+ * GenericRelayService (Implementation):
+ * - Low-level: publishEventToRelays(), queryFromRelays()
+ * - Manages WebSocket connections and relay state
+ * - Handles retries, verification, health checks
+ * 
+ * DELEGATION FLOW:
+ * 1. Business Service calls: nostrEventService.publishEvent(event, signer)
+ * 2. NostrEventService prepares event (signs, formats)
+ * 3. NostrEventService delegates: genericRelayService.publishEventToRelays(event)
+ * 4. GenericRelayService manages connections, retries, returns results
+ * 5. NostrEventService returns results to business layer
+ * 
+ * STATE MANAGEMENT:
+ * - This service is STATELESS (creates new instance per business service)
+ * - GenericRelayService is STATEFUL (singleton with connection pool)
+ * - State consistency: All relay state managed by GenericRelayService singleton
+ * 
+ * @singleton Stateless (but delegates to stateful GenericRelayService)
+ * @layer Nostr (facade over Generic layer relay infrastructure)
+ * @pattern Facade (simplifies complex relay operations)
+ */
+
 import { logger } from '../core/LoggingService';
 import { NostrSigner, NostrEvent, NIP23Event, NIP23Content } from '../../types/nostr';
 import { AppError } from '../../errors/AppError';
@@ -33,6 +85,14 @@ export interface PublishingResult {
   error?: string;
 }
 
+/**
+ * Nostr Event Service - Event creation and publishing facade
+ * 
+ * @architecture Nostr Layer - Facade Service
+ * @singleton Stateless (delegates to stateful GenericRelayService)
+ * @pattern Facade (high-level API over GenericRelayService + GenericEventService)
+ * @layer Nostr (event-focused interface over generic relay infrastructure)
+ */
 export class NostrEventService {
   private static instance: NostrEventService;
 
