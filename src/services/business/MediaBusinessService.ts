@@ -49,7 +49,6 @@ export interface MediaBusinessServiceConfig {
 export class MediaBusinessService {
   private static instance: MediaBusinessService;
   private config: MediaBusinessServiceConfig;
-  private lifecycleEvents: AttachmentLifecycleEvent[] = [];
 
   private constructor(config?: Partial<MediaBusinessServiceConfig>) {
     this.config = {
@@ -423,43 +422,20 @@ export class MediaBusinessService {
   }
 
   /**
-   * Get lifecycle events
-   */
-  public getLifecycleEvents(): AttachmentLifecycleEvent[] {
-    return [...this.lifecycleEvents];
-  }
-
-  /**
-   * Clear lifecycle events
-   */
-  public clearLifecycleEvents(): void {
-    this.lifecycleEvents = [];
-  }
-
-  /**
-   * Track lifecycle event
+   * Track lifecycle event (for logging only)
    */
   private trackLifecycleEvent(type: AttachmentLifecycleEvent['type'], attachmentId: string, metadata?: Record<string, unknown>): void {
     if (!this.config.trackLifecycle) return;
-
-    const event: AttachmentLifecycleEvent = {
-      type,
-      attachmentId,
-      timestamp: Date.now(),
-      metadata
-    };
-
-    this.lifecycleEvents.push(event);
 
     logger.debug('Lifecycle event tracked', {
       service: 'MediaBusinessService',
       method: 'trackLifecycleEvent',
       eventType: type,
-      attachmentId
+      attachmentId,
+      timestamp: Date.now(),
+      metadata
     });
-  }
-
-  /**
+  }  /**
    * Format file size for display
    */
   private formatFileSize(bytes: number): string {
