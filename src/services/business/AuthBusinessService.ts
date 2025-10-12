@@ -57,7 +57,7 @@ export class AuthBusinessService {
    * Generate Nostr keys and store nsec in Zustand
    * 
    * Delegates to keyManagement utility for key generation.
-   * Stores nsec in auth store (in-memory only, never persisted).
+   * Stores nsec in auth store (persisted to localStorage via Zustand).
    * 
    * @returns Generated keys (nsec, npub, pubkey)
    * @throws Error if key generation fails
@@ -72,7 +72,7 @@ export class AuthBusinessService {
       // Delegate to utility (pure function, no side effects)
       const keys = generateKeys();
 
-      // Store nsec in Zustand (in-memory only)
+      // Store nsec in Zustand (persisted to localStorage)
       useAuthStore.getState().setNsec(keys.nsec);
 
       logger.info('Keys generated successfully', {
@@ -287,7 +287,7 @@ export class AuthBusinessService {
    * Create temporary NostrSigner from nsec in Zustand
    * 
    * Creates a signer implementation for signing events during sign-up.
-   * Uses the nsec stored in Zustand (in-memory only).
+   * Uses the nsec stored in Zustand (persisted to localStorage).
    * 
    * @returns NostrSigner implementation
    * @throws Error if no nsec in store
@@ -334,7 +334,7 @@ export class AuthBusinessService {
    * Sign in with nsec (private key)
    * 
    * For mobile users or those without browser extension.
-   * Validates nsec, stores in Zustand (in-memory), fetches profile.
+   * Validates nsec, stores in Zustand (persisted to localStorage), fetches profile.
    * 
    * @param nsec - User's private key (nsec1...)
    * @returns Sign-in result with user data
@@ -375,7 +375,7 @@ export class AuthBusinessService {
         throw new Error('Invalid nsec. Please check your private key.');
       }
 
-      // Store nsec in Zustand (in-memory only, not persisted)
+      // Store nsec in Zustand (persisted to localStorage)
       useAuthStore.getState().setNsec(nsec);
 
       logger.info('Nsec validated and stored', {
