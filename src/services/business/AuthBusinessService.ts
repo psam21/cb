@@ -14,7 +14,6 @@ import { GenericBlossomService } from '@/services/generic/GenericBlossomService'
 import { ProfileBusinessService, UserProfile } from '@/services/business/ProfileBusinessService';
 import { GenericEventService } from '@/services/generic/GenericEventService';
 import { GenericRelayService } from '@/services/generic/GenericRelayService';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { NostrSigner } from '@/types/nostr';
 import { logger } from '@/services/core/LoggingService';
 import { nip19, getPublicKey } from 'nostr-tools';
@@ -368,20 +367,6 @@ export class AuthBusinessService {
         error: errorMessage,
       };
     }
-  }
-
-  /**
-   * Clear nsec from Zustand
-   * 
-   * Called after sign-up completion to remove nsec from memory.
-   * User must use backup file or browser extension after this.
-   */
-  public clearNsec(): void {
-    logger.info('Clearing nsec from memory', {
-      service: 'AuthBusinessService',
-      method: 'clearNsec',
-    });
-    useAuthStore.getState().setNsec(null);
   }
 }
 
