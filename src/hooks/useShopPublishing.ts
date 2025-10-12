@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useNostrSigner } from './useNostrSigner';
 import { useShopStore } from '@/stores/useShopStore';
@@ -8,10 +8,12 @@ import {
   shopBusinessService, 
   CreateProductResult,
   updateProductWithAttachments,
-  CreateProductWithAttachmentsResult
+  CreateProductWithAttachmentsResult,
+  ShopPublishingProgress
 } from '@/services/business/ShopBusinessService';
 import { ProductEventData } from '@/services/nostr/NostrEventService';
 import { useConsentDialog } from './useConsentDialog';
+import { useContentPublishing } from './useContentPublishing';
 
 export const useShopPublishing = () => {
   const { isAvailable, getSigner } = useNostrSigner();
@@ -25,6 +27,44 @@ export const useShopPublishing = () => {
     addProduct,
   } = useShopStore();
   const consentDialog = useConsentDialog();
+
+  // Create state setters for the generic publishing hook
+  const stateSetters = useMemo(() => ({
+    setPublishing,
+    setProgress: setPublishingProgress,
+    setResult: (result: { success: boolean; eventId?: string; publishedRelays?: string[]; failedRelays?: string[]; error?: string; } | null) => {
+      if (result) {
+        setLastPublishingResult({
+          success: result.success,
+          eventId: result.eventId,
+          publishedRelays: result.publishedRelays || [],
+          failedRelays: result.failedRelays || [],
+          error: result.error,
+        });
+      } else {
+        setLastPublishingResult(null);
+      }
+    },
+  }), [setPublishing, setPublishingProgress, setLastPublishingResult]);
+
+  // Initialize generic publishing wrapper
+  const { publishWithWrapper } = useContentPublishing<
+    ProductEventData,
+    CreateProductWithAttachmentsResult,
+    ShopPublishingProgress
+  >({
+    serviceName: 'ShopBusinessService',
+    methodName: 'createProductWithAttachments',
+    isAvailable,
+    getSigner,
+    consentDialog,
+    stateSetters,
+    onSuccess: (result: CreateProductWithAttachmentsResult) => {
+      if (result.success && result.product) {
+        addProduct(result.product);
+      }
+    },
+  });
 
   const publishProduct = useCallback(async (
     productData: ProductEventData,
@@ -113,145 +153,19 @@ export const useShopPublishing = () => {
     productData: ProductEventData,
     attachmentFiles: File[]
   ): Promise<CreateProductWithAttachmentsResult> => {
-    if (!isAvailable) {
-      const error = 'Nostr signer not available';
-      logger.error('Cannot publish product with attachments', new Error(error), {
-        service: 'useShopPublishing',
-        method: 'publishProductWithAttachments',
-        error,
-      });
-      return {
-        success: false,
-        error,
-        attachmentResults: {
-          successful: [],
-          failed: attachmentFiles.map(file => ({ file, error })),
-          partialSuccess: false
-        }
-      };
-    }
-
-    const signer = await getSigner();
-    if (!signer) {
-      const error = 'Failed to get Nostr signer';
-      logger.error('Cannot publish product with attachments', new Error(error), {
-        service: 'useShopPublishing',
-        method: 'publishProductWithAttachments',
-        error,
-      });
-      return {
-        success: false,
-        error,
-        attachmentResults: {
-          successful: [],
-          failed: attachmentFiles.map(file => ({ file, error })),
-          partialSuccess: false
-        }
-      };
-    }
-
-    logger.info('Starting product publication with multiple attachments', {
-      service: 'useShopPublishing',
-      method: 'publishProductWithAttachments',
-      attachmentCount: attachmentFiles.length,
-      totalSize: attachmentFiles.reduce((sum, f) => sum + f.size, 0),
-    });
-
-    // Show consent dialog before starting upload
-    if (attachmentFiles.length > 0) {
-      const userAccepted = await consentDialog.showConsentDialog(attachmentFiles);
-      if (!userAccepted) {
-        logger.info('User cancelled upload during consent phase', {
-          service: 'useShopPublishing',
-          method: 'publishProductWithAttachments',
-          attachmentCount: attachmentFiles.length
-        });
-        
-        return {
-          success: false,
-          error: 'User cancelled upload',
-          attachmentResults: {
-            successful: [],
-            failed: attachmentFiles.map(file => ({ file, error: 'User cancelled' })),
-            partialSuccess: false
-          }
-        };
-      }
-    }
-
-    setPublishing(true);
-    setPublishingProgress(null);
-
-    try {
-      const result = await shopBusinessService.createProductWithAttachments(
-        productData,
-        attachmentFiles,
-        signer,
-        (progress) => {
-          logger.info('Publishing with attachments progress', {
-            service: 'useShopPublishing',
-            method: 'publishProductWithAttachments',
-            step: progress.step,
-            progress: progress.progress,
-            message: progress.message,
-            attachmentProgress: progress.attachmentProgress,
-          });
-          
-          setPublishingProgress(progress);
-        }
-      );
-
-      if (result.success && result.product) {
-        addProduct(result.product);
-        
-        logger.info('Product with attachments published successfully', {
-          service: 'useShopPublishing',
-          method: 'publishProductWithAttachments',
-          eventId: result.eventId,
-          publishedRelays: result.publishedRelays?.length || 0,
-          attachmentCount: result.attachmentResults?.successful.length || 0,
-        });
-      } else {
-        logger.error('Product with attachments publication failed', new Error(result.error || 'Unknown error'), {
-          service: 'useShopPublishing',
-          method: 'publishProductWithAttachments',
-          error: result.error,
-        });
-      }
-
-      setLastPublishingResult({
-        success: result.success,
-        eventId: result.eventId,
-        publishedRelays: result.publishedRelays || [],
-        failedRelays: result.failedRelays || [],
-        error: result.error,
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Product with attachments publication error', error instanceof Error ? error : new Error(errorMessage), {
-        service: 'useShopPublishing',
-        method: 'publishProductWithAttachments',
-        error: errorMessage,
-      });
-      const errorResult = { 
-        success: false, 
-        error: errorMessage, 
-        publishedRelays: [], 
-        failedRelays: [],
-        attachmentResults: {
-          successful: [],
-          failed: attachmentFiles.map(file => ({ file, error: errorMessage })),
-          partialSuccess: false
-        }
-      };
-      setLastPublishingResult(errorResult);
-      return errorResult;
-    } finally {
-      setPublishing(false);
-      setPublishingProgress(null);
-    }
-  }, [isAvailable, getSigner, setPublishing, setPublishingProgress, setLastPublishingResult, addProduct, consentDialog]);
+    return await publishWithWrapper(
+      async (data, files, signer, onProgress) => {
+        return await shopBusinessService.createProductWithAttachments(
+          data,
+          files,
+          signer,
+          onProgress
+        );
+      },
+      productData,
+      attachmentFiles
+    );
+  }, [publishWithWrapper]);
 
   const updateProductWithAttachmentsData = useCallback(async (
     originalEventId: string,

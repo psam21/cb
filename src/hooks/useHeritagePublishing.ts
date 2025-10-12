@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { useNostrSigner } from './useNostrSigner';
 import { useConsentDialog } from './useConsentDialog';
+import { useContentPublishing } from './useContentPublishing';
 import type {
   HeritageContributionData,
   HeritagePublishingResult,
@@ -30,20 +31,56 @@ export const useHeritagePublishing = () => {
     result: null,
   });
 
-  const setProgress = useCallback((progress: HeritagePublishingProgress) => {
-    setState(prev => ({
-      ...prev,
-      currentStep: progress.step,
-      uploadProgress: progress.progress,
-    }));
+  // State setters for the generic publishing hook
+  const stateSetters = useMemo(() => ({
+    setPublishing: (isPublishing: boolean) => {
+      setState(prev => ({ ...prev, isPublishing }));
+    },
+    setProgress: (progress: HeritagePublishingProgress | null) => {
+      if (progress) {
+        setState(prev => ({
+          ...prev,
+          currentStep: progress.step,
+          uploadProgress: progress.progress,
+        }));
+        
+        logger.debug('Heritage publishing progress', {
+          service: 'useHeritagePublishing',
+          step: progress.step,
+          progress: progress.progress,
+          message: progress.message,
+        });
+      }
+    },
+    setResult: (result: { success: boolean; error?: string; eventId?: string; publishedRelays?: string[]; failedRelays?: string[] } | null) => {
+      if (result) {
+        setState(prev => ({
+          ...prev,
+          result: result.success ? {
+            success: true,
+            eventId: result.eventId!,
+            publishedRelays: result.publishedRelays || [],
+            failedRelays: result.failedRelays || [],
+          } : null,
+          error: result.error || null,
+        }));
+      }
+    },
+  }), []);
 
-    logger.debug('Heritage publishing progress', {
-      service: 'useHeritagePublishing',
-      step: progress.step,
-      progress: progress.progress,
-      message: progress.message,
-    });
-  }, []);
+  // Initialize generic publishing wrapper
+  const { publishWithWrapper } = useContentPublishing<
+    HeritageContributionData,
+    HeritagePublishingResult,
+    HeritagePublishingProgress
+  >({
+    serviceName: 'HeritageContentService',
+    methodName: 'createHeritageContribution',
+    isAvailable,
+    getSigner,
+    consentDialog,
+    stateSetters,
+  });
 
   /**
    * Publish heritage contribution to Nostr
@@ -56,158 +93,43 @@ export const useHeritagePublishing = () => {
     attachmentFiles: File[],
     existingDTag?: string
   ): Promise<HeritagePublishingResult> => {
-    try {
-      logger.info('Starting heritage contribution publishing', {
-        service: 'useHeritagePublishing',
-        method: 'publishHeritage',
-        title: data.title,
-        heritageType: data.heritageType,
-        attachmentCount: attachmentFiles.length,
-      });
+    // Reset state
+    setState({
+      isPublishing: true,
+      uploadProgress: 0,
+      currentStep: 'validating',
+      error: null,
+      result: null,
+    });
 
-      // Reset state
-      setState({
-        isPublishing: true,
-        uploadProgress: 0,
-        currentStep: 'validating',
-        error: null,
-        result: null,
-      });
+    const result = await publishWithWrapper(
+      async (contributionData, files, signer, onProgress) => {
+        const serviceResult = await createHeritageContribution(
+          contributionData,
+          files,
+          signer,
+          existingDTag,
+          onProgress
+        );
 
-      // Check Nostr signer
-      if (!isAvailable) {
-        const errorMsg = 'Nostr signer not available. Please install a Nostr extension.';
-        logger.error(errorMsg, new Error(errorMsg), {
-          service: 'useHeritagePublishing',
-        });
-
-        setState(prev => ({
-          ...prev,
-          isPublishing: false,
-          currentStep: 'error',
-          error: errorMsg,
-        }));
-
+        // Map service result to HeritagePublishingResult
         return {
-          success: false,
-          error: errorMsg,
+          success: serviceResult.success,
+          eventId: serviceResult.eventId,
+          dTag: serviceResult.contribution?.dTag,
+          event: undefined,
+          publishedToRelays: serviceResult.publishedRelays || [],
+          publishedRelays: serviceResult.publishedRelays || [],
+          failedRelays: serviceResult.failedRelays || [],
+          error: serviceResult.error,
         };
-      }
+      },
+      data,
+      attachmentFiles
+    );
 
-      const signer = await getSigner();
-      if (!signer) {
-        const errorMsg = 'Failed to get Nostr signer';
-        logger.error(errorMsg, new Error(errorMsg), {
-          service: 'useHeritagePublishing',
-        });
-
-        setState(prev => ({
-          ...prev,
-          isPublishing: false,
-          currentStep: 'error',
-          error: errorMsg,
-        }));
-
-        return {
-          success: false,
-          error: errorMsg,
-        };
-      }
-
-      // Show consent dialog if there are files to upload
-      if (attachmentFiles.length > 0) {
-        logger.info('Showing consent dialog for file uploads', {
-          service: 'useHeritagePublishing',
-          fileCount: attachmentFiles.length,
-        });
-        
-        const userAccepted = await consentDialog.showConsentDialog(attachmentFiles);
-        
-        if (!userAccepted) {
-          logger.info('User cancelled heritage upload during consent phase', {
-            service: 'useHeritagePublishing',
-            attachmentCount: attachmentFiles.length,
-          });
-
-          setState(prev => ({
-            ...prev,
-            isPublishing: false,
-            currentStep: 'idle',
-          }));
-
-          return {
-            success: false,
-            error: 'User cancelled upload',
-          };
-        }
-      }
-
-      // Delegate to business service
-      const serviceResult = await createHeritageContribution(
-        data,
-        attachmentFiles,
-        signer,
-        existingDTag,
-        setProgress
-      );
-
-      if (!serviceResult.success) {
-        setState(prev => ({
-          ...prev,
-          isPublishing: false,
-          currentStep: 'error',
-          error: serviceResult.error || 'Failed to create heritage contribution',
-        }));
-        return {
-          success: false,
-          error: serviceResult.error || 'Failed to create heritage contribution',
-        };
-      }
-
-      const result: HeritagePublishingResult = {
-        success: true,
-        eventId: serviceResult.eventId!,
-        dTag: serviceResult.contribution?.dTag,
-        event: undefined,
-        publishedToRelays: serviceResult.publishedRelays || [],
-      };
-
-      setState(prev => ({
-        ...prev,
-        isPublishing: false,
-        currentStep: 'complete',
-        result,
-      }));
-
-      logger.info('Heritage contribution published successfully', {
-        service: 'useHeritagePublishing',
-        eventId: serviceResult.eventId,
-        publishedRelays: serviceResult.publishedRelays?.length || 0,
-        failedRelays: serviceResult.failedRelays?.length || 0,
-      });
-
-      return result;
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Heritage publishing failed', error instanceof Error ? error : new Error(errorMessage), {
-        service: 'useHeritagePublishing',
-        error: errorMessage,
-      });
-
-      setState(prev => ({
-        ...prev,
-        isPublishing: false,
-        currentStep: 'error',
-        error: errorMessage,
-      }));
-
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
-  }, [isAvailable, getSigner, consentDialog, setProgress]);
+    return result;
+  }, [publishWithWrapper, setState]);
 
   /**
    * Reset publishing state

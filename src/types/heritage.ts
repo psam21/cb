@@ -100,6 +100,9 @@ export interface HeritagePublishingResult {
   event?: HeritageNostrEvent;
   error?: string;
   publishedToRelays?: string[];
+  publishedRelays?: string[];
+  failedRelays?: string[];
+  [key: string]: unknown;
 }
 
 /**
