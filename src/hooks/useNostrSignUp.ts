@@ -39,6 +39,11 @@ interface GeneratedKeys {
 type SignUpStep = 1 | 2;
 
 /**
+ * Publishing status for background operations
+ */
+type PublishingStatus = 'idle' | 'uploading' | 'publishing-profile' | 'publishing-note' | 'complete' | 'error';
+
+/**
  * Hook return type
  */
 interface UseNostrSignUpReturn {
@@ -50,9 +55,13 @@ interface UseNostrSignUpReturn {
   
   // Loading states
   isGeneratingKeys: boolean;
-  isUploadingAvatar: boolean;
-  isPublishingProfile: boolean;
   isCreatingBackup: boolean;
+  
+  // Background publishing states
+  isPublishingInBackground: boolean;
+  publishingStatus: PublishingStatus;
+  publishingMessage: string;
+  publishingError: string | null;
   
   // Error states
   error: string | null;
@@ -63,7 +72,7 @@ interface UseNostrSignUpReturn {
   setAvatarFile: (file: File | null) => void;
   
   // Step actions
-  generateKeysAndMoveToBackup: () => Promise<void>; // Auto-generates and moves to step 2
+  generateKeysAndMoveToStep2: () => Promise<void>; // Fast - only generates keys and moves to step 2
   previousStep: () => void;
   goToStep: (step: SignUpStep) => void;
   
@@ -94,9 +103,13 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
   
   // Loading states
   const [isGeneratingKeys, setIsGeneratingKeys] = useState(false);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isPublishingProfile, setIsPublishingProfile] = useState(false);
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  
+  // Background publishing states
+  const [isPublishingInBackground, setIsPublishingInBackground] = useState(false);
+  const [publishingStatus, setPublishingStatus] = useState<PublishingStatus>('idle');
+  const [publishingMessage, setPublishingMessage] = useState('');
+  const [publishingError, setPublishingError] = useState<string | null>(null);
   
   // Error state
   const [error, setError] = useState<string | null>(null);
@@ -125,31 +138,24 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
     setError(null);
   }, []);
   
-  // Generate keys and move to backup step (automatic from Step 1 → Step 2)
-  const generateKeysAndMoveToBackup = useCallback(async () => {
+  // Publish profile in background (non-blocking)
+  const publishInBackground = useCallback(async (keys: GeneratedKeys) => {
     try {
-      setError(null);
-      setIsGeneratingKeys(true);
+      setIsPublishingInBackground(true);
+      setPublishingStatus('idle');
+      setPublishingError(null);
       
-      console.log('Generating Nostr keys...');
+      console.log('Starting background publishing...');
       
-      // 1. Generate keys
-      const keys = authBusinessService.generateNostrKeys();
-      setGeneratedKeys(keys);
-      
-      // Store nsec in Zustand (hook responsibility, not service)
-      useAuthStore.getState().setNsec(keys.nsec);
-      
-      console.log('Keys generated:', { npub: keys.npub });
-
-      // Create signer once for all operations (hook responsibility)
+      // Create signer once for all operations
       const signer = await createNsecSigner(keys.nsec);
       
-      // 2. Upload avatar if provided
+      // 1. Upload avatar if provided
       let uploadedAvatarUrl: string | null = null;
       if (formData.avatarFile) {
-        console.log('Uploading avatar...');
-        setIsUploadingAvatar(true);
+        console.log('Uploading avatar in background...');
+        setPublishingStatus('uploading');
+        setPublishingMessage('Uploading profile picture...');
         
         try {
           uploadedAvatarUrl = await authBusinessService.uploadAvatar(formData.avatarFile, signer);
@@ -157,15 +163,15 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
           console.log('Avatar uploaded:', uploadedAvatarUrl);
         } catch (avatarError) {
           console.error('Avatar upload failed:', avatarError);
+          setPublishingError('Avatar upload failed. You can update it later from your profile.');
           // Continue without avatar - not critical
-        } finally {
-          setIsUploadingAvatar(false);
         }
       }
       
-      // 3. Publish profile (Kind 0)
-      console.log('Publishing profile...');
-      setIsPublishingProfile(true);
+      // 2. Publish profile (Kind 0)
+      console.log('Publishing profile in background...');
+      setPublishingStatus('publishing-profile');
+      setPublishingMessage('Publishing profile to Nostr relays...');
       
       const profile: UserProfile = {
         display_name: formData.displayName,
@@ -180,22 +186,74 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
       await authBusinessService.publishProfile(profile, signer);
       console.log('Profile published successfully');
       
-      // 4. Publish welcome note (Kind 1) - Silent verification
-      console.log('Publishing welcome note (silent)...');
+      // Update user in auth store with actual avatar URL
+      if (uploadedAvatarUrl) {
+        useAuthStore.getState().setUser({
+          pubkey: keys.pubkey,
+          npub: keys.npub,
+          profile: {
+            ...profile,
+            picture: uploadedAvatarUrl,
+          },
+        });
+      }
+      
+      // 3. Publish welcome note (Kind 1) - Silent verification
+      console.log('Publishing welcome note in background...');
+      setPublishingStatus('publishing-note');
+      setPublishingMessage('Publishing welcome note...');
+      
       await authBusinessService.publishWelcomeNote(signer);
-      console.log('Welcome note published (silent)');
+      console.log('Welcome note published');
       
-      setIsPublishingProfile(false);
-      setIsGeneratingKeys(false);
+      // Success!
+      setPublishingStatus('complete');
+      setPublishingMessage('Profile published successfully!');
+      console.log('Background publishing complete');
+    } catch (err) {
+      console.error('Background publishing failed:', err);
+      const appError = err instanceof AppError 
+        ? err 
+        : new AppError(
+            err instanceof Error ? err.message : 'Failed to publish profile',
+            ErrorCode.NOSTR_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorCategory.AUTHENTICATION,
+            ErrorSeverity.MEDIUM
+          );
+      setPublishingStatus('error');
+      setPublishingError(appError.message);
+      setPublishingMessage('Publishing failed. You can update your profile later.');
+    } finally {
+      setIsPublishingInBackground(false);
+    }
+  }, [formData]);
+  
+  // Generate keys and move to step 2 (fast - local operation only)
+  const generateKeysAndMoveToStep2 = useCallback(async () => {
+    try {
+      setError(null);
+      setIsGeneratingKeys(true);
       
-      // Authenticate user in auth store
+      console.log('Generating Nostr keys...');
+      
+      // 1. Generate keys (fast - local operation)
+      const keys = authBusinessService.generateNostrKeys();
+      setGeneratedKeys(keys);
+      
+      // Store nsec in Zustand (hook responsibility, not service)
+      useAuthStore.getState().setNsec(keys.nsec);
+      
+      console.log('Keys generated:', { npub: keys.npub });
+      
+      // Authenticate user in auth store immediately with placeholder profile
       useAuthStore.getState().setUser({
         pubkey: keys.pubkey,
         npub: keys.npub,
         profile: {
           display_name: formData.displayName,
           about: formData.bio || '',
-          picture: uploadedAvatarUrl || '',
+          picture: '', // Will be updated after upload completes
           website: '',
           banner: '',
           bot: false,
@@ -203,16 +261,21 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
         },
       });
       
-      console.log('User authenticated after sign-up');
+      console.log('User authenticated with placeholder profile');
       
-      // Success - move to backup step automatically
+      setIsGeneratingKeys(false);
+      
+      // Success - move to backup step immediately
       setCurrentStep(2);
+      
+      // Start background publishing (non-blocking)
+      publishInBackground(keys);
     } catch (err) {
-      console.error('Key generation/publishing failed:', err);
+      console.error('Key generation failed:', err);
       const appError = err instanceof AppError 
         ? err 
         : new AppError(
-            err instanceof Error ? err.message : 'Failed to generate keys and publish profile',
+            err instanceof Error ? err.message : 'Failed to generate keys',
             ErrorCode.NOSTR_ERROR,
             HttpStatus.INTERNAL_SERVER_ERROR,
             ErrorCategory.AUTHENTICATION,
@@ -220,10 +283,8 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
           );
       setError(appError.message);
       setIsGeneratingKeys(false);
-      setIsUploadingAvatar(false);
-      setIsPublishingProfile(false);
     }
-  }, [formData]);
+  }, [formData, publishInBackground]);
   
   // Create backup (Step 3)
   const createBackup = useCallback(() => {
@@ -285,9 +346,13 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
     
     // Loading
     isGeneratingKeys,
-    isUploadingAvatar,
-    isPublishingProfile,
     isCreatingBackup,
+    
+    // Background publishing
+    isPublishingInBackground,
+    publishingStatus,
+    publishingMessage,
+    publishingError,
     
     // Error
     error,
@@ -302,7 +367,7 @@ export function useNostrSignUp(): UseNostrSignUpReturn {
     goToStep,
     
     // Actions
-    generateKeysAndMoveToBackup,
+    generateKeysAndMoveToStep2,
     createBackup,
     completeSignUp,
   };

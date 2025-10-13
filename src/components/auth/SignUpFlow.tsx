@@ -25,14 +25,16 @@ export const SignUpFlow: React.FC = () => {
     formData,
     generatedKeys,
     isGeneratingKeys,
-    isUploadingAvatar,
-    isPublishingProfile,
     isCreatingBackup,
+    isPublishingInBackground,
+    publishingStatus,
+    publishingMessage,
+    publishingError,
     error,
     setDisplayName,
     setBio,
     setAvatarFile,
-    generateKeysAndMoveToBackup,
+    generateKeysAndMoveToStep2,
     createBackup,
     completeSignUp,
     previousStep,
@@ -140,10 +142,8 @@ export const SignUpFlow: React.FC = () => {
               onDisplayNameChange={setDisplayName}
               onBioChange={setBio}
               onAvatarChange={setAvatarFile}
-              onNext={generateKeysAndMoveToBackup}
+              onNext={generateKeysAndMoveToStep2}
               isGeneratingKeys={isGeneratingKeys}
-              isUploadingAvatar={isUploadingAvatar}
-              isPublishingProfile={isPublishingProfile}
               error={error}
             />
           )}
@@ -155,6 +155,10 @@ export const SignUpFlow: React.FC = () => {
               npub={generatedKeys.npub}
               isCreatingBackup={isCreatingBackup}
               error={error}
+              isPublishingInBackground={isPublishingInBackground}
+              publishingStatus={publishingStatus}
+              publishingMessage={publishingMessage}
+              publishingError={publishingError}
               onCreateBackup={createBackup}
               onNext={handleComplete}
               onBack={previousStep}
@@ -190,6 +194,30 @@ export const SignUpFlow: React.FC = () => {
               <p className="text-lg text-gray-600 mb-4">
                 Your Nostr identity has been created successfully. You&apos;re now part of the decentralized web.
               </p>
+              
+              {/* Publishing Status in Modal */}
+              {publishingStatus === 'complete' && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-700">
+                    ✅ Your profile has been published successfully to the Nostr network!
+                  </p>
+                </div>
+              )}
+              {(publishingStatus === 'uploading' || publishingStatus === 'publishing-profile' || publishingStatus === 'publishing-note' || isPublishingInBackground) && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    ⏳ Your profile is being published in the background...
+                  </p>
+                </div>
+              )}
+              {publishingStatus === 'error' && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    ℹ️ You can update your profile anytime from your profile page.
+                  </p>
+                </div>
+              )}
+              
               <p className="text-sm text-gray-500">
                 Start exploring indigenous heritage, connecting with communities, and preserving cultural knowledge for future generations.
               </p>

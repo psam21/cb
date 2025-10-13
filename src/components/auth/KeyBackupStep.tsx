@@ -13,6 +13,8 @@
 
 import React, { useState } from 'react';
 
+type PublishingStatus = 'idle' | 'uploading' | 'publishing-profile' | 'publishing-note' | 'complete' | 'error';
+
 interface KeyBackupStepProps {
   /** Display name */
   displayName: string;
@@ -20,8 +22,13 @@ interface KeyBackupStepProps {
   npub: string;
   /** Loading state for backup creation */
   isCreatingBackup: boolean;
-  /** Error message */
+  /** Error message for backup */
   error: string | null;
+  /** Background publishing states */
+  isPublishingInBackground: boolean;
+  publishingStatus: PublishingStatus;
+  publishingMessage: string;
+  publishingError: string | null;
   /** Callback to create and download backup */
   onCreateBackup: () => void;
   /** Callback to go to next step */
@@ -37,6 +44,10 @@ export default function KeyBackupStep({
   npub,
   isCreatingBackup,
   error,
+  isPublishingInBackground,
+  publishingStatus,
+  publishingMessage,
+  publishingError,
   onCreateBackup,
   onNext,
   onBack,
@@ -65,6 +76,62 @@ export default function KeyBackupStep({
           <li>No one, not even Culture Bridge, can recover your keys for you</li>
         </ul>
       </div>
+
+      {/* Publishing Status (Non-blocking) */}
+      {publishingStatus !== 'idle' && (
+        <div className={`border rounded-lg p-4 ${
+          publishingStatus === 'complete' ? 'bg-green-50 border-green-200' :
+          publishingStatus === 'error' ? 'bg-red-50 border-red-200' :
+          'bg-blue-50 border-blue-200'
+        }`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {publishingStatus === 'complete' ? (
+                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : publishingStatus === 'error' ? (
+                <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className={`text-sm font-semibold mb-1 ${
+                publishingStatus === 'complete' ? 'text-green-900' :
+                publishingStatus === 'error' ? 'text-red-900' :
+                'text-blue-900'
+              }`}>
+                {publishingStatus === 'complete' ? 'Profile Published Successfully!' :
+                 publishingStatus === 'error' ? 'Publishing Issue (Non-Critical)' :
+                 'Publishing Your Profile...'}
+              </h3>
+              <p className={`text-sm ${
+                publishingStatus === 'complete' ? 'text-green-700' :
+                publishingStatus === 'error' ? 'text-red-700' :
+                'text-blue-700'
+              }`}>
+                {publishingMessage}
+              </p>
+              {publishingError && (
+                <p className="text-xs text-red-600 mt-2">
+                  {publishingError} You can update your profile later from your profile page.
+                </p>
+              )}
+              {(isPublishingInBackground || publishingStatus === 'uploading' || publishingStatus === 'publishing-profile' || publishingStatus === 'publishing-note') && (
+                <p className="text-xs text-blue-600 mt-2">
+                  You can download your backup and continue while this completes in the background.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Download Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -184,7 +251,7 @@ export default function KeyBackupStep({
           disabled={!canProceed}
           className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Continue to Final Step
+          Complete Sign Up
         </button>
       </div>
     </div>

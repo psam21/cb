@@ -20,10 +20,8 @@ interface ProfileSetupStepProps {
   onDisplayNameChange: (name: string) => void;
   onBioChange: (bio: string) => void;
   onAvatarChange: (file: File | null) => void;
-  onNext: () => void | Promise<void>; // Can be async now (auto-generates keys)
+  onNext: () => void | Promise<void>; // Can be async (generates keys)
   isGeneratingKeys?: boolean;
-  isUploadingAvatar?: boolean;
-  isPublishingProfile?: boolean;
   error?: string | null;
 }
 
@@ -38,8 +36,6 @@ export default function ProfileSetupStep({
   onAvatarChange,
   onNext,
   isGeneratingKeys = false,
-  isUploadingAvatar = false,
-  isPublishingProfile = false,
   error = null,
 }: ProfileSetupStepProps) {
   const [displayNameError, setDisplayNameError] = useState<string>('');
@@ -242,12 +238,10 @@ export default function ProfileSetupStep({
       </div>
 
       {/* Loading/Error Messages */}
-      {(isGeneratingKeys || isUploadingAvatar || isPublishingProfile) && (
+      {isGeneratingKeys && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            {isGeneratingKeys && 'Generating your Nostr keys...'}
-            {isUploadingAvatar && 'Uploading your profile picture...'}
-            {isPublishingProfile && 'Publishing your profile to Nostr...'}
+            Generating your Nostr keys...
           </p>
         </div>
       )}
@@ -262,16 +256,16 @@ export default function ProfileSetupStep({
       <div className="flex justify-end">
         <button
           onClick={handleNext}
-          disabled={!displayName.trim() || !!displayNameError || !!bioError || isGeneratingKeys || isUploadingAvatar || isPublishingProfile}
+          disabled={!displayName.trim() || !!displayNameError || !!bioError || isGeneratingKeys}
           className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          {(isGeneratingKeys || isUploadingAvatar || isPublishingProfile) && (
+          {isGeneratingKeys && (
             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           )}
-          {isGeneratingKeys || isUploadingAvatar || isPublishingProfile ? 'Creating Account...' : 'Next →'}
+          {isGeneratingKeys ? 'Generating Keys...' : 'Next →'}
         </button>
       </div>
     </div>
