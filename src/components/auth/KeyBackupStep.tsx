@@ -65,18 +65,7 @@ export default function KeyBackupStep({
   const canProceed = hasDownloaded && hasConfirmed;
 
   return (
-    <div className="space-y-8">
-      {/* Why Backup Section */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-yellow-900 mb-2">Why is this important?</h3>
-        <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
-          <li>Nostr is decentralized - there&apos;s no &quot;forgot password&quot; option</li>
-          <li>If you lose your keys, you lose access to this identity forever</li>
-          <li>Your backup file is the only way to sign in on other devices</li>
-          <li>No one, not even Culture Bridge, can recover your keys for you</li>
-        </ul>
-      </div>
-
+    <div className="space-y-6">
       {/* Publishing Status (Non-blocking) */}
       {publishingStatus !== 'idle' && (
         <div className={`border rounded-lg p-4 ${
@@ -120,12 +109,12 @@ export default function KeyBackupStep({
               </p>
               {publishingError && (
                 <p className="text-xs text-red-600 mt-2">
-                  {publishingError} You can update your profile later from your profile page.
+                  {publishingError} You can update your profile later.
                 </p>
               )}
               {(isPublishingInBackground || publishingStatus === 'uploading' || publishingStatus === 'publishing-profile' || publishingStatus === 'publishing-note') && (
                 <p className="text-xs text-blue-600 mt-2">
-                  You can download your backup and continue while this completes in the background.
+                  You can continue while this completes in the background.
                 </p>
               )}
             </div>
@@ -133,26 +122,25 @@ export default function KeyBackupStep({
         </div>
       )}
 
-      {/* Download Section */}
+      {/* Main Backup Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Download Backup File</h3>
-        
-        <div className="mb-4">
-          <p className="text-sm text-gray-700 mb-2">
-            This file will contain:
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Backup Your Keys</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Your keys are your identity. <strong>No one can recover them if lost</strong> - not even Culture Bridge.
           </p>
-          <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside ml-4">
-            <li>Your public key (npub): <span className="font-mono text-xs">{npub.substring(0, 20)}...</span></li>
-            <li>Your private key (nsec) - KEEP THIS SECRET!</li>
-            <li>Instructions for using your keys</li>
-          </ul>
         </div>
 
         <button
           type="button"
           onClick={handleDownload}
           disabled={isCreatingBackup}
-          className="w-full px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          className="w-full px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center mb-4"
         >
           {isCreatingBackup ? (
             'Creating backup...'
@@ -174,47 +162,31 @@ export default function KeyBackupStep({
         </button>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
-      </div>
 
-      {/* Storage Best Practices */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">🔐 Best Practices for Storing Your Backup</h3>
-        <div className="text-sm text-gray-700 space-y-2">
-          <div className="flex items-start">
-            <span className="text-green-600 mr-2">✓</span>
-            <span>Store in a password manager (recommended)</span>
-          </div>
-          <div className="flex items-start">
-            <span className="text-green-600 mr-2">✓</span>
-            <span>Save to an encrypted USB drive or external hard drive</span>
-          </div>
-          <div className="flex items-start">
-            <span className="text-green-600 mr-2">✓</span>
-            <span>Print it out and store in a safe place</span>
-          </div>
-          <div className="flex items-start">
-            <span className="text-green-600 mr-2">✓</span>
-            <span>Make multiple copies in different secure locations</span>
-          </div>
-          <div className="flex items-start mt-3">
-            <span className="text-red-600 mr-2">✗</span>
-            <span>Don&apos;t store it in plain text on your computer</span>
-          </div>
-          <div className="flex items-start">
-            <span className="text-red-600 mr-2">✗</span>
-            <span>Don&apos;t email it to yourself</span>
-          </div>
-          <div className="flex items-start">
-            <span className="text-red-600 mr-2">✗</span>
-            <span>Don&apos;t share it with anyone, even family or friends</span>
-          </div>
-          <div className="flex items-start">
-            <span className="text-red-600 mr-2">✗</span>
-            <span>Don&apos;t upload it to cloud storage unless it&apos;s encrypted</span>
+        {/* Concise 4-Item Storage Guide */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">🔐 Storage Guidelines</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            <div className="flex items-start">
+              <span className="text-green-600 mr-2 font-bold">✓</span>
+              <span className="text-gray-700">Use a password manager</span>
+            </div>
+            <div className="flex items-start">
+              <span className="text-green-600 mr-2 font-bold">✓</span>
+              <span className="text-gray-700">Keep multiple copies</span>
+            </div>
+            <div className="flex items-start">
+              <span className="text-red-600 mr-2 font-bold">✗</span>
+              <span className="text-gray-700">Don&apos;t email or share it</span>
+            </div>
+            <div className="flex items-start">
+              <span className="text-red-600 mr-2 font-bold">✗</span>
+              <span className="text-gray-700">Don&apos;t upload to cloud</span>
+            </div>
           </div>
         </div>
       </div>
@@ -230,7 +202,7 @@ export default function KeyBackupStep({
               className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
             <span className="ml-3 text-sm text-accent-900">
-              I confirm that I have downloaded and securely stored my backup file. I understand that if I lose my keys, I will lose access to this account permanently, and no one can recover it for me.
+              I have downloaded and securely stored my backup. I understand these keys cannot be recovered if lost.
             </span>
           </label>
         </div>
