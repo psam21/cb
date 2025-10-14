@@ -65,22 +65,31 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/shop/LightningInvoice.tsx`, `/src/components/shop/PaymentStatus.tsx`, `/src/components/shop/QRCodeDisplay.tsx` | `/src/hooks/usePayment.ts` | `/src/services/business/PaymentBusinessService.ts` | - | - |
-| **UPDATE** | `/src/app/checkout/page.tsx` (PaymentStep - show invoice, poll status) | `/src/components/shop/PaymentStep.tsx` (integrate LightningInvoice component) | - | - | - | - |
+| **NEW** | - | `/src/components/shop/LightningInvoice.tsx`, `/src/components/shop/PaymentStatus.tsx`, `/src/components/shop/QRCodeDisplay.tsx`, `/src/components/shop/MarkPaidButton.tsx` | `/src/hooks/usePayment.ts` | `/src/services/business/PaymentBusinessService.ts` | - | - |
+| **UPDATE** | `/src/app/checkout/page.tsx` (PaymentStep - show invoice, poll status, show "Mark as Paid" button) | `/src/components/shop/PaymentStep.tsx` (integrate LightningInvoice + MarkPaidButton components) | - | - | - | - |
 
 **Type:** NEW `/src/types/payment.ts` with `LightningInvoice`, `PaymentStatus`, `PaymentVerification`  
 **Lightning Address Source:** Seller's Nostr profile (Kind 0 metadata) - `lud16` field (Lightning Address) OR `lud06` field (LNURL)  
 **Flow:**
+
 1. Fetch seller's Kind 0 profile metadata
 2. Extract `lud16` (e.g., `seller@getalby.com`) OR `lud06` (LNURL) from profile
 3. Generate invoice using seller's Lightning Address via LNURL-pay protocol
-4. Display QR code + invoice string for buyer to pay
-5. Poll for payment verification (check if invoice paid)
+4. Display QR code + invoice string + Lightning Address for buyer to pay
+5. Show **"Mark as Paid"** button for buyer to confirm payment manually
+6. On "Mark as Paid" click → Set payment status to verified, proceed to order placement
 
-**Business Methods:** `getSellerLightningAddress(sellerPubkey)`, `generateInvoiceFromLUD16(lud16, amount, orderId)`, `verifyPayment(invoiceId)`, `checkPaymentStatus(invoiceId)`  
+**Manual Payment Verification:**
+- Buyer clicks "Mark as Paid" after paying invoice in their wallet
+- System trusts buyer (seller will verify payment on their end)
+- Order proceeds to placement immediately
+- Seller can dispute/cancel if payment not received (handled in seller order management)
+
+**Business Methods:** `getSellerLightningAddress(sellerPubkey)`, `generateInvoiceFromLUD16(lud16, amount, orderId)`, `markPaymentAsPaid(orderId)`, `checkPaymentStatus(invoiceId)` (optional auto-verification)  
 **Nostr:** Query Kind 0 for seller, parse `lud16`/`lud06` field  
 **Protocol:** LNURL-pay for invoice generation from Lightning Address  
-Value: Instant settlement, low fees, crypto-native, global payments, no fiat complexity, decentralized (no payment processor middleman)
+**UI:** Display Lightning Address, QR code, invoice string, AND "Mark as Paid" button  
+Value: Instant settlement, low fees, crypto-native, global payments, no fiat complexity, decentralized (no payment processor middleman), simple manual verification
 
 ---
 
@@ -212,16 +221,25 @@ How:
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
 | **NEW** | - | - | - | - | - | - |
-| **UPDATE** | `/src/app/checkout/page.tsx` (poll payment status before allowing order placement) | `/src/components/shop/PaymentStatus.tsx` (show verification progress) | `/src/hooks/usePayment.ts` (add verifyPayment method, poll every 2s) | `/src/services/business/PaymentBusinessService.ts` (add verifyPayment, checkZapReceipt methods), `/src/services/business/OrderBusinessService.ts` (auto-update order to 'processing' on verified payment) | - | `/src/services/generic/GenericRelayService.ts` (query NIP-57 zap receipts) |
+| **UPDATE** | `/src/app/checkout/page.tsx` (manual verification via "Mark as Paid" button, buyer-initiated) | `/src/components/shop/PaymentStatus.tsx` (show payment info + "Mark as Paid" button) | `/src/hooks/usePayment.ts` (add markAsPaid method, optional auto-verification) | `/src/services/business/PaymentBusinessService.ts` (add markAsPaid, optional checkZapReceipt methods), `/src/services/business/OrderBusinessService.ts` (auto-update order to 'processing' on marked paid) | - | `/src/services/generic/GenericRelayService.ts` (optional: query NIP-57 zap receipts for auto-verify) |
 
-**Nostr:** Query `{ kinds: [9735], '#e': [paymentRequestId] }` for NIP-57 zap receipts  
+**Manual Verification (Primary):**
+- Buyer clicks "Mark as Paid" button after paying invoice
+- System trusts buyer, proceeds to order placement
+- Seller verifies payment on their end (can dispute/cancel if not received)
+
+**Optional Auto-Verification (Future Enhancement):**
+- Query `{ kinds: [9735], '#e': [paymentRequestId] }` for NIP-57 zap receipts
+- Check Lightning provider API for payment status
+- Auto-enable "Continue" button when payment detected
+
 **Business Methods:** 
-- `verifyPayment(invoiceId)` → checks Lightning provider + Nostr zap receipt
-- `checkZapReceipt(paymentId)` → queries Kind 9735 events
+- `markAsPaid(orderId)` → sets payment status to verified, triggers order placement
+- `checkZapReceipt(paymentId)` → (optional) queries Kind 9735 events for auto-verify
 - OrderBusinessService: `onPaymentVerified(orderId)` → auto-update to 'processing'
 
-**Pattern:** Poll payment status every 2s, verify via Lightning provider + optional Nostr zap receipt  
-Value: Fraud prevention, automated fulfillment, trust building
+**Pattern:** Manual verification via buyer confirmation, seller validates on their end  
+Value: Simple UX, no complex payment polling, fraud handled by seller dispute process
 
 ---
 
