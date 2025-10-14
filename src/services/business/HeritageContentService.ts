@@ -82,9 +82,12 @@ function parseImetaTag(imetaTag: string[]): Partial<ContentMediaSource> | null {
 function createMediaItemsFromImeta(event: { tags: string[][] }): ContentMediaItem[] {
   const mediaItems: ContentMediaItem[] = [];
   
-  // Find all image tags and their corresponding imeta tags
+  // Find all media tags (image, video, audio) and their corresponding imeta tags
   (event.tags as string[][]).forEach(tag => {
-    if (tag[0] === 'image' && tag[1]) {
+    const tagType = tag[0];
+    const isMediaTag = (tagType === 'image' || tagType === 'video' || tagType === 'audio') && tag[1];
+    
+    if (isMediaTag) {
       const url = tag[1];
       
       // Find corresponding imeta tag
@@ -105,22 +108,24 @@ function createMediaItemsFromImeta(event: { tags: string[][] }): ContentMediaIte
         }
       }
       
-      // Infer mime type from URL if not provided
+      // Infer mime type from URL or tag type if not provided
       if (!metadata.mimeType) {
-        if (url.match(/\.(mp4|webm|mov)$/i)) {
+        if (tagType === 'video' || url.match(/\.(mp4|webm|mov)$/i)) {
           metadata.mimeType = 'video/mp4';
-        } else if (url.match(/\.(mp3|wav|ogg)$/i)) {
+        } else if (tagType === 'audio' || url.match(/\.(mp3|wav|ogg)$/i)) {
           metadata.mimeType = 'audio/mpeg';
         } else {
           metadata.mimeType = 'image/jpeg';
         }
       }
       
-      // Determine media type
-      const type: ContentMediaType = 
-        metadata.mimeType?.startsWith('video/') ? 'video' :
-        metadata.mimeType?.startsWith('audio/') ? 'audio' :
-        'image';
+      // Determine media type from tag type or mime type
+      let type: ContentMediaType = 'image';
+      if (tagType === 'video' || metadata.mimeType?.startsWith('video/')) {
+        type = 'video';
+      } else if (tagType === 'audio' || metadata.mimeType?.startsWith('audio/')) {
+        type = 'audio';
+      }
       
       mediaItems.push({
         id: metadata.hash || `media-${mediaItems.length}`,
