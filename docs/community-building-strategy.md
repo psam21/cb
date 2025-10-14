@@ -223,4 +223,86 @@ Value: Build trust, facilitate introductions, strengthen network density
 
 ---
 
+## 🔄 Reusability & Generic Services
+
+### Battle-Tested Patterns to Reuse
+
+These community features should **NOT** create duplicate code. Follow the battle-tested patterns:
+
+| Feature | What to Reuse | From Where |
+|---------|---------------|------------|
+| **#1: Activity Feed** | `useExploreHeritage` hook | Heritage Contribution Flow (already generic!) |
+| **#2: Contributor Profiles** | Query pattern from `useExploreHeritage` | Heritage Contribution Flow (filter by author) |
+| **#4: Following Feed** | `useExploreHeritage` + filter by authors | Heritage Contribution Flow |
+| **#5: Comments** | Simple event creation (Kind 1) | Can extend GenericEventService |
+| **#6: Reactions** | Simple event creation (Kind 7) | Can extend GenericEventService |
+| **#7: Related Contributors** | Query pattern from `useExploreHeritage` | Heritage Contribution Flow (filter by tags) |
+| **#10: Share/Repost** | Simple event creation (Kind 6) | Can extend GenericEventService |
+| **#12: Direct Messages** | `GenericMessageService` (NIP-17) | Messaging System (encrypted DMs) |
+
+### Generic Opportunities (For Future)
+
+If implementing multiple similar features in one sprint, consider creating:
+
+**1. Generic Query Hook**
+
+```typescript
+// Instead of separate useContributorProfile, useRelatedContributors, useCultureGroup
+// Create: useNostrQuery<T>(kind, filters, mapper)
+
+const contributions = useNostrQuery(
+  30023,
+  { authors: [npub], '#t': ['culture-bridge-heritage-contribution'] },
+  mapToHeritage
+);
+```
+
+**2. Generic Interaction Service**
+
+```typescript
+// Instead of separate CommentEventService, ReactionEventService, RepostEventService
+// Extend: GenericEventService with createSimpleEvent()
+
+GenericInteractionService.createComment(
+  contentEventId,
+  commentText,
+  authorPubkey,
+  'root' // or 'reply'
+);
+
+GenericInteractionService.createReaction(
+  contentEventId,
+  '❤️',
+  authorPubkey,
+  contentAuthorPubkey
+);
+```
+
+**When to Genericize:**
+
+- ✅ Pattern repeats 3+ times
+- ✅ Logic is identical or nearly identical
+- ❌ Don't over-abstract prematurely
+
+### Critical: Follow Battle-Tested Patterns
+
+**DO:**
+
+- ✅ Study reference implementations (Shop Product, Heritage Contribution, Profile)
+- ✅ Copy proven patterns, adapt minimally
+- ✅ Reuse existing hooks like `useExploreHeritage` before creating new ones
+- ✅ Follow SOA strictly: Page → Component → Hook → Business → Event → Generic
+
+**DON'T:**
+
+- ❌ Create new query hooks if `useExploreHeritage` can be adapted with filters
+- ❌ Create new EventService if GenericEventService can handle it
+- ❌ Write custom relay queries if GenericRelayService works
+- ❌ Skip battle-tested comparison (see implementation-protocol.md)
+
+**Special Note on Activity Feed (#1):**
+`useExploreHeritage` is ALREADY a battle-tested, generic content query hook. It queries Kind 30023 with filters. Don't recreate this logic - just use it with different filter parameters for activity feeds, contributor profiles, following feeds, etc.
+
+---
+
 _Last Updated: October 14, 2025_

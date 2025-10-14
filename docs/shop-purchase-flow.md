@@ -69,9 +69,18 @@ How:
 | **UPDATE** | `/src/app/checkout/page.tsx` (PaymentStep - show invoice, poll status) | `/src/components/shop/PaymentStep.tsx` (integrate LightningInvoice component) | - | - | - | - |
 
 **Type:** NEW `/src/types/payment.ts` with `LightningInvoice`, `PaymentStatus`, `PaymentVerification`  
-**Nostr:** NIP-57 (Zap) integration OR LNURL-pay protocol  
-**Business Methods:** `generateInvoice(amount, orderId)`, `verifyPayment(invoiceId)`, `checkPaymentStatus(invoiceId)`  
-Value: Instant settlement, low fees, crypto-native, global payments, no fiat complexity
+**Lightning Address Source:** Seller's Nostr profile (Kind 0 metadata) - `lud16` field (Lightning Address) OR `lud06` field (LNURL)  
+**Flow:**
+1. Fetch seller's Kind 0 profile metadata
+2. Extract `lud16` (e.g., `seller@getalby.com`) OR `lud06` (LNURL) from profile
+3. Generate invoice using seller's Lightning Address via LNURL-pay protocol
+4. Display QR code + invoice string for buyer to pay
+5. Poll for payment verification (check if invoice paid)
+
+**Business Methods:** `getSellerLightningAddress(sellerPubkey)`, `generateInvoiceFromLUD16(lud16, amount, orderId)`, `verifyPayment(invoiceId)`, `checkPaymentStatus(invoiceId)`  
+**Nostr:** Query Kind 0 for seller, parse `lud16`/`lud06` field  
+**Protocol:** LNURL-pay for invoice generation from Lightning Address  
+Value: Instant settlement, low fees, crypto-native, global payments, no fiat complexity, decentralized (no payment processor middleman)
 
 ---
 
@@ -248,6 +257,73 @@ How:
 **Business Methods:** `confirmDelivery(orderId, confirmedBy)` → creates permanent delivery record  
 **Pattern:** Final Kind 1111 status update marking order complete on detail page  
 Value: Order closure, review trigger, dispute prevention
+
+---
+
+## 🔄 Reusability & Generic Services
+
+### Battle-Tested Patterns to Reuse
+
+These shop purchase features should **NOT** create duplicate code. Follow the battle-tested patterns:
+
+| Feature | What to Reuse | From Where |
+|---------|---------------|------------|
+| **#5: Order Placement** | `GenericEventService.createNIP23Event()` | Shop Product Flow (Kind 30023 creation) |
+| **#6: Shipping Address** | `GenericMessageService` (NIP-17) | Messaging System (encrypted DMs) |
+| **#6: Order Confirmation** | `GenericMessageService` (NIP-17) | Messaging System (encrypted DMs) |
+| **#8: Order History** | Query pattern from `useExploreHeritage` | Heritage Contribution Flow |
+| **#9: Seller Orders** | Same query pattern, different filters | Heritage Contribution Flow |
+| **#10: Status Updates** | Simple event creation (Kind 1111) | Can extend GenericEventService |
+| **#13: Receipt DM** | `GenericMessageService` (NIP-17) | Messaging System (encrypted DMs) |
+
+### Generic Opportunities (For Future)
+
+If implementing multiple similar features (e.g., Comments, Reactions, Status Updates all in one sprint), consider creating:
+
+**1. Generic Query Hook**
+```typescript
+// Instead of separate useOrderHistory, useSellerOrders hooks
+// Create: useNostrQuery<T>(kind, filters, mapper)
+
+const orders = useNostrQuery(
+  30023,
+  { '#t': ['culture-bridge-order'], authors: [pubkey] },
+  mapToOrder
+);
+```
+
+**2. Generic Interaction Service**
+```typescript
+// Instead of separate CommentEventService, ReactionEventService
+// Extend: GenericEventService with createSimpleEvent()
+
+GenericInteractionService.createStatusUpdate(
+  orderId,
+  'shipped',
+  { trackingNumber },
+  sellerPubkey,
+  buyerPubkey
+);
+```
+
+**When to Genericize:**
+- ✅ Pattern repeats 3+ times
+- ✅ Logic is identical or nearly identical
+- ❌ Don't over-abstract prematurely
+
+### Critical: Follow Battle-Tested Patterns
+
+**DO:**
+- ✅ Study reference implementations (Shop Product, Heritage Contribution, Profile)
+- ✅ Copy proven patterns, adapt minimally
+- ✅ Reuse existing services before creating new ones
+- ✅ Follow SOA strictly: Page → Component → Hook → Business → Event → Generic
+
+**DON'T:**
+- ❌ Create new EventService if GenericEventService can handle it
+- ❌ Write custom relay queries if GenericRelayService works
+- ❌ Duplicate NIP-17 logic when GenericMessageService exists
+- ❌ Skip battle-tested comparison (see implementation-protocol.md)
 
 ---
 
