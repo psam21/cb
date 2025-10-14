@@ -1241,8 +1241,18 @@ export async function updateHeritageWithAttachments(
 
     if (selectiveOps) {
       // Selective mode: Keep only specified attachments + add new ones
-      const keptAttachments = existingAttachments.filter(att =>
-        selectiveOps.keptAttachments.includes(att.id)
+      // Build a map of kept IDs to URLs from the form's perspective
+      const keptUrlSet = new Set<string>();
+      selectiveOps.keptAttachments.forEach(keptId => {
+        const found = existingAttachments.find(att => att.id === keptId);
+        if (found?.url) {
+          keptUrlSet.add(found.url);
+        }
+      });
+      
+      // Filter by URL (stable identifier across re-fetches)
+      const keptAttachments = existingAttachments.filter(att => 
+        keptUrlSet.has(att.url)
       );
       allAttachments = [...keptAttachments, ...newAttachments];
 
@@ -1254,6 +1264,11 @@ export async function updateHeritageWithAttachments(
         removedCount: selectiveOps.removedAttachments.length,
         newCount: newAttachments.length,
         finalCount: allAttachments.length,
+        existingAttachments: existingAttachments.map(a => ({ id: a.id, url: a.url })),
+        keptAttachmentIds: selectiveOps.keptAttachments,
+        keptUrls: Array.from(keptUrlSet),
+        keptAttachments: keptAttachments.map(a => ({ id: a.id, url: a.url })),
+        newAttachments: newAttachments.map(a => ({ url: a.url })),
       });
     } else {
       // Legacy mode: Keep all existing + add new ones
