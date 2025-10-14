@@ -88,6 +88,7 @@ How:
 **Type:** NEW `/src/types/order.ts` with `Order`, `OrderItem`, `OrderStatus`  
 **Nostr:** Kind 30023, dTag = `order-{timestamp}-{random}`, tag `['t', 'culture-bridge-order']`  
 **Event Structure:**
+
 - title: `Order #{orderId}`
 - summary: Order total, item count
 - content: JSON stringified order details (items, quantities, total, seller pubkeys)
@@ -95,7 +96,7 @@ How:
 
 **Business Methods:** `createOrder(cartItems, shippingAddress, paymentId)`, `getOrderById(dTag)`  
 **Event Methods:** `createOrderEvent(orderData)` → calls GenericEventService.createNIP23Event  
-**Reuse:** GenericEventService.createNIP23Event() with `dTagPrefix: 'order'`  
+**Reuse:** ✅ GenericEventService.createNIP23Event() with `dTagPrefix: 'order'` (battle-tested pattern)  
 Value: Permanent order record, verifiable on Nostr, decentralized commerce
 
 ---
