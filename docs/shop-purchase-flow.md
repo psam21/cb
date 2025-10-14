@@ -14,79 +14,79 @@ Products exist on /shop but no way to actually purchase. Users can only "contact
 **1. Add to Cart**  
 What: Button on product detail to add items to shopping cart  
 Why: Can't collect multiple items before checkout, forces one-at-a-time purchasing  
-How: Client-side state (Zustand), store product IDs + quantities in localStorage, cart icon with count in header  
+How: **New:** `src/stores/useCartStore.ts` (Zustand persist), `src/types/cart.ts`, `src/components/shop/AddToCartButton.tsx` | **Update:** `src/components/shop/ProductDetail.tsx` (add button), `src/components/Header.tsx` (cart icon + count)  
 Value: Multi-item purchasing, better UX, increased order size
 
 **2. Shopping Cart Page**  
 What: `/cart` page showing all added items with quantities and total  
 Why: Need to review items before purchase, adjust quantities, remove items  
-How: Read cart state, display product details (fetch from Nostr by ID), quantity controls, calculate totals  
+How: **New:** `src/app/cart/page.tsx`, `src/components/shop/CartPage.tsx` | **Use:** useCartStore to read state, fetch product details from Nostr by dTag  
 Value: Order review, quantity management, price transparency
 
 **3. Checkout Flow**  
 What: Multi-step checkout process (review → shipping → payment)  
 Why: Need structured process to collect all required information  
-How: Nostr: N/A (client-side flow) | Codebase: New /checkout route, multi-step form component, validation per step, Lightning-only payment (sats)  
+How: **New:** `src/app/checkout/page.tsx`, `src/components/shop/CheckoutFlow.tsx`, `src/components/shop/CheckoutSteps.tsx` (multi-step form with validation)  
 Value: Guided purchase process, reduced errors, professional experience
 
 **4. Lightning Payment Integration**  
 What: Generate Lightning invoice and accept payment via Bitcoin Lightning Network (sats only)  
 Why: Fast, low-fee payments aligned with Nostr ecosystem, default and only payment method  
-How: Nostr: Use NIP-57 (Lightning Zaps) or integrate with LNURL/Lightning Address | Codebase: New PaymentBusinessService, LN invoice generation, payment verification webhook  
+How: **New:** `src/services/business/PaymentBusinessService.ts`, `src/hooks/usePayment.ts`, `src/components/shop/LightningInvoice.tsx`, `src/types/payment.ts` | **Nostr:** NIP-57 Zap integration or LNURL  
 Value: Instant settlement, low fees, crypto-native, global payments, no fiat complexity
 
 **5. Order Placement (Nostr Event)**  
 What: Create order event on Nostr when checkout completes  
 Why: Need decentralized, permanent record of order details  
-How: Nostr: Kind 30023 (NIP-23) with dTag = "order-{timestamp}-{random}", include product IDs, quantities, total, buyer pubkey | Codebase: New OrderBusinessService, reuse GenericEventService.createNIP23Event()  
+How: **New:** `src/services/business/OrderBusinessService.ts`, `src/services/nostr/OrderEventService.ts`, `src/hooks/useOrderPlacement.ts`, `src/types/order.ts` | **Nostr:** Kind 30023, dTag = "order-{timestamp}-{random}", tag `#t: culture-bridge-order` | **Reuse:** GenericEventService.createNIP23Event()  
 Value: Permanent order record, verifiable on Nostr, decentralized commerce
 
 **6. Shipping Address Exchange**  
 What: Securely share shipping address with seller  
 Why: Seller needs address to fulfill, but address is sensitive PII  
-How: Nostr: Encrypted NIP-17 DM from buyer to seller with shipping details | Codebase: Extend messaging to send structured address data, encrypt before publishing  
+How: **New:** `src/components/shop/ShippingAddressForm.tsx` | **Extend:** `src/hooks/useMessageSending.ts` (already has NIP-17 encryption) | **Nostr:** Encrypted DM with structured shipping data  
 Value: Privacy-preserving, secure address sharing, no centralized storage
 
 **7. Order Confirmation**  
 What: Send confirmation to both buyer and seller after order placement  
 Why: Both parties need proof of transaction and order details  
-How: Nostr: Kind 1 notification event or NIP-17 encrypted message to both parties | Codebase: OrderBusinessService sends confirmations, includes order ID, summary, next steps  
+How: **Use:** OrderBusinessService sends confirmations via NIP-17 encrypted messages | **Extend:** `src/hooks/useMessages.ts` for order context | **Nostr:** Kind 1 notification or NIP-17 DM  
 Value: Transaction proof, clear communication, reduces confusion
 
 **8. Order History (Buyer)**  
 What: `/orders` page showing all past purchases  
 Why: Buyers need to track orders, reorder, view history  
-How: Nostr: Query `{ kinds: [30023], '#t': ['culture-bridge-order'], authors: [userPubkey] }` | Codebase: New useOrderHistory hook, display list with status/tracking  
+How: **New:** `src/app/orders/page.tsx`, `src/hooks/useOrderHistory.ts`, `src/components/shop/OrderList.tsx`, `src/components/shop/OrderDetail.tsx` | **Nostr:** Query `{ kinds: [30023], '#t': ['culture-bridge-order'], authors: [userPubkey] }`  
 Value: Order tracking, purchase history, reorder convenience
 
 **9. Order Management (Seller)**  
 What: `/my-shop/orders` page showing all incoming orders  
 Why: Sellers need to see pending orders, fulfill them, track revenue  
-How: Nostr: Query order events where product author matches seller pubkey | Codebase: New useSellerOrders hook, filter by status (pending/shipped/completed)  
+How: **New:** `src/app/my-shop/orders/page.tsx`, `src/hooks/useSellerOrders.ts` | **Update:** `src/app/my-shop/page.tsx` (add orders link) | **Nostr:** Query orders referencing seller's products, filter by status  
 Value: Fulfillment workflow, revenue tracking, business management
 
 **10. Order Status Updates**  
 What: Update order status (pending → processing → shipped → delivered)  
 Why: Buyers need visibility into fulfillment progress  
-How: Nostr: Kind 1111 comment event with 'e' tag referencing order event ID, content = status + details (tracking, ship date, etc.) | Codebase: Status update UI in seller dashboard, query `{ kinds: [1111], '#e': [orderId] }` for timeline, all updates become permanent relay record  
+How: **New:** `src/services/business/OrderStatusService.ts`, `src/services/nostr/CommentEventService.ts`, `src/hooks/useOrderStatus.ts`, `src/components/shop/OrderStatusTimeline.tsx`, `src/components/shop/StatusUpdateForm.tsx` | **Nostr:** Kind 1111 with 'e' tag to order event, query `{ kinds: [1111], '#e': [orderId] }`  
 Value: Transparency, verifiable proof of work, reduced support requests, permanent order history
 
 **11. Payment Verification**  
 What: Verify Lightning payment was received before releasing order  
 Why: Prevent fraud, ensure seller gets paid  
-How: Nostr: Check Lightning payment proof (NIP-57 zap receipt) or LN node confirmation | Codebase: PaymentBusinessService verifies payment, updates order status automatically  
+How: **Extend:** PaymentBusinessService checks NIP-57 zap receipt or LN node webhook | **Update:** OrderBusinessService auto-updates status on payment confirmation  
 Value: Fraud prevention, automated fulfillment, trust building
 
 **12. Shipping Notifications**  
 What: Alert buyer when order ships with tracking info  
 Why: Buyers want to know when to expect delivery  
-How: Nostr: Kind 1111 comment on order event with tracking number, carrier, ship date | Codebase: Shipping form in seller dashboard, publishes kind 1111 with structured data, becomes permanent relay record  
+How: **Use:** CommentEventService (kind 1111) with tracking number, carrier, ship date | **Component:** StatusUpdateForm in seller dashboard | **Nostr:** Permanent relay record  
 Value: Delivery expectations, tracking capability, verifiable proof of shipment
 
 **13. Delivery Confirmation**  
 What: Mark order as delivered/completed  
 Why: Close order lifecycle, trigger reviews, finalize transaction  
-How: Nostr: Buyer or seller publishes kind 1111 delivery confirmation comment on order event | Codebase: "Confirm Delivery" button in order detail, updates order status  
+How: **Component:** "Confirm Delivery" button in OrderDetail | **Use:** CommentEventService (kind 1111) for delivery confirmation | **Update:** Order status in local state  
 Value: Order closure, review trigger, dispute prevention
 
 ---
