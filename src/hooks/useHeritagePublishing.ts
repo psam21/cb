@@ -52,13 +52,14 @@ export const useHeritagePublishing = () => {
         });
       }
     },
-    setResult: (result: { success: boolean; error?: string; eventId?: string; publishedRelays?: string[]; failedRelays?: string[] } | null) => {
+    setResult: (result: { success: boolean; error?: string; eventId?: string; dTag?: string; publishedRelays?: string[]; failedRelays?: string[] } | null) => {
       if (result) {
         setState(prev => ({
           ...prev,
           result: result.success ? {
             success: true,
             eventId: result.eventId!,
+            dTag: result.dTag,
             publishedRelays: result.publishedRelays || [],
             failedRelays: result.failedRelays || [],
           } : null,
