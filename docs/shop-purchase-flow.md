@@ -26,19 +26,19 @@ Value: Order review, quantity management, price transparency
 **3. Checkout Flow**  
 What: Multi-step checkout process (review → shipping → payment)  
 Why: Need structured process to collect all required information  
-How: Nostr: N/A (client-side flow) | Codebase: New /checkout route, multi-step form component, validation per step  
+How: Nostr: N/A (client-side flow) | Codebase: New /checkout route, multi-step form component, validation per step, Lightning-only payment (sats)  
 Value: Guided purchase process, reduced errors, professional experience
 
 **4. Lightning Payment Integration**  
-What: Generate Lightning invoice and accept payment via Bitcoin Lightning Network  
-Why: Fast, low-fee payments aligned with Nostr ecosystem  
-How: Nostr: Use NIP-57 (Lightning Zaps) or integrate with LNURL/Lightning Address | Codebase: New PaymentBusinessService, LN invoice generation, payment verification  
-Value: Instant settlement, low fees, crypto-native, global payments
+What: Generate Lightning invoice and accept payment via Bitcoin Lightning Network (sats only)  
+Why: Fast, low-fee payments aligned with Nostr ecosystem, default and only payment method  
+How: Nostr: Use NIP-57 (Lightning Zaps) or integrate with LNURL/Lightning Address | Codebase: New PaymentBusinessService, LN invoice generation, payment verification webhook  
+Value: Instant settlement, low fees, crypto-native, global payments, no fiat complexity
 
 **5. Order Placement (Nostr Event)**  
 What: Create order event on Nostr when checkout completes  
 Why: Need decentralized, permanent record of order details  
-How: Nostr: New kind (TBD, maybe kind 30311 for orders), include product IDs, quantities, total, buyer pubkey | Codebase: New OrderBusinessService, create order event, publish to relays  
+How: Nostr: Kind 30023 (NIP-23) with dTag = "order-{timestamp}-{random}", include product IDs, quantities, total, buyer pubkey | Codebase: New OrderBusinessService, reuse GenericEventService.createNIP23Event()  
 Value: Permanent order record, verifiable on Nostr, decentralized commerce
 
 **6. Shipping Address Exchange**  
@@ -56,7 +56,7 @@ Value: Transaction proof, clear communication, reduces confusion
 **8. Order History (Buyer)**  
 What: `/orders` page showing all past purchases  
 Why: Buyers need to track orders, reorder, view history  
-How: Nostr: Query order events where buyer pubkey matches `{ kinds: [30311?], authors: [userPubkey] }` | Codebase: New useOrderHistory hook, display list with status/tracking  
+How: Nostr: Query `{ kinds: [30023], '#t': ['culture-bridge-order'], authors: [userPubkey] }` | Codebase: New useOrderHistory hook, display list with status/tracking  
 Value: Order tracking, purchase history, reorder convenience
 
 **9. Order Management (Seller)**  
@@ -68,8 +68,8 @@ Value: Fulfillment workflow, revenue tracking, business management
 **10. Order Status Updates**  
 What: Update order status (pending → processing → shipped → delivered)  
 Why: Buyers need visibility into fulfillment progress  
-How: Nostr: Seller publishes status update events (kind 1 reply or update to order event) | Codebase: Status update UI in seller dashboard, query status events in buyer order view  
-Value: Transparency, reduced support requests, customer satisfaction
+How: Nostr: Kind 1111 comment event with 'e' tag referencing order event ID, content = status + details (tracking, ship date, etc.) | Codebase: Status update UI in seller dashboard, query `{ kinds: [1111], '#e': [orderId] }` for timeline, all updates become permanent relay record  
+Value: Transparency, verifiable proof of work, reduced support requests, permanent order history
 
 **11. Payment Verification**  
 What: Verify Lightning payment was received before releasing order  
@@ -80,55 +80,25 @@ Value: Fraud prevention, automated fulfillment, trust building
 **12. Shipping Notifications**  
 What: Alert buyer when order ships with tracking info  
 Why: Buyers want to know when to expect delivery  
-How: Nostr: Seller sends NIP-17 encrypted DM with tracking number and carrier | Codebase: Shipping form in seller dashboard, sends notification on submit  
-Value: Delivery expectations, tracking capability, reduced anxiety
+How: Nostr: Kind 1111 comment on order event with tracking number, carrier, ship date | Codebase: Shipping form in seller dashboard, publishes kind 1111 with structured data, becomes permanent relay record  
+Value: Delivery expectations, tracking capability, verifiable proof of shipment
 
 **13. Delivery Confirmation**  
 What: Mark order as delivered/completed  
 Why: Close order lifecycle, trigger reviews, finalize transaction  
-How: Nostr: Buyer or seller publishes delivery confirmation event | Codebase: "Confirm Delivery" button in order detail, updates order status  
+How: Nostr: Buyer or seller publishes kind 1111 delivery confirmation comment on order event | Codebase: "Confirm Delivery" button in order detail, updates order status  
 Value: Order closure, review trigger, dispute prevention
 
-**14. Review/Rating System**  
-What: Leave reviews and ratings for products after delivery  
-Why: Build trust, help future buyers, motivate quality  
-How: Nostr: Kind 1985 (label/review event) with product 'a' tag and rating | Codebase: Review form on completed orders, display reviews on product detail  
-Value: Social proof, quality signal, community trust
+---
 
-**15. Dispute Resolution**  
-What: Handle refunds, returns, or order issues  
-Why: Things go wrong, need mechanism to resolve fairly  
-How: Nostr: Dispute event (kind TBD) with issue description, both parties can respond | Codebase: Dispute form on orders, mediation UI, refund process (Lightning)  
-Value: Customer protection, seller accountability, fair commerce
+## Future Enhancements (Not Required for Initial Release)
 
-**16. Inventory Management**  
-What: Track product stock, mark out of stock, auto-update availability  
-Why: Prevent overselling, manage limited inventory  
-How: Nostr: Update product event (NIP-33 replacement) with stock count | Codebase: Stock field in product creation, decrement on purchase, disable purchase when 0  
-Value: Inventory control, prevent overselling, operational efficiency
-
-**17. Multi-Currency Support**  
-What: Display prices in multiple fiat currencies (USD, EUR, etc.) alongside sats  
-Why: Global buyers think in local currency  
-How: Client-side conversion using BTC exchange rate API, store price in sats | Codebase: Currency selector, real-time conversion display  
-Value: Global accessibility, price clarity, wider market
-
-**18. Abandoned Cart Recovery**  
-What: Remind users about items left in cart  
-Why: Users forget, gentle nudge increases conversion  
-How: Client-side: Check cart age in localStorage, show notification | Nostr: Optional reminder event if user opts in  
-Value: Increased sales, reduced abandonment, customer service
-
-**19. Seller Reputation**  
-What: Display seller stats (total sales, rating, response time)  
-Why: Buyers need trust signals before purchasing  
-How: Nostr: Aggregate order events by seller, count completions, calculate avg rating | Codebase: Seller profile shows stats, badge system  
-Value: Trust building, seller motivation, informed purchases
-
-**20. Bulk Order Discounts**  
-What: Offer quantity-based pricing (e.g., 10+ items get 20% off)  
-Why: Incentivize larger purchases, clear inventory  
-How: Nostr: Include pricing tiers in product event metadata | Codebase: Auto-apply discount in cart based on quantity  
-Value: Increased order value, inventory movement, buyer savings
+**14. Review/Rating System** - Post-delivery reviews and ratings  
+**15. Dispute Resolution** - Handle refunds, returns, order issues  
+**16. Inventory Management** - Track stock, prevent overselling  
+**17. Multi-Currency Display** - Show fiat equivalents (payment still in sats)  
+**18. Abandoned Cart Recovery** - Remind users about cart items  
+**19. Seller Reputation** - Display seller stats and badges  
+**20. Bulk Order Discounts** - Quantity-based pricing tiers
 
 _Last Updated: October 14, 2025_
