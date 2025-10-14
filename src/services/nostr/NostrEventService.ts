@@ -279,23 +279,9 @@ export class NostrEventService {
       const now = Math.floor(Date.now() / 1000);
       const pubkey = await signer.getPublicKey();
 
-      // Create markdown content with embedded media (title is displayed in header, so don't duplicate it here)
-      let markdownContent = heritageData.description;
-      
-      // Add embedded media to markdown content
-      if (heritageData.attachments && heritageData.attachments.length > 0) {
-        markdownContent += '\n\n## Media\n\n';
-        
-        for (const attachment of heritageData.attachments) {
-          if (attachment.type === 'image') {
-            markdownContent += `![${attachment.name}](${attachment.url})\n\n`;
-          } else if (attachment.type === 'video') {
-            markdownContent += `[📹 ${attachment.name}](${attachment.url})\n\n`;
-          } else if (attachment.type === 'audio') {
-            markdownContent += `[🎵 ${attachment.name}](${attachment.url})\n\n`;
-          }
-        }
-      }
+      // Create markdown content (title is displayed in header, so don't duplicate it here)
+      // Media is displayed separately via ContentMediaGallery, so don't embed in markdown
+      const markdownContent = heritageData.description;
       
       // Create NIP-23 content
       const nip23Content: NIP23Content = {
