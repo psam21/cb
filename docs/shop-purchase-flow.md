@@ -143,12 +143,13 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/orders/page.tsx` (buyer order history - list all orders, filter by status) | `/src/components/shop/OrderList.tsx`, `/src/components/shop/OrderCard.tsx`, `/src/components/shop/OrderDetailModal.tsx` | `/src/hooks/useOrderHistory.ts` (fetch buyer's orders, subscribe to status updates) | - | - | - |
-| **UPDATE** | - | `/src/components/Header.tsx` (add "My Orders" nav link) | - | `/src/services/business/OrderBusinessService.ts` (add getBuyerOrders method) | - | `/src/services/generic/GenericRelayService.ts` (reuse queryEvents) |
+| **NEW** | `/src/app/orders/page.tsx` (order list - click order → navigate to detail page), `/src/app/orders/[orderId]/page.tsx` (full order detail page) | `/src/components/shop/OrderList.tsx`, `/src/components/shop/OrderCard.tsx` (clickable, links to detail), `/src/components/shop/OrderDetail.tsx` (full order view with status timeline) | `/src/hooks/useOrderHistory.ts` (fetch buyer's orders, subscribe to status updates), `/src/hooks/useOrderDetail.ts` (fetch single order + status history) | - | - | - |
+| **UPDATE** | - | `/src/components/Header.tsx` (add "My Orders" nav link → /orders) | - | `/src/services/business/OrderBusinessService.ts` (add getBuyerOrders, getOrderById methods) | - | `/src/services/generic/GenericRelayService.ts` (reuse queryEvents) |
 
 **Nostr:** Query `{ kinds: [30023], '#t': ['culture-bridge-order'], authors: [userPubkey] }`  
 **Hook Methods:** `fetchOrders()`, `getOrderStatus(orderId)` (query Kind 1111 comments)  
 **Business Methods:** `getBuyerOrders(pubkey)` → fetches + parses orders  
+**Pattern:** List page → Detail page (no modals)  
 Value: Order tracking, purchase history, reorder convenience
 
 ---
@@ -160,12 +161,13 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/my-shop/orders/page.tsx` (seller order dashboard - pending, processing, shipped, delivered tabs) | `/src/components/shop/SellerOrderList.tsx`, `/src/components/shop/SellerOrderCard.tsx`, `/src/components/shop/OrderFulfillment.tsx` (update status, add tracking) | `/src/hooks/useSellerOrders.ts` (fetch orders for seller's products, real-time updates) | - | - | - |
-| **UPDATE** | `/src/app/my-shop/page.tsx` (add "Orders" tab/link to navigation) | - | - | `/src/services/business/OrderBusinessService.ts` (add getSellerOrders method) | - | `/src/services/generic/GenericRelayService.ts` (reuse queryEvents) |
+| **NEW** | `/src/app/my-shop/orders/page.tsx` (order list by status tabs), `/src/app/my-shop/orders/[orderId]/page.tsx` (full order detail + fulfillment page) | `/src/components/shop/SellerOrderList.tsx`, `/src/components/shop/SellerOrderCard.tsx` (clickable, links to detail), `/src/components/shop/OrderFulfillment.tsx` (update status, add tracking - on detail page) | `/src/hooks/useSellerOrders.ts` (fetch orders for seller's products, real-time updates), `/src/hooks/useOrderDetail.ts` (fetch single order + status history) | - | - | - |
+| **UPDATE** | `/src/app/my-shop/page.tsx` (add "Orders" tab/link to navigation → /my-shop/orders) | - | - | `/src/services/business/OrderBusinessService.ts` (add getSellerOrders method) | - | `/src/services/generic/GenericRelayService.ts` (reuse queryEvents) |
 
 **Nostr:** Query `{ kinds: [30023], '#t': ['culture-bridge-order'], '#p': [sellerPubkey] }`  
 **Hook Methods:** `fetchSellerOrders()`, `filterByStatus(status)`, `getOrderDetails(orderId)`  
 **Business Methods:** `getSellerOrders(sellerPubkey)` → fetches orders referencing seller's products  
+**Pattern:** List page → Detail/Fulfillment page (no modals)  
 Value: Fulfillment workflow, revenue tracking, business management
 
 ---
@@ -177,8 +179,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/shop/OrderStatusTimeline.tsx` (buyer view - read-only timeline), `/src/components/shop/StatusUpdateForm.tsx` (seller dashboard - post updates) | `/src/hooks/useOrderStatus.ts` (fetch status history, subscribe to new updates) | `/src/services/business/OrderStatusService.ts` (validate status transitions, post updates) | `/src/services/nostr/CommentEventService.ts` (create Kind 1111 events) | - |
-| **UPDATE** | `/src/app/orders/page.tsx` (OrderDetailModal - show timeline), `/src/app/my-shop/orders/page.tsx` (OrderFulfillment - show form) | `/src/components/shop/OrderDetailModal.tsx` (add OrderStatusTimeline), `/src/components/shop/OrderFulfillment.tsx` (add StatusUpdateForm) | - | - | - | `/src/services/generic/GenericEventService.ts` (reuse signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent, queryEvents, subscribeToEvents) |
+| **NEW** | - | `/src/components/shop/OrderStatusTimeline.tsx` (buyer view on order detail page - read-only timeline), `/src/components/shop/StatusUpdateForm.tsx` (seller view on order detail page - post updates) | `/src/hooks/useOrderStatus.ts` (fetch status history, subscribe to new updates) | `/src/services/business/OrderStatusService.ts` (validate status transitions, post updates) | `/src/services/nostr/CommentEventService.ts` (create Kind 1111 events) | - |
+| **UPDATE** | `/src/app/orders/[orderId]/page.tsx` (buyer - show OrderStatusTimeline), `/src/app/my-shop/orders/[orderId]/page.tsx` (seller - show StatusUpdateForm) | `/src/components/shop/OrderDetail.tsx` (add OrderStatusTimeline for buyer view), `/src/components/shop/OrderFulfillment.tsx` (add StatusUpdateForm for seller view) | - | - | - | `/src/services/generic/GenericEventService.ts` (reuse signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent, queryEvents, subscribeToEvents) |
 
 **Type:** NEW `/src/types/order-status.ts` with `OrderStatus`, `StatusUpdate`  
 **Nostr:** Kind 1111 with `['e', orderId, relay, 'root']` tag, query `{ kinds: [1111], '#e': [orderId] }`  
@@ -222,11 +224,11 @@ How:
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
 | **NEW** | - | - | - | - | - | - |
-| **UPDATE** | `/src/app/my-shop/orders/page.tsx` (seller posts shipping update from OrderFulfillment component) | `/src/components/shop/StatusUpdateForm.tsx` (add carrier dropdown, tracking number field, estimated delivery datepicker), `/src/components/shop/OrderStatusTimeline.tsx` (display shipping info in timeline) | `/src/hooks/useOrderStatus.ts` (parse shipping data from Kind 1111 content) | `/src/services/business/OrderStatusService.ts` (add validateShippingData method) | `/src/services/nostr/CommentEventService.ts` (include tracking fields in Kind 1111 content JSON) | - |
+| **UPDATE** | `/src/app/my-shop/orders/[orderId]/page.tsx` (seller posts shipping update from StatusUpdateForm) | `/src/components/shop/StatusUpdateForm.tsx` (add carrier dropdown, tracking number field, estimated delivery datepicker), `/src/components/shop/OrderStatusTimeline.tsx` (display shipping info in timeline) | `/src/hooks/useOrderStatus.ts` (parse shipping data from Kind 1111 content) | `/src/services/business/OrderStatusService.ts` (add validateShippingData method) | `/src/services/nostr/CommentEventService.ts` (include tracking fields in Kind 1111 content JSON) | - |
 
 **Nostr:** Kind 1111 comment with content = JSON `{ status: 'shipped', trackingNumber, carrier, estimatedDelivery, timestamp }`  
 **Business Methods:** `updateOrderStatus(orderId, 'shipped', { trackingNumber, carrier, estimatedDelivery })` → validates shipping data, creates permanent relay record  
-**Pattern:** Shipping notification = Kind 1111 status update with specific fields  
+**Pattern:** Shipping notification = Kind 1111 status update with specific fields on detail page  
 Value: Delivery expectations, tracking capability, verifiable proof of shipment
 
 ---
@@ -239,12 +241,12 @@ How:
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
 | **NEW** | - | - | - | - | - | - |
-| **UPDATE** | `/src/app/orders/page.tsx` (buyer clicks "Confirm Delivery" on OrderDetailModal), `/src/app/my-shop/orders/page.tsx` (seller marks delivered in OrderFulfillment) | `/src/components/shop/OrderDetailModal.tsx` (add "Confirm Delivery" button for buyer), `/src/components/shop/OrderFulfillment.tsx` (add "Mark Delivered" button for seller) | `/src/hooks/useOrderStatus.ts` (add confirmDelivery method) | `/src/services/business/OrderStatusService.ts` (add confirmDelivery method - records who confirmed) | `/src/services/nostr/CommentEventService.ts` (create Kind 1111 with status='delivered', confirmedBy field) | - |
+| **UPDATE** | `/src/app/orders/[orderId]/page.tsx` (buyer clicks "Confirm Delivery" button on detail page), `/src/app/my-shop/orders/[orderId]/page.tsx` (seller marks delivered on detail page) | `/src/components/shop/OrderDetail.tsx` (add "Confirm Delivery" button for buyer), `/src/components/shop/OrderFulfillment.tsx` (add "Mark Delivered" button for seller) | `/src/hooks/useOrderStatus.ts` (add confirmDelivery method) | `/src/services/business/OrderStatusService.ts` (add confirmDelivery method - records who confirmed) | `/src/services/nostr/CommentEventService.ts` (create Kind 1111 with status='delivered', confirmedBy field) | - |
 
 **Nostr:** Kind 1111 delivery confirmation comment with content = JSON `{ status: 'delivered', confirmedBy: 'buyer|seller', timestamp }`  
 **Hook Methods:** `confirmDelivery(orderId)` (buyer) or seller can mark delivered in StatusUpdateForm  
 **Business Methods:** `confirmDelivery(orderId, confirmedBy)` → creates permanent delivery record  
-**Pattern:** Final Kind 1111 status update marking order complete  
+**Pattern:** Final Kind 1111 status update marking order complete on detail page  
 Value: Order closure, review trigger, dispute prevention
 
 ---

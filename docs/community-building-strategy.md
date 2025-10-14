@@ -144,11 +144,11 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/heritage/ShareButton.tsx`, `/src/components/heritage/ShareModal.tsx` | `/src/hooks/useShare.ts` | `/src/services/business/ShareBusinessService.ts` | `/src/services/nostr/RepostEventService.ts` | - |
-| **UPDATE** | `/src/app/heritage/[id]/page.tsx` | - | - | - | - | `/src/services/generic/GenericEventService.ts` (signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent) |
+| **NEW** | - | `/src/components/heritage/ShareButton.tsx` (dropdown: Repost / Quote Post) | `/src/hooks/useShare.ts` (create repost or quote post) | `/src/services/business/ShareBusinessService.ts` (format repost/quote events) | `/src/services/nostr/RepostEventService.ts` (create Kind 6 or Kind 1 events) | - |
+| **UPDATE** | `/src/app/heritage/[id]/page.tsx` (add ShareButton to action bar) | `/src/components/heritage/HeritageDetail.tsx` (integrate ShareButton) | - | - | - | `/src/services/generic/GenericEventService.ts` (signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent) |
 
 **Nostr:** Create Kind 6 (repost) with `['e', originalEventId, relay]`, `['p', originalAuthorPubkey]` OR Kind 1 (quote) with same tags + comment text  
-**Pattern:** Event creation via GenericEventService, optional quote text  
+**Pattern:** Button action → immediate repost (simple repost) OR inline textarea for quote (expands on button click, no separate page)  
 Value: Viral spread, cross-community discovery, contributor recognition
 
 **11. Culture Groups**  
