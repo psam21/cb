@@ -16,11 +16,13 @@ What: Button on product detail to add items to shopping cart
 Why: Can't collect multiple items before checkout, forces one-at-a-time purchasing  
 How:
 
-| | Store | Type | Component | Page |
-|---|---|---|---|---|
-| **NEW** | useCartStore.ts | cart.ts | AddToCartButton.tsx | - |
-| **UPDATE** | - | - | ProductDetail.tsx, Header.tsx | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | `/src/components/shop/AddToCartButton.tsx` | - | - | - | - |
+| **UPDATE** | - | `/src/components/shop/ProductDetail.tsx` (add button), `/src/components/Header.tsx` (add cart icon + count) | - | - | - | - |
 
+**Store:** NEW `/src/stores/useCartStore.ts` (Zustand persist) with methods: `addItem()`, `removeItem()`, `updateQuantity()`, `clearCart()`, `getTotal()`  
+**Type:** NEW `/src/types/cart.ts` with `CartItem`, `Cart`  
 Value: Multi-item purchasing, better UX, increased order size
 
 ---
@@ -30,11 +32,12 @@ What: `/cart` page showing all added items with quantities and total
 Why: Need to review items before purchase, adjust quantities, remove items  
 How:
 
-| | Component | Page |
-|---|---|---|
-| **NEW** | CartPage.tsx | cart/page.tsx |
-| **UPDATE** | - | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | `/src/app/cart/page.tsx` | `/src/components/shop/CartPage.tsx`, `/src/components/shop/CartItem.tsx`, `/src/components/shop/CartSummary.tsx` | - | - | - | - |
+| **UPDATE** | - | - | - | - | - | - |
 
+**Store:** Reuse `useCartStore` (getters: `items`, `total`, `itemCount`)  
 Value: Order review, quantity management, price transparency
 
 ---
@@ -44,11 +47,13 @@ What: Multi-step checkout process (review → shipping → payment)
 Why: Need structured process to collect all required information  
 How:
 
-| | Component | Page |
-|---|---|---|
-| **NEW** | CheckoutFlow.tsx, CheckoutSteps.tsx | checkout/page.tsx |
-| **UPDATE** | - | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | `/src/app/checkout/page.tsx` | `/src/components/shop/CheckoutFlow.tsx`, `/src/components/shop/CheckoutSteps.tsx`, `/src/components/shop/ReviewStep.tsx`, `/src/components/shop/ShippingStep.tsx`, `/src/components/shop/PaymentStep.tsx` | `/src/hooks/useCheckout.ts` | - | - | - |
+| **UPDATE** | - | - | - | - | - | - |
 
+**Store:** Reuse `useCartStore` for cart data  
+**Type:** NEW `/src/types/checkout.ts` with `CheckoutStep`, `CheckoutData`  
 Value: Guided purchase process, reduced errors, professional experience
 
 ---
@@ -58,12 +63,14 @@ What: Generate Lightning invoice and accept payment via Bitcoin Lightning Networ
 Why: Fast, low-fee payments aligned with Nostr ecosystem, default and only payment method  
 How:
 
-| | Hook | Component | Business Service | Type |
-|---|---|---|---|---|
-| **NEW** | usePayment.ts | LightningInvoice.tsx | PaymentBusinessService.ts | payment.ts |
-| **UPDATE** | - | - | - | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | `/src/components/shop/LightningInvoice.tsx`, `/src/components/shop/PaymentStatus.tsx`, `/src/components/shop/QRCodeDisplay.tsx` | `/src/hooks/usePayment.ts` | `/src/services/business/PaymentBusinessService.ts` | - | - |
+| **UPDATE** | `/src/app/checkout/page.tsx` (integrate payment step) | - | - | - | - | - |
 
-**Nostr:** NIP-57 Zap integration or LNURL  
+**Type:** NEW `/src/types/payment.ts` with `LightningInvoice`, `PaymentStatus`, `PaymentVerification`  
+**Nostr:** NIP-57 (Zap) integration OR LNURL-pay protocol  
+**Business Methods:** `generateInvoice(amount, orderId)`, `verifyPayment(invoiceId)`, `checkPaymentStatus(invoiceId)`  
 Value: Instant settlement, low fees, crypto-native, global payments, no fiat complexity
 
 ---
@@ -73,13 +80,22 @@ What: Create order event on Nostr when checkout completes
 Why: Need decentralized, permanent record of order details  
 How:
 
-| | Hook | Business Service | Event Service | Type |
-|---|---|---|---|---|
-| **NEW** | useOrderPlacement.ts | OrderBusinessService.ts | OrderEventService.ts | order.ts |
-| **UPDATE** | - | - | - | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | - | `/src/hooks/useOrderPlacement.ts` | `/src/services/business/OrderBusinessService.ts` | `/src/services/nostr/OrderEventService.ts` | - |
+| **UPDATE** | `/src/app/checkout/page.tsx` (call on payment success) | - | - | - | - | `/src/services/generic/GenericEventService.ts` (reuse createNIP23Event, signEvent) |
 
-**Nostr:** Kind 30023, dTag = "order-{timestamp}-{random}", tag `#t: culture-bridge-order`  
-**Reuse:** GenericEventService.createNIP23Event()  
+**Type:** NEW `/src/types/order.ts` with `Order`, `OrderItem`, `OrderStatus`  
+**Nostr:** Kind 30023, dTag = `order-{timestamp}-{random}`, tag `['t', 'culture-bridge-order']`  
+**Event Structure:**
+- title: `Order #{orderId}`
+- summary: Order total, item count
+- content: JSON stringified order details (items, quantities, total, seller pubkeys)
+- tags: `['t', 'culture-bridge-order']`, `['p', sellerPubkey]` for each seller
+
+**Business Methods:** `createOrder(cartItems, shippingAddress, paymentId)`, `getOrderById(dTag)`  
+**Event Methods:** `createOrderEvent(orderData)` → calls GenericEventService.createNIP23Event  
+**Reuse:** GenericEventService.createNIP23Event() with `dTagPrefix: 'order'`  
 Value: Permanent order record, verifiable on Nostr, decentralized commerce
 
 ---
@@ -89,12 +105,15 @@ What: Securely share shipping address with seller
 Why: Seller needs address to fulfill, but address is sensitive PII  
 How:
 
-| | Hook | Component |
-|---|---|---|
-| **NEW** | - | ShippingAddressForm.tsx |
-| **UPDATE** | useMessageSending.ts (extend) | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | `/src/components/shop/ShippingAddressForm.tsx` | - | - | - | - |
+| **UPDATE** | `/src/app/checkout/page.tsx` (collect address in shipping step) | - | `/src/hooks/useMessageSending.ts` (extend for structured shipping data) | - | - | `/src/services/generic/GenericMessageService.ts` (reuse NIP-17 encryption) |
 
-**Nostr:** NIP-17 encrypted DM with structured shipping data  
+**Type:** NEW `/src/types/shipping.ts` with `ShippingAddress`, `ShippingMethod`  
+**Nostr:** NIP-17 encrypted DM with structured shipping data sent to each seller  
+**Message Structure:** JSON with `{ type: 'shipping-address', orderId, address, phone, notes }`  
+**Hook Methods:** `sendShippingAddress(sellerPubkey, orderId, addressData)` in useMessageSending  
 Value: Privacy-preserving, secure address sharing, no centralized storage
 
 ---
@@ -104,12 +123,14 @@ What: Send confirmation to both buyer and seller after order placement
 Why: Both parties need proof of transaction and order details  
 How:
 
-| | Hook | Business Service |
-|---|---|---|
-| **NEW** | - | - |
-| **UPDATE** | useMessages.ts (extend for order context) | OrderBusinessService.ts (sends confirmations) |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | `/src/components/shop/OrderConfirmation.tsx` | - | - | - | - |
+| **UPDATE** | `/src/app/checkout/page.tsx` (show confirmation on success) | - | `/src/hooks/useMessages.ts` (extend for order context) | `/src/services/business/OrderBusinessService.ts` (sendOrderConfirmations method) | - | `/src/services/generic/GenericMessageService.ts` (reuse NIP-17) |
 
-**Nostr:** Kind 1 notification or NIP-17 DM  
+**Nostr:** NIP-17 encrypted DMs to buyer and seller(s) with order summary  
+**Message Structure:** JSON with `{ type: 'order-confirmation', orderId, items, total, status }`  
+**Business Methods:** `sendOrderConfirmations(order)` → sends to buyer + all sellers  
 Value: Transaction proof, clear communication, reduces confusion
 
 ---
@@ -119,12 +140,14 @@ What: `/orders` page showing all past purchases
 Why: Buyers need to track orders, reorder, view history  
 How:
 
-| | Hook | Component | Page |
-|---|---|---|---|
-| **NEW** | useOrderHistory.ts | OrderList.tsx, OrderDetail.tsx | orders/page.tsx |
-| **UPDATE** | - | - | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | `/src/app/orders/page.tsx` | `/src/components/shop/OrderList.tsx`, `/src/components/shop/OrderCard.tsx`, `/src/components/shop/OrderDetailModal.tsx` | `/src/hooks/useOrderHistory.ts` | - | - | - |
+| **UPDATE** | - | `/src/components/Header.tsx` (add Orders link) | - | `/src/services/business/OrderBusinessService.ts` (add getBuyerOrders method) | - | `/src/services/generic/GenericRelayService.ts` (reuse queryEvents) |
 
 **Nostr:** Query `{ kinds: [30023], '#t': ['culture-bridge-order'], authors: [userPubkey] }`  
+**Hook Methods:** `fetchOrders()`, `getOrderStatus(orderId)` (query Kind 1111 comments)  
+**Business Methods:** `getBuyerOrders(pubkey)` → fetches + parses orders  
 Value: Order tracking, purchase history, reorder convenience
 
 ---
@@ -134,12 +157,14 @@ What: `/my-shop/orders` page showing all incoming orders
 Why: Sellers need to see pending orders, fulfill them, track revenue  
 How:
 
-| | Hook | Page |
-|---|---|---|
-| **NEW** | useSellerOrders.ts | my-shop/orders/page.tsx |
-| **UPDATE** | - | my-shop/page.tsx (add orders link) |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | `/src/app/my-shop/orders/page.tsx` | `/src/components/shop/SellerOrderList.tsx`, `/src/components/shop/SellerOrderCard.tsx`, `/src/components/shop/OrderFulfillment.tsx` | `/src/hooks/useSellerOrders.ts` | - | - | - |
+| **UPDATE** | `/src/app/my-shop/page.tsx` (add Orders nav link) | - | - | `/src/services/business/OrderBusinessService.ts` (add getSellerOrders method) | - | `/src/services/generic/GenericRelayService.ts` (reuse queryEvents) |
 
-**Nostr:** Query orders referencing seller's products, filter by status  
+**Nostr:** Query `{ kinds: [30023], '#t': ['culture-bridge-order'], '#p': [sellerPubkey] }`  
+**Hook Methods:** `fetchSellerOrders()`, `filterByStatus(status)`, `getOrderDetails(orderId)`  
+**Business Methods:** `getSellerOrders(sellerPubkey)` → fetches orders referencing seller's products  
 Value: Fulfillment workflow, revenue tracking, business management
 
 ---
@@ -149,12 +174,20 @@ What: Update order status (pending → processing → shipped → delivered)
 Why: Buyers need visibility into fulfillment progress  
 How:
 
-| | Hook | Component | Business Service | Event Service |
-|---|---|---|---|---|
-| **NEW** | useOrderStatus.ts | OrderStatusTimeline.tsx, StatusUpdateForm.tsx | OrderStatusService.ts | CommentEventService.ts |
-| **UPDATE** | - | - | - | - |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | `/src/components/shop/OrderStatusTimeline.tsx`, `/src/components/shop/StatusUpdateForm.tsx` (seller only) | `/src/hooks/useOrderStatus.ts` | `/src/services/business/OrderStatusService.ts` | `/src/services/nostr/CommentEventService.ts` | - |
+| **UPDATE** | `/src/app/orders/page.tsx`, `/src/app/my-shop/orders/page.tsx` | - | - | - | - | `/src/services/generic/GenericEventService.ts` (reuse signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent, queryEvents, subscribeToEvents) |
 
-**Nostr:** Kind 1111 with 'e' tag to order event, query `{ kinds: [1111], '#e': [orderId] }`  
+**Type:** NEW `/src/types/order-status.ts` with `OrderStatus`, `StatusUpdate`  
+**Nostr:** Kind 1111 with `['e', orderId, relay, 'root']` tag, query `{ kinds: [1111], '#e': [orderId] }`  
+**Event Structure:**
+- content: JSON `{ status: 'processing|shipped|delivered', timestamp, note, trackingNumber? }`
+- tags: `['e', orderId, relay, 'root']`, `['p', buyerPubkey]`, `['status', statusValue]`
+
+**Hook Methods:** `fetchStatusUpdates(orderId)`, `subscribeToUpdates(orderId)`, `postStatusUpdate(orderId, statusData)` (seller only)  
+**Business Methods:** `updateOrderStatus(orderId, status, note, trackingNumber)` → validates, creates Kind 1111  
+**Event Methods:** `createStatusUpdateEvent(orderId, statusData)` → builds Kind 1111 comment  
 Value: Transparency, verifiable proof of work, reduced support requests, permanent order history
 
 ---
@@ -164,11 +197,18 @@ What: Verify Lightning payment was received before releasing order
 Why: Prevent fraud, ensure seller gets paid  
 How:
 
-| | Business Service |
-|---|---|
-| **NEW** | - |
-| **UPDATE** | PaymentBusinessService.ts (verify NIP-57 zap receipt), OrderBusinessService.ts (auto-update status) |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | - | - | - | - | - |
+| **UPDATE** | - | - | `/src/hooks/usePayment.ts` (add verification polling) | `/src/services/business/PaymentBusinessService.ts` (add verifyPayment, checkZapReceipt methods), `/src/services/business/OrderBusinessService.ts` (auto-update status on payment) | - | `/src/services/generic/GenericRelayService.ts` (query NIP-57 zap receipts) |
 
+**Nostr:** Query `{ kinds: [9735], '#e': [paymentRequestId] }` for NIP-57 zap receipts  
+**Business Methods:** 
+- `verifyPayment(invoiceId)` → checks Lightning provider + Nostr zap receipt
+- `checkZapReceipt(paymentId)` → queries Kind 9735 events
+- OrderBusinessService: `onPaymentVerified(orderId)` → auto-update to 'processing'
+
+**Pattern:** Poll payment status every 2s, verify via Lightning provider + optional Nostr zap receipt  
 Value: Fraud prevention, automated fulfillment, trust building
 
 ---
@@ -178,12 +218,14 @@ What: Alert buyer when order ships with tracking info
 Why: Buyers want to know when to expect delivery  
 How:
 
-| | Event Service | Component |
-|---|---|---|
-| **NEW** | - | - |
-| **UPDATE** | CommentEventService.ts (kind 1111 with tracking) | StatusUpdateForm.tsx (seller dashboard) |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | - | - | - | - | - |
+| **UPDATE** | - | `/src/components/shop/StatusUpdateForm.tsx` (add tracking fields: carrier, number, estimated delivery) | `/src/hooks/useOrderStatus.ts` (parse shipping updates) | `/src/services/business/OrderStatusService.ts` (validateShippingData method) | `/src/services/nostr/CommentEventService.ts` (include shipping fields in Kind 1111) | - |
 
-**Nostr:** Kind 1111 comment with tracking number, carrier, ship date (permanent relay record)  
+**Nostr:** Kind 1111 comment with content = JSON `{ status: 'shipped', trackingNumber, carrier, estimatedDelivery, timestamp }`  
+**Business Methods:** `updateOrderStatus(orderId, 'shipped', { trackingNumber, carrier, estimatedDelivery })` → validates shipping data, creates permanent relay record  
+**Pattern:** Shipping notification = Kind 1111 status update with specific fields  
 Value: Delivery expectations, tracking capability, verifiable proof of shipment
 
 ---
@@ -193,12 +235,15 @@ What: Mark order as delivered/completed
 Why: Close order lifecycle, trigger reviews, finalize transaction  
 How:
 
-| | Component | Event Service |
-|---|---|---|
-| **NEW** | - | - |
-| **UPDATE** | OrderDetail.tsx (add "Confirm Delivery" button) | CommentEventService.ts (kind 1111 delivery confirmation) |
+| | Page | Component | Hook | Business Service | Event Service | Generic Service |
+|---|---|---|---|---|---|---|
+| **NEW** | - | - | - | - | - | - |
+| **UPDATE** | `/src/app/orders/page.tsx` (buyer can confirm delivery) | `/src/components/shop/OrderDetailModal.tsx` (add "Confirm Delivery" button) | `/src/hooks/useOrderStatus.ts` (add confirmDelivery method) | `/src/services/business/OrderStatusService.ts` (add deliveryConfirmation method) | `/src/services/nostr/CommentEventService.ts` (create Kind 1111 with 'delivered' status) | - |
 
-**Nostr:** Kind 1111 delivery confirmation comment on order event  
+**Nostr:** Kind 1111 delivery confirmation comment with content = JSON `{ status: 'delivered', confirmedBy: 'buyer|seller', timestamp }`  
+**Hook Methods:** `confirmDelivery(orderId)` (buyer) or seller can mark delivered in StatusUpdateForm  
+**Business Methods:** `confirmDelivery(orderId, confirmedBy)` → creates permanent delivery record  
+**Pattern:** Final Kind 1111 status update marking order complete  
 Value: Order closure, review trigger, dispute prevention
 
 ---
@@ -212,5 +257,7 @@ Value: Order closure, review trigger, dispute prevention
 **18. Abandoned Cart Recovery** - Remind users about cart items  
 **19. Seller Reputation** - Display seller stats and badges  
 **20. Bulk Order Discounts** - Quantity-based pricing tiers
+
+---
 
 _Last Updated: October 14, 2025_
