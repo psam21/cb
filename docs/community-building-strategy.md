@@ -18,8 +18,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/community/page.tsx` | `/src/components/community/ActivityFeed.tsx` | - | - | - | - |
-| **UPDATE** | - | - | `/src/hooks/useExploreHeritage.ts` (reuse existing) | `/src/services/business/HeritageContentService.ts` (add queryAll method) | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
+| **NEW** | `/src/app/community/page.tsx` (activity feed - all contributions, paginated) | `/src/components/community/ActivityFeed.tsx` (grid layout), `/src/components/community/ActivityCard.tsx` (individual contribution card) | - | - | - | - |
+| **UPDATE** | `/src/app/page.tsx` (add link to /community in hero section) | `/src/components/Header.tsx` (add "Community" nav link) | `/src/hooks/useExploreHeritage.ts` (already queries all public heritage - reuse as-is) | `/src/services/business/HeritageContentService.ts` (add queryAll method if needed) | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
 
 **Nostr:** Query `{ kinds: [30023], '#t': ['culture-bridge-heritage-contribution'], limit: 50 }`  
 **Pattern:** Reuse Shop's product listing approach (battle-tested)  
@@ -32,8 +32,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/profile/[npub]/page.tsx` | `/src/components/profile/ContributorProfile.tsx`, `/src/components/profile/ContributorContributions.tsx` | `/src/hooks/useContributorProfile.ts` | - | - | - |
-| **UPDATE** | - | - | `/src/hooks/useExploreHeritage.ts` (add authors filter) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
+| **NEW** | `/src/app/profile/[npub]/page.tsx` (public contributor profile - not editable) | `/src/components/profile/ContributorProfile.tsx` (profile header with stats), `/src/components/profile/ContributorContributions.tsx` (grid of their heritage items) | `/src/hooks/useContributorProfile.ts` (fetch profile + contributions for any pubkey) | - | - | - |
+| **UPDATE** | - | `/src/components/community/ActivityCard.tsx`, `/src/components/heritage/HeritageCard.tsx` (make author name/avatar clickable → link to /profile/[npub]) | `/src/hooks/useExploreHeritage.ts` (add authors filter parameter) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
 
 **Nostr:** Query `{ kinds: [30023], authors: [pubkey] }` + `{ kinds: [0], authors: [pubkey] }` for profile metadata  
 **Pattern:** Battle-tested profile flow + heritage query pattern  
@@ -46,8 +46,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/profile/FollowButton.tsx` | `/src/hooks/useFollowing.ts` | `/src/services/business/FollowBusinessService.ts` | `/src/services/nostr/ContactListEventService.ts` | - |
-| **UPDATE** | `/src/app/profile/[npub]/page.tsx` | - | - | - | - | `/src/services/generic/GenericEventService.ts` (signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent, queryEvents) |
+| **NEW** | - | `/src/components/profile/FollowButton.tsx` (follow/unfollow toggle with count) | `/src/hooks/useFollowing.ts` (fetch contact list, follow/unfollow actions) | `/src/services/business/FollowBusinessService.ts` (manage Kind 3 contact list) | `/src/services/nostr/ContactListEventService.ts` (create/update Kind 3 events) | - |
+| **UPDATE** | `/src/app/profile/[npub]/page.tsx` (add FollowButton to profile header) | `/src/components/profile/ContributorProfile.tsx` (integrate FollowButton) | - | - | - | `/src/services/generic/GenericEventService.ts` (signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent, queryEvents) |
 
 **Nostr:** Create/update Kind 3 with `['p', pubkey, relay, petname]` tags, query `{ kinds: [3], authors: [userPubkey] }`  
 **Pattern:** Event creation via GenericEventService, tag management in ContactListEventService  
@@ -60,8 +60,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/community/FollowingFeed.tsx` | `/src/hooks/useFollowingFeed.ts` | - | - | - |
-| **UPDATE** | `/src/app/community/page.tsx` (add tab toggle) | - | `/src/hooks/useFollowing.ts` (fetch contact list), `/src/hooks/useExploreHeritage.ts` (add authors filter) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
+| **NEW** | - | `/src/components/community/FollowingFeed.tsx` (filtered feed component) | `/src/hooks/useFollowingFeed.ts` (fetch contact list → query contributions from followed pubkeys) | - | - | - |
+| **UPDATE** | `/src/app/community/page.tsx` (add tabs: "All Activity" vs "Following", toggle between feeds) | `/src/components/community/ActivityFeed.tsx` (add filter prop to switch between all/following) | `/src/hooks/useFollowing.ts` (fetch user's Kind 3 contact list), `/src/hooks/useExploreHeritage.ts` (add authors array filter) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
 
 **Nostr:** Fetch `{ kinds: [3], authors: [userPubkey] }`, extract 'p' tags, query `{ kinds: [30023], authors: [extractedPubkeys] }`  
 **Pattern:** Compose existing hooks (useFollowing + useExploreHeritage)  
@@ -74,8 +74,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/heritage/CommentSection.tsx`, `/src/components/heritage/CommentForm.tsx`, `/src/components/heritage/CommentItem.tsx` | `/src/hooks/useComments.ts` | `/src/services/business/CommentBusinessService.ts` | `/src/services/nostr/CommentEventService.ts` | - |
-| **UPDATE** | `/src/app/heritage/[id]/page.tsx` | - | - | - | - | `/src/services/generic/GenericEventService.ts` (signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent, queryEvents, subscribeToEvents) |
+| **NEW** | - | `/src/components/heritage/CommentSection.tsx` (comment list + form), `/src/components/heritage/CommentForm.tsx` (textarea + submit), `/src/components/heritage/CommentItem.tsx` (single comment with author/timestamp) | `/src/hooks/useComments.ts` (fetch comments, subscribe to new ones, post comment) | `/src/services/business/CommentBusinessService.ts` (validate, format comments) | `/src/services/nostr/CommentEventService.ts` (create Kind 1 events) | - |
+| **UPDATE** | `/src/app/heritage/[id]/page.tsx` (add CommentSection below contribution detail) | `/src/components/heritage/HeritageDetail.tsx` (integrate CommentSection) | - | - | - | `/src/services/generic/GenericEventService.ts` (signEvent), `/src/services/generic/GenericRelayService.ts` (publishEvent, queryEvents, subscribeToEvents) |
 
 **Nostr:** Create Kind 1 with `['e', eventId, relay, 'reply']` tag, query `{ kinds: [1], '#e': [eventId] }`  
 **Pattern:** Real-time subscription like messaging, event creation via GenericEventService  
@@ -130,8 +130,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/notifications/page.tsx` | `/src/components/notifications/NotificationBell.tsx`, `/src/components/notifications/NotificationList.tsx`, `/src/components/notifications/NotificationItem.tsx` | `/src/hooks/useNotifications.ts` | `/src/services/business/NotificationBusinessService.ts` | - | - |
-| **UPDATE** | - | `/src/components/Header.tsx` (add bell icon) | - | - | - | `/src/services/generic/GenericRelayService.ts` (subscribeToEvents) |
+| **NEW** | `/src/app/notifications/page.tsx` (notification center - grouped by type, mark as read) | `/src/components/notifications/NotificationBell.tsx` (header icon with unread badge), `/src/components/notifications/NotificationList.tsx` (scrollable list), `/src/components/notifications/NotificationItem.tsx` (single notification with action link) | `/src/hooks/useNotifications.ts` (subscribe to mention events, aggregate, mark read) | `/src/services/business/NotificationBusinessService.ts` (parse event types, format messages, manage read state) | - | - |
+| **UPDATE** | - | `/src/components/Header.tsx` (add NotificationBell icon next to user menu) | - | - | - | `/src/services/generic/GenericRelayService.ts` (subscribeToEvents with filter: kinds [1,3,7,14], #p: [userPubkey]) |
 
 **Nostr:** Subscribe `{ kinds: [1, 3, 7, 14], '#p': [userPubkey] }`, parse event type, format notification  
 **Pattern:** Real-time WebSocket subscription like messaging, notification aggregation  
@@ -158,8 +158,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/culture/[slug]/page.tsx` | `/src/components/culture/CultureHeader.tsx`, `/src/components/culture/CultureStats.tsx` | - | - | - | - |
-| **UPDATE** | - | - | `/src/hooks/useExploreHeritage.ts` (pre-filter by culture slug) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
+| **NEW** | `/src/app/culture/[slug]/page.tsx` (culture-specific landing page with stats + contributions) | `/src/components/culture/CultureHeader.tsx` (culture name, description, stats), `/src/components/culture/CultureStats.tsx` (contributor count, contribution count, top contributors) | - | - | - | - |
+| **UPDATE** | `/src/app/community/page.tsx` (add "Browse by Culture" section with links) | `/src/components/community/CultureFilter.tsx` (dropdown/grid to select culture) | `/src/hooks/useExploreHeritage.ts` (pre-filter by #culture tag from route param) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
 
 **Nostr:** Query `{ kinds: [30023], '#culture': [slug] }`, aggregate stats (contributor count, contribution count)  
 **Pattern:** Dynamic routes + pre-filtered heritage query  
@@ -172,8 +172,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/heritage/CoAuthorSelector.tsx` | `/src/hooks/useCoAuthors.ts` | - | - | - |
-| **UPDATE** | `/src/app/heritage/create/page.tsx`, `/src/app/heritage/[id]/edit/page.tsx` | `/src/components/heritage/HeritageContributionForm.tsx` | `/src/hooks/useHeritagePublishing.ts` (add co-authors to event) | - | `/src/services/nostr/NostrEventService.ts` (createHeritageEvent - add multiple 'p' tags) | - |
+| **NEW** | - | `/src/components/heritage/CoAuthorSelector.tsx` (search and select co-authors by npub/name) | `/src/hooks/useCoAuthors.ts` (search contributors, validate co-authors) | - | - | - |
+| **UPDATE** | `/src/app/heritage/create/page.tsx` (add co-authors section in form), `/src/app/heritage/[id]/edit/page.tsx` (allow original author to add co-authors) | `/src/components/heritage/HeritageContributionForm.tsx` (add co-authors field, show selected co-authors) | `/src/hooks/useHeritagePublishing.ts` (include co-author pubkeys in event tags) | - | `/src/services/nostr/NostrEventService.ts` - createHeritageEvent (add ['p', coAuthorPubkey, relay, 'co-author'] tags) | - |
 
 **Nostr:** Add multiple `['p', coAuthorPubkey, relay, 'co-author']` tags to Kind 30023, query to show multi-author contributions  
 **Pattern:** Tag-based collaboration, co-author selection UI  
@@ -186,8 +186,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/contributors/page.tsx` | `/src/components/contributors/ContributorDirectory.tsx`, `/src/components/contributors/ContributorCard.tsx`, `/src/components/contributors/DirectoryFilters.tsx` | `/src/hooks/useContributorDirectory.ts` | - | - | - |
-| **UPDATE** | - | - | - | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
+| **NEW** | `/src/app/contributors/page.tsx` (searchable directory with filters) | `/src/components/contributors/ContributorDirectory.tsx` (grid/list view), `/src/components/contributors/ContributorCard.tsx` (avatar, name, bio, stats, cultures), `/src/components/contributors/DirectoryFilters.tsx` (filter by culture, region, contribution count) | `/src/hooks/useContributorDirectory.ts` (fetch all contributors, aggregate stats, filter/search) | - | - | - |
+| **UPDATE** | `/src/app/community/page.tsx` (add "Browse Contributors" link) | `/src/components/Header.tsx` (add "Contributors" nav link) | - | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents - fetch all Kind 30023, extract unique authors, fetch Kind 0 for each) |
 
 **Nostr:** Query `{ kinds: [30023] }`, extract unique authors, fetch `{ kinds: [0], authors: [uniquePubkeys] }`, aggregate by culture/region tags  
 **Pattern:** Aggregation + profile metadata, filterable directory  
@@ -200,8 +200,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/community/TrendingSection.tsx` | `/src/hooks/useTrending.ts` | `/src/services/business/EngagementBusinessService.ts` | - | - |
-| **UPDATE** | `/src/app/community/page.tsx` (add trending tab) | - | - | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
+| **NEW** | - | `/src/components/community/TrendingSection.tsx` (top engaged items with engagement counts) | `/src/hooks/useTrending.ts` (fetch heritage + count engagement, score, cache results) | `/src/services/business/EngagementBusinessService.ts` (calculate engagement scores, cache for performance) | - | - |
+| **UPDATE** | `/src/app/community/page.tsx` (add "Trending" tab alongside All/Following) | `/src/components/community/ActivityFeed.tsx` (support trending sort order) | - | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents - two-phase: get heritage, then get engagement events) |
 
 **Nostr:** Query `{ kinds: [30023] }` for heritage, then `{ kinds: [1, 7, 6], '#e': [eventIds] }` for engagement, score = comments + reactions + reposts  
 **Pattern:** Multi-step query (content → engagement), scoring algorithm, caching for performance  
@@ -214,8 +214,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/profile/MutualConnections.tsx` | `/src/hooks/useMutualConnections.ts` | - | - | - |
-| **UPDATE** | `/src/app/profile/[npub]/page.tsx` | - | `/src/hooks/useFollowing.ts` (fetch contact lists for comparison) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents) |
+| **NEW** | - | `/src/components/profile/MutualConnections.tsx` (show avatars + count of mutual follows) | `/src/hooks/useMutualConnections.ts` (fetch both contact lists, compute intersection) | - | - | - |
+| **UPDATE** | `/src/app/profile/[npub]/page.tsx` (add MutualConnections section below profile header) | `/src/components/profile/ContributorProfile.tsx` (integrate MutualConnections component) | `/src/hooks/useFollowing.ts` (fetch contact lists for comparison) | - | - | `/src/services/generic/GenericRelayService.ts` (existing queryEvents - fetch Kind 3 for both users) |
 
 **Nostr:** Fetch `{ kinds: [3], authors: [userPubkey, profilePubkey] }`, extract 'p' tags from both, compute intersection  
 **Pattern:** Set intersection algorithm, contact list parsing  
