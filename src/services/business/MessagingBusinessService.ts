@@ -749,6 +749,18 @@ export class MessagingBusinessService {
             const messages = await this.decryptGiftWraps([event], signer);
             if (messages.length > 0) {
               messages[0].isSent = messages[0].senderPubkey === userPubkey;
+              
+              // Cache the message for future access
+              try {
+                await this.cache.cacheMessages([messages[0]]);
+              } catch (cacheError) {
+                logger.warn('Failed to cache incoming message', {
+                  service: 'MessagingBusinessService',
+                  method: 'subscribeToMessages',
+                  error: cacheError instanceof Error ? cacheError.message : 'Unknown error',
+                });
+              }
+              
               onMessage(messages[0]);
             }
           } catch (error) {

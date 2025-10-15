@@ -85,8 +85,14 @@ export const useConversations = () => {
    * Update conversation with new message
    */
   const updateConversationWithMessage = useCallback(async (message: Message) => {
+    console.log('[useConversations] 📨 Message received', {
+      id: message.id?.substring(0, 8),
+      createdAt: message.createdAt,
+      isSent: message.isSent,
+    });
+    
     const otherPubkey = message.isSent ? message.recipientPubkey : message.senderPubkey;
-    let updatedConversation: Conversation | null = null;
+    let updatedConversation: Conversation | undefined;
     
     setConversations(prev => {
       // Find existing conversation
@@ -95,6 +101,12 @@ export const useConversations = () => {
       if (existingIndex >= 0) {
         // Update existing conversation
         const updated = [...prev];
+        
+        console.log('[useConversations] ✏️ Updating conversation', {
+          pubkey: otherPubkey?.substring(0, 8),
+          oldLastMessageAt: updated[existingIndex].lastMessageAt,
+          newLastMessageAt: message.createdAt,
+        });
         
         updatedConversation = {
           ...updated[existingIndex],
@@ -105,9 +117,20 @@ export const useConversations = () => {
         updated[existingIndex] = updatedConversation;
         
         // Move to top (sort by lastMessageAt descending)
-        return updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+        const sorted = updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+        
+        console.log('[useConversations] 📊 Sorted - Top 3:', 
+          sorted.slice(0, 3).map(c => `${c.pubkey?.substring(0, 8)}@${c.lastMessageAt}`).join(', ')
+        );
+        
+        return sorted;
       } else {
         // Create new conversation
+        console.log('[useConversations] ➕ Creating new conversation', {
+          pubkey: otherPubkey?.substring(0, 8),
+          lastMessageAt: message.createdAt,
+        });
+        
         updatedConversation = {
           pubkey: otherPubkey,
           lastMessage: message,
@@ -123,9 +146,17 @@ export const useConversations = () => {
     
     // Update cache to persist conversation order across refreshes
     if (updatedConversation) {
+      const convToCache = updatedConversation; // Capture for type safety
+      console.log('[useConversations] 💾 Updating conversation cache', {
+        pubkey: convToCache.pubkey?.substring(0, 8),
+        lastMessageAt: convToCache.lastMessageAt,
+      });
+      
       try {
-        await messagingBusinessService.updateConversationCache(updatedConversation);
+        await messagingBusinessService.updateConversationCache(convToCache);
+        console.log('[useConversations] ✅ Cache updated successfully');
       } catch (error) {
+        console.error('[useConversations] ❌ Cache update failed:', error);
         logger.error('Failed to update conversation cache', error instanceof Error ? error : new Error('Unknown error'), {
           service: 'useConversations',
           method: 'updateConversationWithMessage',
