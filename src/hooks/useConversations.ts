@@ -85,8 +85,22 @@ export const useConversations = () => {
    * Update conversation with new message
    */
   const updateConversationWithMessage = useCallback((message: Message) => {
+    console.log('[useConversations] 📨 updateConversationWithMessage called', {
+      messageId: message.id?.substring(0, 8),
+      isSent: message.isSent,
+      senderPubkey: message.senderPubkey?.substring(0, 8),
+      recipientPubkey: message.recipientPubkey?.substring(0, 8),
+      createdAt: message.createdAt,
+    });
+    
     setConversations(prev => {
       const otherPubkey = message.isSent ? message.recipientPubkey : message.senderPubkey;
+      
+      console.log('[useConversations] 🎯 Calculated otherPubkey', {
+        otherPubkey: otherPubkey?.substring(0, 8),
+        isSent: message.isSent,
+        prevConversations: prev.length,
+      });
       
       // Find existing conversation
       const existingIndex = prev.findIndex(c => c.pubkey === otherPubkey);
@@ -100,8 +114,21 @@ export const useConversations = () => {
           lastMessageAt: message.createdAt,
         };
         
+        console.log('[useConversations] ✏️ Updated existing conversation', {
+          index: existingIndex,
+          pubkey: otherPubkey?.substring(0, 8),
+          newLastMessageAt: message.createdAt,
+        });
+        
       // Move to top (sort by lastMessageAt descending)
-      return updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+      const sorted = updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+      console.log('[useConversations] 📊 Sorted conversations', {
+        top3: sorted.slice(0, 3).map(c => ({
+          pubkey: c.pubkey?.substring(0, 8),
+          lastMessageAt: c.lastMessageAt,
+        })),
+      });
+      return sorted;
     } else {
       // Create new conversation
       const newConversation: Conversation = {
@@ -111,9 +138,21 @@ export const useConversations = () => {
         context: message.context,
       };
       
+      console.log('[useConversations] ➕ Created new conversation', {
+        pubkey: otherPubkey?.substring(0, 8),
+        lastMessageAt: message.createdAt,
+      });
+      
       // Add new conversation and sort to maintain order
       const updated = [newConversation, ...prev];
-      return updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+      const sorted = updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+      console.log('[useConversations] 📊 Sorted conversations', {
+        top3: sorted.slice(0, 3).map(c => ({
+          pubkey: c.pubkey?.substring(0, 8),
+          lastMessageAt: c.lastMessageAt,
+        })),
+      });
+      return sorted;
     }
   });
 }, []);  /**
