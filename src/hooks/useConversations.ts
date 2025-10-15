@@ -100,23 +100,23 @@ export const useConversations = () => {
           lastMessageAt: message.createdAt,
         };
         
-        // Move to top (sort by lastMessageAt descending)
-        return updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
-      } else {
-        // Create new conversation
-        const newConversation: Conversation = {
-          pubkey: otherPubkey,
-          lastMessage: message,
-          lastMessageAt: message.createdAt,
-          context: message.context,
-        };
-        
-        return [newConversation, ...prev];
-      }
-    });
-  }, []);
-
-  /**
+      // Move to top (sort by lastMessageAt descending)
+      return updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+    } else {
+      // Create new conversation
+      const newConversation: Conversation = {
+        pubkey: otherPubkey,
+        lastMessage: message,
+        lastMessageAt: message.createdAt,
+        context: message.context,
+      };
+      
+      // Add new conversation and sort to maintain order
+      const updated = [newConversation, ...prev];
+      return updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+    }
+  });
+}, []);  /**
    * Subscribe to new messages for real-time updates
    */
   useEffect(() => {
