@@ -87,7 +87,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           <div className="flex-1 overflow-y-auto">
             <button
               onClick={() => onSelectConversation(selectedPubkey)}
-              className="w-full p-4 border-b border-primary-100 bg-primary-100 text-left"
+              className="w-full p-5 md:p-4 border-b border-primary-100 bg-primary-100 text-left active:bg-primary-200 transition-colors"
             >
               <div className="flex items-start gap-3">
                 {/* Avatar placeholder */}
@@ -158,7 +158,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         {selectedPubkey && !conversations.find(c => c.pubkey === selectedPubkey) && (
           <button
             onClick={() => handleSelect(selectedPubkey)}
-            className="w-full p-4 border-b border-primary-100 bg-primary-100 text-left"
+            className="w-full p-5 md:p-4 border-b border-primary-100 bg-primary-100 text-left active:bg-primary-200 transition-colors"
           >
             <div className="flex items-start gap-3">
               {/* Avatar placeholder */}
@@ -186,7 +186,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           <button
             key={conversation.pubkey}
             onClick={() => handleSelect(conversation.pubkey)}
-            className={`w-full p-4 border-b border-primary-100 hover:bg-primary-50 transition-colors text-left ${
+            className={`w-full p-5 md:p-4 border-b border-primary-100 hover:bg-primary-50 active:bg-primary-150 transition-colors text-left ${
               selectedPubkey === conversation.pubkey ? 'bg-primary-100' : 'bg-white'
             }`}
           >

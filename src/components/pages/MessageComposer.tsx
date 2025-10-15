@@ -67,7 +67,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   };
 
   return (
-    <div className="border-t border-primary-200 bg-white p-4">
+    <div className="border-t border-primary-200 bg-white p-4 md:p-4">
       <div className="flex items-start gap-2">
         {/* Message input */}
         <div className="flex-1">
@@ -79,10 +79,10 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             placeholder={placeholder}
             disabled={disabled || isSending}
             rows={1}
-            className="w-full px-4 py-2 border border-primary-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent disabled:bg-primary-50 disabled:text-primary-400 disabled:cursor-not-allowed"
-            style={{ minHeight: '40px', maxHeight: '120px' }}
+            className="w-full px-4 py-3 md:py-2 border border-primary-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent disabled:bg-primary-50 disabled:text-primary-400 disabled:cursor-not-allowed text-base"
+            style={{ minHeight: '48px', maxHeight: '120px' }}
           />
-          <p className="text-xs text-primary-500 mt-1">
+          <p className="text-xs text-primary-500 mt-1 hidden md:block">
             Press Enter to send, Shift+Enter for new line
           </p>
         </div>
@@ -91,7 +91,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         <button
           onClick={handleSend}
           disabled={!message.trim() || disabled || isSending}
-          className="px-6 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:bg-primary-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center h-[40px]"
+          className="px-5 md:px-6 py-3 md:py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:bg-primary-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-h-[48px] md:min-h-[40px]"
         >
           {isSending ? (
             <>

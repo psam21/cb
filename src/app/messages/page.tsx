@@ -29,6 +29,9 @@ function MessagesPageContent() {
     type: 'product' | 'heritage';
     id: string;
   } | undefined>(undefined);
+  
+  // Mobile view state: true = show conversation list, false = show message thread
+  const [showConversationList, setShowConversationList] = useState(true);
 
   // Handle URL parameters for direct navigation (e.g., from "Contact Seller")
   React.useEffect(() => {
@@ -134,6 +137,15 @@ function MessagesPageContent() {
       pubkey,
     });
     setSelectedPubkey(pubkey);
+    setShowConversationList(false); // Switch to message view on mobile
+  };
+
+  const handleBackToList = () => {
+    logger.info('Returning to conversation list', {
+      service: 'MessagesPage',
+      method: 'handleBackToList',
+    });
+    setShowConversationList(true);
   };
 
   const handleSendMessage = async (content: string) => {
@@ -268,54 +280,105 @@ function MessagesPageContent() {
   return (
     <div className="min-h-screen bg-primary-50">
       <div className="max-w-7xl mx-auto h-screen flex flex-col">
-        {/* Header */}
-        <header className="bg-white border-b border-primary-200 px-6 py-4">
-          <h1 className="text-2xl font-bold text-primary-900">Messages</h1>
-          <p className="text-sm text-primary-600">Private encrypted conversations</p>
+        {/* Header - hidden on mobile when in message view */}
+        <header className={`bg-white border-b border-primary-200 px-4 md:px-6 py-3 md:py-4 ${!showConversationList ? 'hidden md:block' : ''}`}>
+          <h1 className="text-xl md:text-2xl font-bold text-primary-900">Messages</h1>
+          <p className="text-xs md:text-sm text-primary-600">Private encrypted conversations</p>
         </header>
 
-        {/* Two-panel layout */}
+        {/* Two-panel layout - responsive */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left panel: Conversation list */}
-          <div className="w-full md:w-80 border-r border-primary-200 bg-white flex flex-col">
-            <ConversationList
-              conversations={conversations}
-              selectedPubkey={selectedPubkey}
-              onSelectConversation={handleSelectConversation}
-              isLoading={conversationsLoading}
-            />
+          {/* Mobile: Show either conversation list OR message thread */}
+          <div className="md:hidden w-full flex">
+            {showConversationList ? (
+              <div className="w-full border-r border-primary-200 bg-white flex flex-col">
+                <ConversationList
+                  conversations={conversations}
+                  selectedPubkey={selectedPubkey}
+                  onSelectConversation={handleSelectConversation}
+                  isLoading={conversationsLoading}
+                />
+              </div>
+            ) : (
+              <div className="w-full flex flex-col bg-white">
+                <MessageThread
+                  messages={messages}
+                  currentUserPubkey={currentUserPubkey}
+                  otherUserPubkey={selectedPubkey}
+                  isLoading={messagesLoading}
+                  onBack={handleBackToList}
+                  showMobileHeader={true}
+                />
+
+                {selectedPubkey && (
+                  <MessageComposer
+                    onSend={handleSendMessage}
+                    disabled={!signer}
+                    isSending={isSending}
+                  />
+                )}
+
+                {/* Send error display */}
+                {sendError && (
+                  <div className="px-4 py-2 bg-red-50 border-t border-red-200">
+                    <p className="text-sm text-red-600">{sendError}</p>
+                  </div>
+                )}
+
+                {/* Messages error display */}
+                {messagesError && (
+                  <div className="px-4 py-2 bg-red-50 border-t border-red-200">
+                    <p className="text-sm text-red-600">{messagesError}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Right panel: Message thread + composer */}
-          <div className="flex-1 flex flex-col bg-white">
-            <MessageThread
-              messages={messages}
-              currentUserPubkey={currentUserPubkey}
-              otherUserPubkey={selectedPubkey}
-              isLoading={messagesLoading}
-            />
-
-            {selectedPubkey && (
-              <MessageComposer
-                onSend={handleSendMessage}
-                disabled={!signer}
-                isSending={isSending}
+          {/* Desktop: Show both panels side-by-side */}
+          <div className="hidden md:flex flex-1">
+            {/* Left panel: Conversation list */}
+            <div className="w-80 border-r border-primary-200 bg-white flex flex-col">
+              <ConversationList
+                conversations={conversations}
+                selectedPubkey={selectedPubkey}
+                onSelectConversation={handleSelectConversation}
+                isLoading={conversationsLoading}
               />
-            )}
+            </div>
 
-            {/* Send error display */}
-            {sendError && (
-              <div className="px-4 py-2 bg-red-50 border-t border-red-200">
-                <p className="text-sm text-red-600">{sendError}</p>
-              </div>
-            )}
+            {/* Right panel: Message thread + composer */}
+            <div className="flex-1 flex flex-col bg-white">
+              <MessageThread
+                messages={messages}
+                currentUserPubkey={currentUserPubkey}
+                otherUserPubkey={selectedPubkey}
+                isLoading={messagesLoading}
+                showMobileHeader={false}
+              />
 
-            {/* Messages error display */}
-            {messagesError && (
-              <div className="px-4 py-2 bg-red-50 border-t border-red-200">
-                <p className="text-sm text-red-600">{messagesError}</p>
-              </div>
-            )}
+              {selectedPubkey && (
+                <MessageComposer
+                  onSend={handleSendMessage}
+                  disabled={!signer}
+                  isSending={isSending}
+                />
+              )}
+
+              {/* Send error display */}
+              {sendError && (
+                <div className="px-4 py-2 bg-red-50 border-t border-red-200">
+                  <p className="text-sm text-red-600">{sendError}</p>
+                </div>
+              )}
+
+              {/* Messages error display */}
+              {messagesError && (
+                <div className="px-4 py-2 bg-red-50 border-t border-red-200">
+                  <p className="text-sm text-red-600">{messagesError}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

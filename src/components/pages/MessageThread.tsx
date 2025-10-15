@@ -16,6 +16,8 @@ interface MessageThreadProps {
   currentUserPubkey: string | null;
   otherUserPubkey: string | null;
   isLoading?: boolean;
+  onBack?: () => void;
+  showMobileHeader?: boolean;
 }
 
 export const MessageThread: React.FC<MessageThreadProps> = ({
@@ -23,6 +25,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   currentUserPubkey,
   otherUserPubkey,
   isLoading = false,
+  onBack,
+  showMobileHeader = false,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -113,6 +117,9 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     );
   }
 
+  // Get conversation display name (simplified - could be enhanced with profile lookup)
+  const displayName = otherUserPubkey.substring(0, 8) + '...' + otherUserPubkey.substring(otherUserPubkey.length - 4);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-white">
@@ -151,7 +158,39 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   }
 
   return (
-    <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-primary-50 p-4 space-y-4">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Mobile header with back button */}
+      {showMobileHeader && onBack && (
+        <div className="bg-white border-b border-primary-200 px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="p-2 -ml-2 hover:bg-primary-100 rounded-lg transition-colors"
+            aria-label="Back to conversations"
+          >
+            <svg
+              className="w-6 h-6 text-primary-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold text-primary-900 truncate">
+              {displayName}
+            </h2>
+          </div>
+        </div>
+      )}
+
+      {/* Messages container */}
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-primary-50 p-4 space-y-4">
       {messages.map((message) => {
         // Use the isSent flag from the message (already set by business service)
         const isSent = message.isSent ?? (message.senderPubkey === currentUserPubkey);
@@ -162,7 +201,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-lg px-4 py-2 ${
+              className={`max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-2 ${
                 isSent
                   ? 'bg-accent-600 text-white'
                   : 'bg-white text-primary-900 border border-primary-200'
@@ -200,6 +239,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
       {/* Scroll anchor */}
       <div ref={messagesEndRef} />
+      </div>
     </div>
   );
 };
