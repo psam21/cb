@@ -75,6 +75,23 @@ export class MessagingBusinessService {
   }
 
   /**
+   * Update a single conversation in cache
+   * Used when a new message arrives to persist conversation order
+   * 
+   * @param conversation - Conversation to update
+   */
+  public async updateConversationCache(conversation: Conversation): Promise<void> {
+    try {
+      await this.cache.updateConversation(conversation);
+    } catch (error) {
+      logger.error('Failed to update conversation cache', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'MessagingBusinessService',
+        method: 'updateConversationCache',
+      });
+    }
+  }
+
+  /**
    * Send a gift-wrapped message to a recipient
    * 
    * NIP-17 Implementation: Send TWO gift wraps:

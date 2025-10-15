@@ -266,6 +266,40 @@ export class MessageCacheService {
   }
 
   /**
+   * Update a single conversation in cache
+   * Optimized method for updating one conversation (e.g., when new message arrives)
+   * 
+   * @param conversation - Conversation to update
+   */
+  async updateConversation(conversation: Conversation): Promise<void> {
+    if (!this.db) {
+      return;
+    }
+
+    try {
+      const tx = this.db.transaction('conversations', 'readwrite');
+      const store = tx.objectStore('conversations');
+
+      // Encrypt conversation
+      const { ciphertext, iv } = await this.encryption.encrypt(conversation);
+
+      // Store/update encrypted conversation
+      await store.put({
+        pubkey: conversation.pubkey,
+        ciphertext,
+        iv,
+        lastMessageTime: conversation.lastMessageAt,
+        unreadCount: 0,
+        cachedAt: Date.now()
+      });
+
+      await tx.done;
+    } catch (error) {
+      console.error(`❌ Failed to update conversation ${conversation.pubkey}:`, error);
+    }
+  }
+
+  /**
    * Get all cached conversations
    */
   async getConversations(): Promise<Conversation[]> {
