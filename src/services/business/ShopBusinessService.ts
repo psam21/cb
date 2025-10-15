@@ -1543,8 +1543,9 @@ export class ShopBusinessService {
   }
 
   /**
-   * Fetch a single product by event ID
-   * Attempts to return cached product first, then queries relays if needed
+   * Fetch a single product by event ID or dTag
+   * For dTags (NIP-33), always queries relays to get the latest version
+   * For event IDs, uses cache first then queries relays if needed
    */
   public async fetchProductById(eventId: string): Promise<ShopProduct | null> {
     try {
@@ -1558,29 +1559,22 @@ export class ShopBusinessService {
         eventId,
       });
 
-      // Check local cache first (try both eventId and dTag)
-      let cachedProduct = productStore.getProduct(eventId);
-      
-      // If not found by ID, it might be a dTag - check if we have a product with matching dTag
-      if (!cachedProduct) {
-        // Note: ProductStore uses Map with ID as key, so we need to iterate to find by dTag
-        // This is acceptable since cache is small and in-memory
-        const allProducts = Array.from(productStore['products'].values());
-        cachedProduct = allProducts.find((p: ShopProduct) => p.dTag === eventId) || null;
-      }
-      
-      if (cachedProduct) {
-        logger.info('Product found in local store', {
-          service: 'ShopBusinessService',
-          method: 'fetchProductById',
-          eventId,
-          foundBy: cachedProduct.id === eventId ? 'eventId' : 'dTag',
-        });
-        return cachedProduct;
-      }
-
       // Determine if this is an event ID (64 hex chars) or dTag
       const isEventId = /^[a-f0-9]{64}$/i.test(eventId);
+      
+      // For event IDs, check cache first (event IDs are immutable)
+      // For dTags, ALWAYS query relays to get the latest version (NIP-33 replaceable events)
+      if (isEventId) {
+        const cachedProduct = productStore.getProduct(eventId);
+        if (cachedProduct) {
+          logger.info('Product found in local store by event ID', {
+            service: 'ShopBusinessService',
+            method: 'fetchProductById',
+            eventId,
+          });
+          return cachedProduct;
+        }
+      }
       
       // Query relays - use appropriate filter
       const filters = isEventId
@@ -1597,7 +1591,8 @@ export class ShopBusinessService {
         service: 'ShopBusinessService',
         method: 'fetchProductById',
         eventId,
-        filterType: isEventId ? 'by eventId' : 'by dTag (NIP-33)',
+        filterType: isEventId ? 'by eventId (immutable)' : 'by dTag (NIP-33 replaceable - always fetch latest)',
+        skipCache: !isEventId,
       });
 
       const queryResult = await queryEvents(filters, progress => {
@@ -1640,10 +1635,12 @@ export class ShopBusinessService {
       logger.info('Product fetched from relays successfully', {
         service: 'ShopBusinessService',
         method: 'fetchProductById',
-        eventId,
+        requestedId: eventId,
         productId: product.id,
         dTag: product.dTag,
+        latestEventId: product.eventId,
         publishedRelays: product.publishedRelays.length,
+        attachmentCount: product.attachments?.length || 0,
       });
 
       return product;
