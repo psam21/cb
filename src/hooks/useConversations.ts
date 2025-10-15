@@ -147,7 +147,8 @@ export const useConversations = () => {
       });
       unsubscribe();
     };
-  }, [signer, updateConversationWithMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signer]); // updateConversationWithMessage is stable, no need in deps
 
   /**
    * Load conversations on mount
