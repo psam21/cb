@@ -121,6 +121,7 @@ function MessagesPageContent() {
     isLoading: messagesLoading,
     error: messagesError,
     addMessage,
+    removeMessage,
   } = useMessages({ otherPubkey: selectedPubkey });
 
   // Message sending hook
@@ -160,14 +161,14 @@ function MessagesPageContent() {
         updateConversationWithMessage(tempMessage);
       },
       onSuccess: (message) => {
-        logger.info('Message sent successfully, updating with real ID', {
+        logger.info('Message sent successfully, will be updated via subscription', {
           service: 'MessagesPage',
           method: 'handleSendMessage',
           messageId: message.id,
         });
-        // Update the optimistic message with the real ID and details
-        addMessage(message);
-        // Update conversation list
+        // Don't call addMessage here - the subscription will handle it
+        // This prevents duplicate messages in the UI
+        // Just update conversation list with latest message
         updateConversationWithMessage(message);
       },
       onError: (error, tempId) => {
@@ -176,7 +177,10 @@ function MessagesPageContent() {
           method: 'handleSendMessage',
           tempId,
         });
-        // Could remove temp message here if desired
+        // Remove the failed temp message from UI
+        if (tempId) {
+          removeMessage(tempId);
+        }
       },
     });
   };
