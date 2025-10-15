@@ -86,11 +86,10 @@ export const HeritageContributionForm = ({
     currentStep: editingHook.updateProgress?.step || 'idle',
     error: editingHook.updateError,
     result: null, // Editing doesn't use result the same way
-    publishHeritage: async (data: HeritageContributionData) => {
-      // For editing, extract new files and track selective operations
-      const newFiles = data.attachments.filter(a => a.originalFile).map(a => a.originalFile!);
+    publishHeritage: async (data: HeritageContributionData, attachmentFiles: File[]) => {
+      // For editing, track selective operations based on current form attachments
       const existingAttachments = defaultValues?.attachments || [];
-      const currentAttachmentIds = data.attachments.map(a => a.id);
+      const currentAttachmentIds = attachments.map(a => a.id); // Use component state attachments
       
       // Track removed and kept attachments
       const removedAttachments = existingAttachments
@@ -117,7 +116,7 @@ export const HeritageContributionForm = ({
           knowledgeKeeperContact: data.knowledgeKeeperContact,
           tags: data.tags,
         },
-        newFiles,
+        attachmentFiles, // Use the passed attachmentFiles parameter (new files to upload)
         { removedAttachments, keptAttachments }
       );
       
