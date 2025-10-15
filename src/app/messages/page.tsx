@@ -180,8 +180,8 @@ function MessagesPageContent() {
         });
         // Don't call addMessage here - the subscription will handle it
         // This prevents duplicate messages in the UI
-        // Just update conversation list with latest message
-        updateConversationWithMessage(message);
+        // Note: Also don't update conversation list here - subscription handles it
+        // This prevents conversation order from flickering when timestamps differ
       },
       onError: (error, tempId) => {
         logger.error('Failed to send message', new Error(error), {
