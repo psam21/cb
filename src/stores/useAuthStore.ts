@@ -25,6 +25,10 @@ export interface AuthState {
   // Private key (sign-up only, in-memory, never persisted)
   nsec: string | null;
   
+  // Hydration state - tracks when zustand has finished loading from localStorage
+  _hasHydrated: boolean;
+  setHasHydrated: (hasHydrated: boolean) => void;
+  
   // Actions
   setSignerAvailable: (available: boolean) => void;
   setLoading: (loading: boolean) => void;
@@ -59,7 +63,12 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       nsec: null,
       
+      // Hydration state
+      _hasHydrated: false,
+      
       // Actions
+      setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),
+      
       setSignerAvailable: (available) => set({ isAvailable: available }),
       
       setLoading: (loading) => set({ isLoading: loading }),
@@ -196,7 +205,11 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: state.isAuthenticated,
           isAvailable: state.isAvailable,
           nsec: state.nsec, // Persist nsec for signing events
-        })
+        }),
+        onRehydrateStorage: () => (state) => {
+          // Called when rehydration is complete
+          state?.setHasHydrated(true);
+        },
       }
     ),
     {

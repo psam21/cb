@@ -18,10 +18,12 @@ import { useMessages } from '@/hooks/useMessages';
 import { useMessageSending } from '@/hooks/useMessageSending';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useAuthHydration } from '@/hooks/useAuthHydration';
 import { logger } from '@/services/core/LoggingService';
 
 function MessagesPageContent() {
   const searchParams = useSearchParams();
+  const isHydrated = useAuthHydration();
   const { signer, isLoading: signerLoading } = useNostrSigner();
   const [selectedPubkey, setSelectedPubkey] = useState<string | null>(null);
   const [currentUserPubkey, setCurrentUserPubkey] = useState<string | null>(null);
@@ -196,6 +198,19 @@ function MessagesPageContent() {
       },
     });
   };
+
+  // Wait for auth store to hydrate before checking authentication
+  // This prevents false redirects when the page first loads and persisted state hasn't loaded yet
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-primary-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state for signer
   if (signerLoading) {
