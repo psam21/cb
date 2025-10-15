@@ -55,6 +55,14 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     }
   }, [messages]);
 
+  // Scroll to bottom when conversation changes (opening a conversation)
+  useEffect(() => {
+    if (otherUserPubkey && messagesContainerRef.current && messagesEndRef.current) {
+      // Immediate scroll (no smooth animation) when opening conversation
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
+    }
+  }, [otherUserPubkey]);
+
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp * 1000);
     const now = new Date();
