@@ -145,14 +145,24 @@ function createMediaItemsFromImeta(event: { tags: string[][] }): ContentMediaIte
 function cleanLegacyContent(content: string, title: string): string {
   // Remove title as H1 heading from the beginning if it exists
   const titleH1Pattern = new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n+`, 'i');
-  const cleaned = content.replace(titleH1Pattern, '');
+  let cleaned = content.replace(titleH1Pattern, '');
   
   // Also remove if title appears at the very start without the H1 marker
   if (cleaned.startsWith(`${title}\n`)) {
-    return cleaned.substring(title.length + 1).trimStart();
+    cleaned = cleaned.substring(title.length + 1).trimStart();
   }
   
-  return cleaned;
+  // Remove embedded media section added by old createHeritageEvent implementation
+  // Pattern: ## Media followed by any number of image/video/audio embeds
+  // This handles backward compatibility for events created before Oct 14, 2025
+  const mediaHeaderPattern = /\n\n##\s+Media\s*\n\n(.*\n)*?(?=\n\n##|\n\n[^!\[]|$)/;
+  cleaned = cleaned.replace(mediaHeaderPattern, '');
+  
+  // Also handle case where ## Media section is at the end of content
+  const mediaHeaderAtEndPattern = /\n\n##\s+Media\s*\n\n[\s\S]*$/;
+  cleaned = cleaned.replace(mediaHeaderAtEndPattern, '');
+  
+  return cleaned.trim();
 }
 
 function buildMeta(contribution: HeritageContribution): ContentMeta[] {
