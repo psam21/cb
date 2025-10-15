@@ -102,16 +102,20 @@ export const useConversations = () => {
         // Update existing conversation
         const updated = [...prev];
         
+        // Keep the newest timestamp (in case old messages arrive after new ones)
+        const newestTimestamp = Math.max(updated[existingIndex].lastMessageAt, message.createdAt);
+        
         console.log('[useConversations] ✏️ Updating conversation', {
           pubkey: otherPubkey?.substring(0, 8),
           oldLastMessageAt: updated[existingIndex].lastMessageAt,
-          newLastMessageAt: message.createdAt,
+          messageTimestamp: message.createdAt,
+          usingTimestamp: newestTimestamp,
         });
         
         updatedConversation = {
           ...updated[existingIndex],
           lastMessage: message,
-          lastMessageAt: message.createdAt,
+          lastMessageAt: newestTimestamp,
         };
         
         updated[existingIndex] = updatedConversation;
