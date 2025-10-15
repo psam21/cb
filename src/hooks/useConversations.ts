@@ -108,6 +108,11 @@ export const useConversations = () => {
       if (existingIndex >= 0) {
         // Update existing conversation
         const updated = [...prev];
+        
+        console.log('[useConversations] 📋 BEFORE update - Top 3:',
+          updated.slice(0, 3).map(c => `${c.pubkey?.substring(0, 8)}@${c.lastMessageAt}`).join(', ')
+        );
+        
         updated[existingIndex] = {
           ...updated[existingIndex],
           lastMessage: message,
@@ -117,17 +122,17 @@ export const useConversations = () => {
         console.log('[useConversations] ✏️ Updated existing conversation', {
           index: existingIndex,
           pubkey: otherPubkey?.substring(0, 8),
+          oldLastMessageAt: prev[existingIndex].lastMessageAt,
           newLastMessageAt: message.createdAt,
         });
         
       // Move to top (sort by lastMessageAt descending)
       const sorted = updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
-      console.log('[useConversations] 📊 Sorted conversations', {
-        top3: sorted.slice(0, 3).map(c => ({
-          pubkey: c.pubkey?.substring(0, 8),
-          lastMessageAt: c.lastMessageAt,
-        })),
-      });
+      
+      console.log('[useConversations] 📊 AFTER sort - Top 3:',
+        sorted.slice(0, 3).map(c => `${c.pubkey?.substring(0, 8)}@${c.lastMessageAt}`).join(', ')
+      );
+      
       return sorted;
     } else {
       // Create new conversation
@@ -143,15 +148,18 @@ export const useConversations = () => {
         lastMessageAt: message.createdAt,
       });
       
+      console.log('[useConversations] 📋 BEFORE adding new - Top 3:',
+        prev.slice(0, 3).map(c => `${c.pubkey?.substring(0, 8)}@${c.lastMessageAt}`).join(', ')
+      );
+      
       // Add new conversation and sort to maintain order
       const updated = [newConversation, ...prev];
       const sorted = updated.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
-      console.log('[useConversations] 📊 Sorted conversations', {
-        top3: sorted.slice(0, 3).map(c => ({
-          pubkey: c.pubkey?.substring(0, 8),
-          lastMessageAt: c.lastMessageAt,
-        })),
-      });
+      
+      console.log('[useConversations] 📊 AFTER sort - Top 3:',
+        sorted.slice(0, 3).map(c => `${c.pubkey?.substring(0, 8)}@${c.lastMessageAt}`).join(', ')
+      );
+      
       return sorted;
     }
   });
