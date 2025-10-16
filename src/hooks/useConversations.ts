@@ -8,7 +8,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { messagingBusinessService } from '@/services/business/MessagingBusinessService';
 import { Conversation, Message } from '@/types/messaging';
@@ -21,7 +21,7 @@ export const useConversations = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [processedMessageIds] = useState<Set<string>>(new Set());
+  const processedMessageIds = useRef<Set<string>>(new Set());
 
   /**
    * Load conversations from relays
@@ -93,7 +93,7 @@ export const useConversations = () => {
     });
     
     // Deduplication: Skip if we've already processed this message
-    if (processedMessageIds.has(message.id)) {
+    if (processedMessageIds.current.has(message.id)) {
       console.log('[useConversations] ⏭️  Skipping duplicate message', {
         id: message.id?.substring(0, 8),
       });
@@ -106,12 +106,12 @@ export const useConversations = () => {
         id: message.id?.substring(0, 8),
         pubkey: message.senderPubkey?.substring(0, 8),
       });
-      processedMessageIds.add(message.id); // Mark as processed to avoid checking again
+      processedMessageIds.current.add(message.id); // Mark as processed to avoid checking again
       return;
     }
     
     // Mark message as processed
-    processedMessageIds.add(message.id);
+    processedMessageIds.current.add(message.id);
     
     const otherPubkey = message.isSent ? message.recipientPubkey : message.senderPubkey;
     let updatedConversation: Conversation | undefined;
@@ -195,7 +195,9 @@ export const useConversations = () => {
         });
       }
     }
-  }, [processedMessageIds]);  /**
+  }, []); // processedMessageIds is a ref, stable across renders
+
+  /**
    * Subscribe to new messages for real-time updates
    */
   useEffect(() => {
