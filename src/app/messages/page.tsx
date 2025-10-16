@@ -311,12 +311,6 @@ function MessagesPageContent() {
   return (
     <div className="min-h-screen bg-primary-50">
       <div className="max-w-7xl mx-auto h-screen flex flex-col">
-        {/* Header - hidden on mobile when in message view */}
-        <header className={`bg-white border-b border-primary-200 px-4 md:px-6 py-3 md:py-4 ${!showConversationList ? 'hidden md:block' : ''}`}>
-          <h1 className="text-xl md:text-2xl font-bold text-primary-900">Messages</h1>
-          <p className="text-xs md:text-sm text-primary-600">Private encrypted conversations</p>
-        </header>
-
         {/* Two-panel layout - responsive */}
         <div className="flex-1 flex overflow-hidden">
           {/* Mobile: Show either conversation list OR message thread */}
