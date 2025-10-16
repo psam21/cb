@@ -1057,6 +1057,87 @@ export class MessagingBusinessService {
   }
 
   /**
+   * Parse imeta tags from message content and extract attachments
+   * Removes imeta tag text from content and returns clean content + attachments
+   * 
+   * @param content - Message content potentially containing imeta tags
+   * @returns Object with cleanContent (stripped of imeta) and attachments array
+   */
+  private parseImetaFromContent(content: string): {
+    cleanContent: string;
+    attachments: GenericAttachment[];
+  } {
+    const attachments: GenericAttachment[] = [];
+    
+    // Regex to match: [Attachment N]\nurl ... m ... x ... [size ...] [dim ...] [duration ...]
+    const imetaRegex = /\n\n\[Attachment \d+\]\n((?:url [^\n]+|m [^\n]+|x [^\n]+|size [^\n]+|dim [^\n]+|duration [^\n]+)\s*)+/g;
+    
+    let cleanContent = content;
+    let match;
+    
+    while ((match = imetaRegex.exec(content)) !== null) {
+      const imetaBlock = match[0];
+      const imetaContent = match[1];
+      
+      // Parse individual fields from imeta
+      const urlMatch = imetaContent.match(/url ([^\s]+)/);
+      const mimeMatch = imetaContent.match(/m ([^\s]+)/);
+      const hashMatch = imetaContent.match(/x ([^\s]+)/);
+      const sizeMatch = imetaContent.match(/size (\d+)/);
+      const dimMatch = imetaContent.match(/dim (\d+)x(\d+)/);
+      const durationMatch = imetaContent.match(/duration ([\d.]+)/);
+      
+      if (urlMatch && mimeMatch && hashMatch) {
+        const url = urlMatch[1];
+        const mimeType = mimeMatch[1];
+        const hash = hashMatch[1];
+        
+        // Determine attachment type from mime type
+        let type: 'image' | 'video' | 'audio' | 'document' = 'document';
+        if (mimeType.startsWith('image/')) type = 'image';
+        else if (mimeType.startsWith('video/')) type = 'video';
+        else if (mimeType.startsWith('audio/')) type = 'audio';
+        
+        // Extract filename from URL
+        const urlParts = url.split('/');
+        const filename = urlParts[urlParts.length - 1] || 'attachment';
+        
+        // Size is required, default to 0 if not present
+        const size = sizeMatch ? parseInt(sizeMatch[1]) : 0;
+        
+        const attachment: GenericAttachment = {
+          id: hash, // Use hash as unique ID
+          type,
+          url,
+          name: filename,
+          mimeType,
+          size,
+          hash,
+          metadata: {},
+        };
+        
+        // Add dimension metadata for images/videos
+        if (dimMatch) {
+          attachment.metadata!.width = parseInt(dimMatch[1]);
+          attachment.metadata!.height = parseInt(dimMatch[2]);
+        }
+        
+        // Add duration for video/audio
+        if (durationMatch) {
+          attachment.metadata!.duration = parseFloat(durationMatch[1]);
+        }
+        
+        attachments.push(attachment);
+      }
+      
+      // Remove this imeta block from content
+      cleanContent = cleanContent.replace(imetaBlock, '');
+    }
+    
+    return { cleanContent: cleanContent.trim(), attachments };
+  }
+
+  /**
    * Decrypt gift-wrapped messages (Kind 1059 events)
    * Private helper method
    * 
@@ -1108,11 +1189,15 @@ export class MessagingBusinessService {
         const recipientTag = rumor.tags.find((tag: string[]) => tag[0] === 'p');
         const recipientPubkey = recipientTag ? recipientTag[1] : '';
 
+        // Parse imeta tags from content and create attachments
+        const { cleanContent, attachments } = this.parseImetaFromContent(content);
+
         const message: Message = {
           id: giftWrap.id,
           senderPubkey: rumor.pubkey,
           recipientPubkey,
-          content,
+          content: cleanContent,
+          attachments: attachments.length > 0 ? attachments : undefined,
           createdAt: rumor.created_at,
           context,
         };
