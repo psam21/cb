@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useState, useRef, KeyboardEvent } from 'react';
+import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { logger } from '@/services/core/LoggingService';
 
 interface MessageComposerProps {
@@ -16,6 +16,7 @@ interface MessageComposerProps {
   disabled?: boolean;
   placeholder?: string;
   isSending?: boolean;
+  conversationKey?: string | null; // To detect conversation changes
 }
 
 export const MessageComposer: React.FC<MessageComposerProps> = ({
@@ -23,9 +24,22 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   disabled = false,
   placeholder = 'Type a message...',
   isSending = false,
+  conversationKey = null,
 }) => {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-focus when conversation changes or component mounts
+  useEffect(() => {
+    if (!disabled && textareaRef.current) {
+      // Small delay to ensure DOM is ready and scroll has completed
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 150);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [conversationKey, disabled]);
 
   const handleSend = () => {
     const trimmedMessage = message.trim();

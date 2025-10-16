@@ -340,6 +340,7 @@ function MessagesPageContent() {
                     onSend={handleSendMessage}
                     disabled={!signer}
                     isSending={isSending}
+                    conversationKey={selectedPubkey}
                   />
                 )}
 
@@ -387,6 +388,7 @@ function MessagesPageContent() {
                   onSend={handleSendMessage}
                   disabled={!signer}
                   isSending={isSending}
+                  conversationKey={selectedPubkey}
                 />
               )}
 
