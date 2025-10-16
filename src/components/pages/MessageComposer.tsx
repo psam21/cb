@@ -10,13 +10,17 @@
 
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { logger } from '@/services/core/LoggingService';
+import { GenericAttachment } from '@/types/attachments';
+import { FileUp, X, Image, Film, Music } from 'lucide-react';
 
 interface MessageComposerProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, attachments?: GenericAttachment[]) => void;
   disabled?: boolean;
   placeholder?: string;
   isSending?: boolean;
   conversationKey?: string | null; // To detect conversation changes
+  maxAttachments?: number;
+  maxFileSizeMB?: number;
 }
 
 export const MessageComposer: React.FC<MessageComposerProps> = ({
@@ -25,9 +29,14 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   placeholder = 'Type a message...',
   isSending = false,
   conversationKey = null,
+  maxAttachments = 5,
+  maxFileSizeMB = 100,
 }) => {
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<GenericAttachment[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus when conversation changes or component mounts
   useEffect(() => {
@@ -41,10 +50,17 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     }
   }, [conversationKey, disabled]);
 
+  // Reset attachments when conversation changes
+  useEffect(() => {
+    setAttachments([]);
+    setUploadError(null);
+  }, [conversationKey]);
+
   const handleSend = () => {
     const trimmedMessage = message.trim();
     
-    if (!trimmedMessage || disabled || isSending) {
+    // Allow sending if there's text OR attachments
+    if ((!trimmedMessage && attachments.length === 0) || disabled || isSending) {
       return;
     }
 
@@ -52,10 +68,13 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       service: 'MessageComposer',
       method: 'handleSend',
       messageLength: trimmedMessage.length,
+      attachmentCount: attachments.length,
     });
 
-    onSend(trimmedMessage);
+    onSend(trimmedMessage, attachments.length > 0 ? attachments : undefined);
     setMessage('');
+    setAttachments([]);
+    setUploadError(null);
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -80,9 +99,121 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setUploadError(null);
+
+    if (attachments.length + files.length > maxAttachments) {
+      setUploadError(`Maximum ${maxAttachments} files allowed`);
+      return;
+    }
+
+    // Validate files
+    const maxBytes = maxFileSizeMB * 1024 * 1024;
+    const allowedTypes = ['image/', 'video/', 'audio/'];
+    
+    for (const file of files) {
+      if (file.size > maxBytes) {
+        setUploadError(`${file.name} exceeds ${maxFileSizeMB}MB limit`);
+        return;
+      }
+      
+      if (!allowedTypes.some(type => file.type.startsWith(type))) {
+        setUploadError(`${file.name} is not a supported media file`);
+        return;
+      }
+    }
+
+    // Create attachment objects from files
+    const newAttachments: GenericAttachment[] = files.map(file => {
+      const type = file.type.startsWith('image/') ? 'image' 
+        : file.type.startsWith('video/') ? 'video'
+        : 'audio';
+
+      return {
+        id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        type,
+        name: file.name,
+        size: file.size,
+        mimeType: file.type,
+        originalFile: file,
+        createdAt: Date.now(),
+      };
+    });
+
+    setAttachments(prev => [...prev, ...newAttachments]);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+    setUploadError(null);
+  };
+
+  const getAttachmentIcon = (type: string) => {
+    switch (type) {
+      case 'image': return <Image className="w-4 h-4" />;
+      case 'video': return <Film className="w-4 h-4" />;
+      case 'audio': return <Music className="w-4 h-4" />;
+      default: return <FileUp className="w-4 h-4" />;
+    }
+  };
+
   return (
     <div className="border-t border-primary-200 bg-white p-4 md:p-4">
+      {/* Attachment previews */}
+      {attachments.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {attachments.map(attachment => (
+            <div
+              key={attachment.id}
+              className="flex items-center gap-2 px-3 py-2 bg-primary-100 rounded-lg text-sm"
+            >
+              {getAttachmentIcon(attachment.type)}
+              <span className="max-w-[150px] truncate">{attachment.name}</span>
+              <button
+                onClick={() => removeAttachment(attachment.id)}
+                className="text-primary-500 hover:text-red-600 transition-colors"
+                disabled={isSending}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Error message */}
+      {uploadError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {uploadError}
+        </div>
+      )}
+
       <div className="flex items-start gap-2">
+        {/* File upload button */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*,audio/*"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={disabled || isSending || attachments.length >= maxAttachments}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled || isSending || attachments.length >= maxAttachments}
+          className="px-3 py-3 md:py-2 border border-primary-300 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] md:min-h-[40px]"
+          title="Attach media (images, video, audio)"
+        >
+          <FileUp className="w-5 h-5 text-primary-600" />
+        </button>
+
         {/* Message input */}
         <div className="flex-1">
           <textarea
@@ -104,7 +235,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         {/* Send button */}
         <button
           onClick={handleSend}
-          disabled={!message.trim() || disabled || isSending}
+          disabled={(!message.trim() && attachments.length === 0) || disabled || isSending}
           className="px-5 md:px-6 py-3 md:py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:bg-primary-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-h-[48px] md:min-h-[40px]"
         >
           {isSending ? (

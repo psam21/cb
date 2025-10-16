@@ -20,6 +20,7 @@ import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthHydration } from '@/hooks/useAuthHydration';
 import { logger } from '@/services/core/LoggingService';
+import { GenericAttachment } from '@/types/attachments';
 
 function MessagesPageContent() {
   const searchParams = useSearchParams();
@@ -166,7 +167,7 @@ function MessagesPageContent() {
     setShowConversationList(true);
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, attachments?: GenericAttachment[]) => {
     if (!selectedPubkey) {
       logger.warn('No conversation selected', {
         service: 'MessagesPage',
@@ -180,17 +181,18 @@ function MessagesPageContent() {
       method: 'handleSendMessage',
       recipientPubkey: selectedPubkey,
       context: conversationContext,
+      attachmentCount: attachments?.length || 0,
     });
 
     // Pass conversation context if available (e.g., from "Contact Seller" button)
-    await sendMessage(selectedPubkey, content, conversationContext, {
-      onOptimisticUpdate: (tempMessage) => {
+    await sendMessage(selectedPubkey, content, attachments, conversationContext, {
+      onOptimisticUpdate: (tempMessage: any) => {
         // Add to messages list immediately
         addMessage(tempMessage);
         // Update conversation list
         updateConversationWithMessage(tempMessage);
       },
-      onSuccess: (message) => {
+      onSuccess: (message: any) => {
         logger.info('Message sent successfully, will be updated via subscription', {
           service: 'MessagesPage',
           method: 'handleSendMessage',
@@ -201,7 +203,7 @@ function MessagesPageContent() {
         // Note: Also don't update conversation list here - subscription handles it
         // This prevents conversation order from flickering when timestamps differ
       },
-      onError: (error, tempId) => {
+      onError: (error: string, tempId?: string) => {
         logger.error('Failed to send message', new Error(error), {
           service: 'MessagesPage',
           method: 'handleSendMessage',

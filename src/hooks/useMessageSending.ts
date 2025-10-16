@@ -12,6 +12,7 @@ import { useState, useCallback } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { messagingBusinessService } from '@/services/business/MessagingBusinessService';
 import { Message, ConversationContext } from '@/types/messaging';
+import { GenericAttachment } from '@/types/attachments';
 import { useNostrSigner } from './useNostrSigner';
 import { AppError } from '@/errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
@@ -35,12 +36,14 @@ export const useMessageSending = () => {
    * 
    * @param recipientPubkey - Recipient's public key
    * @param content - Message content
+   * @param attachments - Optional media attachments
    * @param context - Optional conversation context (product/heritage reference)
    * @param options - Callbacks for optimistic UI and error handling
    */
   const sendMessage = useCallback(async (
     recipientPubkey: string,
     content: string,
+    attachments?: GenericAttachment[],
     context?: ConversationContext,
     options?: SendMessageOptions
   ) => {
@@ -55,9 +58,9 @@ export const useMessageSending = () => {
       return;
     }
 
-    if (!content.trim()) {
-      const error = 'Message content cannot be empty';
-      logger.warn('Cannot send empty message', {
+    if (!content.trim() && (!attachments || attachments.length === 0)) {
+      const error = 'Message must have content or attachments';
+      logger.warn('Cannot send empty message without attachments', {
         service: 'useMessageSending',
         method: 'sendMessage',
       });
@@ -72,6 +75,7 @@ export const useMessageSending = () => {
         method: 'sendMessage',
         recipientPubkey,
         hasContext: !!context,
+        attachmentCount: attachments?.length || 0,
       });
 
       setIsSending(true);
@@ -88,6 +92,7 @@ export const useMessageSending = () => {
         senderPubkey,
         recipientPubkey,
         content,
+        attachments,
         createdAt: Math.floor(Date.now() / 1000),
         context,
         isSent: true,
@@ -102,6 +107,7 @@ export const useMessageSending = () => {
           recipientPubkey,
           content,
           signer,
+          attachments,
           context
         );
 

@@ -220,6 +220,41 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 {message.content}
               </p>
 
+              {/* Media attachments */}
+              {message.attachments && message.attachments.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {message.attachments.map((attachment) => (
+                    <div key={attachment.id}>
+                      {attachment.type === 'image' && attachment.url && (
+                        <img
+                          src={attachment.url}
+                          alt={attachment.name}
+                          className="max-w-full rounded-lg max-h-64 object-contain"
+                        />
+                      )}
+                      {attachment.type === 'video' && attachment.url && (
+                        <video
+                          src={attachment.url}
+                          controls
+                          className="max-w-full rounded-lg max-h-64"
+                        >
+                          Your browser does not support video playback.
+                        </video>
+                      )}
+                      {attachment.type === 'audio' && attachment.url && (
+                        <audio
+                          src={attachment.url}
+                          controls
+                          className="w-full"
+                        >
+                          Your browser does not support audio playback.
+                        </audio>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Timestamp */}
               <p
                 className={`text-xs mt-1 ${

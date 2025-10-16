@@ -11,6 +11,7 @@
 import { logger } from '../core/LoggingService';
 import { NostrSigner, NostrEvent } from '../../types/nostr';
 import { Conversation, Message, ConversationContext, SendMessageResult } from '../../types/messaging';
+import { GenericAttachment } from '../../types/attachments';
 import { nostrEventService } from '../nostr/NostrEventService';
 import { queryEvents, publishEvent, subscribeToEvents } from '../generic/GenericRelayService';
 import { EncryptionService } from '../generic/EncryptionService';
@@ -19,6 +20,7 @@ import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../error
 import { profileService } from './ProfileBusinessService';
 import { MessageCacheService } from './MessageCacheService';
 import { getDisplayNameFromNIP05 } from '@/utils/nip05';
+import { uploadFile } from '../generic/GenericBlossomService';
 
 export class MessagingBusinessService {
   private static instance: MessagingBusinessService;
@@ -122,6 +124,7 @@ export class MessagingBusinessService {
     recipientPubkey: string,
     content: string,
     signer: NostrSigner,
+    attachments?: GenericAttachment[],
     context?: ConversationContext
   ): Promise<SendMessageResult> {
     try {
@@ -130,15 +133,104 @@ export class MessagingBusinessService {
         method: 'sendMessage',
         recipientPubkey,
         hasContext: !!context,
+        attachmentCount: attachments?.length || 0,
       });
 
       const senderPubkey = await signer.getPublicKey();
+
+      // Upload attachments to Blossom if provided
+      const uploadedAttachments: GenericAttachment[] = [];
+      if (attachments && attachments.length > 0) {
+        logger.info('Uploading message attachments', {
+          service: 'MessagingBusinessService',
+          method: 'sendMessage',
+          count: attachments.length,
+        });
+
+        for (const attachment of attachments) {
+          if (!attachment.originalFile) {
+            logger.warn('Attachment missing originalFile, skipping', {
+              service: 'MessagingBusinessService',
+              method: 'sendMessage',
+              attachmentId: attachment.id,
+            });
+            continue;
+          }
+
+          try {
+            const result = await uploadFile(attachment.originalFile, signer);
+            
+            if (!result.success || !result.metadata) {
+              throw new Error(result.error || 'Upload failed');
+            }
+
+            uploadedAttachments.push({
+              ...attachment,
+              url: result.metadata.url,
+              hash: result.metadata.hash,
+              metadata: {
+                ...attachment.metadata,
+              },
+            });
+
+            logger.info('Attachment uploaded successfully', {
+              service: 'MessagingBusinessService',
+              method: 'sendMessage',
+              attachmentId: attachment.id,
+              url: result.metadata.url,
+            });
+          } catch (error) {
+            logger.error('Failed to upload attachment', error instanceof Error ? error : new Error('Unknown error'), {
+              service: 'MessagingBusinessService',
+              method: 'sendMessage',
+              attachmentId: attachment.id,
+            });
+            throw new AppError(
+              `Failed to upload attachment: ${attachment.name}`,
+              ErrorCode.NOSTR_ERROR,
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              ErrorCategory.EXTERNAL_SERVICE,
+              ErrorSeverity.HIGH
+            );
+          }
+        }
+      }
 
       // Add context to message content if provided
       let messageContent = content;
       if (context) {
         const contextPrefix = `[Context: ${context.type}/${context.id}]\n\n`;
         messageContent = contextPrefix + content;
+      }
+
+      // Add imeta tags for attachments (NIP-94)
+      if (uploadedAttachments.length > 0) {
+        const imetaTags = uploadedAttachments.map(att => {
+          const tags = [
+            `url ${att.url}`,
+            `m ${att.mimeType}`,
+            `x ${att.hash}`,
+          ];
+          
+          if (att.metadata?.width && att.metadata?.height) {
+            tags.push(`dim ${att.metadata.width}x${att.metadata.height}`);
+          }
+          if (att.metadata?.duration) {
+            tags.push(`duration ${att.metadata.duration}`);
+          }
+          if (att.size) {
+            tags.push(`size ${att.size}`);
+          }
+          
+          return tags.join(' ');
+        });
+
+        // Add imeta tags to content (will be included in the rumor event)
+        // This is a simple text representation; ideally we'd modify createGiftWrappedMessage to accept tags
+        const imetaText = imetaTags.map((imeta, i) => 
+          `\n\n[Attachment ${i + 1}]\n${imeta}`
+        ).join('');
+        messageContent += imetaText;
       }
 
       // Create gift-wrapped message to recipient
@@ -179,6 +271,7 @@ export class MessagingBusinessService {
         senderPubkey,
         recipientPubkey,
         content,
+        attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
         createdAt: Math.floor(Date.now() / 1000),
         context,
         isSent: true,
@@ -1043,8 +1136,14 @@ export class MessagingBusinessService {
 export const messagingBusinessService = MessagingBusinessService.getInstance();
 
 // Export convenience functions
-export const sendMessage = (recipientPubkey: string, content: string, signer: NostrSigner, context?: ConversationContext) =>
-  messagingBusinessService.sendMessage(recipientPubkey, content, signer, context);
+export const sendMessage = (
+  recipientPubkey: string, 
+  content: string, 
+  signer: NostrSigner, 
+  attachments?: GenericAttachment[],
+  context?: ConversationContext
+) =>
+  messagingBusinessService.sendMessage(recipientPubkey, content, signer, attachments, context);
 
 export const getConversations = (signer: NostrSigner) =>
   messagingBusinessService.getConversations(signer);

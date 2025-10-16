@@ -4,6 +4,7 @@
  */
 
 import type { NostrEvent } from './nostr';
+import type { GenericAttachment } from './attachments';
 
 /**
  * Conversation between two users
@@ -49,6 +50,9 @@ export interface Message {
   
   /** Decrypted message content */
   content: string;
+  
+  /** Media attachments (images, video, audio) */
+  attachments?: GenericAttachment[];
   
   /** Timestamp when message was created */
   createdAt: number;
