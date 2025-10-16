@@ -67,6 +67,10 @@ export class MessageCacheService {
   private db: IDBPDatabase<MessageCacheDB> | null = null;
   private encryption: CacheEncryptionService;
   private static instance: MessageCacheService;
+  
+  // In-memory cache for decrypted messages (per session)
+  private decryptedMessagesCache: Map<string, Message[]> = new Map();
+  private decryptedConversationsCache: Map<string, Conversation> = new Map();
 
   private constructor() {
     this.encryption = CacheEncryptionService.getInstance();
@@ -144,12 +148,16 @@ export class MessageCacheService {
 
   /**
    * Cache multiple messages
+   * Invalidates in-memory cache for affected conversations
    */
   async cacheMessages(messages: Message[]): Promise<void> {
     if (!this.db) {
       console.warn('⚠️ Cache not initialized, skipping cacheMessages');
       return;
     }
+
+    // Track which conversations are affected
+    const affectedConversations = new Set<string>();
 
     // Encrypt all messages first, before opening transaction
     const encryptedMessages = await Promise.all(
@@ -159,6 +167,8 @@ export class MessageCacheService {
           const conversationId = message.isSent 
             ? message.recipientPubkey 
             : message.senderPubkey;
+
+          affectedConversations.add(conversationId);
 
           return {
             id: message.id,
@@ -193,13 +203,28 @@ export class MessageCacheService {
     });
 
     await tx.done;
+
+    // Invalidate in-memory cache for affected conversations
+    affectedConversations.forEach(conversationId => {
+      this.decryptedMessagesCache.delete(conversationId);
+      console.log(`[Cache] 🗑️ Invalidated decrypted cache for ${conversationId.substring(0, 8)}...`);
+    });
+
     console.log(`✅ Cached ${validMessages.length} messages`);
   }
 
   /**
    * Retrieve messages for a specific conversation
+   * Uses in-memory cache to avoid re-decrypting on every access
    */
   async getMessages(conversationPubkey: string): Promise<Message[]> {
+    // Check in-memory cache first
+    const cached = this.decryptedMessagesCache.get(conversationPubkey);
+    if (cached) {
+      console.log(`[Cache] ⚡ Decrypted messages cache HIT for ${conversationPubkey.substring(0, 8)}... (${cached.length} messages)`);
+      return cached;
+    }
+
     if (!this.db) {
       return [];
     }
@@ -210,6 +235,8 @@ export class MessageCacheService {
       
       // Get all encrypted messages for this conversation
       const encryptedMessages = await index.getAll(conversationPubkey);
+
+      console.log(`[Cache] 🔓 Decrypting ${encryptedMessages.length} messages for ${conversationPubkey.substring(0, 8)}...`);
 
       // Decrypt all messages
       const messages: Message[] = [];
@@ -228,6 +255,10 @@ export class MessageCacheService {
       // Sort by timestamp
       messages.sort((a, b) => a.createdAt - b.createdAt);
 
+      // Cache decrypted messages in memory
+      this.decryptedMessagesCache.set(conversationPubkey, messages);
+      console.log(`[Cache] 💾 Cached ${messages.length} decrypted messages for ${conversationPubkey.substring(0, 8)}...`);
+
       return messages;
     } catch (error) {
       console.error('❌ Failed to get cached messages:', error);
@@ -237,6 +268,7 @@ export class MessageCacheService {
 
   /**
    * Cache conversations
+   * Invalidates in-memory cache since we're updating stored data
    */
   async cacheConversations(conversations: Conversation[]): Promise<void> {
     console.log(`[Cache] 💾 cacheConversations called with ${conversations.length} conversations`, {
@@ -287,12 +319,18 @@ export class MessageCacheService {
     });
 
     await tx.done;
+
+    // Invalidate entire conversations cache since we're bulk updating
+    this.decryptedConversationsCache.clear();
+    console.log(`[Cache] 🗑️ Cleared decrypted conversations cache (bulk update)`);
+    
     console.log(`[Cache] ✅ Cache save transaction completed: ${validConversations.length} saved, ${conversations.length - validConversations.length} failed`);
   }
 
   /**
    * Update a single conversation in cache
    * Optimized method for updating one conversation (e.g., when new message arrives)
+   * Invalidates in-memory cache for that conversation
    * 
    * @param conversation - Conversation to update
    */
@@ -320,6 +358,10 @@ export class MessageCacheService {
       });
 
       await tx.done;
+
+      // Invalidate in-memory cache for this conversation
+      this.decryptedConversationsCache.delete(conversation.pubkey);
+      console.log(`[Cache] 🗑️ Invalidated decrypted conversation cache for ${conversation.pubkey.substring(0, 8)}...`);
     } catch (error) {
       console.error(`❌ Failed to update conversation ${conversation.pubkey}:`, error);
     }
@@ -327,12 +369,23 @@ export class MessageCacheService {
 
   /**
    * Get all cached conversations
+   * Uses in-memory cache to avoid re-decrypting on every access
    */
   async getConversations(): Promise<Conversation[]> {
     console.log('[Cache] 🔍 getConversations called', {
       dbInitialized: this.db !== null,
-      encryptionReady: this.encryption.isInitialized()
+      encryptionReady: this.encryption.isInitialized(),
+      cachedCount: this.decryptedConversationsCache.size
     });
+
+    // Check if we have all conversations cached in memory
+    if (this.decryptedConversationsCache.size > 0) {
+      const cached = Array.from(this.decryptedConversationsCache.values());
+      console.log(`[Cache] ⚡ Decrypted conversations cache HIT (${cached.length} conversations)`);
+      // Sort by last message time (newest first)
+      cached.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+      return cached;
+    }
 
     if (!this.db) {
       console.warn('[Cache] ⚠️ Database not initialized in getConversations');
@@ -346,6 +399,7 @@ export class MessageCacheService {
       // Get all encrypted conversations
       const encryptedConvos = await store.getAll();
       console.log(`[Cache] 📦 Retrieved ${encryptedConvos.length} encrypted conversations from IndexedDB`);
+      console.log(`[Cache] 🔓 Decrypting ${encryptedConvos.length} conversations...`);
 
       // Decrypt all conversations
       const conversations: Conversation[] = [];
@@ -356,12 +410,15 @@ export class MessageCacheService {
             encrypted.iv
           );
           conversations.push(conversation);
+          // Cache in memory
+          this.decryptedConversationsCache.set(conversation.pubkey, conversation);
         } catch (error) {
           console.error(`❌ Failed to decrypt conversation ${encrypted.pubkey}:`, error);
         }
       }
 
       console.log(`[Cache] ✅ Successfully decrypted ${conversations.length} conversations`);
+      console.log(`[Cache] 💾 Cached ${conversations.length} decrypted conversations in memory`);
 
       // Sort by last message time (newest first)
       conversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
@@ -412,6 +469,11 @@ export class MessageCacheService {
    * Clear all cached data (on logout)
    */
   async clearCache(): Promise<void> {
+    // Clear in-memory caches first
+    this.decryptedMessagesCache.clear();
+    this.decryptedConversationsCache.clear();
+    console.log('[Cache] 🗑️ Cleared in-memory decryption caches');
+
     if (!this.db) {
       return;
     }
