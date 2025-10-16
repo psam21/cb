@@ -222,7 +222,10 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
           } else {
             // No tempId (probably from subscription) - find temp by matching sender/time/content
             // This handles the case where subscription arrives before onSuccess
+            let foundMatch = false;
             prev.forEach(prevMsg => {
+              if (foundMatch) return; // Only replace first match
+              
               if (prevMsg.tempId && 
                   !prevMsg.id &&
                   prevMsg.senderPubkey === message.senderPubkey &&
@@ -234,16 +237,47 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
                 const prevContent = cleanContent(prevMsg.content);
                 const newContent = cleanContent(message.content);
                 
-                if (prevContent === newContent || prevContent === '' || newContent === '') {
-                  logger.debug('Replacing temp message with real message (by timestamp + content match)', {
+                // Content must match exactly (both empty is a match for photo-only messages)
+                const contentMatches = prevContent === newContent;
+                
+                // Additional check: attachment count should be similar
+                const prevAttachmentCount = prevMsg.attachments?.length || 0;
+                const newAttachmentCount = message.attachments?.length || 0;
+                const attachmentCountMatches = prevAttachmentCount === newAttachmentCount || 
+                                              (prevAttachmentCount > 0 && newAttachmentCount > 0);
+                
+                logger.info('Checking temp message match', {
+                  service: 'useMessages',
+                  method: 'addMessage',
+                  tempId: prevMsg.tempId,
+                  realId: message.id,
+                  timeDiff: Math.abs(prevMsg.createdAt - message.createdAt),
+                  prevContent,
+                  newContent,
+                  contentMatches,
+                  prevAttachmentCount,
+                  newAttachmentCount,
+                  attachmentCountMatches,
+                });
+                
+                if (contentMatches && attachmentCountMatches) {
+                  logger.info('✅ Replacing temp message with real message', {
                     service: 'useMessages',
                     method: 'addMessage',
                     tempId: prevMsg.tempId,
                     realId: message.id,
                     timeDiff: Math.abs(prevMsg.createdAt - message.createdAt),
-                    contentMatch: prevContent === newContent,
                   });
                   messageMap.delete(`temp:${prevMsg.tempId}`);
+                  foundMatch = true;
+                } else {
+                  logger.warn('❌ Temp message did not match - keeping as separate message', {
+                    service: 'useMessages',
+                    method: 'addMessage',
+                    tempId: prevMsg.tempId,
+                    realId: message.id,
+                    reason: !contentMatches ? 'content mismatch' : 'attachment count mismatch',
+                  });
                 }
               }
             });
