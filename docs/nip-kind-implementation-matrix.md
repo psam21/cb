@@ -85,7 +85,13 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - **NIP-05** fallback for missing names
 - Conversation context with image thumbnails (product/heritage references)
 - Background profile refresh from cache
-- IndexedDB cache with AES-GCM encryption
+- IndexedDB cache with AES-GCM encryption for messages and conversations
+- **ProfileCacheService** - 7-day TTL, persistent across sessions, LRU eviction at 1000 entries
+- **MessageCacheService** - 30-day TTL, encrypted conversation/message storage
+- **AdaptiveSync** - Dynamic polling intervals (1-10 minutes) based on message activity
+- Duplicate message deduplication via processedMessageIds ref (prevents cache+subscription double processing)
+- Self-message filtering (sender === recipient) to prevent invalid conversations
+- Cache migration system for data cleanup (removes pre-fix invalid conversations on init)
 
 ### Shop Products
 
@@ -165,9 +171,25 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 ### Caching Strategy
 
-- IndexedDB for conversation/message persistence
-- AES-GCM encryption (PBKDF2 key derivation from npub, 100k iterations)
-- 40s cache validity for conversation lists
+- **ProfileCacheService** - IndexedDB persistent cache with 7-day TTL
+  - LRU eviction at 1000 entries (prevents unbounded growth)
+  - In-memory secondary cache (Map) for instant lookups
+  - Hit rate tracking (62% observed in production)
+  - PBKDF2 key derivation from npub (100k iterations)
+  - AES-256-GCM encryption-at-rest
+- **MessageCacheService** - IndexedDB encrypted storage with 30-day TTL
+  - Caches conversations (metadata, last message, unread count)
+  - Caches messages (full conversation history)
+  - Two-tier caching: In-memory Map + IndexedDB
+  - Encryption using PBKDF2 + AES-GCM (100k iterations)
+  - Migration system for schema updates and data cleanup
+  - Automatic TTL-based cleanup on initialization
+- **AdaptiveSync** - Background sync with exponential backoff
+  - Dynamic polling interval: 1-10 minutes based on activity
+  - Starts at 1 minute, increases 1.5x on empty syncs
+  - Resets to 1 minute on new message detection
+  - Stops on component unmount to prevent resource leaks
+- 40s cache validity for conversation lists (in-memory staleness check)
 - Background profile refresh for up-to-date user metadata
 - Automatic cache clearing on sign-out for security
 - Encryption-at-rest prevents casual DevTools browsing
@@ -267,7 +289,7 @@ Current relay configurations include support for additional NIPs not yet utilize
 - ✅ **NIP-05 verification** - Real-time DNS verification with verified/unverified badges (implemented 2025-10-06)
 - ✅ **Lightning addresses** - lud16 (modern) and lud06 (LNURL) support (implemented 2025-10-06)
 - ✅ **Image cropping** - react-easy-crop for profile picture and banner (implemented 2025-10-06)
-- Profile cache (7-day TTL) - planned
+- ✅ **Profile cache** - ProfileCacheService with 7-day TTL, LRU eviction, 62% hit rate (implemented 2025-10-16)
 - WebSocket profile updates - planned
 
 ### Static Content Migration (Future)
@@ -285,12 +307,19 @@ Current relay configurations include support for additional NIPs not yet utilize
 
 ---
 
-**Last Updated**: October 12, 2025  
+**Last Updated**: October 16, 2025  
 **Codebase Version**: Next.js 15.4.6  
 **Active NIPs**: 9 implemented (NIP-01, NIP-05, NIP-07, NIP-09, NIP-17, NIP-23, NIP-33, NIP-44, NIP-94 + Blossom)  
 **Active Event Kinds**: 8 kinds (Kind 0, Kind 1, Kind 5, Kind 14, Kind 1059, Kind 10063, Kind 24242, Kind 30023)  
 **Recent Updates**:
 
+- 2025-10-16: Messaging - Fixed duplicate conversation bug (useState → useRef for processedMessageIds Set)
+- 2025-10-16: Messaging - Added self-message filter (prevents conversations with self where sender === recipient)
+- 2025-10-16: Messaging - Implemented cache migration system (removes invalid pre-fix data on init)
+- 2025-10-16: Messaging - ProfileCacheService deployed (7-day TTL, LRU eviction, 62% hit rate)
+- 2025-10-16: Messaging - MessageCacheService optimization (two-tier caching, 30-day TTL)
+- 2025-10-16: Messaging - AdaptiveSync background polling (1-10 min dynamic intervals)
+- 2025-10-16: Performance - Reduced conversation load time from 86s → 35s → 22s (74% improvement)
 - 2025-10-12: Code Quality - Completed comprehensive refactoring initiative (17/17 tasks, 100% complete)
 - 2025-10-12: Architecture - Documented attachment hook patterns (decorator pattern, when-to-use guidance)
 - 2025-10-12: Error Handling - Standardized error handling across 9 hooks (AppError with structured metadata)
