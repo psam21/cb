@@ -8,8 +8,9 @@
 
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Message } from '@/types/messaging';
+import { ArrowLeft, X } from 'lucide-react';
 
 interface MessageThreadProps {
   messages: Message[];
@@ -24,12 +25,13 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   messages,
   currentUserPubkey,
   otherUserPubkey,
-  isLoading = false,
+  isLoading,
   onBack,
   showMobileHeader = false,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<{ url: string; alt: string } | null>(null);
 
   // Debug logging
   useEffect(() => {
@@ -229,7 +231,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                         <img
                           src={attachment.url}
                           alt={attachment.name}
-                          className="max-w-full rounded-lg max-h-64 object-contain"
+                          className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setFullscreenImage({ url: attachment.url!, alt: attachment.name })}
                         />
                       )}
                       {attachment.type === 'video' && attachment.url && (
@@ -283,6 +286,31 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       {/* Scroll anchor */}
       <div ref={messagesEndRef} />
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setFullscreenImage(null)}
+            className="absolute top-4 right-4 p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full transition-colors"
+            aria-label="Close fullscreen"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Fullscreen image */}
+          <img
+            src={fullscreenImage.url}
+            alt={fullscreenImage.alt}
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };

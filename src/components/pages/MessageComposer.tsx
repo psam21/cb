@@ -21,6 +21,7 @@ interface MessageComposerProps {
   conversationKey?: string | null; // To detect conversation changes
   maxAttachments?: number;
   maxFileSizeMB?: number;
+  uploadProgress?: { fileName: string; progress: number } | null;
 }
 
 export const MessageComposer: React.FC<MessageComposerProps> = ({
@@ -31,12 +32,17 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   conversationKey = null,
   maxAttachments = 5,
   maxFileSizeMB = 100,
+  uploadProgress: externalUploadProgress = null,
 }) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<GenericAttachment[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use external progress if provided, otherwise use internal
+  const displayProgress = externalUploadProgress || uploadProgress;
 
   // Auto-focus when conversation changes or component mounts
   useEffect(() => {
@@ -54,6 +60,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   useEffect(() => {
     setAttachments([]);
     setUploadError(null);
+    setUploadProgress(null);
   }, [conversationKey]);
 
   const handleSend = () => {
@@ -75,6 +82,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     setMessage('');
     setAttachments([]);
     setUploadError(null);
+    setUploadProgress(null);
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -102,6 +110,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setUploadError(null);
+    setUploadProgress(null);
 
     if (attachments.length + files.length > maxAttachments) {
       setUploadError(`Maximum ${maxAttachments} files allowed`);
@@ -152,6 +161,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const removeAttachment = (id: string) => {
     setAttachments(prev => prev.filter(a => a.id !== id));
     setUploadError(null);
+    setUploadProgress(null);
   };
 
   const getAttachmentIcon = (type: string) => {
@@ -194,12 +204,29 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         </div>
       )}
 
+      {/* Upload progress */}
+      {displayProgress && (
+        <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm text-blue-700">Uploading {displayProgress.fileName}...</span>
+            <span className="text-sm font-medium text-blue-700">{displayProgress.progress}%</span>
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${displayProgress.progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start gap-2">
         {/* File upload button */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*,video/*,audio/*"
+          capture="environment"
           multiple
           onChange={handleFileSelect}
           className="hidden"
