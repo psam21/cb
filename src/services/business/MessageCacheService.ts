@@ -151,35 +151,49 @@ export class MessageCacheService {
       return;
     }
 
+    // Encrypt all messages first, before opening transaction
+    const encryptedMessages = await Promise.all(
+      messages.map(async (message) => {
+        try {
+          const { ciphertext, iv } = await this.encryption.encrypt(message);
+          const conversationId = message.isSent 
+            ? message.recipientPubkey 
+            : message.senderPubkey;
+
+          return {
+            id: message.id,
+            conversationId,
+            ciphertext,
+            iv,
+            timestamp: message.createdAt,
+            cachedAt: Date.now()
+          };
+        } catch (error) {
+          console.error(`❌ Failed to encrypt message ${message.id}:`, error);
+          return null;
+        }
+      })
+    );
+
+    // Filter out failed encryptions
+    const validMessages = encryptedMessages.filter(m => m !== null);
+
+    if (validMessages.length === 0) {
+      console.warn('⚠️ No valid messages to cache');
+      return;
+    }
+
+    // Now do the transaction with already-encrypted data
     const tx = this.db.transaction('messages', 'readwrite');
     const store = tx.objectStore('messages');
 
-    for (const message of messages) {
-      try {
-        // Encrypt message
-        const { ciphertext, iv } = await this.encryption.encrypt(message);
-
-        // Determine conversation ID (other user's pubkey)
-        const conversationId = message.isSent 
-          ? message.recipientPubkey 
-          : message.senderPubkey;
-
-        // Store encrypted message
-        await store.put({
-          id: message.id,
-          conversationId,
-          ciphertext,
-          iv,
-          timestamp: message.createdAt,
-          cachedAt: Date.now()
-        });
-      } catch (error) {
-        console.error(`❌ Failed to cache message ${message.id}:`, error);
-      }
-    }
+    // Add all messages to store synchronously (no await in loop)
+    validMessages.forEach(message => {
+      store.put(message);
+    });
 
     await tx.done;
-    console.log(`✅ Cached ${messages.length} messages`);
+    console.log(`✅ Cached ${validMessages.length} messages`);
   }
 
   /**
@@ -235,34 +249,45 @@ export class MessageCacheService {
       return;
     }
 
-    const tx = this.db.transaction('conversations', 'readwrite');
-    const store = tx.objectStore('conversations');
-    let successCount = 0;
-    let failCount = 0;
+    // Encrypt all conversations first, before opening transaction
+    const encryptedConversations = await Promise.all(
+      conversations.map(async (conversation) => {
+        try {
+          const { ciphertext, iv } = await this.encryption.encrypt(conversation);
+          return {
+            pubkey: conversation.pubkey,
+            ciphertext,
+            iv,
+            lastMessageTime: conversation.lastMessageAt,
+            unreadCount: conversation.unreadCount || 0,
+            cachedAt: Date.now()
+          };
+        } catch (error) {
+          console.error(`❌ Failed to encrypt conversation ${conversation.pubkey}:`, error);
+          return null;
+        }
+      })
+    );
 
-    for (const conversation of conversations) {
-      try {
-        // Encrypt conversation
-        const { ciphertext, iv } = await this.encryption.encrypt(conversation);
-
-        // Store encrypted conversation
-        await store.put({
-          pubkey: conversation.pubkey,
-          ciphertext,
-          iv,
-          lastMessageTime: conversation.lastMessageAt,
-          unreadCount: 0, // TODO: Implement unread tracking
-          cachedAt: Date.now()
-        });
-        successCount++;
-      } catch (error) {
-        failCount++;
-        console.error(`❌ Failed to cache conversation ${conversation.pubkey}:`, error);
-      }
+    // Filter out failed encryptions
+    const validConversations = encryptedConversations.filter(c => c !== null);
+    
+    if (validConversations.length === 0) {
+      console.warn('[Cache] ⚠️ No valid conversations to cache');
+      return;
     }
 
+    // Now do the transaction with already-encrypted data
+    const tx = this.db.transaction('conversations', 'readwrite');
+    const store = tx.objectStore('conversations');
+
+    // Add all conversations to store synchronously (no await in loop)
+    validConversations.forEach(conversation => {
+      store.put(conversation);
+    });
+
     await tx.done;
-    console.log(`[Cache] ✅ Cache save transaction completed: ${successCount} saved, ${failCount} failed`);
+    console.log(`[Cache] ✅ Cache save transaction completed: ${validConversations.length} saved, ${conversations.length - validConversations.length} failed`);
   }
 
   /**
@@ -277,19 +302,20 @@ export class MessageCacheService {
     }
 
     try {
+      // Encrypt conversation first, before opening transaction
+      const { ciphertext, iv } = await this.encryption.encrypt(conversation);
+
+      // Now do the transaction with already-encrypted data
       const tx = this.db.transaction('conversations', 'readwrite');
       const store = tx.objectStore('conversations');
 
-      // Encrypt conversation
-      const { ciphertext, iv } = await this.encryption.encrypt(conversation);
-
-      // Store/update encrypted conversation
-      await store.put({
+      // Store/update encrypted conversation (synchronous call)
+      store.put({
         pubkey: conversation.pubkey,
         ciphertext,
         iv,
         lastMessageTime: conversation.lastMessageAt,
-        unreadCount: 0,
+        unreadCount: conversation.unreadCount || 0,
         cachedAt: Date.now()
       });
 
