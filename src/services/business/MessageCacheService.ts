@@ -121,6 +121,9 @@ export class MessageCacheService {
 
       console.log('✅ Message cache initialized');
 
+      // Run migrations
+      await this.runMigrations(pubkey);
+
       // Cleanup old cached data
       await this.cleanupOldCache();
     } catch (error) {
@@ -542,6 +545,64 @@ export class MessageCacheService {
       console.log('🔒 Cache cleared');
     } catch (error) {
       console.error('❌ Failed to clear cache:', error);
+    }
+  }
+
+  /**
+   * Run data migrations
+   * Called once during cache initialization
+   * 
+   * @param currentUserPubkey - Current user's public key
+   */
+  private async runMigrations(currentUserPubkey: string): Promise<void> {
+    if (!this.db) {
+      return;
+    }
+
+    console.log('[Cache] 🔄 Running cache migrations...');
+
+    try {
+      // MIGRATION 1: Remove self-conversations
+      // Issue: Conversations where pubkey === currentUserPubkey should not exist
+      // These were created before the self-message filter was implemented
+      const tx = this.db.transaction('conversations', 'readwrite');
+      const store = tx.objectStore('conversations');
+      
+      // Check if self-conversation exists
+      const selfConversation = await store.get(currentUserPubkey);
+      
+      if (selfConversation) {
+        console.log(`[Cache] 🗑️ Removing self-conversation: ${currentUserPubkey.substring(0, 8)}...`);
+        await store.delete(currentUserPubkey);
+        
+        // Also remove associated messages
+        const messageTx = this.db.transaction('messages', 'readwrite');
+        const messageStore = messageTx.objectStore('messages');
+        const messageIndex = messageStore.index('by-conversation');
+        
+        let cursor = await messageIndex.openCursor(currentUserPubkey);
+        let deletedMessages = 0;
+        
+        while (cursor) {
+          await cursor.delete();
+          deletedMessages++;
+          cursor = await cursor.continue();
+        }
+        
+        console.log(`[Cache] 🧹 Removed ${deletedMessages} self-messages`);
+        
+        // Invalidate in-memory cache
+        this.decryptedConversationsCache.delete(currentUserPubkey);
+        this.decryptedMessagesCache.delete(currentUserPubkey);
+      } else {
+        console.log('[Cache] ✅ No self-conversation found (already clean)');
+      }
+
+      await tx.done;
+      console.log('[Cache] ✅ Migrations completed');
+    } catch (error) {
+      console.error('[Cache] ❌ Migration failed:', error);
+      // Don't throw - continue even if migration fails
     }
   }
 
