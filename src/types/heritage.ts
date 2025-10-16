@@ -46,7 +46,6 @@ export interface HeritageNostrEvent extends NostrEvent {
   kind: 30023;
   tags: [
     ['d', string], // Unique identifier
-    ['content-type', 'heritage'], // Content type identifier
     ['t', 'culture-bridge-heritage-contribution'], // System tag (hidden)
     ['title', string],
     ['category', string],
@@ -181,7 +180,6 @@ export interface HeritageContribution {
  */
 export const HERITAGE_TAG_KEYS = {
   D_TAG: 'd',
-  CONTENT_TYPE: 'content-type',
   SYSTEM_TAG: 't', // For 'culture-bridge-heritage-contribution'
   TITLE: 'title',
   CATEGORY: 'category',
@@ -204,11 +202,6 @@ export const HERITAGE_TAG_KEYS = {
  * System tag constant
  */
 export const HERITAGE_SYSTEM_TAG = 'culture-bridge-heritage-contribution';
-
-/**
- * Content type constant
- */
-export const HERITAGE_CONTENT_TYPE = 'heritage';
 
 /**
  * Helper to extract heritage data from Nostr event
@@ -293,7 +286,6 @@ export const parseHeritageEvent = (event: NostrEvent): HeritageContribution | nu
 export const isHeritageEvent = (event: NostrEvent): event is HeritageNostrEvent => {
   return (
     event.kind === 30023 &&
-    event.tags.some(t => t[0] === 'content-type' && t[1] === 'heritage') &&
     event.tags.some(t => t[0] === 't' && t[1] === HERITAGE_SYSTEM_TAG)
   );
 };
