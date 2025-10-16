@@ -8,9 +8,11 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Conversation } from '@/types/messaging';
 import { logger } from '@/services/core/LoggingService';
+import { decodeNpub } from '@/utils/keyManagement';
+import { MessageSquarePlus } from 'lucide-react';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -25,6 +27,9 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   onSelectConversation,
   isLoading = false,
 }) => {
+  const [npubInput, setNpubInput] = useState('');
+  const [npubError, setNpubError] = useState('');
+
   const handleSelect = (pubkey: string) => {
     logger.info('Conversation selected', {
       service: 'ConversationList',
@@ -32,6 +37,61 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       pubkey,
     });
     onSelectConversation(pubkey);
+  };
+
+  const handleStartConversation = () => {
+    setNpubError('');
+    const input = npubInput.trim();
+    
+    if (!input) {
+      setNpubError('Please enter an npub');
+      return;
+    }
+
+    try {
+      // Try to decode the npub
+      const pubkey = decodeNpub(input);
+      
+      // Check if conversation already exists
+      const existingConversation = conversations.find(c => c.pubkey === pubkey);
+      
+      if (existingConversation) {
+        logger.info('Selecting existing conversation from npub input', {
+          service: 'ConversationList',
+          method: 'handleStartConversation',
+          npub: input,
+          pubkey: pubkey.substring(0, 8) + '...',
+          status: 'existing',
+        });
+      } else {
+        logger.info('Starting new conversation from npub input', {
+          service: 'ConversationList',
+          method: 'handleStartConversation',
+          npub: input,
+          pubkey: pubkey.substring(0, 8) + '...',
+          status: 'new',
+        });
+      }
+
+      // Select conversation (works for both existing and new)
+      onSelectConversation(pubkey);
+      
+      // Clear input
+      setNpubInput('');
+    } catch (error) {
+      logger.error('Invalid npub entered', error instanceof Error ? error : new Error('Unknown error'), {
+        service: 'ConversationList',
+        method: 'handleStartConversation',
+        input,
+      });
+      setNpubError('Invalid npub format. Please enter a valid npub1... address');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleStartConversation();
+    }
   };
 
   const formatTimestamp = (timestamp: number) => {
@@ -82,7 +142,40 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       return (
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-primary-200">
-            <h2 className="text-lg font-semibold text-primary-900">Messages</h2>
+            <h2 className="text-lg font-semibold text-primary-900 mb-3">Messages</h2>
+            
+            {/* Start New Conversation Input */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={npubInput}
+                  onChange={(e) => {
+                    setNpubInput(e.target.value);
+                    setNpubError('');
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Enter npub to start chat..."
+                  className={`flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                    npubError
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-primary-300 focus:ring-primary-500 focus:border-primary-500'
+                  }`}
+                />
+                <button
+                  onClick={handleStartConversation}
+                  disabled={!npubInput.trim()}
+                  className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  title="Start conversation"
+                >
+                  <MessageSquarePlus size={18} />
+                  <span className="hidden sm:inline text-sm">Start</span>
+                </button>
+              </div>
+              {npubError && (
+                <p className="text-xs text-red-600">{npubError}</p>
+              )}
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             <button
@@ -117,7 +210,40 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     return (
       <div className="flex flex-col h-full">
         <div className="p-4 border-b border-primary-200">
-          <h2 className="text-lg font-semibold text-primary-900">Messages</h2>
+          <h2 className="text-lg font-semibold text-primary-900 mb-3">Messages</h2>
+          
+          {/* Start New Conversation Input */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={npubInput}
+                onChange={(e) => {
+                  setNpubInput(e.target.value);
+                  setNpubError('');
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Enter npub to start chat..."
+                className={`flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                  npubError
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-primary-300 focus:ring-primary-500 focus:border-primary-500'
+                }`}
+              />
+              <button
+                onClick={handleStartConversation}
+                disabled={!npubInput.trim()}
+                className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                title="Start conversation"
+              >
+                <MessageSquarePlus size={18} />
+                <span className="hidden sm:inline text-sm">Start</span>
+              </button>
+            </div>
+            {npubError && (
+              <p className="text-xs text-red-600">{npubError}</p>
+            )}
+          </div>
         </div>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center">
@@ -136,7 +262,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             </svg>
             <p className="text-primary-600 font-medium mb-1">No conversations yet</p>
             <p className="text-sm text-primary-500">
-              Start a conversation from a product or heritage contribution
+              Enter an npub above or start a conversation from a product or heritage contribution
             </p>
           </div>
         </div>
@@ -148,8 +274,42 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-primary-200 bg-white">
-        <h2 className="text-lg font-semibold text-primary-900">Messages</h2>
-        <p className="text-xs text-primary-600 mt-1">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
+        <h2 className="text-lg font-semibold text-primary-900 mb-3">Messages</h2>
+        
+        {/* Start New Conversation Input */}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={npubInput}
+              onChange={(e) => {
+                setNpubInput(e.target.value);
+                setNpubError('');
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter npub to start chat..."
+              className={`flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                npubError
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-primary-300 focus:ring-primary-500 focus:border-primary-500'
+              }`}
+            />
+            <button
+              onClick={handleStartConversation}
+              disabled={!npubInput.trim()}
+              className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              title="Start conversation"
+            >
+              <MessageSquarePlus size={18} />
+              <span className="hidden sm:inline text-sm">Start</span>
+            </button>
+          </div>
+          {npubError && (
+            <p className="text-xs text-red-600">{npubError}</p>
+          )}
+        </div>
+        
+        <p className="text-xs text-primary-600 mt-3">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Conversation List */}
