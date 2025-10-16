@@ -299,7 +299,7 @@ export default function ExploreContent() {
                     All Culture Contributions
                   </h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {grid.map((item, index) => (
+                    {grid.slice(0, 5).map((item, index) => (
                       <Link
                         key={item.id}
                         href={`/heritage/${item.dTag}`}
@@ -364,6 +364,35 @@ export default function ExploreContent() {
                       </motion.div>
                       </Link>
                     ))}
+                    
+                    {/* See More Card (6th position) */}
+                    <Link
+                      href="/heritage"
+                      className="block"
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.5 }}
+                        className="culture-card group cursor-pointer bg-gradient-to-br from-primary-50 to-accent-50 border-2 border-dashed border-primary-300 hover:border-accent-500 transition-all duration-300"
+                      >
+                        <div className="h-full flex flex-col items-center justify-center p-8 min-h-[400px]">
+                          <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <ArrowRight className="w-8 h-8 text-white" />
+                          </div>
+                          <h3 className="text-2xl font-serif font-bold text-primary-800 mb-2 text-center">
+                            See More Contributions
+                          </h3>
+                          <p className="text-gray-600 text-center mb-4">
+                            Explore all culture and heritage contributions
+                          </p>
+                          <span className="text-accent-600 font-semibold group-hover:text-accent-700 transition-colors duration-200 flex items-center">
+                            View All Heritage
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </span>
+                        </div>
+                      </motion.div>
+                    </Link>
                   </div>
                 </div>
               )}
