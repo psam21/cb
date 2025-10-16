@@ -14,13 +14,12 @@
 - Coding without testing = FAILURE
 - "Complete" without proof = LYING
 - Pretty code without functionality = WASTE
-- Architecture over working features = WRONG PRIORITY
+- Architecture only without working features = WRONG PRIORITY
 
 **✅ THE FIX:**
 
 - Build → Test → Verify → THEN mark complete
 - Proof required: Event IDs, console logs, UI verification
-- Function over form. Working over pretty.
 - **NO SHORTCUTS. NO ASSUMPTIONS.**
 
 ### 2. SOA VIOLATIONS
@@ -86,9 +85,9 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 **❌ Shipping incomplete code**
 
 - "Coming Soon" pages → NOT ACCEPTABLE
-- Mock data without real implementation → REMOVE
-- Placeholder functions → COMPLETE OR DELETE
-- "TODO" comments older than 1 sprint → TECHNICAL DEBT
+- Mock data without real implementation → NOT ACCEPTABLE
+- Placeholder functions → NOT ACCEPTABLE
+- "TODO" comments older than 1 sprint → NOT ACCEPTABLE
 
 ---
 
@@ -98,12 +97,13 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 
 **EVERY. SINGLE. TIME.**
 
-1. **Build:** `npm run build`
-2. **Fix:** ALL errors iteratively
-3. **Commit:** Detailed message explaining WHAT changed and WHY
+1. **Build:** `npm run build` ; avoid -head or -tail to truncate and miss key details
+2. **Fix:** ALL errors first but iteratively, and then get to iteratively fixing warnings
+3. **Commit:** use `git add .` and then Detailed commit message explaining WHAT changed and WHY
 4. **Push:** `git push origin main`
-5. **Verify:** User tests on https://culturebridge.vercel.app
+5. **Verify:** User tests on https://culturebridge.vercel.app and not localhost
 6. **Confirm:** Get explicit confirmation before marking complete
+7. **Avoid:** Creating new documentation without permission
 
 **❌ NO SKIPPING STEPS**
 **❌ NO ASSUMING IT WORKS**
@@ -130,9 +130,9 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 
 **Before writing ANY new code:**
 
-1. Search for existing implementations
+1. Search with full depth for existing implementations
 2. Check GenericEventService for event creation
-3. Check if shop does something similar
+3. Check if shop or heritage does something similar
 4. Reuse > Refactor > Create new
 
 **The question: "Does this already exist?" is MANDATORY.**
@@ -155,7 +155,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 
 - Document the pattern
 - Explain WHY (Architecture Decision Record)
-- Update relevant docs
+- Update relevant docs with permission
 - Leave it better than you found it
 
 ---
@@ -204,17 +204,12 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 ### ❌ "I'll Document Later"
 
 **Problem:** Later = Never
-**Fix:** Document AS YOU CODE or don't code at all
+**Fix:** Document AS YOU CODE or don't code at all; e.g. docs/nip-kind-implementation-matrix.md
 
 ### ❌ "Just One Little Shortcut"
 
 **Problem:** Technical debt compounds
 **Fix:** Do it right or don't do it
-
-### ❌ "The User Will Test It"
-
-**Problem:** User is not QA
-**Fix:** YOU test it first, THEN user verifies
 
 ---
 
@@ -372,7 +367,7 @@ Hook → Manually build events → Publish    // ARCHITECTURAL VIOLATION
 
 ## 🔒 SECURITY & DATA
 
-- **NEVER** hardcode credentials
+- **NEVER** hardcode credentials such as user ids, npubs, nsecs
 - **NEVER** access runtime logs
 - **ALWAYS** use environment variables
 - **ALWAYS** ask before showing user data
