@@ -99,17 +99,15 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`px-3 py-2 rounded-md text-base font-semibold transition-colors duration-200 flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-md text-base font-semibold transition-colors duration-200 ${
                   pathname === item.href
                     ? 'text-white bg-primary-600'
                     : 'text-white hover:text-accent-200 hover:bg-primary-700'
                 }`}
               >
-                <span>{item.name}</span>
+                {item.name}
                 {item.comingSoon && (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-white/20 rounded-full font-normal">
-                    Soon
-                  </span>
+                  <sup className="text-[9px] ml-1 opacity-60 font-normal">soon</sup>
                 )}
               </Link>
             ))}
@@ -161,14 +159,10 @@ export default function Header() {
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="flex items-center justify-between w-full">
-                    <span>{item.name}</span>
-                    {item.comingSoon && (
-                      <span className="text-[10px] px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full font-normal">
-                        Soon
-                      </span>
-                    )}
-                  </span>
+                  {item.name}
+                  {item.comingSoon && (
+                    <sup className="text-[9px] ml-1 opacity-60 font-normal">soon</sup>
+                  )}
                 </Link>
               ))}
             </div>
