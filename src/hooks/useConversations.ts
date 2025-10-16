@@ -21,6 +21,7 @@ export const useConversations = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processedMessageIds] = useState<Set<string>>(new Set());
 
   /**
    * Load conversations from relays
@@ -90,6 +91,27 @@ export const useConversations = () => {
       createdAt: message.createdAt,
       isSent: message.isSent,
     });
+    
+    // Deduplication: Skip if we've already processed this message
+    if (processedMessageIds.has(message.id)) {
+      console.log('[useConversations] ⏭️  Skipping duplicate message', {
+        id: message.id?.substring(0, 8),
+      });
+      return;
+    }
+    
+    // Filter out self-messages: Skip if sender = recipient (message to self)
+    if (message.senderPubkey === message.recipientPubkey) {
+      console.log('[useConversations] 🚫 Skipping self-message (sender = recipient)', {
+        id: message.id?.substring(0, 8),
+        pubkey: message.senderPubkey?.substring(0, 8),
+      });
+      processedMessageIds.add(message.id); // Mark as processed to avoid checking again
+      return;
+    }
+    
+    // Mark message as processed
+    processedMessageIds.add(message.id);
     
     const otherPubkey = message.isSent ? message.recipientPubkey : message.senderPubkey;
     let updatedConversation: Conversation | undefined;
@@ -173,7 +195,7 @@ export const useConversations = () => {
         });
       }
     }
-  }, []);  /**
+  }, [processedMessageIds]);  /**
    * Subscribe to new messages for real-time updates
    */
   useEffect(() => {
