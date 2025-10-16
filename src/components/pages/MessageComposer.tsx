@@ -235,10 +235,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isSending || attachments.length >= maxAttachments}
-          className="px-3 py-3 md:py-2 border border-primary-300 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] md:min-h-[40px]"
+          className="px-5 md:px-6 py-3 md:py-2 bg-primary-50 border-2 border-primary-400 rounded-lg hover:bg-primary-100 hover:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] md:min-h-[40px] flex items-center justify-center"
           title="Attach media (images, video, audio)"
+          aria-label="Attach media"
         >
-          <FileUp className="w-5 h-5 text-primary-600" />
+          <FileUp className="w-5 h-5 text-primary-700" />
         </button>
 
         {/* Message input */}
