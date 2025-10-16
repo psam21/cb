@@ -11,7 +11,7 @@
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { logger } from '@/services/core/LoggingService';
 import { GenericAttachment } from '@/types/attachments';
-import { FileUp, X, Image, Film, Music } from 'lucide-react';
+import { Paperclip, X, Image, Film, Music } from 'lucide-react';
 
 interface MessageComposerProps {
   onSend: (content: string, attachments?: GenericAttachment[]) => void;
@@ -191,7 +191,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       case 'image': return <Image className="w-4 h-4" />;
       case 'video': return <Film className="w-4 h-4" />;
       case 'audio': return <Music className="w-4 h-4" />;
-      default: return <FileUp className="w-4 h-4" />;
+      default: return <Paperclip className="w-4 h-4" />;
     }
   };
 
@@ -243,27 +243,6 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       )}
 
       <div className="flex items-start gap-2">
-        {/* File upload button */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,video/*,audio/*"
-          capture="environment"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-          disabled={disabled || isSending || attachments.length >= maxAttachments}
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || isSending || attachments.length >= maxAttachments}
-          className="px-5 md:px-6 py-3 md:py-2 bg-primary-50 border-2 border-primary-400 rounded-lg hover:bg-primary-100 hover:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] md:min-h-[40px] flex items-center justify-center"
-          title="Attach media (images, video, audio)"
-          aria-label="Attach media"
-        >
-          <FileUp className="w-5 h-5 text-primary-700" />
-        </button>
-
         {/* Message input */}
         <div className="flex-1">
           <textarea
@@ -281,6 +260,28 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             Press Enter to send, Shift+Enter for new line
           </p>
         </div>
+
+        {/* File upload button */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*,audio/*"
+          capture="environment"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={disabled || isSending || attachments.length >= maxAttachments}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled || isSending || attachments.length >= maxAttachments}
+          className="px-4 md:px-5 py-3 md:py-2 bg-primary-50 border border-primary-300 rounded-lg hover:bg-primary-100 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] md:min-h-[40px] flex items-center gap-2"
+          title="Attach media (images, video, audio)"
+          aria-label="Attach media"
+        >
+          <Paperclip className="w-5 h-5 text-primary-700" />
+          <span className="hidden md:inline text-primary-700">Attach</span>
+        </button>
 
         {/* Send button */}
         <button
