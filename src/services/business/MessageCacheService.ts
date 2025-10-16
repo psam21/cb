@@ -216,16 +216,25 @@ export class MessageCacheService {
   /**
    * Retrieve messages for a specific conversation
    * Uses in-memory cache to avoid re-decrypting on every access
+   * 
+   * PERFORMANCE OPTIMIZATION: Two-tier caching
+   * 1. In-memory cache (instant, no decryption)
+   * 2. IndexedDB cache (encrypted, requires decryption)
    */
   async getMessages(conversationPubkey: string): Promise<Message[]> {
-    // Check in-memory cache first
+    const startTime = performance.now();
+    
+    // Check in-memory cache first (FASTEST)
     const cached = this.decryptedMessagesCache.get(conversationPubkey);
     if (cached) {
-      console.log(`[Cache] ⚡ Decrypted messages cache HIT for ${conversationPubkey.substring(0, 8)}... (${cached.length} messages)`);
+      const elapsed = performance.now() - startTime;
+      console.log(`[Cache] ⚡ Decrypted messages cache HIT for ${conversationPubkey.substring(0, 8)}... (${cached.length} messages, ${elapsed.toFixed(2)}ms)`);
       return cached;
     }
 
     if (!this.db) {
+      const elapsed = performance.now() - startTime;
+      console.log(`[Cache] ❌ Database not initialized (${elapsed.toFixed(2)}ms)`);
       return [];
     }
 
@@ -233,13 +242,18 @@ export class MessageCacheService {
       const tx = this.db.transaction('messages', 'readonly');
       const index = tx.objectStore('messages').index('by-conversation');
       
+      const queryStart = performance.now();
       // Get all encrypted messages for this conversation
       const encryptedMessages = await index.getAll(conversationPubkey);
+      const queryElapsed = performance.now() - queryStart;
 
-      console.log(`[Cache] 🔓 Decrypting ${encryptedMessages.length} messages for ${conversationPubkey.substring(0, 8)}...`);
+      console.log(`[Cache] 🔓 Decrypting ${encryptedMessages.length} messages for ${conversationPubkey.substring(0, 8)}... (query: ${queryElapsed.toFixed(2)}ms)`);
 
       // Decrypt all messages
+      const decryptStart = performance.now();
       const messages: Message[] = [];
+      let decryptErrors = 0;
+      
       for (const encrypted of encryptedMessages) {
         try {
           const message = await this.encryption.decrypt<Message>(
@@ -248,20 +262,29 @@ export class MessageCacheService {
           );
           messages.push(message);
         } catch (error) {
+          decryptErrors++;
           console.error(`❌ Failed to decrypt message ${encrypted.id}:`, error);
         }
       }
+      
+      const decryptElapsed = performance.now() - decryptStart;
+      const avgDecryptTime = encryptedMessages.length > 0 
+        ? (decryptElapsed / encryptedMessages.length).toFixed(2) 
+        : 'N/A';
 
       // Sort by timestamp
       messages.sort((a, b) => a.createdAt - b.createdAt);
 
       // Cache decrypted messages in memory
       this.decryptedMessagesCache.set(conversationPubkey, messages);
-      console.log(`[Cache] 💾 Cached ${messages.length} decrypted messages for ${conversationPubkey.substring(0, 8)}...`);
+      
+      const totalElapsed = performance.now() - startTime;
+      console.log(`[Cache] 💾 Cached ${messages.length} decrypted messages for ${conversationPubkey.substring(0, 8)}... (total: ${totalElapsed.toFixed(2)}ms, decrypt: ${decryptElapsed.toFixed(2)}ms, avg: ${avgDecryptTime}ms, errors: ${decryptErrors})`);
 
       return messages;
     } catch (error) {
-      console.error('❌ Failed to get cached messages:', error);
+      const elapsed = performance.now() - startTime;
+      console.error(`❌ Failed to get cached messages (${elapsed.toFixed(2)}ms):`, error);
       return [];
     }
   }
@@ -370,25 +393,33 @@ export class MessageCacheService {
   /**
    * Get all cached conversations
    * Uses in-memory cache to avoid re-decrypting on every access
+   * 
+   * PERFORMANCE OPTIMIZATION: Two-tier caching
+   * 1. In-memory cache (instant, no decryption)
+   * 2. IndexedDB cache (encrypted, requires decryption)
    */
   async getConversations(): Promise<Conversation[]> {
+    const startTime = performance.now();
+    
     console.log('[Cache] 🔍 getConversations called', {
       dbInitialized: this.db !== null,
       encryptionReady: this.encryption.isInitialized(),
       cachedCount: this.decryptedConversationsCache.size
     });
 
-    // Check if we have all conversations cached in memory
+    // Check if we have all conversations cached in memory (FASTEST)
     if (this.decryptedConversationsCache.size > 0) {
       const cached = Array.from(this.decryptedConversationsCache.values());
-      console.log(`[Cache] ⚡ Decrypted conversations cache HIT (${cached.length} conversations)`);
+      const elapsed = performance.now() - startTime;
+      console.log(`[Cache] ⚡ Decrypted conversations cache HIT (${cached.length} conversations, ${elapsed.toFixed(2)}ms)`);
       // Sort by last message time (newest first)
       cached.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
       return cached;
     }
 
     if (!this.db) {
-      console.warn('[Cache] ⚠️ Database not initialized in getConversations');
+      const elapsed = performance.now() - startTime;
+      console.warn(`[Cache] ⚠️ Database not initialized in getConversations (${elapsed.toFixed(2)}ms)`);
       return [];
     }
 
@@ -396,13 +427,19 @@ export class MessageCacheService {
       const tx = this.db.transaction('conversations', 'readonly');
       const store = tx.objectStore('conversations');
       
+      const queryStart = performance.now();
       // Get all encrypted conversations
       const encryptedConvos = await store.getAll();
-      console.log(`[Cache] 📦 Retrieved ${encryptedConvos.length} encrypted conversations from IndexedDB`);
+      const queryElapsed = performance.now() - queryStart;
+      
+      console.log(`[Cache] 📦 Retrieved ${encryptedConvos.length} encrypted conversations from IndexedDB (${queryElapsed.toFixed(2)}ms)`);
       console.log(`[Cache] 🔓 Decrypting ${encryptedConvos.length} conversations...`);
 
       // Decrypt all conversations
+      const decryptStart = performance.now();
       const conversations: Conversation[] = [];
+      let decryptErrors = 0;
+      
       for (const encrypted of encryptedConvos) {
         try {
           const conversation = await this.encryption.decrypt<Conversation>(
@@ -413,19 +450,29 @@ export class MessageCacheService {
           // Cache in memory
           this.decryptedConversationsCache.set(conversation.pubkey, conversation);
         } catch (error) {
+          decryptErrors++;
           console.error(`❌ Failed to decrypt conversation ${encrypted.pubkey}:`, error);
         }
       }
 
-      console.log(`[Cache] ✅ Successfully decrypted ${conversations.length} conversations`);
+      const decryptElapsed = performance.now() - decryptStart;
+      const avgDecryptTime = encryptedConvos.length > 0 
+        ? (decryptElapsed / encryptedConvos.length).toFixed(2) 
+        : 'N/A';
+
+      console.log(`[Cache] ✅ Successfully decrypted ${conversations.length} conversations (${decryptElapsed.toFixed(2)}ms, avg: ${avgDecryptTime}ms, errors: ${decryptErrors})`);
       console.log(`[Cache] 💾 Cached ${conversations.length} decrypted conversations in memory`);
 
       // Sort by last message time (newest first)
       conversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
 
+      const totalElapsed = performance.now() - startTime;
+      console.log(`[Cache] 📊 Total getConversations time: ${totalElapsed.toFixed(2)}ms (query: ${queryElapsed.toFixed(2)}ms, decrypt: ${decryptElapsed.toFixed(2)}ms)`);
+
       return conversations;
     } catch (error) {
-      console.error('❌ Failed to get cached conversations:', error);
+      const elapsed = performance.now() - startTime;
+      console.error(`❌ Failed to get cached conversations (${elapsed.toFixed(2)}ms):`, error);
       return [];
     }
   }

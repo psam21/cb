@@ -23,6 +23,14 @@ import { getDisplayNameFromNIP05 } from '@/utils/nip05';
 export class MessagingBusinessService {
   private static instance: MessagingBusinessService;
   private cache: MessageCacheService;
+  
+  // Background sync optimization
+  private syncIntervalId: NodeJS.Timeout | null = null;
+  private syncBackoffMs = 60000; // Start with 1 minute
+  private readonly MIN_SYNC_INTERVAL = 60000; // 1 minute minimum
+  private readonly MAX_SYNC_INTERVAL = 600000; // 10 minutes maximum
+  private readonly BACKOFF_MULTIPLIER = 1.5; // Exponential backoff
+  private consecutiveEmptySyncs = 0;
 
   private constructor() {
     this.cache = MessageCacheService.getInstance();
@@ -58,11 +66,17 @@ export class MessagingBusinessService {
 
   /**
    * Clear cache (call on logout)
+   * Also stops background sync
    */
   public async clearCache(): Promise<void> {
     try {
+      // Stop background sync
+      this.stopBackgroundSync();
+      
+      // Clear message cache
       await this.cache.clearCache();
-      logger.info('Message cache cleared', {
+      
+      logger.info('Message cache and background sync cleared', {
         service: 'MessagingBusinessService',
         method: 'clearCache',
       });
@@ -242,13 +256,15 @@ export class MessagingBusinessService {
           count: cachedConversations.length,
         });
 
-        // Background sync for new messages (don't await)
-        this.syncNewMessages(signer).catch(error => {
-          logger.error('Background sync failed', error instanceof Error ? error : new Error('Unknown error'), {
+        // Start adaptive background sync if not already running
+        // This will handle periodic syncing with exponential backoff
+        if (!this.syncIntervalId) {
+          logger.debug('Starting adaptive background sync', {
             service: 'MessagingBusinessService',
             method: 'getConversations',
           });
-        });
+          this.startBackgroundSync(signer);
+        }
 
         // Background profile refresh for cached conversations (don't await)
         this.refreshProfilesInBackground(cachedConversations).catch(error => {
@@ -296,18 +312,34 @@ export class MessagingBusinessService {
   /**
    * Background sync for new messages (since last sync)
    * Does NOT block UI - runs in background
+   * 
+   * OPTIMIZATION: Adaptive polling with exponential backoff
+   * - Increases interval when no new messages (less network traffic)
+   * - Decreases interval when messages detected (faster updates)
+   * - WebSocket-first, polling as fallback
    */
   private async syncNewMessages(signer: NostrSigner): Promise<void> {
+    const startTime = performance.now();
+    
     try {
       const lastSync = await this.cache.getLastSyncTime();
       if (lastSync === 0) {
+        logger.debug('No last sync time, skipping background sync', {
+          service: 'MessagingBusinessService',
+          method: 'syncNewMessages',
+        });
         return; // No last sync time, skip background sync
       }
+
+      const sinceDate = new Date(lastSync * 1000);
+      const ageSeconds = Math.floor((Date.now() - lastSync * 1000) / 1000);
 
       logger.info('🔄 Background sync: fetching new messages', {
         service: 'MessagingBusinessService',
         method: 'syncNewMessages',
-        since: new Date(lastSync * 1000).toISOString(),
+        since: sinceDate.toISOString(),
+        ageSeconds,
+        currentInterval: Math.floor(this.syncBackoffMs / 1000) + 's',
       });
 
       const userPubkey = await signer.getPublicKey();
@@ -323,13 +355,26 @@ export class MessagingBusinessService {
       ];
 
       const queryResult = await queryEvents(filters);
+      const elapsed = performance.now() - startTime;
+
       if (!queryResult.success || queryResult.events.length === 0) {
-        logger.info('No new messages in background sync', {
+        // NO NEW MESSAGES - increase backoff
+        this.consecutiveEmptySyncs++;
+        this.increaseBackoff();
+
+        logger.info('📭 No new messages in background sync', {
           service: 'MessagingBusinessService',
           method: 'syncNewMessages',
+          consecutiveEmpty: this.consecutiveEmptySyncs,
+          nextInterval: Math.floor(this.syncBackoffMs / 1000) + 's',
+          elapsedMs: elapsed.toFixed(2),
         });
         return;
       }
+
+      // NEW MESSAGES FOUND - reset backoff to minimum
+      this.consecutiveEmptySyncs = 0;
+      this.resetBackoff();
 
       // Decrypt and cache new messages
       const newMessages = await this.decryptGiftWraps(queryResult.events, signer);
@@ -337,16 +382,118 @@ export class MessagingBusinessService {
         await this.cache.cacheMessages(newMessages);
         await this.cache.setLastSyncTime(Math.floor(Date.now() / 1000));
 
+        const finalElapsed = performance.now() - startTime;
+
         logger.info('✅ Background sync: cached new messages', {
           service: 'MessagingBusinessService',
           method: 'syncNewMessages',
           count: newMessages.length,
+          decryptionTime: (finalElapsed - elapsed).toFixed(2) + 'ms',
+          totalTime: finalElapsed.toFixed(2) + 'ms',
+          nextInterval: Math.floor(this.syncBackoffMs / 1000) + 's',
         });
       }
     } catch (error) {
+      const elapsed = performance.now() - startTime;
+      
+      // On error, increase backoff to reduce hammering
+      this.increaseBackoff();
+      
       logger.error('Background sync failed', error instanceof Error ? error : new Error('Unknown error'), {
         service: 'MessagingBusinessService',
         method: 'syncNewMessages',
+        elapsedMs: elapsed.toFixed(2),
+        nextInterval: Math.floor(this.syncBackoffMs / 1000) + 's',
+      });
+    }
+  }
+
+  /**
+   * Increase background sync interval (exponential backoff)
+   */
+  private increaseBackoff(): void {
+    const oldInterval = this.syncBackoffMs;
+    this.syncBackoffMs = Math.min(
+      this.syncBackoffMs * this.BACKOFF_MULTIPLIER,
+      this.MAX_SYNC_INTERVAL
+    );
+
+    if (oldInterval !== this.syncBackoffMs) {
+      logger.debug('🐌 Increased sync interval (less activity)', {
+        service: 'MessagingBusinessService',
+        method: 'increaseBackoff',
+        oldInterval: Math.floor(oldInterval / 1000) + 's',
+        newInterval: Math.floor(this.syncBackoffMs / 1000) + 's',
+        consecutiveEmpty: this.consecutiveEmptySyncs,
+      });
+    }
+  }
+
+  /**
+   * Reset background sync interval to minimum (when messages detected)
+   */
+  private resetBackoff(): void {
+    const oldInterval = this.syncBackoffMs;
+    this.syncBackoffMs = this.MIN_SYNC_INTERVAL;
+
+    if (oldInterval !== this.syncBackoffMs) {
+      logger.debug('🚀 Reset sync interval (activity detected)', {
+        service: 'MessagingBusinessService',
+        method: 'resetBackoff',
+        oldInterval: Math.floor(oldInterval / 1000) + 's',
+        newInterval: Math.floor(this.syncBackoffMs / 1000) + 's',
+      });
+    }
+  }
+
+  /**
+   * Start adaptive background sync
+   * Call this after user signs in and WebSocket subscription is set up
+   * 
+   * @param signer - NIP-07 signer
+   */
+  public startBackgroundSync(signer: NostrSigner): void {
+    // Clear any existing sync
+    this.stopBackgroundSync();
+
+    logger.info('🔄 Starting adaptive background sync', {
+      service: 'MessagingBusinessService',
+      method: 'startBackgroundSync',
+      initialInterval: Math.floor(this.syncBackoffMs / 1000) + 's',
+    });
+
+    // Initial sync immediately
+    this.syncNewMessages(signer).catch(error => {
+      logger.error('Initial background sync failed', error instanceof Error ? error : new Error('Unknown error'));
+    });
+
+    // Schedule recurring sync with dynamic interval
+    const scheduleNext = () => {
+      this.syncIntervalId = setTimeout(() => {
+        this.syncNewMessages(signer)
+          .catch(error => {
+            logger.error('Scheduled background sync failed', error instanceof Error ? error : new Error('Unknown error'));
+          })
+          .finally(() => {
+            scheduleNext(); // Schedule next sync with updated interval
+          });
+      }, this.syncBackoffMs);
+    };
+
+    scheduleNext();
+  }
+
+  /**
+   * Stop background sync (call on logout)
+   */
+  public stopBackgroundSync(): void {
+    if (this.syncIntervalId) {
+      clearTimeout(this.syncIntervalId);
+      this.syncIntervalId = null;
+      
+      logger.info('🛑 Stopped background sync', {
+        service: 'MessagingBusinessService',
+        method: 'stopBackgroundSync',
       });
     }
   }
@@ -357,9 +504,13 @@ export class MessagingBusinessService {
    * 1. Profile metadata (Kind 0)
    * 2. NIP-05 verification (fallback)
    * 
+   * OPTIMIZATION: Uses profile cache to batch-load profiles efficiently
+   * 
    * @param conversations - Conversations to enrich
    */
   private async refreshProfilesInBackground(conversations: Conversation[]): Promise<void> {
+    const startTime = performance.now();
+    
     try {
       logger.info('🔄 Refreshing profiles in background', {
         service: 'MessagingBusinessService',
@@ -367,33 +518,60 @@ export class MessagingBusinessService {
         count: conversations.length,
       });
 
-      // Refresh profiles in parallel
-      await Promise.all(conversations.map(async (conversation) => {
-        try {
-          await this.enrichConversationProfile(conversation);
-        } catch (error) {
-          logger.debug('Failed to refresh profile', {
-            service: 'MessagingBusinessService',
-            method: 'refreshProfilesInBackground',
-            pubkey: conversation.pubkey.substring(0, 8) + '...',
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
+      // Refresh profiles in parallel with rate limiting
+      // Batch into groups of 3 to avoid overwhelming the system
+      const BATCH_SIZE = 3;
+      const batches: Conversation[][] = [];
+      
+      for (let i = 0; i < conversations.length; i += BATCH_SIZE) {
+        batches.push(conversations.slice(i, i + BATCH_SIZE));
+      }
+
+      let enrichedCount = 0;
+      let failedCount = 0;
+
+      // Process batches sequentially to avoid hammering relays
+      for (const batch of batches) {
+        await Promise.all(batch.map(async (conversation) => {
+          try {
+            const wasEnriched = await this.enrichConversationProfile(conversation);
+            if (wasEnriched) enrichedCount++;
+          } catch (error) {
+            failedCount++;
+            logger.debug('Failed to refresh profile', {
+              service: 'MessagingBusinessService',
+              method: 'refreshProfilesInBackground',
+              pubkey: conversation.pubkey.substring(0, 8) + '...',
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        }));
+
+        // Small delay between batches to be nice to relays
+        if (batches.indexOf(batch) < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
-      }));
+      }
 
       // Re-cache conversations with updated profiles
       await this.cache.cacheConversations(conversations);
 
+      const elapsed = performance.now() - startTime;
+
       logger.info('✅ Profiles refreshed successfully', {
         service: 'MessagingBusinessService',
         method: 'refreshProfilesInBackground',
-        enriched: conversations.filter(c => c.displayName).length,
+        enriched: enrichedCount,
+        failed: failedCount,
         total: conversations.length,
+        elapsedMs: elapsed.toFixed(2),
       });
     } catch (error) {
+      const elapsed = performance.now() - startTime;
       logger.error('Profile refresh failed', error instanceof Error ? error : new Error('Unknown error'), {
         service: 'MessagingBusinessService',
         method: 'refreshProfilesInBackground',
+        elapsedMs: elapsed.toFixed(2),
       });
     }
   }
@@ -403,8 +581,9 @@ export class MessagingBusinessService {
    * Uses fallback strategy: Profile metadata → NIP-05 → npub truncation
    * 
    * @param conversation - Conversation to enrich (modified in place)
+   * @returns boolean indicating if enrichment was successful
    */
-  private async enrichConversationProfile(conversation: Conversation): Promise<void> {
+  private async enrichConversationProfile(conversation: Conversation): Promise<boolean> {
     // Try fetching profile metadata first
     try {
       const profile = await profileService.getUserProfile(conversation.pubkey);
@@ -426,7 +605,7 @@ export class MessagingBusinessService {
           }
         }
         
-        return;
+        return true; // Successfully enriched
       }
     } catch (error) {
       logger.debug('Profile fetch failed, trying NIP-05', {
@@ -444,6 +623,8 @@ export class MessagingBusinessService {
       method: 'enrichConversationProfile',
       pubkey: conversation.pubkey.substring(0, 8) + '...',
     });
+    
+    return false; // Enrichment failed
   }
 
   /**

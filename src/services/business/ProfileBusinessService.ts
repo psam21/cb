@@ -311,17 +311,40 @@ export class ProfileBusinessService {
   /**
    * Fetch user profile from Nostr relays
    * Uses in-memory cache to avoid redundant queries (5 minute TTL)
+   * 
+   * Performance optimizations:
+   * - Cache-first strategy with TTL
+   * - Detailed logging for cache hits/misses
+   * - Metrics tracking for performance analysis
    */
   public async getUserProfile(pubkey: string): Promise<UserProfile | null> {
+    const startTime = performance.now();
+    
     try {
-      // Check cache first
+      // Check cache first - CRITICAL OPTIMIZATION
       const { profileCacheService } = await import('@/services/core/ProfileCacheService');
       const cached = profileCacheService.get(pubkey);
+      
       if (cached) {
+        const elapsed = performance.now() - startTime;
+        logger.info('⚡ Profile loaded from CACHE', {
+          service: 'ProfileBusinessService',
+          method: 'getUserProfile',
+          pubkey: pubkey.substring(0, 8) + '...',
+          displayName: cached.display_name,
+          elapsedMs: elapsed.toFixed(2),
+          source: 'cache',
+        });
         return cached;
       }
 
-      logger.info('Fetching user profile from relays', { pubkey: pubkey.substring(0, 8) + '...' });
+      // Cache miss - fetch from relays
+      logger.info('📡 Fetching user profile from relays', {
+        service: 'ProfileBusinessService',
+        method: 'getUserProfile', 
+        pubkey: pubkey.substring(0, 8) + '...',
+        source: 'relays',
+      });
       
       // Import relay service
       const { genericRelayService } = await import('@/services/generic/GenericRelayService');
@@ -333,8 +356,15 @@ export class ProfileBusinessService {
         limit: 1
       }]);
 
+      const elapsed = performance.now() - startTime;
+
       if (!events.success || events.events.length === 0) {
-        logger.info('No profile events found for user', { pubkey: pubkey.substring(0, 8) + '...' });
+        logger.info('❌ No profile events found for user', { 
+          service: 'ProfileBusinessService',
+          method: 'getUserProfile',
+          pubkey: pubkey.substring(0, 8) + '...',
+          elapsedMs: elapsed.toFixed(2),
+        });
         return null;
       }
 
@@ -342,21 +372,28 @@ export class ProfileBusinessService {
       const profileEvent = events.events[0];
       const profile = this.parseProfileMetadata(profileEvent);
       
-      // Cache the profile
+      // Cache the profile - CRITICAL: Store for future access
       profileCacheService.set(pubkey, profile);
       
-      logger.info('Profile fetched successfully', { 
-        display_name: profile.display_name,
+      logger.info('✅ Profile fetched and CACHED', { 
+        service: 'ProfileBusinessService',
+        method: 'getUserProfile',
+        pubkey: pubkey.substring(0, 8) + '...',
+        displayName: profile.display_name,
         hasPicture: !!profile.picture,
-        hasAbout: !!profile.about
+        hasAbout: !!profile.about,
+        elapsedMs: elapsed.toFixed(2),
+        source: 'relays',
       });
 
       return profile;
     } catch (error) {
+      const elapsed = performance.now() - startTime;
       logger.error('Failed to fetch user profile', error instanceof Error ? error : new Error('Unknown error'), {
         service: 'ProfileBusinessService',
         method: 'getUserProfile',
-        pubkey: pubkey.substring(0, 8) + '...'
+        pubkey: pubkey.substring(0, 8) + '...',
+        elapsedMs: elapsed.toFixed(2),
       });
       return null;
     }
