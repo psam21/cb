@@ -310,9 +310,17 @@ export class ProfileBusinessService {
 
   /**
    * Fetch user profile from Nostr relays
+   * Uses in-memory cache to avoid redundant queries (5 minute TTL)
    */
   public async getUserProfile(pubkey: string): Promise<UserProfile | null> {
     try {
+      // Check cache first
+      const { profileCacheService } = await import('@/services/core/ProfileCacheService');
+      const cached = profileCacheService.get(pubkey);
+      if (cached) {
+        return cached;
+      }
+
       logger.info('Fetching user profile from relays', { pubkey: pubkey.substring(0, 8) + '...' });
       
       // Import relay service
@@ -333,6 +341,9 @@ export class ProfileBusinessService {
       // Parse the most recent profile event
       const profileEvent = events.events[0];
       const profile = this.parseProfileMetadata(profileEvent);
+      
+      // Cache the profile
+      profileCacheService.set(pubkey, profile);
       
       logger.info('Profile fetched successfully', { 
         display_name: profile.display_name,
@@ -561,6 +572,11 @@ export class ProfileBusinessService {
           failedRelays: publishResult.failedRelays,
         };
       }
+
+      // Invalidate cache for updated profile
+      const pubkey = await signer.getPublicKey();
+      const { profileCacheService } = await import('@/services/core/ProfileCacheService');
+      profileCacheService.invalidate(pubkey);
 
       logger.info('User profile updated successfully', {
         service: 'ProfileBusinessService',
