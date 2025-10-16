@@ -150,7 +150,29 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       };
     });
 
-    setAttachments(prev => [...prev, ...newAttachments]);
+    // Auto-send immediately when files are selected
+    const currentMessage = message.trim();
+    const allAttachments = [...attachments, ...newAttachments];
+    
+    logger.info('Auto-sending message with attachments', {
+      service: 'MessageComposer',
+      method: 'handleFileSelect',
+      messageLength: currentMessage.length,
+      attachmentCount: allAttachments.length,
+    });
+
+    onSend(currentMessage, allAttachments);
+    
+    // Clear state after sending
+    setMessage('');
+    setAttachments([]);
+    setUploadError(null);
+    setUploadProgress(null);
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
     
     // Reset file input
     if (fileInputRef.current) {
