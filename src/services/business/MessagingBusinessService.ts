@@ -1069,8 +1069,8 @@ export class MessagingBusinessService {
   } {
     const attachments: GenericAttachment[] = [];
     
-    // Regex to match: [Attachment N]\nurl ... m ... x ... [size ...] [dim ...] [duration ...]
-    const imetaRegex = /\n\n\[Attachment \d+\]\n((?:url [^\n]+|m [^\n]+|x [^\n]+|size [^\n]+|dim [^\n]+|duration [^\n]+)\s*)+/g;
+    // Regex to match: \n\n[Attachment N]\n followed by all fields on one line
+    const imetaRegex = /\n\n\[Attachment \d+\]\n([^\n]+)/g;
     
     let cleanContent = content;
     let match;
