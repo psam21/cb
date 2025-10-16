@@ -24,6 +24,9 @@ dist/
 *.swp
 .vscode/
 
+# Logs
+logs/
+
 # TypeScript
 *.tsbuildinfo
 
