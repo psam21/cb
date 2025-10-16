@@ -10,16 +10,16 @@ const navigationLine1 = [
   // Home link removed; users access home via the top-left icon
   { name: 'Explore', href: '/explore' },
   { name: 'Contribute', href: '/contribute' },
+  { name: 'Shop', href: '/shop' },
   { name: 'Community', href: '/community' },
   { name: 'Courses', href: '/courses' },
-];
-
-const navigationLine2 = [
   { name: 'Elder Voices', href: '/elder-voices' },
   { name: 'Exhibitions', href: '/exhibitions' },
   { name: 'Meetups', href: '/meetups' },
-  { name: 'Shop', href: '/shop' },
 ];
+
+const navigationLine2: { name: string; href: string }[] = [];
+
 
 // Combined navigation for mobile
 const allNavigation = [...navigationLine1, ...navigationLine2];
