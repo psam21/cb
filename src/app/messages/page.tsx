@@ -341,7 +341,7 @@ function MessagesPageContent() {
                 {selectedPubkey && (
                   <MessageComposer
                     onSend={handleSendMessage}
-                    disabled={!signer}
+                    disabled={!signer && !currentUserPubkey}
                     isSending={isSending}
                     conversationKey={selectedPubkey}
                   />
@@ -389,7 +389,7 @@ function MessagesPageContent() {
               {selectedPubkey && (
                 <MessageComposer
                   onSend={handleSendMessage}
-                  disabled={!signer}
+                  disabled={!signer && !currentUserPubkey}
                   isSending={isSending}
                   conversationKey={selectedPubkey}
                 />

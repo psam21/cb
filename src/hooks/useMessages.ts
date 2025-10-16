@@ -220,7 +220,7 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
               messageMap.delete(tempKey);
             }
           } else {
-            // No tempId (probably from subscription) - find temp by matching sender/time
+            // No tempId (probably from subscription) - find temp by matching sender/time/content
             // This handles the case where subscription arrives before onSuccess
             prev.forEach(prevMsg => {
               if (prevMsg.tempId && 
@@ -228,14 +228,23 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
                   prevMsg.senderPubkey === message.senderPubkey &&
                   prevMsg.recipientPubkey === message.recipientPubkey &&
                   Math.abs(prevMsg.createdAt - message.createdAt) < 5) {
-                logger.debug('Replacing temp message with real message (by timestamp match)', {
-                  service: 'useMessages',
-                  method: 'addMessage',
-                  tempId: prevMsg.tempId,
-                  realId: message.id,
-                  timeDiff: Math.abs(prevMsg.createdAt - message.createdAt),
-                });
-                messageMap.delete(`temp:${prevMsg.tempId}`);
+                // Additional check: content should match (allowing for imeta tags)
+                // Strip imeta tags from both for comparison
+                const cleanContent = (content: string) => content.replace(/\n\n\[Attachment \d+\]\n(?:url [^\n]+|m [^\n]+|x [^\n]+|size [^\n]+|dim [^\n]+|duration [^\n]+\s*)+/g, '').trim();
+                const prevContent = cleanContent(prevMsg.content);
+                const newContent = cleanContent(message.content);
+                
+                if (prevContent === newContent || prevContent === '' || newContent === '') {
+                  logger.debug('Replacing temp message with real message (by timestamp + content match)', {
+                    service: 'useMessages',
+                    method: 'addMessage',
+                    tempId: prevMsg.tempId,
+                    realId: message.id,
+                    timeDiff: Math.abs(prevMsg.createdAt - message.createdAt),
+                    contentMatch: prevContent === newContent,
+                  });
+                  messageMap.delete(`temp:${prevMsg.tempId}`);
+                }
               }
             });
           }
