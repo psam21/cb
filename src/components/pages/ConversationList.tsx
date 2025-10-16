@@ -210,15 +210,15 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                   </span>
                 </div>
 
-                {/* Last message preview */}
-                {conversation.lastMessage && (
+                {/* Last message preview - DISABLED */}
+                {/* {conversation.lastMessage && (
                   <p className="text-sm text-primary-600 truncate">
                     {conversation.lastMessage.isSent && (
                       <span className="text-primary-500 mr-1">You:</span>
                     )}
                     {truncateMessage(conversation.lastMessage.content)}
                   </p>
-                )}
+                )} */}
 
                 {/* Context tag if present */}
                 {conversation.context && (
