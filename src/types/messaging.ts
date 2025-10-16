@@ -26,6 +26,12 @@ export interface Conversation {
   
   /** Context (product/heritage) that started the conversation */
   context?: ConversationContext;
+  
+  /** Number of unread messages */
+  unreadCount?: number;
+  
+  /** Timestamp when conversation was last viewed */
+  lastViewedAt?: number;
 }
 
 /**

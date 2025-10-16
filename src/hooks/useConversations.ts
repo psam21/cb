@@ -112,10 +112,15 @@ export const useConversations = () => {
           usingTimestamp: newestTimestamp,
         });
         
+        // Increment unread count if message is from the other person (not sent by current user)
+        const currentUnreadCount = updated[existingIndex].unreadCount || 0;
+        const newUnreadCount = message.isSent ? currentUnreadCount : currentUnreadCount + 1;
+        
         updatedConversation = {
           ...updated[existingIndex],
           lastMessage: message,
           lastMessageAt: newestTimestamp,
+          unreadCount: newUnreadCount,
         };
         
         updated[existingIndex] = updatedConversation;
@@ -140,6 +145,7 @@ export const useConversations = () => {
           lastMessage: message,
           lastMessageAt: message.createdAt,
           context: message.context,
+          unreadCount: message.isSent ? 0 : 1, // Mark as unread if message is from other person
         };
         
         // Add new conversation and sort to maintain order
@@ -226,6 +232,48 @@ export const useConversations = () => {
     return conversations.find(c => c.pubkey === pubkey);
   }, [conversations]);
 
+  /**
+   * Mark conversation as read (reset unread count)
+   */
+  const markAsRead = useCallback(async (pubkey: string) => {
+    logger.info('Marking conversation as read', {
+      service: 'useConversations',
+      method: 'markAsRead',
+      pubkey: pubkey.substring(0, 8),
+    });
+    
+    setConversations(prev => {
+      const updated = prev.map(conv => {
+        if (conv.pubkey === pubkey) {
+          return {
+            ...conv,
+            unreadCount: 0,
+            lastViewedAt: Math.floor(Date.now() / 1000),
+          };
+        }
+        return conv;
+      });
+      return updated;
+    });
+
+    // Update cache
+    const conversation = conversations.find(c => c.pubkey === pubkey);
+    if (conversation) {
+      try {
+        await messagingBusinessService.updateConversationCache({
+          ...conversation,
+          unreadCount: 0,
+          lastViewedAt: Math.floor(Date.now() / 1000),
+        });
+      } catch (error) {
+        logger.error('Failed to update conversation cache', error instanceof Error ? error : new Error('Unknown error'), {
+          service: 'useConversations',
+          method: 'markAsRead',
+        });
+      }
+    }
+  }, [conversations]);
+
   return {
     conversations,
     isLoading,
@@ -233,5 +281,6 @@ export const useConversations = () => {
     refreshConversations,
     getConversation,
     updateConversationWithMessage,
+    markAsRead,
   };
 };

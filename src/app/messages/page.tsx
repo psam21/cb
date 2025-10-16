@@ -118,6 +118,7 @@ function MessagesPageContent() {
     isLoading: conversationsLoading,
     error: conversationsError,
     updateConversationWithMessage,
+    markAsRead,
   } = useConversations();
 
   // Messages hook for selected conversation
@@ -140,6 +141,11 @@ function MessagesPageContent() {
     });
     setSelectedPubkey(pubkey);
     setShowConversationList(false); // Switch to message view on mobile
+    
+    // Mark conversation as read when selected
+    if (markAsRead) {
+      markAsRead(pubkey);
+    }
   };
 
   const handleBackToList = () => {
