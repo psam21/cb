@@ -161,8 +161,8 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             className="w-full p-5 md:p-4 border-b border-primary-100 bg-primary-100 text-left active:bg-primary-200 transition-colors"
           >
             <div className="flex items-start gap-3">
-              {/* Avatar placeholder */}
-              <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center flex-shrink-0">
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 <span className="text-accent-700 font-semibold text-sm">
                   {selectedPubkey[0]?.toUpperCase()}
                 </span>
@@ -195,11 +195,19 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             }`}
           >
             <div className="flex items-start gap-3">
-              {/* Avatar placeholder */}
-              <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-accent-700 font-semibold text-sm">
-                  {conversation.displayName?.[0]?.toUpperCase() || conversation.pubkey[0]?.toUpperCase()}
-                </span>
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {conversation.avatar ? (
+                  <img 
+                    src={conversation.avatar} 
+                    alt={conversation.displayName || 'User'} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-accent-700 font-semibold text-sm">
+                    {conversation.displayName?.[0]?.toUpperCase() || conversation.pubkey[0]?.toUpperCase()}
+                  </span>
+                )}
               </div>
 
               {/* Content */}
