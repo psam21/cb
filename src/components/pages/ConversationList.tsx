@@ -214,12 +214,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     }`}>
                       {conversation.displayName || formatPubkey(conversation.pubkey)}
                     </h3>
-                    {/* Unread indicator */}
-                    {conversation.unreadCount && conversation.unreadCount > 0 && (
-                      <span className="flex-shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-accent-600 rounded-full">
-                        {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
-                      </span>
-                    )}
                   </div>
                   <span className="text-xs text-primary-500 flex-shrink-0">
                     {formatTimestamp(conversation.lastMessageAt)}

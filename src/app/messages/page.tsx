@@ -373,7 +373,7 @@ function MessagesPageContent() {
             </div>
 
             {/* Right panel: Message thread + composer */}
-            <div ref={messagePanelRef} className="flex-1 flex flex-col bg-white overflow-y-auto">
+            <div ref={messagePanelRef} className="flex-1 flex flex-col bg-white border-l border-primary-200 overflow-y-auto">
               <MessageThread
                 messages={messages}
                 currentUserPubkey={currentUserPubkey}
