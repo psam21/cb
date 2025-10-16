@@ -187,7 +187,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             key={conversation.pubkey}
             onClick={() => handleSelect(conversation.pubkey)}
             className={`w-full p-5 md:p-4 border-b border-primary-100 hover:bg-primary-50 active:bg-primary-150 transition-colors text-left ${
-              selectedPubkey === conversation.pubkey ? 'bg-primary-100' : 'bg-white'
+              selectedPubkey === conversation.pubkey 
+                ? 'bg-primary-100' 
+                : conversation.unreadCount && conversation.unreadCount > 0
+                  ? 'bg-accent-50'  // Light accent background for unread
+                  : 'bg-white'
             }`}
           >
             <div className="flex items-start gap-3">
@@ -203,7 +207,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 {/* Name and timestamp */}
                 <div className="flex items-baseline justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <h3 className="font-medium text-primary-900 truncate">
+                    <h3 className={`truncate ${
+                      conversation.unreadCount && conversation.unreadCount > 0
+                        ? 'font-bold text-accent-700'  // Bold + accent color for unread
+                        : 'font-medium text-primary-900'  // Normal styling for read
+                    }`}>
                       {conversation.displayName || formatPubkey(conversation.pubkey)}
                     </h3>
                     {/* Unread indicator */}
