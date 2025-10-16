@@ -6,19 +6,25 @@ import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import AuthButton from './auth/AuthButton';
 
-const navigationLine1 = [
+interface NavigationItem {
+  name: string;
+  href: string;
+  comingSoon?: boolean;
+}
+
+const navigationLine1: NavigationItem[] = [
   // Home link removed; users access home via the top-left icon
   { name: 'Explore', href: '/explore' },
   { name: 'Contribute', href: '/contribute' },
   { name: 'Shop', href: '/shop' },
-  { name: 'Community', href: '/community' },
-  { name: 'Courses', href: '/courses' },
-  { name: 'Elder Voices', href: '/elder-voices' },
-  { name: 'Exhibitions', href: '/exhibitions' },
-  { name: 'Meetups', href: '/meetups' },
+  { name: 'Community', href: '/community', comingSoon: true },
+  { name: 'Courses', href: '/courses', comingSoon: true },
+  { name: 'Elder Voices', href: '/elder-voices', comingSoon: true },
+  { name: 'Exhibitions', href: '/exhibitions', comingSoon: true },
+  { name: 'Meetups', href: '/meetups', comingSoon: true },
 ];
 
-const navigationLine2: { name: string; href: string }[] = [];
+const navigationLine2: NavigationItem[] = [];
 
 
 // Combined navigation for mobile
@@ -93,13 +99,18 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`px-3 py-2 rounded-md text-base font-semibold transition-colors duration-200 ${
+                className={`px-3 py-2 rounded-md text-base font-semibold transition-colors duration-200 flex items-center gap-1.5 ${
                   pathname === item.href
                     ? 'text-white bg-primary-600'
                     : 'text-white hover:text-accent-200 hover:bg-primary-700'
                 }`}
               >
-                {item.name}
+                <span>{item.name}</span>
+                {item.comingSoon && (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-white/20 rounded-full font-normal">
+                    Soon
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -150,7 +161,14 @@ export default function Header() {
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
-                  {item.name}
+                  <span className="flex items-center justify-between w-full">
+                    <span>{item.name}</span>
+                    {item.comingSoon && (
+                      <span className="text-[10px] px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full font-normal">
+                        Soon
+                      </span>
+                    )}
+                  </span>
                 </Link>
               ))}
             </div>
