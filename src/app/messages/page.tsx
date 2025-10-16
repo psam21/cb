@@ -19,6 +19,7 @@ import { useMessageSending } from '@/hooks/useMessageSending';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthHydration } from '@/hooks/useAuthHydration';
+import type { Message } from '@/types/messaging';
 import { logger } from '@/services/core/LoggingService';
 import { GenericAttachment } from '@/types/attachments';
 
@@ -186,13 +187,13 @@ function MessagesPageContent() {
 
     // Pass conversation context if available (e.g., from "Contact Seller" button)
     await sendMessage(selectedPubkey, content, attachments, conversationContext, {
-      onOptimisticUpdate: (tempMessage: any) => {
+      onOptimisticUpdate: (tempMessage: Message) => {
         // Add to messages list immediately
         addMessage(tempMessage);
         // Update conversation list
         updateConversationWithMessage(tempMessage);
       },
-      onSuccess: (message: any) => {
+      onSuccess: (message: Message) => {
         logger.info('Message sent successfully, will be updated via subscription', {
           service: 'MessagesPage',
           method: 'handleSendMessage',
