@@ -232,7 +232,8 @@ export const useMessages = ({ otherPubkey, limit = 100 }: UseMessagesProps) => {
                   prevMsg.recipientPubkey === message.recipientPubkey) {
                 // Additional check: content should match (allowing for imeta tags)
                 // Strip imeta tags from both for comparison
-                const cleanContent = (content: string) => content.replace(/\n\n\[Attachment \d+\]\n(?:url [^\n]+|m [^\n]+|x [^\n]+|size [^\n]+|dim [^\n]+|duration [^\n]+\s*)+/g, '').trim();
+                // Regex matches the actual format: all fields on one line separated by spaces
+                const cleanContent = (content: string) => content.replace(/\n\n\[Attachment \d+\]\n[^\n]+/g, '').trim();
                 const prevContent = cleanContent(prevMsg.content);
                 const newContent = cleanContent(message.content);
                 
