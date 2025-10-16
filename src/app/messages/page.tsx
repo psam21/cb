@@ -34,6 +34,9 @@ function MessagesPageContent() {
   
   // Mobile view state: true = show conversation list, false = show message thread
   const [showConversationList, setShowConversationList] = useState(true);
+  
+  // Ref for the message panel container (to scroll to composer)
+  const messagePanelRef = React.useRef<HTMLDivElement>(null);
 
   // Handle URL parameters for direct navigation (e.g., from "Contact Seller")
   React.useEffect(() => {
@@ -146,6 +149,13 @@ function MessagesPageContent() {
     if (markAsRead) {
       markAsRead(pubkey);
     }
+    
+    // Scroll to bottom (composer) when conversation is opened
+    setTimeout(() => {
+      if (messagePanelRef.current) {
+        messagePanelRef.current.scrollTop = messagePanelRef.current.scrollHeight;
+      }
+    }, 100);
   };
 
   const handleBackToList = () => {
@@ -321,7 +331,7 @@ function MessagesPageContent() {
                 />
               </div>
             ) : (
-              <div className="w-full flex flex-col bg-white">
+              <div ref={messagePanelRef} className="w-full flex flex-col bg-white overflow-y-auto">
                 <MessageThread
                   messages={messages}
                   currentUserPubkey={currentUserPubkey}
@@ -369,7 +379,7 @@ function MessagesPageContent() {
             </div>
 
             {/* Right panel: Message thread + composer */}
-            <div className="flex-1 flex flex-col bg-white">
+            <div ref={messagePanelRef} className="flex-1 flex flex-col bg-white overflow-y-auto">
               <MessageThread
                 messages={messages}
                 currentUserPubkey={currentUserPubkey}
