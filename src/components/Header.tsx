@@ -3,8 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ShoppingBag } from 'lucide-react';
 import AuthButton from './auth/AuthButton';
+import { useCartStore } from '@/stores/useCartStore';
 
 interface NavigationItem {
   name: string;
@@ -37,6 +38,7 @@ export default function Header() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const firstLinkRef = useRef<HTMLAnchorElement | null>(null);
   const toggleBtnRef = useRef<HTMLButtonElement | null>(null);
+  const itemCount = useCartStore(state => state.itemCount);
 
   // Close on ESC
   useEffect(() => {
@@ -113,8 +115,22 @@ export default function Header() {
             ))}
           </div>
 
-          {/* Right side: Auth Button + Mobile Menu */}
+          {/* Right side: Cart + Auth Button + Mobile Menu */}
           <div className="flex items-center space-x-3">
+            {/* Cart Icon with Badge */}
+            <Link
+              href="/cart"
+              className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+              aria-label={`Shopping cart${itemCount > 0 ? ` with ${itemCount} items` : ''}`}
+            >
+              <ShoppingBag className="w-6 h-6" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              )}
+            </Link>
+            
             {/* Auth Button - Always visible */}
             <AuthButton />
             

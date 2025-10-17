@@ -8,6 +8,7 @@ import { ContentDetailLayout } from '@/components/generic/ContentDetailLayout';
 import { ContentMediaGallery } from '@/components/generic/ContentMediaGallery';
 import { ContentDetailInfo } from '@/components/generic/ContentDetailInfo';
 import { ContentMetaInfo } from '@/components/generic/ContentMetaInfo';
+import { AddToCartButton } from '@/components/shop/AddToCartButton';
 import { getCategoryById } from '@/config/categories';
 import { logger } from '@/services/core/LoggingService';
 import type { ShopContentDetail } from '@/types/shop-content';
@@ -235,6 +236,18 @@ export function ShopProductDetail({ detail, backHref = '/shop' }: ShopProductDet
               author={detail.author}
               relays={detail.relays}
             />
+            {typeof detail.customFields.price === 'number' && detail.customFields.currency && (
+              <AddToCartButton
+                productId={detail.id}
+                title={detail.title}
+                price={detail.customFields.price}
+                currency={detail.customFields.currency}
+                imageUrl={detail.media[0]?.source.url}
+                sellerPubkey={detail.author.pubkey}
+                maxQuantity={typeof detail.customFields.quantity === 'number' ? detail.customFields.quantity : undefined}
+                className="w-full"
+              />
+            )}
             {contactAction && (
               <button
                 type="button"
