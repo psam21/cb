@@ -29,7 +29,10 @@ export function AddToCartButton({
   const [showSuccess, setShowSuccess] = useState(false);
   const addItem = useCartStore(state => state.addItem);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Stop event from bubbling up to parent card's onClick handler
+    e.stopPropagation();
+    
     logger.info('Add to cart clicked', {
       service: 'AddToCartButton',
       method: 'handleAddToCart',
