@@ -120,7 +120,7 @@ export default function MyShopPage() {
             </div>
             <div className="mt-4 lg:mt-0">
               <button
-                onClick={() => router.push('/shop')}
+                onClick={() => router.push('/my-shop/create')}
                 className="btn-primary-sm"
               >
                 Create Product
