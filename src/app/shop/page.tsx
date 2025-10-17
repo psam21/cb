@@ -35,19 +35,24 @@ export default function ShopPage() {
     const fetchAuthorProfiles = async () => {
       if (products.length === 0) return;
       
+      console.log('[ShopPage] Fetching profiles for', products.length, 'products');
+      
       const profileService = await getProfileService();
       const profiles: Record<string, string> = {};
       
       // Get unique author pubkeys
       const uniqueAuthors = [...new Set(products.map(p => p.author))];
+      console.log('[ShopPage] Unique authors:', uniqueAuthors);
       
       // Fetch profiles in parallel
       await Promise.all(
         uniqueAuthors.map(async (pubkey) => {
           try {
             const profile = await profileService.getUserProfile(pubkey);
+            console.log('[ShopPage] Profile for', pubkey.substring(0, 8), ':', profile);
             if (profile?.display_name) {
               profiles[pubkey] = profile.display_name;
+              console.log('[ShopPage] Added displayName:', profile.display_name);
             }
           } catch (error) {
             logger.warn('Failed to fetch author profile', {
@@ -60,6 +65,7 @@ export default function ShopPage() {
         })
       );
       
+      console.log('[ShopPage] Final profiles:', profiles);
       setAuthorProfiles(profiles);
     };
     
@@ -182,6 +188,11 @@ export default function ShopPage() {
           <BaseGrid
             data={filteredProducts.map(product => {
               console.log('Product eventId:', product.eventId, 'Type:', typeof product.eventId);
+              const authorData = {
+                pubkey: product.author,
+                displayName: authorProfiles[product.author],
+              };
+              console.log('[ShopPage] Author data for product:', product.title, authorData);
               return {
                 id: product.id,
                 title: product.title,
@@ -189,10 +200,7 @@ export default function ShopPage() {
                 imageUrl: product.imageUrl,
                 tags: product.tags,
                 publishedAt: product.publishedAt,
-                author: {
-                  pubkey: product.author,
-                  displayName: authorProfiles[product.author],
-                },
+                author: authorData,
                 price: product.price,
                 currency: product.currency,
                 category: product.category,
