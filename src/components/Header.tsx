@@ -115,36 +115,58 @@ export default function Header() {
             ))}
           </div>
 
-          {/* Right side: Auth Button + Mobile Menu + Cart */}
-          <div className="flex items-center space-x-3">
-            {/* Auth Button - Always visible */}
-            <AuthButton />
-            
-            {/* Mobile menu button */}
-            <button
-              ref={toggleBtnRef}
-              onClick={() => setIsOpen((prev: boolean) => !prev)}
-              aria-expanded={isOpen}
-              aria-controls="mobile-nav"
-              aria-label="Toggle navigation menu"
-              className="lg:hidden p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-            >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-            
-            {/* Cart Icon with Badge - Only shows when items in cart */}
-            {itemCount > 0 && (
-              <Link
-                href="/cart"
-                className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-                aria-label={`Shopping cart with ${itemCount} items`}
+          {/* Right side - Separate sections for mobile menu and account/cart area */}
+          <div className="flex items-center gap-6">
+            {/* Account & Cart Section - Visually separated like Amazon */}
+            <div className="hidden lg:flex items-center gap-4 border-l border-primary-600 pl-6">
+              {/* Auth Button */}
+              <AuthButton />
+              
+              {/* Cart Icon - Separate from navigation */}
+              {itemCount > 0 && (
+                <Link
+                  href="/cart"
+                  className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+                  aria-label={`Shopping cart with ${itemCount} items`}
+                >
+                  <ShoppingCart className="w-6 h-6" />
+                  <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {itemCount > 9 ? '9+' : itemCount}
+                  </span>
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile: Auth + Menu + Cart */}
+            <div className="flex lg:hidden items-center gap-3">
+              <AuthButton />
+              
+              {/* Mobile menu button */}
+              <button
+                ref={toggleBtnRef}
+                onClick={() => setIsOpen((prev: boolean) => !prev)}
+                aria-expanded={isOpen}
+                aria-controls="mobile-nav"
+                aria-label="Toggle navigation menu"
+                className="p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
               >
-                <ShoppingCart className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {itemCount > 9 ? '9+' : itemCount}
-                </span>
-              </Link>
-            )}
+                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+              
+              {/* Cart Icon - Mobile */}
+              {itemCount > 0 && (
+                <Link
+                  href="/cart"
+                  className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+                  aria-label={`Shopping cart with ${itemCount} items`}
+                >
+                  <ShoppingCart className="w-6 h-6" />
+                  <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {itemCount > 9 ? '9+' : itemCount}
+                  </span>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
