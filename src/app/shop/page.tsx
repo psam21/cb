@@ -16,10 +16,6 @@ export default function ShopPage() {
 
   // No filtering needed - NIP-33 relays return only latest events per dTag
   const filteredProducts = useMemo(() => {
-    console.log(`[ShopPage] Raw products count: ${products.length}`);
-    console.log(`[ShopPage] Raw products:`, products);
-    console.log(`[ShopPage] Filtered products count: ${products.length}`);
-    console.log(`[ShopPage] Filtered products:`, products);
     return products;
   }, [products]);
 
@@ -138,12 +134,10 @@ export default function ShopPage() {
         {!isLoading && !error && (
           <BaseGrid
             data={filteredProducts.map(product => {
-              console.log('Product eventId:', product.eventId, 'Type:', typeof product.eventId);
               const authorData = {
                 pubkey: product.author,
                 displayName: product.authorDisplayName,
               };
-              console.log('[ShopPage] Author data for product:', product.title, authorData);
               return {
                 id: product.id,
                 title: product.title,
