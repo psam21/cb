@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
-import { ProductCreationForm } from '@/components/shop/ProductCreationForm';
 import { BaseGrid } from '@/components/ui/BaseGrid';
 import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 
 export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const router = useRouter();
 
   // Memoize product data transformation to avoid re-mapping on every render
@@ -38,18 +36,7 @@ export default function ShopPage() {
     }));
   }, [products]);
 
-  const handleProductCreated = (productId: string) => {
-    logger.info('Product created successfully', {
-      service: 'ShopPage',
-      method: 'handleProductCreated',
-      productId,
-    });
-    
-    setShowCreateForm(false);
-    
-    // Refresh the products list to show the new product
-    refreshProducts();
-  };
+
 
   const handleContact = (product: ShopProduct) => {
     logger.info('Contact seller clicked', {
@@ -70,34 +57,7 @@ export default function ShopPage() {
     router.push(`/messages?${params.toString()}`);
   };
 
-  const handleCreateProduct = () => {
-    logger.info('Create product button clicked', {
-      service: 'ShopPage',
-      method: 'handleCreateProduct',
-    });
-    setShowCreateForm(true);
-  };
 
-  const handleCancelCreate = () => {
-    logger.info('Create product cancelled', {
-      service: 'ShopPage',
-      method: 'handleCancelCreate',
-    });
-    setShowCreateForm(false);
-  };
-
-  if (showCreateForm) {
-    return (
-      <div className="min-h-screen bg-primary-50 py-8">
-        <div className="container-width">
-          <ProductCreationForm
-            onProductCreated={handleProductCreated}
-            onCancel={handleCancelCreate}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-primary-50">
@@ -109,14 +69,6 @@ export default function ShopPage() {
               <p className="text-gray-600 text-lg">
                 Buy and sell Culture and Heritage products directly interacting with Customers
               </p>
-            </div>
-            <div className="mt-4 lg:mt-0">
-              <button
-                onClick={handleCreateProduct}
-                className="btn-primary-sm"
-              >
-                Create Product
-              </button>
             </div>
           </div>
         </div>
@@ -209,15 +161,9 @@ export default function ShopPage() {
               </svg>
             </div>
             <h3 className="text-2xl font-serif font-bold text-primary-800 mb-2">No products yet</h3>
-            <p className="text-gray-600 mb-6 text-lg">
-              Be the first to create a product in the Nostr shop!
+            <p className="text-gray-600 text-lg">
+              Check back soon for cultural and heritage products from our community!
             </p>
-            <button
-              onClick={handleCreateProduct}
-              className="btn-primary-sm"
-            >
-              Create First Product
-            </button>
           </div>
         )}
       </div>
