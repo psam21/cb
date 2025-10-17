@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
@@ -13,6 +13,30 @@ export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const router = useRouter();
+
+  // Memoize product data transformation to avoid re-mapping on every render
+  const transformedProducts = useMemo(() => {
+    return products.map(product => ({
+      id: product.id,
+      title: product.title,
+      description: product.description,
+      imageUrl: product.imageUrl,
+      tags: product.tags,
+      publishedAt: product.publishedAt,
+      author: {
+        pubkey: product.author,
+        displayName: product.authorDisplayName,
+      },
+      price: product.price,
+      currency: product.currency,
+      category: product.category,
+      condition: product.condition,
+      location: product.location,
+      contact: product.contact,
+      eventId: product.eventId,
+      publishedRelays: product.publishedRelays,
+    }));
+  }, [products]);
 
   const handleProductCreated = (productId: string) => {
     logger.info('Product created successfully', {
@@ -128,29 +152,7 @@ export default function ShopPage() {
         {/* Products Grid */}
         {!isLoading && !error && (
           <BaseGrid
-            data={products.map(product => {
-              const authorData = {
-                pubkey: product.author,
-                displayName: product.authorDisplayName,
-              };
-              return {
-                id: product.id,
-                title: product.title,
-                description: product.description,
-                imageUrl: product.imageUrl,
-                tags: product.tags,
-                publishedAt: product.publishedAt,
-                author: authorData,
-                price: product.price,
-                currency: product.currency,
-                category: product.category,
-                condition: product.condition,
-                location: product.location,
-                contact: product.contact,
-                eventId: product.eventId,
-                publishedRelays: product.publishedRelays,
-              };
-            })}
+            data={transformedProducts}
             renderItem={(item) => (
               <BaseCard
                 data={item}
