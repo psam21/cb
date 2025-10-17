@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
@@ -9,9 +9,16 @@ import { BaseGrid } from '@/components/ui/BaseGrid';
 import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 
+// Import profile service to fetch author display names
+const getProfileService = async () => {
+  const { profileService } = await import('@/services/business/ProfileBusinessService');
+  return profileService;
+};
+
 export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [authorProfiles, setAuthorProfiles] = useState<Record<string, string>>({});
   const router = useRouter();
 
   // No filtering needed - NIP-33 relays return only latest events per dTag
@@ -21,6 +28,42 @@ export default function ShopPage() {
     console.log(`[ShopPage] Filtered products count: ${products.length}`);
     console.log(`[ShopPage] Filtered products:`, products);
     return products;
+  }, [products]);
+
+  // Fetch author profiles for all products
+  useEffect(() => {
+    const fetchAuthorProfiles = async () => {
+      if (products.length === 0) return;
+      
+      const profileService = await getProfileService();
+      const profiles: Record<string, string> = {};
+      
+      // Get unique author pubkeys
+      const uniqueAuthors = [...new Set(products.map(p => p.author))];
+      
+      // Fetch profiles in parallel
+      await Promise.all(
+        uniqueAuthors.map(async (pubkey) => {
+          try {
+            const profile = await profileService.getUserProfile(pubkey);
+            if (profile?.display_name) {
+              profiles[pubkey] = profile.display_name;
+            }
+          } catch (error) {
+            logger.warn('Failed to fetch author profile', {
+              service: 'ShopPage',
+              method: 'fetchAuthorProfiles',
+              pubkey: pubkey.substring(0, 8),
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        })
+      );
+      
+      setAuthorProfiles(profiles);
+    };
+    
+    fetchAuthorProfiles();
   }, [products]);
 
   const handleProductCreated = (productId: string) => {
@@ -146,7 +189,10 @@ export default function ShopPage() {
                 imageUrl: product.imageUrl,
                 tags: product.tags,
                 publishedAt: product.publishedAt,
-                author: product.author,
+                author: {
+                  pubkey: product.author,
+                  displayName: authorProfiles[product.author],
+                },
                 price: product.price,
                 currency: product.currency,
                 category: product.category,
