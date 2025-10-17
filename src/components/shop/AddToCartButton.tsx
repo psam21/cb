@@ -71,11 +71,12 @@ export function AddToCartButton({
     <button
       onClick={handleAddToCart}
       className={`
-        inline-flex items-center gap-2 px-6 py-3 
+        inline-flex items-center justify-center gap-2 px-4 py-2 
         bg-accent-600 hover:bg-accent-700 
-        text-white font-medium rounded-lg
+        text-white font-medium rounded-default text-sm
         transition-all duration-200
         disabled:opacity-50 disabled:cursor-not-allowed
+        focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2
         ${showSuccess ? 'bg-green-600 hover:bg-green-700' : ''}
         ${className}
       `}
@@ -83,12 +84,12 @@ export function AddToCartButton({
     >
       {showSuccess ? (
         <>
-          <Check className="w-5 h-5" />
+          <Check className="w-4 h-4" />
           <span>Added to Cart</span>
         </>
       ) : (
         <>
-          <ShoppingBag className="w-5 h-5" />
+          <ShoppingBag className="w-4 h-4" />
           <span>Add to Cart</span>
         </>
       )}
