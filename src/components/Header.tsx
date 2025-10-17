@@ -84,11 +84,11 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-primary-800 shadow-lg`}
     >
-      <nav className="container-width px-4 sm:px-6 lg:px-8 relative">
-        {/* Main header content - Logo + Navigation (full width) */}
-        <div className="flex items-center h-20 lg:h-24">
+      <nav className="container-width px-4 sm:px-6 lg:px-8">
+        {/* Main header content - Logo + Navigation + Auth/Cart */}
+        <div className="flex items-center justify-between h-20 lg:h-24 gap-8">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 group mr-8">
+          <Link href="/" className="flex items-center space-x-3 group shrink-0">
             {/* Logo icon removed, only text remains */}
             <div className="hidden sm:block">
               <h1 className="text-xl font-serif font-bold text-white">Culture Bridge</h1>
@@ -96,13 +96,13 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation - Takes full available width */}
-          <div className="hidden lg:flex items-center space-x-1 flex-1">
+          {/* Desktop Navigation - Takes available space and spreads links */}
+          <div className="hidden lg:flex items-center justify-between flex-1">
             {[...navigationLine1, ...navigationLine2].map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`px-3 py-2 rounded-md text-base font-semibold transition-colors duration-200 ${
+                className={`px-3 py-2 rounded-md text-base font-semibold transition-colors duration-200 whitespace-nowrap ${
                   pathname === item.href
                     ? 'text-white bg-primary-600'
                     : 'text-white hover:text-accent-200 hover:bg-primary-700'
@@ -116,6 +116,23 @@ export default function Header() {
             ))}
           </div>
 
+          {/* Auth & Cart Section - Separate area on the right */}
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
+            <AuthButton />
+            {itemCount > 0 && (
+              <Link
+                href="/cart"
+                className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+                aria-label={`Shopping cart with ${itemCount} items`}
+              >
+                <ShoppingCart className="w-6 h-6" />
+                <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              </Link>
+            )}
+          </div>
+
           {/* Mobile menu button - only visible on mobile */}
           <button
             ref={toggleBtnRef}
@@ -127,45 +144,6 @@ export default function Header() {
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
-        </div>
-
-        {/* Separate Account & Cart Section - Absolute positioned on the right (doesn't affect main layout) */}
-        <div className="hidden lg:flex absolute right-0 top-0 h-20 lg:h-24 items-center gap-4 bg-primary-800 pl-6 border-l border-primary-600">
-          {/* Auth Button */}
-          <AuthButton />
-          
-          {/* Cart Icon */}
-          {itemCount > 0 && (
-            <Link
-              href="/cart"
-              className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-              aria-label={`Shopping cart with ${itemCount} items`}
-            >
-              <ShoppingCart className="w-6 h-6" />
-              <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {itemCount > 9 ? '9+' : itemCount}
-              </span>
-            </Link>
-          )}
-        </div>
-
-        {/* Mobile: Auth + Cart - shown in dropdown */}
-        <div className="lg:hidden absolute right-16 top-0 h-20 flex items-center gap-3">
-          <AuthButton />
-          
-          {/* Cart Icon - Mobile */}
-          {itemCount > 0 && (
-            <Link
-              href="/cart"
-              className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-              aria-label={`Shopping cart with ${itemCount} items`}
-            >
-              <ShoppingCart className="w-6 h-6" />
-              <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {itemCount > 9 ? '9+' : itemCount}
-              </span>
-            </Link>
-          )}
         </div>
 
         {/* Mobile Navigation */}
