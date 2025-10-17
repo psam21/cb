@@ -84,10 +84,11 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-primary-800 shadow-lg`}
     >
-      <nav className="container-width">
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 lg:gap-8 h-20 lg:h-24">
-          {/* Logo - Left */}
-          <Link href="/" className="flex items-center space-x-3 group">
+      <nav className="container-width relative">
+        {/* Main header content - Logo + Navigation (full width) */}
+        <div className="flex items-center h-20 lg:h-24">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-3 group mr-8">
             {/* Logo icon removed, only text remains */}
             <div className="hidden sm:block">
               <h1 className="text-xl font-serif font-bold text-white">Culture Bridge</h1>
@@ -95,8 +96,8 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation - Center (spreads across available space) */}
-          <div className="hidden lg:flex items-center justify-center space-x-1">
+          {/* Desktop Navigation - Takes full available width */}
+          <div className="hidden lg:flex items-center space-x-1 flex-1">
             {[...navigationLine1, ...navigationLine2].map((item) => (
               <Link
                 key={item.name}
@@ -115,59 +116,56 @@ export default function Header() {
             ))}
           </div>
 
-          {/* Right side - Account & Cart Section */}
-          <div className="flex items-center justify-end">
-            {/* Desktop: Auth + Cart separated from navigation */}
-            <div className="hidden lg:flex items-center gap-4 border-l border-primary-600 pl-6">
-              {/* Auth Button */}
-              <AuthButton />
-              
-              {/* Cart Icon - Visually separate from navigation links */}
-              {itemCount > 0 && (
-                <Link
-                  href="/cart"
-                  className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-                  aria-label={`Shopping cart with ${itemCount} items`}
-                >
-                  <ShoppingCart className="w-6 h-6" />
-                  <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {itemCount > 9 ? '9+' : itemCount}
-                  </span>
-                </Link>
-              )}
-            </div>
+          {/* Mobile menu button - only visible on mobile */}
+          <button
+            ref={toggleBtnRef}
+            onClick={() => setIsOpen((prev: boolean) => !prev)}
+            aria-expanded={isOpen}
+            aria-controls="mobile-nav"
+            aria-label="Toggle navigation menu"
+            className="lg:hidden ml-auto p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
 
-            {/* Mobile: Auth + Menu + Cart */}
-            <div className="flex lg:hidden items-center gap-3">
-              <AuthButton />
-              
-              {/* Mobile menu button */}
-              <button
-                ref={toggleBtnRef}
-                onClick={() => setIsOpen((prev: boolean) => !prev)}
-                aria-expanded={isOpen}
-                aria-controls="mobile-nav"
-                aria-label="Toggle navigation menu"
-                className="p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-              >
-                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-              
-              {/* Cart Icon - Mobile */}
-              {itemCount > 0 && (
-                <Link
-                  href="/cart"
-                  className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-                  aria-label={`Shopping cart with ${itemCount} items`}
-                >
-                  <ShoppingCart className="w-6 h-6" />
-                  <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {itemCount > 9 ? '9+' : itemCount}
-                  </span>
-                </Link>
-              )}
-            </div>
-          </div>
+        {/* Separate Account & Cart Section - Absolute positioned on the right (doesn't affect main layout) */}
+        <div className="hidden lg:flex absolute right-0 top-0 h-20 lg:h-24 items-center gap-4 bg-primary-800 pl-6 border-l border-primary-600">
+          {/* Auth Button */}
+          <AuthButton />
+          
+          {/* Cart Icon */}
+          {itemCount > 0 && (
+            <Link
+              href="/cart"
+              className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+              aria-label={`Shopping cart with ${itemCount} items`}
+            >
+              <ShoppingCart className="w-6 h-6" />
+              <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {itemCount > 9 ? '9+' : itemCount}
+              </span>
+            </Link>
+          )}
+        </div>
+
+        {/* Mobile: Auth + Cart - shown in dropdown */}
+        <div className="lg:hidden absolute right-16 top-0 h-20 flex items-center gap-3">
+          <AuthButton />
+          
+          {/* Cart Icon - Mobile */}
+          {itemCount > 0 && (
+            <Link
+              href="/cart"
+              className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+              aria-label={`Shopping cart with ${itemCount} items`}
+            >
+              <ShoppingCart className="w-6 h-6" />
+              <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {itemCount > 9 ? '9+' : itemCount}
+              </span>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Navigation */}
