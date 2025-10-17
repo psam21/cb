@@ -74,8 +74,17 @@ export const useShopProducts = () => {
           method: 'loadProducts',
           productCount: localProducts.length,
         });
+        
+        // Enrich local products with author names (same as relay path)
+        const enrichedLocalProducts = await shopBusinessService.enrichProducts(localProducts);
+        logger.info('Local products enriched with author names', {
+          service: 'useShopProducts',
+          method: 'loadProducts',
+          enrichedCount: enrichedLocalProducts.filter(p => p.authorDisplayName).length,
+        });
+        
         // Sort products by newest first (publishedAt descending)
-        const sortedLocalProducts = localProducts.sort((a, b) => b.publishedAt - a.publishedAt);
+        const sortedLocalProducts = enrichedLocalProducts.sort((a, b) => b.publishedAt - a.publishedAt);
         setProducts(sortedLocalProducts);
       }
     } catch (error) {

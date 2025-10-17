@@ -1287,6 +1287,16 @@ export class ShopBusinessService {
   }
 
   /**
+   * Enrich any products array with author display names
+   * Public method for enriching products from any source (relays, local store, etc.)
+   * @param products - Array of products to enrich
+   * @returns Promise resolving to enriched products with authorDisplayName field
+   */
+  public async enrichProducts(products: ShopProduct[]): Promise<ShopProduct[]> {
+    return this.enrichProductsWithAuthorNames(products);
+  }
+
+  /**
    * Query products from relays with author enrichment
    * Public method that combines querying and enrichment
    */
