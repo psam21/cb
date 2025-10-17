@@ -1,8 +1,24 @@
 # Forensic Analysis Fixes - October 17, 2025
 
 **Context:** Post-SOA refactoring cleanup of shop cart implementation  
-**Status:** In Progress  
-**Completion:** 3/11 tasks (all CRITICAL/HIGH priority complete ✅)
+**Status:** ✅ COMPLETE (All actionable tasks done)  
+**Completion:** 5/11 tasks (3 deferred as architectural preferences)
+
+---
+
+## 🎯 SUMMARY
+
+**FIXED:**
+- ✅ Missing enrichment fallback (URGENT) - 91c5975
+- ✅ Debug console.logs (HIGH) - 650cd6e  
+- ✅ Useless memoization (MEDIUM) - e89e0d2
+- ✅ Duplicate sorting (MEDIUM) - 651d32b
+- ✅ Inefficient transformation (MEDIUM) - 84de9d6
+
+**DEFERRED (Architectural preferences, no bugs):**
+- ⏹️ Tight coupling BaseCard (#6)
+- ⏹️ require() in service (#7) 
+- ⏹️ Hardcoded exchange rates (#8)
 
 ---
 
@@ -161,7 +177,18 @@ import { AddToCartButton } from '@/components/shop/AddToCartButton';
 - Violates separation of concerns
 
 **Fix:**  
-Use composition pattern - pass cart button as children or render prop
+
+**Decision:** DEFERRED  
+**Rationale:**
+- BaseCard uses `variant` prop to discriminate content types
+- Shop-specific coupling is by design (variant="shop")
+- Composition pattern would increase complexity without clear benefit
+- Not a bug, performance issue, or SOA violation
+- Acceptable tradeoff for variant-based component architecture
+
+---
+
+### ⏹️ 7. Use of `require()` in Service Layer (DEFERRED)
 
 **Testing:**
 - [ ] Build succeeds
