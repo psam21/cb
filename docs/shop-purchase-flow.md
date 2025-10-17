@@ -56,8 +56,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/shop/AddToCartButton.tsx` | - | - | - | - |
-| **UPDATE** | `/src/app/shop/[id]/page.tsx` (ProductDetail page - add AddToCartButton) | `/src/components/shop/ProductDetail.tsx` (integrate button), `/src/components/Header.tsx` (add cart icon + badge with item count) | - | - | - | - |
+| **NEW** | - | `AddToCartButton.tsx` (renders button, calls store methods) | - | - | - | - |
+| **UPDATE** | `shop/[id]/page.tsx` (import and render AddToCartButton) | `ProductDetail.tsx` (pass product data to button), `Header.tsx` (show cart icon with item count badge from store) | - | - | - | - |
 
 **Store:** NEW `/src/stores/useCartStore.ts` (Zustand persist) with methods: `addItem()`, `removeItem()`, `updateQuantity()`, `clearCart()`, `getTotal()`  
 **Type:** NEW `/src/types/cart.ts` with `CartItem`, `Cart`  
@@ -72,7 +72,7 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/cart/page.tsx` | `/src/components/shop/CartPage.tsx`, `/src/components/shop/CartItem.tsx`, `/src/components/shop/CartSummary.tsx` | - | - | - | - |
+| **NEW** | `cart/page.tsx` (render cart UI, read from store) | `CartPage.tsx` (container), `CartItem.tsx` (individual item with quantity controls), `CartSummary.tsx` (total + checkout button) | - | - | - | - |
 | **UPDATE** | - | - | - | - | - | - |
 
 **Store:** Reuse `useCartStore` (getters: `items`, `total`, `itemCount`)  
@@ -87,8 +87,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/shop/PurchaseIntentButton.tsx` | `/src/hooks/usePurchaseIntent.ts` | `/src/services/business/PurchaseBusinessService.ts` | - | - |
-| **UPDATE** | `/src/app/cart/page.tsx` (add "Checkout" button → triggers purchase intent) | `/src/components/shop/CartSummary.tsx` (add checkout button) | - | - | - | `/src/services/generic/GenericMessageService.ts` (reuse NIP-17 encryption) |
+| **NEW** | - | `PurchaseIntentButton.tsx` (triggers intent flow) | `usePurchaseIntent.ts` (orchestrates: calls Business → Message Service, manages loading/success states) | `PurchaseBusinessService.ts` (validateCart, preparePurchaseIntent, groupBySeller methods) | - | - |
+| **UPDATE** | `cart/page.tsx` (add "Checkout" button triggering intent) | `CartSummary.tsx` (render PurchaseIntentButton, pass cart data) | - | - | - | `GenericMessageService.ts` (reuse sendEncryptedMessage for NIP-17) |
 
 **Type:** NEW `/src/types/purchase.ts` with `PurchaseIntent`, `PurchaseResponse`  
 **Nostr:** NIP-17 encrypted message to each seller  
@@ -111,8 +111,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/shop/StockConfirmationButton.tsx`, `/src/components/shop/PaymentLinkGenerator.tsx` | `/src/hooks/usePaymentLink.ts` | `/src/services/business/SaleBusinessService.ts` | `/src/services/nostr/SaleEventService.ts` | - |
-| **UPDATE** | `/src/app/my-shop/orders/[saleId]/page.tsx` (seller confirms stock + generates payment link) | `/src/components/shop/SellerOrderCard.tsx` (show "Confirm Stock" action) | - | - | - | `/src/services/generic/GenericEventService.ts` (reuse createNIP23Event) |
+| **NEW** | - | `StockConfirmationButton.tsx` (confirms stock), `PaymentLinkGenerator.tsx` (generates LNURL-pay invoice) | `usePaymentLink.ts` (orchestrates: calls Business → Event Service → Message Service) | `SaleBusinessService.ts` (confirmStock, generatePaymentLink, fetchLightningAddress, createSaleData methods) | `SaleEventService.ts` (createSaleEvent, publishSaleEvent methods - wraps GenericEventService) | - |
+| **UPDATE** | `my-shop/orders/[saleId]/page.tsx` (render confirmation UI) | `SellerOrderCard.tsx` (show "Confirm Stock" action button) | - | - | - | `GenericEventService.ts` (reuse createEvent, signEvent, publishEvent for Kind 30023), `GenericMessageService.ts` (send payment link via NIP-17) |
 
 **Type:** NEW `/src/types/sale.ts` with `Sale`, `SaleStatus`, `SaleEvent`  
 **Nostr:** Kind 30023 (public), dTag = `sale-{timestamp}-{random}`, tag `['t', 'culture-bridge-sale-pending']`  
@@ -146,8 +146,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/payment/[saleId]/page.tsx` (payment page for specific sale) | `/src/components/shop/LightningInvoice.tsx`, `/src/components/shop/PaymentStatus.tsx`, `/src/components/shop/QRCodeDisplay.tsx`, `/src/components/shop/MarkPaidButton.tsx`, `/src/components/shop/ShippingAddressForm.tsx` | `/src/hooks/usePayment.ts` | `/src/services/business/PaymentBusinessService.ts` | - | - |
-| **UPDATE** | - | - | - | - | - | `/src/services/generic/GenericMessageService.ts` (reuse NIP-17) |
+| **NEW** | `payment/[saleId]/page.tsx` (payment page for specific sale) | `LightningInvoice.tsx` (display invoice + QR), `PaymentStatus.tsx` (status indicator), `QRCodeDisplay.tsx` (QR renderer), `MarkPaidButton.tsx` (manual confirmation), `ShippingAddressForm.tsx` (collect address) | `usePayment.ts` (orchestrates: handles form submission, calls Business → Message Service) | `PaymentBusinessService.ts` (validatePayment, preparePaymentConfirmation, validateAddress methods) | - | - |
+| **UPDATE** | - | - | - | - | - | `GenericMessageService.ts` (reuse sendEncryptedMessage for payment confirmation + address via NIP-17) |
 
 **Type:** Update `/src/types/payment.ts` with `PaymentConfirmation`; update `/src/types/shipping.ts` with `ShippingAddress`  
 **Flow:**
@@ -175,8 +175,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/shop/PaymentConfirmationButton.tsx` | `/src/hooks/useSaleConfirmation.ts` | - | `/src/services/nostr/SaleEventService.ts` (add confirmPayment method) | - |
-| **UPDATE** | `/src/app/my-shop/orders/[saleId]/page.tsx` (seller confirms payment) | `/src/components/shop/SellerOrderCard.tsx` (show "Confirm Payment" action) | - | `/src/services/business/SaleBusinessService.ts` (add confirmPayment method) | - | `/src/services/generic/GenericEventService.ts` (reuse createNIP23Event) |
+| **NEW** | - | `PaymentConfirmationButton.tsx` (confirms payment received) | `useSaleConfirmation.ts` (orchestrates: calls Business → Event Service → Message Service) | - | - | - |
+| **UPDATE** | `my-shop/orders/[saleId]/page.tsx` (render confirmation UI) | `SellerOrderCard.tsx` (show "Confirm Payment" action button) | - | `SaleBusinessService.ts` (add confirmPayment, updateSaleStatus methods) | `SaleEventService.ts` (add updateSaleEvent method for status changes) | `GenericEventService.ts` (reuse createEvent, signEvent, publishEvent for Kind 30023 replacement via NIP-33), `GenericMessageService.ts` (send confirmation to buyer via NIP-17) |
 
 **Type:** Update `/src/types/sale.ts` with payment confirmation fields  
 **Nostr:** Kind 30023 (public, replaces previous sale event), same dTag, tag `['t', 'culture-bridge-sale-accepted']`  
@@ -208,8 +208,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | - | `/src/components/shop/ShippingForm.tsx` (seller), `/src/components/shop/DeliveryConfirmation.tsx` (buyer) | `/src/hooks/useShipping.ts` | - | - | - |
-| **UPDATE** | `/src/app/my-shop/orders/[saleId]/page.tsx` (seller shipping actions), `/src/app/orders/[saleId]/page.tsx` (buyer delivery confirmation - NEW page for buyer) | - | `/src/hooks/useMessageSending.ts` (add shipping methods) | - | - | `/src/services/generic/GenericMessageService.ts` (reuse NIP-17) |
+| **NEW** | `orders/[saleId]/page.tsx` (buyer order detail with delivery confirmation) | `ShippingForm.tsx` (seller enters tracking), `DeliveryConfirmation.tsx` (buyer confirms receipt) | `useShipping.ts` (orchestrates: calls Business → Message Service for shipping/delivery) | - | - | - |
+| **UPDATE** | `my-shop/orders/[saleId]/page.tsx` (seller shipping actions) | - | `useMessageSending.ts` (add sendShippingUpdate, sendDeliveryConfirmation methods) | - | - | `GenericMessageService.ts` (reuse sendEncryptedMessage for shipping updates + delivery confirmations via NIP-17) |
 
 **Type:** NEW `/src/types/shipping.ts` with `ShippingUpdate`, `DeliveryConfirmation`  
 **Nostr:** NIP-17 encrypted messages between buyer and seller  
@@ -236,8 +236,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/orders/page.tsx` (order list), `/src/app/orders/[saleId]/page.tsx` (order detail) | `/src/components/shop/BuyerOrderList.tsx`, `/src/components/shop/BuyerOrderCard.tsx`, `/src/components/shop/BuyerOrderDetail.tsx` | `/src/hooks/useBuyerOrders.ts` | `/src/services/business/OrderHistoryService.ts` | - | - |
-| **UPDATE** | - | `/src/components/Header.tsx` (add "My Purchases" nav link) | - | - | - | `/src/services/generic/GenericRelayService.ts` (reuse queryEvents), `/src/services/generic/GenericMessageService.ts` (decrypt messages) |
+| **NEW** | `orders/page.tsx` (order list), `orders/[saleId]/page.tsx` (order detail) | `BuyerOrderList.tsx` (list container), `BuyerOrderCard.tsx` (individual order card), `BuyerOrderDetail.tsx` (full order timeline) | `useBuyerOrders.ts` (orchestrates: calls Business → Relay/Message Services to fetch + decrypt) | `OrderHistoryService.ts` (fetchBuyerOrders, groupBySaleId, constructOrderTimeline methods) | - | - |
+| **UPDATE** | - | `Header.tsx` (add "My Purchases" nav link) | - | - | - | `GenericRelayService.ts` (reuse queryEvents for NIP-17 messages), `GenericMessageService.ts` (reuse decryptMessage for order data) |
 
 **Nostr:** Query NIP-17 encrypted messages: `{ kinds: [1059], '#p': [buyerPubkey] }`  
 **Data Source:** Encrypted messages containing:
@@ -265,8 +265,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/my-shop/orders/page.tsx` (order list by status), `/src/app/my-shop/orders/[saleId]/page.tsx` (order detail + fulfillment) | `/src/components/shop/SellerOrderList.tsx`, `/src/components/shop/SellerOrderCard.tsx`, `/src/components/shop/SellerOrderDetail.tsx` | `/src/hooks/useSellerOrders.ts` | `/src/services/business/OrderHistoryService.ts` (add seller methods) | - | - |
-| **UPDATE** | `/src/app/my-shop/page.tsx` (add "Orders" tab) | - | - | - | - | `/src/services/generic/GenericRelayService.ts`, `/src/services/generic/GenericMessageService.ts` |
+| **NEW** | `my-shop/orders/page.tsx` (order list by status), `my-shop/orders/[saleId]/page.tsx` (order detail + fulfillment) | `SellerOrderList.tsx` (list with status tabs), `SellerOrderCard.tsx` (individual order card with actions), `SellerOrderDetail.tsx` (full order detail + fulfillment UI) | `useSellerOrders.ts` (orchestrates: calls Business → Relay/Message Services to fetch + decrypt) | - | - | - |
+| **UPDATE** | `my-shop/page.tsx` (add "Orders" tab) | - | - | `OrderHistoryService.ts` (add fetchSellerOrders, filterByStatus, constructOrderTimeline methods) | - | `GenericRelayService.ts` (reuse queryEvents for NIP-17 messages), `GenericMessageService.ts` (reuse decryptMessage for order data) |
 
 **Nostr:** Query NIP-17 encrypted messages: `{ kinds: [1059], '#p': [sellerPubkey] }`  
 **Data Source:** Encrypted messages containing:
@@ -299,8 +299,8 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `/src/app/disputes/file/page.tsx` (file dispute form) | `/src/components/shop/DisputeForm.tsx`, `/src/components/shop/DisputeTimeline.tsx`, `/src/components/shop/DisputeButton.tsx` | `/src/hooks/useDispute.ts` | `/src/services/business/DisputeBusinessService.ts` | `/src/services/nostr/DisputeEventService.ts` | - |
-| **UPDATE** | `/src/app/orders/[saleId]/page.tsx` (buyer can file dispute), `/src/app/my-shop/orders/[saleId]/page.tsx` (seller can file dispute) | `/src/components/shop/BuyerOrderDetail.tsx` (add "File Dispute" button), `/src/components/shop/SellerOrderDetail.tsx` (add "Cancel Sale" button) | - | - | - | `/src/services/generic/GenericEventService.ts` (reuse signEvent) |
+| **NEW** | `disputes/file/page.tsx` (file dispute form) | `DisputeForm.tsx` (dispute filing form), `DisputeTimeline.tsx` (dispute history display), `DisputeButton.tsx` (trigger dispute) | `useDispute.ts` (orchestrates: calls Business → Event Service to publish dispute) | `DisputeBusinessService.ts` (validateDispute, prepareDisputeEvent, checkGracePeriod, checkDuplicate methods) | `DisputeEventService.ts` (createDisputeEvent, publishDisputeEvent methods - wraps GenericEventService for Kind 1111) | - |
+| **UPDATE** | `orders/[saleId]/page.tsx` (buyer "File Dispute" option), `my-shop/orders/[saleId]/page.tsx` (seller "Cancel Sale" option) | `BuyerOrderDetail.tsx` (add "File Dispute" button), `SellerOrderDetail.tsx` (add "Cancel Sale" button) | - | - | - | `GenericEventService.ts` (reuse createEvent, signEvent, publishEvent for Kind 1111) |
 
 **Type:** NEW `/src/types/dispute.ts` with `Dispute`, `DisputeType`, `DisputeReason`  
 **Nostr:** Kind 1111 (public comment/complaint), tags reference sale event  
