@@ -250,9 +250,9 @@ export const BaseCard = ({
               <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              {typeof data.author === 'string' 
-                ? data.author.substring(0, 8) + '...'
-                : data.author?.name || data.author?.npub?.substring(0, 8) + '...' || 'Anonymous'
+              {typeof data.author === 'object' && data.author?.name 
+                ? data.author.name
+                : 'Seller'
               }
             </span>
           )}
