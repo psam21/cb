@@ -139,29 +139,27 @@ export default function ShopPage() {
           <BaseGrid
             data={filteredProducts.map(product => {
               console.log('Product eventId:', product.eventId, 'Type:', typeof product.eventId);
-              // Cast to access enriched field
-              const enrichedProduct = product as ShopProduct & { authorDisplayName?: string };
               const authorData = {
-                pubkey: enrichedProduct.author,
-                displayName: enrichedProduct.authorDisplayName,
+                pubkey: product.author,
+                displayName: product.authorDisplayName,
               };
-              console.log('[ShopPage] Author data for product:', enrichedProduct.title, authorData);
+              console.log('[ShopPage] Author data for product:', product.title, authorData);
               return {
-                id: enrichedProduct.id,
-                title: enrichedProduct.title,
-                description: enrichedProduct.description,
-                imageUrl: enrichedProduct.imageUrl,
-                tags: enrichedProduct.tags,
-                publishedAt: enrichedProduct.publishedAt,
+                id: product.id,
+                title: product.title,
+                description: product.description,
+                imageUrl: product.imageUrl,
+                tags: product.tags,
+                publishedAt: product.publishedAt,
                 author: authorData,
-                price: enrichedProduct.price,
-                currency: enrichedProduct.currency,
-                category: enrichedProduct.category,
-                condition: enrichedProduct.condition,
-                location: enrichedProduct.location,
-                contact: enrichedProduct.contact,
-                eventId: enrichedProduct.eventId,
-                publishedRelays: enrichedProduct.publishedRelays,
+                price: product.price,
+                currency: product.currency,
+                category: product.category,
+                condition: product.condition,
+                location: product.location,
+                contact: product.contact,
+                eventId: product.eventId,
+                publishedRelays: product.publishedRelays,
               };
             })}
             renderItem={(item) => (

@@ -47,6 +47,9 @@ export interface ShopProduct {
   author: string;
   isDeleted: boolean; // Track if this is a deleted product
   // Note: Removed revision tracking fields - Kind 30023 handles this automatically
+  
+  // Enriched data (added by service layer)
+  authorDisplayName?: string;
 }
 
 export interface CreateProductResult {
@@ -1224,6 +1227,87 @@ export class ShopBusinessService {
         error: errorMessage,
       };
     }
+  }
+
+  /**
+   * Enrich products with author display names from profiles
+   * This is a service-to-service operation following SOA principles
+   */
+  private async enrichProductsWithAuthorNames(products: ShopProduct[]): Promise<ShopProduct[]> {
+    try {
+      logger.info('Enriching products with author names', {
+        service: 'ShopBusinessService',
+        method: 'enrichProductsWithAuthorNames',
+        productCount: products.length,
+      });
+
+      // Import ProfileBusinessService (service-to-service)
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { profileService } = require('./ProfileBusinessService');
+
+      // Enrich products with author display names
+      const enrichedProducts = await Promise.all(
+        products.map(async (product) => {
+          try {
+            const profile = await profileService.getUserProfile(product.author);
+            return {
+              ...product,
+              authorDisplayName: profile?.display_name,
+            };
+          } catch (error) {
+            logger.warn('Failed to fetch author profile for product', {
+              service: 'ShopBusinessService',
+              method: 'enrichProductsWithAuthorNames',
+              productId: product.id,
+              author: product.author,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+            return product;
+          }
+        })
+      );
+
+      const enrichedCount = enrichedProducts.filter(p => p.authorDisplayName).length;
+      logger.info('Products enriched with author names', {
+        service: 'ShopBusinessService',
+        method: 'enrichProductsWithAuthorNames',
+        totalProducts: products.length,
+        enrichedCount,
+      });
+
+      return enrichedProducts;
+    } catch (error) {
+      logger.error('Failed to enrich products with author names', error instanceof Error ? error : new Error(String(error)), {
+        service: 'ShopBusinessService',
+        method: 'enrichProductsWithAuthorNames',
+      });
+      // Return original products if enrichment fails
+      return products;
+    }
+  }
+
+  /**
+   * Query products from relays with author enrichment
+   * Public method that combines querying and enrichment
+   */
+  public async queryEnrichedProductsFromRelays(
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
+    showDeleted: boolean = false
+  ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
+    // First get products from relays
+    const result = await this.queryProductsFromRelays(onProgress, showDeleted);
+    
+    if (!result.success || result.products.length === 0) {
+      return result;
+    }
+
+    // Then enrich with author names (service-to-service)
+    const enrichedProducts = await this.enrichProductsWithAuthorNames(result.products);
+
+    return {
+      ...result,
+      products: enrichedProducts,
+    };
   }
 
   /**
