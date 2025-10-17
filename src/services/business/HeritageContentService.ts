@@ -277,6 +277,11 @@ export async function createHeritageContribution(
   onProgress?: (progress: HeritagePublishingProgress) => void
 ): Promise<CreateHeritageResult> {
   try {
+    console.log('[HeritageContentService] createHeritageContribution called', {
+      attachmentFilesCount: attachmentFiles.length,
+      isEdit: !!existingDTag,
+    });
+    
     logger.info('Starting heritage contribution creation', {
       service: 'HeritageContentService',
       method: 'createHeritageContribution',
@@ -286,6 +291,7 @@ export async function createHeritageContribution(
     });
 
     // Step 1: Validate heritage data
+    console.log('[HeritageContentService] Reporting validation progress');
     onProgress?.({
       step: 'validating',
       progress: 10,
@@ -293,7 +299,9 @@ export async function createHeritageContribution(
       details: 'Checking required fields',
     });
 
+    console.log('[HeritageContentService] Calling validateHeritageData');
     const validation = validateHeritageData(heritageData);
+    console.log('[HeritageContentService] Validation result', { valid: validation.valid });
     if (!validation.valid) {
       const errorMsg = Object.values(validation.errors).join(', ');
       logger.error('Heritage validation failed', new Error(errorMsg), {

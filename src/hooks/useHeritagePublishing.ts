@@ -94,6 +94,11 @@ export const useHeritagePublishing = () => {
     attachmentFiles: File[],
     existingDTag?: string
   ): Promise<HeritagePublishingResult> => {
+    console.log('[useHeritagePublishing] publishHeritage called', {
+      attachmentFilesCount: attachmentFiles.length,
+      existingDTag,
+    });
+    
     // Reset state
     setState({
       isPublishing: true,
@@ -103,8 +108,14 @@ export const useHeritagePublishing = () => {
       result: null,
     });
 
+    console.log('[useHeritagePublishing] About to call publishWithWrapper');
+    
     const result = await publishWithWrapper(
       async (contributionData, files, signer, onProgress) => {
+        console.log('[useHeritagePublishing] Inside publishWithWrapper callback', {
+          filesCount: files.length,
+        });
+        
         const serviceResult = await createHeritageContribution(
           contributionData,
           files,
@@ -113,6 +124,10 @@ export const useHeritagePublishing = () => {
           onProgress
         );
 
+        console.log('[useHeritagePublishing] createHeritageContribution completed', {
+          success: serviceResult.success,
+        });
+        
         // Map service result to HeritagePublishingResult
         return {
           success: serviceResult.success,
@@ -129,6 +144,10 @@ export const useHeritagePublishing = () => {
       attachmentFiles
     );
 
+    console.log('[useHeritagePublishing] publishWithWrapper completed', {
+      success: result.success,
+    });
+    
     return result;
   }, [publishWithWrapper, setState]);
 

@@ -85,6 +85,12 @@ export function useContentPublishing<
     const { setPublishing, setProgress, setResult } = stateSetters;
 
     try {
+      console.log('[useContentPublishing] publishWithWrapper called', {
+        service: serviceName,
+        method: methodName,
+        attachmentCount: attachmentFiles.length,
+      });
+      
       logger.info(`Starting ${methodName}`, {
         service: serviceName,
         method: methodName,
@@ -92,6 +98,7 @@ export function useContentPublishing<
       });
 
       // Step 1: Validate signer availability
+      console.log('[useContentPublishing] Checking signer availability', { isAvailable });
       if (!isAvailable) {
         const error = 'Nostr signer not available. Please install a Nostr extension.';
         logger.error(`Cannot ${methodName}: No signer`, new Error(error), {
@@ -111,7 +118,9 @@ export function useContentPublishing<
       }
 
       // Step 2: Get signer
+      console.log('[useContentPublishing] Getting signer...');
       const signer = await getSigner();
+      console.log('[useContentPublishing] Got signer', { hasSigner: !!signer });
       if (!signer) {
         const error = 'Failed to get Nostr signer';
         logger.error(`Cannot ${methodName}: Failed to get signer`, new Error(error), {
@@ -131,7 +140,11 @@ export function useContentPublishing<
       }
 
       // Step 3: Show consent dialog if there are files
+      console.log('[useContentPublishing] Checking if consent dialog needed', {
+        filesCount: attachmentFiles.length,
+      });
       if (attachmentFiles.length > 0) {
+        console.log('[useContentPublishing] Showing consent dialog');
         logger.info('Showing consent dialog for file uploads', {
           service: serviceName,
           method: methodName,
@@ -160,10 +173,12 @@ export function useContentPublishing<
       }
 
       // Step 4: Set publishing state
+      console.log('[useContentPublishing] Setting publishing state');
       setPublishing(true);
       setProgress(null);
 
       // Step 5: Call the actual publish function with progress tracking
+      console.log('[useContentPublishing] Calling actual publish function');
       const result = await publishFn(
         data,
         attachmentFiles,
