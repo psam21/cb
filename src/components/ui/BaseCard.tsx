@@ -179,14 +179,14 @@ export const BaseCard = ({
 
       {/* Content */}
       <div className="p-6">
-        {/* Title and Price */}
-        <div className="flex justify-between items-start mb-3">
+        {/* Title and Price - Fixed height for 2 lines */}
+        <div className="flex justify-between items-start mb-3 min-h-[3.5rem]">
           <h3 className="text-xl font-serif font-bold text-primary-800 line-clamp-2 flex-1 mr-3">
             {data.title}
           </h3>
           {data.price && data.currency && (
-            <div className="text-right">
-              <p className="text-2xl font-bold text-accent-600">
+            <div className="text-right flex-shrink-0">
+              <p className="text-2xl font-bold text-accent-600 whitespace-nowrap">
                 {formatPrice(data.price, data.currency)}
               </p>
             </div>
@@ -218,27 +218,29 @@ export const BaseCard = ({
           </div>
         )}
 
-        {/* Tags */}
-        {data.tags && data.tags.length > 0 && (() => {
-          const visibleTags = filterVisibleTags(data.tags);
-          return visibleTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {visibleTags.slice(0, 3).map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-accent-50 text-accent-700 text-xs rounded-full font-medium"
-                >
-                  #{tag}
-                </span>
-              ))}
-              {visibleTags.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                  +{visibleTags.length - 3} more
-                </span>
-              )}
-            </div>
-          );
-        })()}
+        {/* Tags - Fixed height 1 line */}
+        <div className="h-[28px] mb-4 flex items-center overflow-hidden">
+          {data.tags && data.tags.length > 0 && (() => {
+            const visibleTags = filterVisibleTags(data.tags);
+            return visibleTags.length > 0 && (
+              <div className="flex gap-2 overflow-hidden">
+                {visibleTags.slice(0, 3).map((tag, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-accent-50 text-accent-700 text-xs rounded-full font-medium whitespace-nowrap"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+                {visibleTags.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full whitespace-nowrap">
+                    +{visibleTags.length - 3} more
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+        </div>
 
         {/* Contact and Published Info */}
         <div className="flex items-center justify-between text-xs text-gray-400 mb-4">
