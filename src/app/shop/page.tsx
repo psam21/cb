@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
@@ -12,7 +12,6 @@ import { ShopProduct } from '@/services/business/ShopBusinessService';
 export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [authorProfiles, setAuthorProfiles] = useState<Record<string, string>>({});
   const router = useRouter();
 
   // No filtering needed - NIP-33 relays return only latest events per dTag
@@ -22,50 +21,6 @@ export default function ShopPage() {
     console.log(`[ShopPage] Filtered products count: ${products.length}`);
     console.log(`[ShopPage] Filtered products:`, products);
     return products;
-  }, [products]);
-
-  // Fetch author profiles for all products
-  useEffect(() => {
-    const fetchAuthorProfiles = async () => {
-      if (products.length === 0) return;
-      
-      console.log('[ShopPage] Fetching profiles for', products.length, 'products');
-      
-      // Use same pattern as BaseContentProvider
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { profileService } = require('@/services/business/ProfileBusinessService');
-      const profiles: Record<string, string> = {};
-      
-      // Get unique author pubkeys
-      const uniqueAuthors = [...new Set(products.map(p => p.author))];
-      console.log('[ShopPage] Unique authors:', uniqueAuthors);
-      
-      // Fetch profiles in parallel
-      await Promise.all(
-        uniqueAuthors.map(async (pubkey) => {
-          try {
-            const profile = await profileService.getUserProfile(pubkey);
-            console.log('[ShopPage] Profile for', pubkey.substring(0, 8), ':', profile);
-            if (profile?.display_name) {
-              profiles[pubkey] = profile.display_name;
-              console.log('[ShopPage] Added displayName:', profile.display_name);
-            }
-          } catch (error) {
-            logger.warn('Failed to fetch author profile', {
-              service: 'ShopPage',
-              method: 'fetchAuthorProfiles',
-              pubkey: pubkey.substring(0, 8),
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-          }
-        })
-      );
-      
-      console.log('[ShopPage] Final profiles:', profiles);
-      setAuthorProfiles(profiles);
-    };
-    
-    fetchAuthorProfiles();
   }, [products]);
 
   const handleProductCreated = (productId: string) => {
@@ -184,27 +139,29 @@ export default function ShopPage() {
           <BaseGrid
             data={filteredProducts.map(product => {
               console.log('Product eventId:', product.eventId, 'Type:', typeof product.eventId);
+              // Cast to access enriched field
+              const enrichedProduct = product as ShopProduct & { authorDisplayName?: string };
               const authorData = {
-                pubkey: product.author,
-                displayName: authorProfiles[product.author],
+                pubkey: enrichedProduct.author,
+                displayName: enrichedProduct.authorDisplayName,
               };
-              console.log('[ShopPage] Author data for product:', product.title, authorData);
+              console.log('[ShopPage] Author data for product:', enrichedProduct.title, authorData);
               return {
-                id: product.id,
-                title: product.title,
-                description: product.description,
-                imageUrl: product.imageUrl,
-                tags: product.tags,
-                publishedAt: product.publishedAt,
+                id: enrichedProduct.id,
+                title: enrichedProduct.title,
+                description: enrichedProduct.description,
+                imageUrl: enrichedProduct.imageUrl,
+                tags: enrichedProduct.tags,
+                publishedAt: enrichedProduct.publishedAt,
                 author: authorData,
-                price: product.price,
-                currency: product.currency,
-                category: product.category,
-                condition: product.condition,
-                location: product.location,
-                contact: product.contact,
-                eventId: product.eventId,
-                publishedRelays: product.publishedRelays,
+                price: enrichedProduct.price,
+                currency: enrichedProduct.currency,
+                category: enrichedProduct.category,
+                condition: enrichedProduct.condition,
+                location: enrichedProduct.location,
+                contact: enrichedProduct.contact,
+                eventId: enrichedProduct.eventId,
+                publishedRelays: enrichedProduct.publishedRelays,
               };
             })}
             renderItem={(item) => (

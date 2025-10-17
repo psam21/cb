@@ -5,6 +5,11 @@ import { logger } from '@/services/core/LoggingService';
 import { useShopStore } from '@/stores/useShopStore';
 import { shopBusinessService, ShopProduct } from '@/services/business/ShopBusinessService';
 
+// Extended type to include enriched author data
+interface EnrichedShopProduct extends ShopProduct {
+  authorDisplayName?: string;
+}
+
 export const useShopProducts = () => {
   const {
     isLoadingProducts,
@@ -50,6 +55,8 @@ export const useShopProducts = () => {
         false // showDeleted = false for public shop page
       );
 
+      let productsToProcess: ShopProduct[] = [];
+
       if (relayResult.success) {
         logger.info('Products loaded from relays successfully', {
           service: 'useShopProducts',
@@ -58,8 +65,7 @@ export const useShopProducts = () => {
           queriedRelays: relayResult.queriedRelays.length,
         });
         // Sort products by newest first (publishedAt descending)
-        const sortedProducts = relayResult.products.sort((a, b) => b.publishedAt - a.publishedAt);
-        setProducts(sortedProducts);
+        productsToProcess = relayResult.products.sort((a, b) => b.publishedAt - a.publishedAt);
       } else {
         // Fallback to local store if relay query fails
         logger.warn('Relay query failed, falling back to local store', {
@@ -75,9 +81,40 @@ export const useShopProducts = () => {
           productCount: localProducts.length,
         });
         // Sort products by newest first (publishedAt descending)
-        const sortedLocalProducts = localProducts.sort((a, b) => b.publishedAt - a.publishedAt);
-        setProducts(sortedLocalProducts);
+        productsToProcess = localProducts.sort((a, b) => b.publishedAt - a.publishedAt);
       }
+
+      // Enrich products with author display names
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { profileService } = require('@/services/business/ProfileBusinessService');
+      const enrichedProducts: EnrichedShopProduct[] = await Promise.all(
+        productsToProcess.map(async (product) => {
+          try {
+            const profile = await profileService.getUserProfile(product.author);
+            return {
+              ...product,
+              authorDisplayName: profile?.display_name,
+            };
+          } catch (error) {
+            logger.warn('Failed to fetch author profile', {
+              service: 'useShopProducts',
+              method: 'loadProducts',
+              author: product.author,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+            return product;
+          }
+        })
+      );
+
+      logger.info('Products enriched with author names', {
+        service: 'useShopProducts',
+        method: 'loadProducts',
+        enrichedCount: enrichedProducts.filter(p => p.authorDisplayName).length,
+        totalCount: enrichedProducts.length,
+      });
+
+      setProducts(enrichedProducts);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to load products', error instanceof Error ? error : new Error(errorMessage), {
