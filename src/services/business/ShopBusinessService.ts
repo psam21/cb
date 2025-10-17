@@ -45,8 +45,8 @@ export interface ShopProduct {
   eventId: string;
   publishedRelays: string[];
   author: string;
-  isDeleted: boolean; // Track if this is a deleted product
   // Note: Removed revision tracking fields - Kind 30023 handles this automatically
+  // Note: NIP-09 deletion is handled by relays - deleted products won't appear in queries
   
   // Enriched data (added by service layer)
   authorDisplayName?: string;
@@ -273,7 +273,6 @@ export class ShopBusinessService {
         eventId: event.id,
         publishedRelays: publishResult.publishedRelays,
         author: event.pubkey,
-        isDeleted: false, // New products are never deleted
       };
 
       // Store the product in the local store
@@ -473,7 +472,6 @@ export class ShopBusinessService {
         eventId: event.id,
         publishedRelays: publishResult.publishedRelays,
         author: event.pubkey,
-        isDeleted: false,
       };
 
       // Store the product in the local store
@@ -848,7 +846,6 @@ export class ShopBusinessService {
         publishedAt: updatedEvent.created_at,
         eventId: updatedEvent.id,
         publishedRelays: publishResult.publishedRelays,
-        isDeleted: false, // Updated products are not deleted
       };
 
       // Update the product in the store
@@ -1088,7 +1085,6 @@ export class ShopBusinessService {
         publishedAt: updatedEvent.created_at,
         eventId: updatedEvent.id,
         publishedRelays: publishResult.publishedRelays,
-        isDeleted: false, // Updated products are not deleted
       };
 
       // Update the product in the store
@@ -1136,8 +1132,7 @@ export class ShopBusinessService {
    * Query products from Nostr relays
    */
   public async queryProductsFromRelays(
-    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-    showDeleted: boolean = false // Show deleted products or not
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query from relays', {
@@ -1188,11 +1183,9 @@ export class ShopBusinessService {
           const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
           const product = await this.parseProductFromEvent(event, eventRelays);
           if (product) {
-            // Filter deleted products unless explicitly requested
-            if (showDeleted || !product.isDeleted) {
-              products.push(product);
-            }
-            // Always add to store for caching (even deleted ones)
+            // NIP-09 deletion events are handled by relays - deleted products won't appear here
+            products.push(product);
+            // Add to store for caching
             productStore.addProduct(product);
           }
         }
@@ -1301,11 +1294,10 @@ export class ShopBusinessService {
    * Public method that combines querying and enrichment
    */
   public async queryEnrichedProductsFromRelays(
-    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-    showDeleted: boolean = false
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     // First get products from relays
-    const result = await this.queryProductsFromRelays(onProgress, showDeleted);
+    const result = await this.queryProductsFromRelays(onProgress);
     
     if (!result.success || result.products.length === 0) {
       return result;
@@ -1367,9 +1359,6 @@ export class ShopBusinessService {
         return null;
       }
 
-      // Check if this is a deleted product (title starts with [DELETED])
-      const isDeleted = productData.title.startsWith('[DELETED]');
-
       // Parse attachments from event (NEW - Phase 3)
       const attachments = await this.parseAttachmentsFromEvent(event, productData);
 
@@ -1397,7 +1386,6 @@ export class ShopBusinessService {
         eventId: event.id,
         publishedRelays: publishedRelays, // Use actual relay information
         author: event.pubkey,
-        isDeleted, // Track deletion status
       };
 
       logger.info('Product parsed successfully', {
@@ -1414,7 +1402,6 @@ export class ShopBusinessService {
         contact: product.contact,
         tags: product.tags,
         attachmentCount: product.attachments?.length || 0,
-        isDeleted: product.isDeleted,
         parsedProduct: product
       });
 
@@ -1751,12 +1738,12 @@ export class ShopBusinessService {
   }
 
   /**
-   * Query products by specific author from Nostr relays with proper soft delete handling
+   * Query products by specific author from Nostr relays
+   * NIP-09 deletion events are handled by relays - deleted products won't appear in results
    */
   public async queryProductsByAuthor(
     authorPubkey: string,
-    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-    showDeleted: boolean = false // Show deleted products or not
+    onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
   ): Promise<{ success: boolean; products: ShopProduct[]; queriedRelays: string[]; failedRelays: string[]; error?: string }> {
     try {
       logger.info('Starting product query by author', {
@@ -1807,10 +1794,8 @@ export class ShopBusinessService {
           const eventRelays = queryResult.eventRelayMap?.get(event.id) || [];
           const product = await this.parseProductFromEvent(event, eventRelays);
           if (product) {
-            // Filter deleted products unless explicitly requested
-            if (showDeleted || !product.isDeleted) {
-              products.push(product);
-            }
+            // NIP-09 deletion events are handled by relays - deleted products won't appear here
+            products.push(product);
           }
         }
 
@@ -1820,7 +1805,6 @@ export class ShopBusinessService {
           authorPubkey: authorPubkey.substring(0, 8) + '...',
           totalEvents: queryResult.events.length,
           filteredProducts: products.length,
-          showDeleted,
           relayCount: queryResult.relayCount,
         });
 
@@ -2549,9 +2533,8 @@ export const fetchProductById = (eventId: string) =>
 
 export const queryProductsByAuthor = (
   authorPubkey: string,
-  onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void,
-  showDeleted: boolean = false
-) => shopBusinessService.queryProductsByAuthor(authorPubkey, onProgress, showDeleted);
+  onProgress?: (relay: string, status: 'querying' | 'success' | 'failed', count?: number) => void
+) => shopBusinessService.queryProductsByAuthor(authorPubkey, onProgress);
 
 export const deleteProduct = (
   eventId: string,

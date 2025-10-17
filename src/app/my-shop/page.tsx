@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useMyShopProducts } from '@/hooks/useMyShopProducts';
 // useProductEditing removed - edit functionality handled by dedicated page
@@ -17,15 +17,7 @@ export default function MyShopPage() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
   const [isClient, setIsClient] = useState(false);
-  const [showDeleted, setShowDeleted] = useState(false);
-  const { products, isLoading, error, refreshProducts } = useMyShopProducts(showDeleted);
-
-  // No filtering needed - NIP-33 relays return only latest events per dTag
-  const filteredProducts = useMemo(() => {
-    console.log(`[MyShopPage] Raw products count: ${products.length}, showDeleted: ${showDeleted}`);
-    console.log(`[MyShopPage] Filtered products count: ${products.length}`);
-    return products;
-  }, [products, showDeleted]);
+  const { products, isLoading, error } = useMyShopProducts();
   // Edit functionality now handled by dedicated edit page
   const { 
     deletingProduct, 
@@ -109,10 +101,8 @@ export default function MyShopPage() {
 
     const result = await confirmDelete();
     
-    if (result.success) {
-      // Refresh the products list
-      await refreshProducts();
-    }
+    // Note: Products will be automatically filtered out by NIP-09 compliant relays
+    // No manual refresh needed as the deletion event propagates
     
     return result;
   };
@@ -128,25 +118,7 @@ export default function MyShopPage() {
                 Manage your product listings
               </p>
             </div>
-            <div className="mt-4 lg:mt-0 flex items-center space-x-3">
-              <button
-                onClick={() => {
-                  console.log(`[MyShopPage] Toggling showDeleted from ${showDeleted} to ${!showDeleted}`);
-                  setShowDeleted(!showDeleted);
-                }}
-                className={`btn-primary-sm ${showDeleted ? 'bg-gray-100 text-gray-800' : ''}`}
-              >
-                {showDeleted ? 'Hide Deleted' : 'Show Deleted'}
-              </button>
-              <button
-                onClick={() => {
-                  console.log(`[MyShopPage] Refresh button clicked, showDeleted: ${showDeleted}`);
-                  refreshProducts();
-                }}
-                className="btn-primary-sm"
-              >
-                Refresh
-              </button>
+            <div className="mt-4 lg:mt-0">
               <button
                 onClick={() => router.push('/shop')}
                 className="btn-primary-sm"
@@ -188,7 +160,7 @@ export default function MyShopPage() {
         {/* Products Grid */}
         {!isLoading && !error && (
           <BaseGrid
-            data={filteredProducts.map(product => ({
+            data={products.map(product => ({
               id: product.id,
               title: product.title,
               description: product.description,
@@ -217,12 +189,12 @@ export default function MyShopPage() {
                 }}
                 onEdit={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
-                  const product = filteredProducts.find(p => p.id === data.id);
+                  const product = products.find(p => p.id === data.id);
                   if (product) handleEditProduct(product);
                 }}
                 onDelete={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
-                  const product = filteredProducts.find(p => p.id === data.id);
+                  const product = products.find(p => p.id === data.id);
                   if (product) handleDeleteProduct(product);
                 }}
               />

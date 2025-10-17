@@ -55,7 +55,7 @@ export default function ProfilePage() {
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const { products: myProducts } = useMyShopProducts(false);
+  const { products: myProducts } = useMyShopProducts();
 
   // Ensure we're on the client side
   useEffect(() => {

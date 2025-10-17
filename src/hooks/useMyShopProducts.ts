@@ -4,7 +4,7 @@ import { useMyShopStore } from '../stores/useMyShopStore';
 import { shopBusinessService } from '../services/business/ShopBusinessService';
 import { logger } from '../services/core/LoggingService';
 
-export const useMyShopProducts = (showDeleted: boolean = false) => {
+export const useMyShopProducts = () => {
   const { user, isAuthenticated } = useAuthStore();
   const {
     myProducts,
@@ -49,8 +49,7 @@ export const useMyShopProducts = (showDeleted: boolean = false) => {
             status,
             count,
           });
-        },
-        showDeleted // Pass showDeleted parameter
+        }
       );
 
       if (result.success) {
@@ -66,9 +65,6 @@ export const useMyShopProducts = (showDeleted: boolean = false) => {
           method: 'loadMyProducts',
           totalProductsFromRelays: result.products.length,
           userProducts: userProducts.length,
-          activeProducts: userProducts.length, // Kind 30023 only shows active products
-          deletedProducts: 0, // Deleted products are replaced, not shown
-          showingDeleted: showDeleted,
           displayedProducts: sortedProducts.length,
         });
       } else {
@@ -93,7 +89,7 @@ export const useMyShopProducts = (showDeleted: boolean = false) => {
     } finally {
       setLoadingMyProducts(false);
     }
-  }, [pubkey, isAuthenticated, showDeleted, setMyProducts, setLoadingMyProducts, setMyProductsError]);
+  }, [pubkey, isAuthenticated, setMyProducts, setLoadingMyProducts, setMyProductsError]);
 
   // Load products when pubkey becomes available
   useEffect(() => {
@@ -106,6 +102,5 @@ export const useMyShopProducts = (showDeleted: boolean = false) => {
     products: myProducts,
     isLoading: isLoadingMyProducts,
     error: myProductsError,
-    refreshProducts: loadMyProducts,
   };
 };
