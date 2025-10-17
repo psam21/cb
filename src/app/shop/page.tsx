@@ -9,12 +9,6 @@ import { BaseGrid } from '@/components/ui/BaseGrid';
 import { BaseCard } from '@/components/ui/BaseCard';
 import { ShopProduct } from '@/services/business/ShopBusinessService';
 
-// Import profile service to fetch author display names
-const getProfileService = async () => {
-  const { profileService } = await import('@/services/business/ProfileBusinessService');
-  return profileService;
-};
-
 export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -37,7 +31,9 @@ export default function ShopPage() {
       
       console.log('[ShopPage] Fetching profiles for', products.length, 'products');
       
-      const profileService = await getProfileService();
+      // Use same pattern as BaseContentProvider
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { profileService } = require('@/services/business/ProfileBusinessService');
       const profiles: Record<string, string> = {};
       
       // Get unique author pubkeys
