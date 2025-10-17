@@ -6,8 +6,9 @@ import type { ContentMediaItem, ContentMediaSource, ContentMediaType } from '@/t
 import { logger } from '@/services/core/LoggingService';
 import type { HeritageNostrEvent, HeritageContributionData } from '@/types/heritage';
 import { validateHeritageData } from '@/types/heritage';
-import { queryEvents } from '../generic/GenericRelayService';
+import { queryEvents, publishEvent } from '../generic/GenericRelayService';
 import { nostrEventService } from '../nostr/NostrEventService';
+import { signEvent, createDeletionEvent } from '../generic/GenericEventService';
 import type { NostrSigner } from '@/types/nostr';
 import { uploadSequentialWithConsent } from '@/services/generic/GenericBlossomService';
 
@@ -979,7 +980,7 @@ export async function fetchHeritageByAuthor(pubkey: string): Promise<HeritageCon
 
 export async function deleteHeritageContribution(
   eventId: string,
-  signer: unknown,
+  signer: NostrSigner,
   userPubkey: string,
   title: string
 ): Promise<{ success: boolean; error?: string; publishedRelays?: string[] }> {
@@ -990,10 +991,6 @@ export async function deleteHeritageContribution(
       eventId,
       userPubkey: userPubkey.substring(0, 8) + '...',
     });
-
-    // Import deletion functions
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { createDeletionEvent, signEvent, publishEvent } = require('../nostr/NostrEventService');
 
     // Create NIP-09 Kind 5 deletion event
     const deletionResult = createDeletionEvent(
