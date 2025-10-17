@@ -299,51 +299,48 @@ How:
 
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
-| **NEW** | `disputes/file/page.tsx` (file dispute form) | `DisputeForm.tsx` (dispute filing form), `DisputeTimeline.tsx` (dispute history display), `DisputeButton.tsx` (trigger dispute) | `useDispute.ts` (orchestrates: calls Business → Event Service to publish dispute) | `DisputeBusinessService.ts` (validateDispute, prepareDisputeEvent, checkGracePeriod, checkDuplicate methods) | `DisputeEventService.ts` (createDisputeEvent, publishDisputeEvent methods - wraps GenericEventService for Kind 1111) | - |
+| **NEW** | `disputes/file/page.tsx` (file dispute form) | `DisputeForm.tsx` (dispute filing form), `DisputeTimeline.tsx` (dispute history display), `DisputeButton.tsx` (trigger dispute) | `useDispute.ts` (orchestrates: calls Business → Event Service to publish dispute) | `DisputeBusinessService.ts` (validateDispute, prepareDisputeEvent methods) | `DisputeEventService.ts` (createDisputeEvent, publishDisputeEvent methods - wraps GenericEventService for Kind 1111) | - |
 | **UPDATE** | `orders/[saleId]/page.tsx` (buyer "File Dispute" option), `my-shop/orders/[saleId]/page.tsx` (seller "Cancel Sale" option) | `BuyerOrderDetail.tsx` (add "File Dispute" button), `SellerOrderDetail.tsx` (add "Cancel Sale" button) | - | - | - | `GenericEventService.ts` (reuse createEvent, signEvent, publishEvent for Kind 1111) |
 
 **Type:** NEW `/src/types/dispute.ts` with `Dispute`, `DisputeType`, `DisputeReason`  
 **Nostr:** Kind 1111 (public comment/complaint), tags reference sale event  
 **Event Structure:**
-- content: JSON with `{ disputeType: 'non-shipment'|'non-payment', saleId, reason, evidence, daysSince, timestamp }`
+- content: JSON with `{ disputeType: 'non-shipment'|'non-payment', saleId, reason, evidence, timestamp }`
 - tags: `['e', saleEventId, '', 'root']`, `['p', accusedPubkey]`, `['t', 'dispute']`, `['dispute-type', type]`, `['L', 'com.culturebridge.dispute']`, `['l', disputeType, 'com.culturebridge.dispute']`
 
 **Dispute Types:**
 
 **A. Buyer Disputes Non-Shipment:**
-- Trigger: Seller confirmed payment but didn't ship after reasonable time (7 days)
+- Trigger: Seller confirmed payment but hasn't shipped
 - Action: Buyer publishes Kind 1111 complaint referencing sale event
 - Evidence: Link to public "payment-received" sale event (Feature #6)
 - Impact: Damages seller reputation, visible to all
 
 **B. Seller Cancels for Non-Payment:**
-- Trigger: Buyer didn't pay after payment link provided (48 hours)
+- Trigger: Buyer hasn't paid after payment link provided
 - Action: Seller updates sale event to "cancelled-non-payment" status
 - Evidence: Public "payment-pending" event shows payment link was ready
 - Impact: Damages buyer reputation (abandoned checkout)
 
 **Flow (Buyer Dispute):**
-1. 7 days pass after payment confirmed
-2. No shipping update received
-3. Buyer clicks "File Dispute" on order detail page
-4. Submits complaint with evidence (sale event ID)
-5. System publishes public Kind 1111 event
-6. Community sees dispute tagged to seller
-7. Seller reputation damaged
+1. Buyer determines seller hasn't fulfilled obligation
+2. Buyer clicks "File Dispute" on order detail page
+3. Submits complaint with evidence (sale event ID)
+4. System publishes public Kind 1111 event
+5. Community sees dispute tagged to seller
+6. Seller reputation damaged
 
 **Flow (Seller Cancellation):**
-1. 48 hours pass after payment link sent
-2. No payment received
-3. Seller clicks "Cancel Sale" on order detail page
-4. System updates sale event to "cancelled" status (NIP-33 replacement)
-5. Public sees cancellation reason
-6. Buyer reputation shows abandoned sale
+1. Seller determines buyer hasn't paid
+2. Seller clicks "Cancel Sale" on order detail page
+3. System updates sale event to "cancelled" status (NIP-33 replacement)
+4. Public sees cancellation reason
+5. Buyer reputation shows abandoned sale
 
 **Safeguards:**
-- Grace period: 24 hours after deadline before dispute allowed
 - Evidence required: Must reference valid sale event
-- One dispute per sale: Prevents spam
 - Permanent record: Dispute visible forever
+- Community judgment: No automated enforcement, reputation is social
 
 **Value:** Decentralized accountability, reputation system, fraud prevention, community trust
 
