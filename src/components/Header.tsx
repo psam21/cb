@@ -85,8 +85,8 @@ export default function Header() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-primary-800 shadow-lg`}
     >
       <nav className="container-width">
-        <div className="flex items-center justify-between h-20 lg:h-24">
-          {/* Logo */}
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 lg:gap-8 h-20 lg:h-24">
+          {/* Logo - Left */}
           <Link href="/" className="flex items-center space-x-3 group">
             {/* Logo icon removed, only text remains */}
             <div className="hidden sm:block">
@@ -95,8 +95,8 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation - Single Row */}
-          <div className="hidden lg:flex items-center space-x-1">
+          {/* Desktop Navigation - Center (spreads across available space) */}
+          <div className="hidden lg:flex items-center justify-center space-x-1">
             {[...navigationLine1, ...navigationLine2].map((item) => (
               <Link
                 key={item.name}
@@ -115,14 +115,14 @@ export default function Header() {
             ))}
           </div>
 
-          {/* Right side - Separate sections for mobile menu and account/cart area */}
-          <div className="flex items-center gap-6">
-            {/* Account & Cart Section - Visually separated like Amazon */}
+          {/* Right side - Account & Cart Section */}
+          <div className="flex items-center justify-end">
+            {/* Desktop: Auth + Cart separated from navigation */}
             <div className="hidden lg:flex items-center gap-4 border-l border-primary-600 pl-6">
               {/* Auth Button */}
               <AuthButton />
               
-              {/* Cart Icon - Separate from navigation */}
+              {/* Cart Icon - Visually separate from navigation links */}
               {itemCount > 0 && (
                 <Link
                   href="/cart"
