@@ -2,9 +2,7 @@
 
 **Status**: Planned  
 **Priority**: Medium  
-**Dependencies**: KVService (implemented), User Authentication (implemented)  
-**Target Implementation**: Q1 2026  
-**Last Updated**: October 16, 2025
+**Dependencies**: KVService (implemented), User Authentication (implemented)
 
 ---
 
@@ -87,7 +85,7 @@ A cross-site bookmarking and favorites system that allows authenticated users to
 
 ## 🔧 Implementation Plan
 
-### Phase 1: Core Bookmark Service (Week 1-2)
+### Phase 1: Core Bookmark Service
 
 **Create `/src/services/business/BookmarkBusinessService.ts`:**
 
@@ -170,7 +168,7 @@ bookmarks:trending:{contentType} → Sorted set of trending content
 
 ---
 
-### Phase 2: React Hook (Week 2)
+### Phase 2: React Hook
 
 **Create `/src/hooks/useBookmarks.ts`:**
 
@@ -257,7 +255,7 @@ export const useBookmarks = () => {
 
 ---
 
-### Phase 3: UI Components (Week 3)
+### Phase 3: UI Components
 
 **Update Existing Components:**
 
@@ -360,7 +358,7 @@ export default function BookmarksPage() {
 
 ---
 
-### Phase 4: KVService Integration (Week 3-4)
+### Phase 4: KVService Integration
 
 **Extend KVService for Bookmarks:**
 
@@ -538,17 +536,17 @@ export interface ContentSummary {
 
 ## 🚀 Rollout Strategy
 
-### Beta Phase (Week 5)
+### Beta Phase
 1. Deploy bookmark service to staging
 2. Internal testing with team
 3. Fix bugs and refine UX
 
-### Soft Launch (Week 6)
+### Soft Launch
 1. Deploy to production with feature flag
-2. Enable for 10% of users
+2. Enable for subset of users
 3. Monitor performance and user feedback
 
-### Full Launch (Week 7)
+### Full Launch
 1. Enable for all authenticated users
 2. Add bookmarks page to main navigation
 3. Announce feature in changelog
@@ -558,7 +556,7 @@ export interface ContentSummary {
 ## 📈 Success Metrics
 
 ### User Engagement
-- **Target**: 30% of authenticated users bookmark at least one item within 30 days
+- **Target**: 30% of authenticated users bookmark at least one item
 - **Measurement**: Track bookmark creation events
 
 ### Feature Usage
@@ -573,7 +571,7 @@ export interface ContentSummary {
 
 ## 🔮 Future Enhancements
 
-### Phase 2 Features (Q2 2026)
+### Advanced Features
 1. **Collections & Lists**
    - User-created collections
    - Public/private collection sharing
@@ -589,7 +587,7 @@ export interface ContentSummary {
    - "Users who bookmarked X also bookmarked Y"
    - Trending bookmarks feed
 
-4. **Advanced Features**
+4. **Additional Capabilities**
    - Bookmark notes/annotations
    - Bookmark tags for organization
    - Export bookmarks (JSON, CSV)
@@ -640,14 +638,14 @@ export interface ContentSummary {
 - [ ] Design bookmark UI mockups
 - [ ] Define bookmark data structures
 
-### Backend (Week 1-2)
+### Backend
 - [ ] Create `BookmarkBusinessService.ts`
 - [ ] Extend KVService with bookmark methods
 - [ ] Create bookmark types in `/src/types/bookmarks.ts`
 - [ ] Write unit tests for service layer
 - [ ] Add bookmark analytics tracking
 
-### Frontend (Week 2-3)
+### Frontend
 - [ ] Create `useBookmarks.ts` hook
 - [ ] Create `BookmarkButton` component
 - [ ] Update `HeritageCard.tsx` (remove TODO)
@@ -656,19 +654,19 @@ export interface ContentSummary {
 - [ ] Create `/bookmarks` page
 - [ ] Add bookmark icon to navigation
 
-### Testing (Week 3-4)
+### Testing
 - [ ] End-to-end testing of bookmark flow
 - [ ] Performance testing (KVService latency)
 - [ ] User acceptance testing
 - [ ] Cross-browser compatibility
 
-### Documentation (Week 4)
+### Documentation
 - [ ] Update `nip-kind-implementation-matrix.md`
 - [ ] Create user guide for bookmarks
 - [ ] Add bookmark examples to Storybook
 - [ ] Update changelog
 
-### Deployment (Week 5-7)
+### Deployment
 - [ ] Deploy to staging
 - [ ] Beta testing phase
 - [ ] Gradual rollout to production
@@ -690,6 +688,5 @@ export interface ContentSummary {
 
 ---
 
-_Document Created: October 16, 2025_  
 _Author: AI Assistant (with user requirements)_  
 _Status: Draft - Pending Review_

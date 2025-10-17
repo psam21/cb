@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ShoppingBag } from 'lucide-react';
+import { Menu, X, ShoppingCart } from 'lucide-react';
 import AuthButton from './auth/AuthButton';
 import { useCartStore } from '@/stores/useCartStore';
 
@@ -115,22 +115,8 @@ export default function Header() {
             ))}
           </div>
 
-          {/* Right side: Cart + Auth Button + Mobile Menu */}
+          {/* Right side: Auth Button + Mobile Menu + Cart */}
           <div className="flex items-center space-x-3">
-            {/* Cart Icon with Badge */}
-            <Link
-              href="/cart"
-              className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
-              aria-label={`Shopping cart${itemCount > 0 ? ` with ${itemCount} items` : ''}`}
-            >
-              <ShoppingBag className="w-6 h-6" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {itemCount > 9 ? '9+' : itemCount}
-                </span>
-              )}
-            </Link>
-            
             {/* Auth Button - Always visible */}
             <AuthButton />
             
@@ -145,6 +131,20 @@ export default function Header() {
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
+            
+            {/* Cart Icon with Badge - Only shows when items in cart */}
+            {itemCount > 0 && (
+              <Link
+                href="/cart"
+                className="relative p-2 rounded-md text-white hover:text-accent-200 hover:bg-primary-700 transition-colors duration-200"
+                aria-label={`Shopping cart with ${itemCount} items`}
+              >
+                <ShoppingCart className="w-6 h-6" />
+                <span className="absolute -top-1 -right-1 bg-accent-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              </Link>
+            )}
           </div>
         </div>
 

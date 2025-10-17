@@ -4,6 +4,7 @@ import { ReactNode, MouseEvent, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import { filterVisibleTags } from '@/utils/tagFilter';
 import { getCategoryById } from '@/config/categories';
+import { AddToCartButton } from '@/components/shop/AddToCartButton';
 
 export interface BaseCardData {
   id: string;
@@ -254,6 +255,19 @@ export const BaseCard = ({
 
         {/* Dynamic Actions based on variant */}
         <div className="flex gap-2">
+          {variant === 'shop' && data.price && data.currency && (
+            <AddToCartButton
+              productId={data.id}
+              title={data.title}
+              price={data.price}
+              currency={data.currency}
+              imageUrl={imageUrl}
+              sellerPubkey={typeof data.author === 'string' ? data.author : data.author?.pubkey || ''}
+              maxQuantity={typeof data.quantity === 'number' ? data.quantity : undefined}
+              className="flex-1"
+            />
+          )}
+          
           {variant === 'shop' && onContact && (
             <button
               onClick={handleContact}

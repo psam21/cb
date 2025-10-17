@@ -95,7 +95,8 @@ How:
 
 **Type:** NEW `/src/types/purchase.ts` with `PurchaseIntent`, `PurchaseResponse`  
 **Nostr:** NIP-17 encrypted message to each seller  
-**Message Structure:** JSON with `{ type: 'purchase-intent', products: [{ productId, quantity, price }], total, buyerPubkey, timestamp }`  
+**Message Structure:** JSON with `{ type: 'purchase-intent', products: [{ productId, quantity, price }], total, timestamp }`  
+**Note:** Buyer pubkey is in NIP-17 envelope (sender), not needed in message content  
 **Flow:**
 1. Buyer clicks "Checkout" from cart
 2. System sends encrypted purchase intent to each seller (NIP-17)
@@ -122,7 +123,7 @@ How:
 **Event Structure:**
 - title: `Sale Pending`
 - summary: Product title, quantity, amount
-- content: JSON with `{ saleId, productId, productTitle, quantity, amount, paymentLinkReady: true, expiresAt, timestamp }`
+- content: JSON with `{ saleId, productId, productTitle, quantity, amount, paymentLinkReady: true, timestamp }`
 - tags: `['t', 'culture-bridge-sale-pending']`, `['product', productId]`, `['status', 'awaiting-payment']`
 - **NO buyer pubkey, NO seller link to specific sale**
 
@@ -212,7 +213,7 @@ How:
 | | Page | Component | Hook | Business Service | Event Service | Generic Service |
 |---|---|---|---|---|---|---|
 | **NEW** | `orders/[saleId]/page.tsx` (buyer order detail with delivery confirmation) | `ShippingForm.tsx` (seller enters tracking), `DeliveryConfirmation.tsx` (buyer confirms receipt) | `useShipping.ts` (orchestrates: calls Business → Message Service for shipping/delivery) | - | - | - |
-| **UPDATE** | `my-shop/orders/[saleId]/page.tsx` (seller shipping actions) | - | `useMessageSending.ts` (add sendShippingUpdate, sendDeliveryConfirmation methods) | - | - | `GenericMessageService.ts` (reuse sendEncryptedMessage for shipping updates + delivery confirmations via NIP-17) |
+| **UPDATE** | `my-shop/orders/[saleId]/page.tsx` (seller shipping actions) | - | - | - | - | `GenericMessageService.ts` (reuse sendEncryptedMessage for shipping updates + delivery confirmations via NIP-17) |
 
 **Type:** NEW `/src/types/shipping.ts` with `ShippingUpdate`, `DeliveryConfirmation`  
 **Nostr:** NIP-17 encrypted messages between buyer and seller  
