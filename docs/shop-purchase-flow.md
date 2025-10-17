@@ -11,10 +11,13 @@ Products exist on /shop but no way to actually purchase. Users can only "contact
 
 ## Purchase Flow Overview
 
+**Note:** This table shows the core purchase transaction lifecycle (Features #3-7, #10). Cart features (#1-2) happen before this flow, and order history features (#8-9) provide retrospective views of completed flows.
+
 | | Phase 1: Discovery | Phase 2: Intent | Phase 3: Payment Setup | Phase 4: Payment | Phase 5: Acceptance | Phase 6: Shipping | Phase 7: Delivery | Phase 8: Dispute (If Needed) |
 |---|---|---|---|---|---|---|---|---|
 | **PUBLIC** | Product listing (Kind 30023) by seller | | Sale pending event (Kind 30023): stock confirmed, payment link ready, amount visible | | Sale accepted event (Kind 30023): payment confirmed, amount visible | | | Dispute event (Kind 1111): non-shipment or non-payment complaint, references sale event |
 | **PRIVATE** | | Purchase intent (NIP-17): buyer → seller with product list | | Payment confirmation (NIP-17): buyer → seller with "marked as paid" + shipping address | | Shipping update (NIP-17): seller → buyer with tracking info | Delivery confirmation (NIP-17): buyer → seller confirms receipt | |
+| **Feature** | (Already exists) | #3: Purchase Intent | #4: Payment Link Ready | #5: Payment by Buyer | #6: Payment Received Confirmation | #7: Shipping & Delivery | #7: Shipping & Delivery | #10: Dispute Resolution |
 
 **Key Insight**: Each phase is either public (market activity) or private (participant communication), never both. Market transparency without identity surveillance.
 
