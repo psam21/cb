@@ -36,6 +36,10 @@ export const useShopProducts = () => {
       setLoadingProducts(true);
       setProductsError(null);
 
+      // Helper function to sort products by newest first
+      const sortByNewest = (products: ShopProduct[]) => 
+        products.sort((a, b) => b.publishedAt - a.publishedAt);
+
       // Use enriched query method from service (proper SOA)
       const relayResult = await shopBusinessService.queryEnrichedProductsFromRelays(
         (relay, status, count) => {
@@ -57,9 +61,7 @@ export const useShopProducts = () => {
           productCount: relayResult.products.length,
           queriedRelays: relayResult.queriedRelays.length,
         });
-        // Sort products by newest first (publishedAt descending)
-        const sortedProducts = relayResult.products.sort((a, b) => b.publishedAt - a.publishedAt);
-        setProducts(sortedProducts);
+        setProducts(sortByNewest(relayResult.products));
       } else {
         // Fallback to local store if relay query fails
         logger.warn('Relay query failed, falling back to local store', {
@@ -83,9 +85,7 @@ export const useShopProducts = () => {
           enrichedCount: enrichedLocalProducts.filter(p => p.authorDisplayName).length,
         });
         
-        // Sort products by newest first (publishedAt descending)
-        const sortedLocalProducts = enrichedLocalProducts.sort((a, b) => b.publishedAt - a.publishedAt);
-        setProducts(sortedLocalProducts);
+        setProducts(sortByNewest(enrichedLocalProducts));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
