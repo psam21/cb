@@ -242,15 +242,18 @@ export const BaseCard = ({
           })()}
         </div>
 
-        {/* Contact and Published Info */}
+        {/* Published Date and Seller Info */}
         <div className="flex items-center justify-between text-xs text-gray-400 mb-4">
           <span>Published {formatDate(data.publishedAt)}</span>
-          {data.publishedRelays && (
-            <span className="flex items-center">
+          {data.author && (
+            <span className="flex items-center text-gray-600">
               <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              {data.publishedRelays.length} relays
+              {typeof data.author === 'string' 
+                ? data.author.substring(0, 8) + '...'
+                : data.author?.name || data.author?.npub?.substring(0, 8) + '...' || 'Anonymous'
+              }
             </span>
           )}
         </div>
