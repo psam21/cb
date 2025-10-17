@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/services/core/LoggingService';
 import { useShopProducts } from '@/hooks/useShopProducts';
@@ -13,11 +13,6 @@ export default function ShopPage() {
   const { products, isLoading, error, refreshProducts } = useShopProducts();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const router = useRouter();
-
-  // No filtering needed - NIP-33 relays return only latest events per dTag
-  const filteredProducts = useMemo(() => {
-    return products;
-  }, [products]);
 
   const handleProductCreated = (productId: string) => {
     logger.info('Product created successfully', {
@@ -133,7 +128,7 @@ export default function ShopPage() {
         {/* Products Grid */}
         {!isLoading && !error && (
           <BaseGrid
-            data={filteredProducts.map(product => {
+            data={products.map(product => {
               const authorData = {
                 pubkey: product.author,
                 displayName: product.authorDisplayName,
@@ -162,7 +157,7 @@ export default function ShopPage() {
                 variant="shop"
                 onContact={(data) => {
                   // Convert BaseCardData back to ShopProduct for the handler
-                  const product = filteredProducts.find(p => p.id === data.id);
+                  const product = products.find(p => p.id === data.id);
                   if (product) handleContact(product);
                 }}
                 onSelect={(data) => {
