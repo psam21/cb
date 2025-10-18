@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { ShoppingBag, Loader2, Check, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePurchaseIntent } from '@/hooks/usePurchaseIntent';
+import { useCartStore } from '@/stores/useCartStore';
+import PurchaseConfirmationModal from './PurchaseConfirmationModal';
 import { logger } from '@/services/core/LoggingService';
 
 interface PurchaseIntentButtonProps {
@@ -12,15 +15,37 @@ interface PurchaseIntentButtonProps {
 
 export function PurchaseIntentButton({ disabled = false, className = '' }: PurchaseIntentButtonProps) {
   const router = useRouter();
+  const [showModal, setShowModal] = useState(false);
+  const { items } = useCartStore();
   const { loading, success, error, result, sendPurchaseIntent, reset } = usePurchaseIntent();
 
-  const handleClick = async () => {
-    logger.info('Purchase intent button clicked', {
+  // Calculate total in sats
+  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const handleClick = () => {
+    logger.info('Purchase intent button clicked - opening confirmation modal', {
       service: 'PurchaseIntentButton',
       method: 'handleClick',
+      itemCount: items.length,
+    });
+
+    setShowModal(true);
+  };
+
+  const handleConfirm = async () => {
+    logger.info('Purchase intent confirmed in modal', {
+      service: 'PurchaseIntentButton',
+      method: 'handleConfirm',
     });
 
     await sendPurchaseIntent();
+    setShowModal(false);
+  };
+
+  const handleClose = () => {
+    if (!loading) {
+      setShowModal(false);
+    }
   };
 
   // Success state - show confirmation then redirect
@@ -87,22 +112,33 @@ export function PurchaseIntentButton({ disabled = false, className = '' }: Purch
 
   // Default button state
   return (
-    <button
-      onClick={handleClick}
-      disabled={disabled || loading}
-      className={`w-full btn-primary flex items-center justify-center gap-2 ${className}`}
-    >
-      {loading ? (
-        <>
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Sending to Sellers...</span>
-        </>
-      ) : (
-        <>
-          <ShoppingBag className="w-5 h-5" />
-          <span>Proceed to Checkout</span>
-        </>
-      )}
-    </button>
+    <>
+      <button
+        onClick={handleClick}
+        disabled={disabled || loading}
+        className={`w-full btn-primary flex items-center justify-center gap-2 ${className}`}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Sending to Sellers...</span>
+          </>
+        ) : (
+          <>
+            <ShoppingBag className="w-5 h-5" />
+            <span>Proceed to Checkout</span>
+          </>
+        )}
+      </button>
+
+      <PurchaseConfirmationModal
+        isOpen={showModal}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        items={items}
+        total={total}
+        isLoading={loading}
+      />
+    </>
   );
 }
