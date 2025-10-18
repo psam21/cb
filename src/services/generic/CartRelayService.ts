@@ -251,23 +251,70 @@ export class CartRelayService {
         userPubkey: userPubkey.substring(0, 8) + '...',
       });
 
-      // Query relays for unified settings event
-      const filters = [{
+      // Query relays for unified settings event (NEW format)
+      const newFormatFilters = [{
         kinds: [SETTINGS_EVENT_KIND],
         authors: [userPubkey],
         '#d': [SETTINGS_D_TAG],
         limit: 1, // NIP-33 ensures only one event with this d tag exists
       }];
 
-      const result: RelayQueryResult = await queryEvents(filters);
+      const newFormatResult: RelayQueryResult = await queryEvents(newFormatFilters);
 
-      // No settings found
-      if (!result.success || !result.events || result.events.length === 0) {
-        logger.info('No settings found on relays', {
+      // Check if new format exists
+      if (newFormatResult.success && newFormatResult.events && newFormatResult.events.length > 0) {
+        const settingsEvent = newFormatResult.events[0];
+        let items: CartItem[] = [];
+
+        try {
+          const settingsData = JSON.parse(settingsEvent.content);
+          // Extract cart from unified settings object
+          items = settingsData[CART_CONTENT_KEY] || [];
+          
+          logger.info('Cart loaded successfully (new format)', {
+            service: 'CartRelayService',
+            method: 'loadCart',
+            itemCount: items.length,
+            eventId: settingsEvent.id.substring(0, 8) + '...',
+          });
+
+          return {
+            success: true,
+            items,
+            eventId: settingsEvent.id,
+          };
+        } catch (parseError) {
+          logger.error('Failed to parse new format settings content', parseError instanceof Error ? parseError : new Error(String(parseError)), {
+            service: 'CartRelayService',
+            method: 'loadCart',
+            eventId: settingsEvent.id.substring(0, 8) + '...',
+          });
+          // Don't return error yet, try old format as fallback
+        }
+      }
+
+      // Fallback: Try OLD format for backwards compatibility
+      logger.info('New format not found, checking old format', {
+        service: 'CartRelayService',
+        method: 'loadCart',
+        userPubkey: userPubkey.substring(0, 8) + '...',
+      });
+
+      const oldFormatFilters = [{
+        kinds: [SETTINGS_EVENT_KIND],
+        authors: [userPubkey],
+        '#d': ['shopping-cart'], // OLD d tag
+        limit: 1,
+      }];
+
+      const oldFormatResult: RelayQueryResult = await queryEvents(oldFormatFilters);
+
+      // No cart found in either format
+      if (!oldFormatResult.success || !oldFormatResult.events || oldFormatResult.events.length === 0) {
+        logger.info('No cart found on relays (checked both formats)', {
           service: 'CartRelayService',
           method: 'loadCart',
           userPubkey: userPubkey.substring(0, 8) + '...',
-          error: result.error,
         });
 
         return {
@@ -276,40 +323,40 @@ export class CartRelayService {
         };
       }
 
-      // Parse settings data and extract cart
-      const settingsEvent = result.events[0];
+      // Parse OLD format (flat array in content)
+      const oldCartEvent = oldFormatResult.events[0];
       let items: CartItem[] = [];
 
       try {
-        const settingsData = JSON.parse(settingsEvent.content);
-        // Extract cart from unified settings object
-        items = settingsData[CART_CONTENT_KEY] || [];
-      } catch (parseError) {
-        logger.error('Failed to parse settings content', parseError instanceof Error ? parseError : new Error(String(parseError)), {
+        items = JSON.parse(oldCartEvent.content); // OLD format: direct array
+        
+        logger.info('Cart loaded successfully (old format) - MIGRATION NEEDED', {
           service: 'CartRelayService',
           method: 'loadCart',
-          eventId: settingsEvent.id.substring(0, 8) + '...',
+          itemCount: items.length,
+          eventId: oldCartEvent.id.substring(0, 8) + '...',
+          migrationPending: true,
+        });
+
+        // Note: Migration to new format will happen automatically on next save
+        return {
+          success: true,
+          items,
+          eventId: oldCartEvent.id,
+        };
+      } catch (parseError) {
+        logger.error('Failed to parse old format cart content', parseError instanceof Error ? parseError : new Error(String(parseError)), {
+          service: 'CartRelayService',
+          method: 'loadCart',
+          eventId: oldCartEvent.id.substring(0, 8) + '...',
         });
 
         return {
           success: false,
           items: [],
-          error: 'Failed to parse cart data',
+          error: 'Failed to parse cart data from both formats',
         };
       }
-
-      logger.info('Cart loaded successfully', {
-        service: 'CartRelayService',
-        method: 'loadCart',
-        itemCount: items.length,
-        eventId: settingsEvent.id.substring(0, 8) + '...',
-      });
-
-      return {
-        success: true,
-        items,
-        eventId: settingsEvent.id,
-      };
     } catch (error) {
       logger.error('Failed to load cart from relays', error instanceof Error ? error : new Error(String(error)), {
         service: 'CartRelayService',
