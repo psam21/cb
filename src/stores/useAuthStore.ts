@@ -87,6 +87,19 @@ export const useAuthStore = create<AuthState>()(
       setNsec: (nsec) => set({ nsec }),
       
       logout: () => {
+        // Clear cart from relays before logout
+        (async () => {
+          try {
+            const { signer, user } = get();
+            if (signer && user?.pubkey) {
+              const { cartBusinessService } = await import('@/services/business/CartBusinessService');
+              await cartBusinessService.clearCartFromRelay(signer, user.pubkey);
+            }
+          } catch (error) {
+            console.warn('Failed to clear cart from relays on logout:', error);
+          }
+        })();
+        
         // Clear message cache
         (async () => {
           try {

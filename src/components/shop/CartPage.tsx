@@ -4,6 +4,7 @@ import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/useCartStore';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
+import { useCartSync } from '@/hooks/useCartSync';
 import { CartItem } from '@/components/shop/CartItem';
 import { CartSummary } from '@/components/shop/CartSummary';
 import { logger } from '@/services/core/LoggingService';
@@ -14,6 +15,9 @@ export function CartPage() {
   
   // Initialize signer for purchase intent workflow
   useNostrSigner();
+  
+  // Enable cart relay synchronization (SOA compliant)
+  useCartSync();
 
   logger.info('CartPage rendered', {
     service: 'CartPage',

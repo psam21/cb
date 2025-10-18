@@ -409,6 +409,66 @@ export class NostrEventService {
   }
 
   /**
+   * Create a cart storage event (Kind 30078 - Application-Specific Data)
+   * 
+   * Creates NIP-78 parameterized replaceable event for cart storage.
+   * Uses culture-bridge-cart tag for discovery.
+   * 
+   * @param cartItems - Array of cart items to store
+   * @param userPubkey - User's public key
+   * @returns Unsigned cart event
+   * 
+   * @architecture Event Layer - Cart Event Creation
+   * @layer Nostr (event structure definition)
+   */
+  public createCartEvent(
+    cartItems: unknown[],
+    userPubkey: string
+  ): Omit<NostrEvent, 'id' | 'sig'> {
+    try {
+      logger.info('Creating Kind 30078 cart storage event', {
+        service: 'NostrEventService',
+        method: 'createCartEvent',
+        userPubkey: userPubkey.substring(0, 8) + '...',
+        itemCount: cartItems.length,
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+
+      // Create Kind 30078 event (NIP-78 Application-Specific Data)
+      const unsignedEvent: Omit<NostrEvent, 'id' | 'sig'> = {
+        kind: 30078, // NIP-78 Application-Specific Data
+        pubkey: userPubkey,
+        created_at: now,
+        tags: [
+          ['d', 'shopping-cart'], // NIP-33 d tag for parameterized replaceable events
+          ['t', 'culture-bridge-cart'], // Discovery tag following culture-bridge-{type} pattern
+        ],
+        content: JSON.stringify(cartItems), // Cart data as JSON
+      };
+
+      logger.info('Kind 30078 cart event created', {
+        service: 'NostrEventService',
+        method: 'createCartEvent',
+        kind: 30078,
+        dTag: 'shopping-cart',
+        itemCount: cartItems.length,
+      });
+
+      return unsignedEvent;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to create cart event', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'NostrEventService',
+        method: 'createCartEvent',
+        userPubkey: userPubkey.substring(0, 8) + '...',
+        error: errorMessage,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Publish event to multiple relays
    */
   public async publishEvent(

@@ -1,6 +1,8 @@
 /**
  * Zustand store for shopping cart state management
  * Client-side cart with persistence across sessions
+ * 
+ * Note: Relay synchronization handled by useCartSync hook (SOA compliance)
  */
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
@@ -17,6 +19,8 @@ const CURRENCY_TO_SATS: Record<string, number> = {
   'EUR': 3_200,
   'GBP': 3_500,
 };
+
+
 
 export interface CartState {
   // Cart state
