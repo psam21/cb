@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { CartItem } from '@/types/cart';
 import { profileService } from '@/services/business/ProfileBusinessService';
 import { nip19 } from 'nostr-tools';
@@ -41,24 +41,32 @@ export default function PurchaseConfirmationModal({
 }: PurchaseConfirmationModalProps) {
   const [sellerProfiles, setSellerProfiles] = useState<Map<string, SellerProfile>>(new Map());
 
-  // Group items by seller
-  const sellerGroups = items.reduce((acc, item) => {
-    const existingGroup = acc.find((g) => g.sellerPubkey === item.sellerPubkey);
-    const itemSubtotal = item.price * item.quantity;
+  // Group items by seller - memoized to prevent infinite re-renders
+  const sellerGroups = useMemo(() => {
+    return items.reduce((acc, item) => {
+      const existingGroup = acc.find((g) => g.sellerPubkey === item.sellerPubkey);
+      const itemSubtotal = item.price * item.quantity;
 
-    if (existingGroup) {
-      existingGroup.items.push(item);
-      existingGroup.subtotal += itemSubtotal;
-    } else {
-      acc.push({
-        sellerPubkey: item.sellerPubkey,
-        items: [item],
-        subtotal: itemSubtotal,
-      });
-    }
+      if (existingGroup) {
+        existingGroup.items.push(item);
+        existingGroup.subtotal += itemSubtotal;
+      } else {
+        acc.push({
+          sellerPubkey: item.sellerPubkey,
+          items: [item],
+          subtotal: itemSubtotal,
+        });
+      }
 
-    return acc;
-  }, [] as SellerGroup[]);
+      return acc;
+    }, [] as SellerGroup[]);
+  }, [items]);
+
+  // Extract seller pubkeys for effect dependency
+  const sellerPubkeys = useMemo(
+    () => sellerGroups.map(g => g.sellerPubkey).sort().join(','),
+    [sellerGroups]
+  );
 
   // Fetch seller profiles when modal opens
   useEffect(() => {
@@ -87,7 +95,8 @@ export default function PurchaseConfirmationModal({
     };
 
     fetchProfiles();
-  }, [isOpen, sellerGroups]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, sellerPubkeys]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget && !isLoading) {

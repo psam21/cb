@@ -3,6 +3,7 @@
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/useCartStore';
+import { useNostrSigner } from '@/hooks/useNostrSigner';
 import { CartItem } from '@/components/shop/CartItem';
 import { CartSummary } from '@/components/shop/CartSummary';
 import { logger } from '@/services/core/LoggingService';
@@ -10,6 +11,9 @@ import { logger } from '@/services/core/LoggingService';
 export function CartPage() {
   const items = useCartStore(state => state.items);
   const itemCount = useCartStore(state => state.itemCount);
+  
+  // Initialize signer for purchase intent workflow
+  useNostrSigner();
 
   logger.info('CartPage rendered', {
     service: 'CartPage',
