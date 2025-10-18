@@ -1,8 +1,7 @@
 'use client';
 
-import { ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/stores/useCartStore';
-import { logger } from '@/services/core/LoggingService';
+import { PurchaseIntentButton } from '@/components/shop/PurchaseIntentButton';
 
 interface CartSummaryProps {
   className?: string;
@@ -16,25 +15,6 @@ export function CartSummary({ className = '' }: CartSummaryProps) {
   const items = useCartStore(state => state.items);
   const itemCount = useCartStore(state => state.itemCount);
   const totalSats = useCartStore(state => state.totalSats);
-
-  const handleCheckout = () => {
-    // TODO: Feature #3 - This will trigger purchase intent flow
-    logger.info('Checkout button clicked', {
-      service: 'CartSummary',
-      method: 'handleCheckout',
-      itemCount,
-      totalSats,
-      items: items.map(item => ({
-        productId: item.productId,
-        title: item.title,
-        quantity: item.quantity,
-        sellerPubkey: item.sellerPubkey,
-      })),
-    });
-
-    // Placeholder alert for now
-    alert('Checkout flow coming in Feature #3 (Purchase Intent)');
-  };
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 p-6 sticky top-4 ${className}`}>
@@ -68,14 +48,7 @@ export function CartSummary({ className = '' }: CartSummaryProps) {
       </div>
 
       {/* Checkout Button */}
-      <button
-        onClick={handleCheckout}
-        disabled={itemCount === 0}
-        className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ShoppingBag className="w-5 h-5" />
-        <span>Proceed to Checkout</span>
-      </button>
+      <PurchaseIntentButton disabled={itemCount === 0} />
 
       {/* Info Text */}
       <div className="mt-4 p-3 bg-primary-50 rounded-md">
