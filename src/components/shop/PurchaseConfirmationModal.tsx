@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { CartItem } from '@/types/cart';
+import { profileService } from '@/services/business/ProfileBusinessService';
+import { nip19 } from 'nostr-tools';
 import Image from 'next/image';
 
 interface PurchaseConfirmationModalProps {
@@ -18,6 +21,11 @@ interface SellerGroup {
   subtotal: number;
 }
 
+interface SellerProfile {
+  displayName?: string;
+  npub: string;
+}
+
 // Format sats with commas
 const formatSats = (sats: number): string => {
   return sats.toLocaleString('en-US');
@@ -31,7 +39,7 @@ export default function PurchaseConfirmationModal({
   total,
   isLoading = false,
 }: PurchaseConfirmationModalProps) {
-  if (!isOpen) return null;
+  const [sellerProfiles, setSellerProfiles] = useState<Map<string, SellerProfile>>(new Map());
 
   // Group items by seller
   const sellerGroups = items.reduce((acc, item) => {
@@ -52,11 +60,42 @@ export default function PurchaseConfirmationModal({
     return acc;
   }, [] as SellerGroup[]);
 
+  // Fetch seller profiles when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchProfiles = async () => {
+      const profiles = new Map<string, SellerProfile>();
+      
+      for (const group of sellerGroups) {
+        try {
+          const npub = nip19.npubEncode(group.sellerPubkey);
+          const profile = await profileService.getUserProfile(group.sellerPubkey);
+          
+          profiles.set(group.sellerPubkey, {
+            displayName: profile?.display_name,
+            npub,
+          });
+        } catch (error) {
+          // Fallback to just npub if profile fetch fails
+          const npub = nip19.npubEncode(group.sellerPubkey);
+          profiles.set(group.sellerPubkey, { npub });
+        }
+      }
+      
+      setSellerProfiles(profiles);
+    };
+
+    fetchProfiles();
+  }, [isOpen, sellerGroups]);
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget && !isLoading) {
       onClose();
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -77,17 +116,20 @@ export default function PurchaseConfirmationModal({
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {sellerGroups.map((group) => (
-            <div key={group.sellerPubkey} className="mb-6 last:mb-0">
-              {/* Seller Header */}
-              <div className="bg-gray-50 px-4 py-3 rounded-lg mb-3">
-                <h3 className="font-semibold text-gray-900">
-                  Seller
-                </h3>
-                <p className="text-xs text-gray-500 font-mono mt-1">
-                  {group.sellerPubkey.slice(0, 16)}...
-                </p>
-              </div>
+          {sellerGroups.map((group) => {
+            const sellerInfo = sellerProfiles.get(group.sellerPubkey);
+            
+            return (
+              <div key={group.sellerPubkey} className="mb-6 last:mb-0">
+                {/* Seller Header */}
+                <div className="bg-gray-50 px-4 py-3 rounded-lg mb-3">
+                  <h3 className="font-semibold text-gray-900">
+                    {sellerInfo?.displayName || 'Seller'}
+                  </h3>
+                  <p className="text-xs text-gray-500 font-mono mt-1">
+                    ({sellerInfo?.npub || group.sellerPubkey.slice(0, 16) + '...'})
+                  </p>
+                </div>
 
               {/* Items */}
               <div className="space-y-3 ml-4">
@@ -151,7 +193,8 @@ export default function PurchaseConfirmationModal({
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
 
           {/* Total */}
           <div className="mt-6 pt-4 border-t-2 border-gray-300">
