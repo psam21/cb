@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Plus_Jakarta_Sans, Noto_Sans } from 'next/font/google';
+import { CartSyncProvider } from '@/components/providers/CartSyncProvider';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -64,11 +65,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to main content
         </a>
-        <Header />
-        <main id="main-content" className="pt-16 lg:pt-20" tabIndex={-1}>
-          {children}
-        </main>
-        <Footer />
+        <CartSyncProvider>
+          <Header />
+          <main id="main-content" className="pt-16 lg:pt-20" tabIndex={-1}>
+            {children}
+          </main>
+          <Footer />
+        </CartSyncProvider>
         <Analytics />
       </body>
     </html>

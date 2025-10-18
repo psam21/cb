@@ -3,13 +3,27 @@
  * Generic Layer - Cart Relay Storage and Retrieval
  * 
  * Handles cart persistence to Nostr relays using NIP-78 (Application-Specific Data).
- * Implements cross-device cart synchronization with encryption for privacy.
+ * Implements cross-device cart synchronization with unified settings architecture.
  * 
  * Event Kind: 30078 (Parameterized Replaceable Application-Specific Data)
  * Event Structure:
  * - kind: 30078
- * - tags: [['d', 'shopping-cart'], ['t', 'culture-bridge-cart']]
- * - content: JSON.stringify(CartItem[])
+ * - tags: [
+ *     ['d', 'culture-bridge-settings'],        // Single d tag for ALL app data
+ *     ['t', 'culture-bridge'],                 // Discovery tag
+ *     ['culture-bridge-cart-details', 'v1']    // Cart-specific metadata tag
+ *   ]
+ * - content: JSON.stringify({
+ *     cart: [...cartItems],                    // Cart data
+ *     bookmarks: [...],                        // Future: bookmarks
+ *     preferences: {...}                       // Future: user preferences
+ *   })
+ * 
+ * Architecture Benefits:
+ * - Single event per user (less relay storage)
+ * - Multiple features share one event (organized by content keys)
+ * - Tags provide queryable metadata (cart version, timestamps, etc.)
+ * - Backwards compatible (can add features without breaking existing)
  * 
  * Privacy Model:
  * - Cart data stored in plaintext in event.content (NOT encrypted)
@@ -18,9 +32,10 @@
  * - Data: Product IDs, prices, quantities (no personal payment info)
  * 
  * NIP-33 Behavior:
- * - Replaceable event (d tag = 'shopping-cart')
- * - Publishing new cart overwrites previous one
- * - Only most recent cart event exists on relay
+ * - Replaceable event (d tag = 'culture-bridge-settings')
+ * - Publishing new settings overwrites previous one
+ * - Only most recent settings event exists on relay
+ * - Multiple features co-exist in content, organized by keys
  * 
  * @architecture Generic Layer - Application Data Persistence
  * @singleton Stateless
@@ -39,9 +54,10 @@ import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../error
 import { publishEvent, queryEvents, RelayQueryResult } from './GenericRelayService';
 import { nostrEventService } from '../nostr/NostrEventService';
 
-const CART_EVENT_KIND = 30078; // NIP-78 Application-Specific Data
-const CART_D_TAG = 'shopping-cart'; // Stable identifier for cart events
-const CART_T_TAG = 'culture-bridge-cart'; // Discovery tag following established pattern
+const SETTINGS_EVENT_KIND = 30078; // NIP-78 Application-Specific Data
+const SETTINGS_D_TAG = 'culture-bridge-settings'; // Single identifier for ALL app settings
+const CART_CONTENT_KEY = 'cart'; // Key in content object for cart data
+const CART_TAG_NAME = 'culture-bridge-cart-details'; // Tag for cart metadata
 
 export interface CartSaveResult {
   success: boolean;
@@ -144,8 +160,8 @@ export class CartRelayService {
       logger.info('Signing cart event', {
         service: 'CartRelayService',
         method: 'saveCart',
-        kind: CART_EVENT_KIND,
-        dTag: CART_D_TAG,
+        kind: SETTINGS_EVENT_KIND,
+        dTag: SETTINGS_D_TAG,
       });
 
       const signedEvent = await signer.signEvent(unsignedEvent);
@@ -235,19 +251,19 @@ export class CartRelayService {
         userPubkey: userPubkey.substring(0, 8) + '...',
       });
 
-      // Query relays for cart event
+      // Query relays for unified settings event
       const filters = [{
-        kinds: [CART_EVENT_KIND],
+        kinds: [SETTINGS_EVENT_KIND],
         authors: [userPubkey],
-        '#d': [CART_D_TAG],
+        '#d': [SETTINGS_D_TAG],
         limit: 1, // NIP-33 ensures only one event with this d tag exists
       }];
 
       const result: RelayQueryResult = await queryEvents(filters);
 
-      // No cart found
+      // No settings found
       if (!result.success || !result.events || result.events.length === 0) {
-        logger.info('No cart found on relays', {
+        logger.info('No settings found on relays', {
           service: 'CartRelayService',
           method: 'loadCart',
           userPubkey: userPubkey.substring(0, 8) + '...',
@@ -260,17 +276,19 @@ export class CartRelayService {
         };
       }
 
-      // Parse cart data
-      const cartEvent = result.events[0];
+      // Parse settings data and extract cart
+      const settingsEvent = result.events[0];
       let items: CartItem[] = [];
 
       try {
-        items = JSON.parse(cartEvent.content);
+        const settingsData = JSON.parse(settingsEvent.content);
+        // Extract cart from unified settings object
+        items = settingsData[CART_CONTENT_KEY] || [];
       } catch (parseError) {
-        logger.error('Failed to parse cart content', parseError instanceof Error ? parseError : new Error(String(parseError)), {
+        logger.error('Failed to parse settings content', parseError instanceof Error ? parseError : new Error(String(parseError)), {
           service: 'CartRelayService',
           method: 'loadCart',
-          eventId: cartEvent.id.substring(0, 8) + '...',
+          eventId: settingsEvent.id.substring(0, 8) + '...',
         });
 
         return {
@@ -284,13 +302,13 @@ export class CartRelayService {
         service: 'CartRelayService',
         method: 'loadCart',
         itemCount: items.length,
-        eventId: cartEvent.id.substring(0, 8) + '...',
+        eventId: settingsEvent.id.substring(0, 8) + '...',
       });
 
       return {
         success: true,
         items,
-        eventId: cartEvent.id,
+        eventId: settingsEvent.id,
       };
     } catch (error) {
       logger.error('Failed to load cart from relays', error instanceof Error ? error : new Error(String(error)), {

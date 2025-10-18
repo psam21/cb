@@ -44,6 +44,7 @@ const SYNC_DEBOUNCE_MS = 2000;
  * useCartSync();
  * ```
  */
+
 export const useCartSync = () => {
   const { signer, user } = useAuthStore();
   const { items } = useCartStore();
@@ -51,86 +52,65 @@ export const useCartSync = () => {
   const hasLoadedRef = useRef(false);
   const previousItemsRef = useRef<string>('');
 
-  // Load cart from relays on authentication
+  // Exposed function to refresh cart from relay and repopulate state
+  const refreshCartFromRelay = async (mergeWithLocal = true) => {
+    if (!user?.pubkey) return;
+    try {
+      logger.info('Refreshing cart from relays', {
+        service: 'useCartSync',
+        method: 'refreshCartFromRelay',
+        userPubkey: user.pubkey.substring(0, 8) + '...',
+      });
+      const loadResult = await cartBusinessService.loadCartFromRelay(user.pubkey);
+      if (!loadResult.success) {
+        logger.error('Failed to refresh cart from relays', new Error(loadResult.error || 'Unknown error'), {
+          service: 'useCartSync',
+          method: 'refreshCartFromRelay',
+        });
+        return;
+      }
+      const relayItems = loadResult.items;
+      const localItems = useCartStore.getState().items;
+      if (mergeWithLocal && relayItems.length > 0 && localItems.length > 0) {
+        const mergeResult = cartBusinessService.mergeCartItems(localItems, relayItems);
+        useCartStore.setState({ items: mergeResult.mergedItems });
+        useCartStore.getState()._updateComputedValues();
+        logger.info('Cart merge complete (refresh)', {
+          service: 'useCartSync',
+          method: 'refreshCartFromRelay',
+          mergedCount: mergeResult.mergedItems.length,
+          conflictsResolved: mergeResult.conflictsResolved,
+        });
+      } else if (relayItems.length > 0) {
+        useCartStore.setState({ items: relayItems });
+        useCartStore.getState()._updateComputedValues();
+        logger.info('Loaded cart from relay (refresh, no local items)', {
+          service: 'useCartSync',
+          method: 'refreshCartFromRelay',
+          itemCount: relayItems.length,
+        });
+      } else {
+        logger.info('No cart items on relay (refresh)', {
+          service: 'useCartSync',
+          method: 'refreshCartFromRelay',
+          localCount: localItems.length,
+        });
+      }
+      hasLoadedRef.current = true;
+    } catch (error) {
+      logger.error('Error refreshing cart from relays', error instanceof Error ? error : new Error(String(error)), {
+        service: 'useCartSync',
+        method: 'refreshCartFromRelay',
+      });
+    }
+  };
+
+  // Load cart from relays on authentication (initial load)
   useEffect(() => {
     if (!signer || !user?.pubkey || hasLoadedRef.current) {
       return;
     }
-
-    const loadCart = async () => {
-      try {
-        logger.info('Loading cart from relays', {
-          service: 'useCartSync',
-          method: 'loadCart',
-          userPubkey: user.pubkey.substring(0, 8) + '...',
-        });
-
-        // Load from relays
-        const loadResult = await cartBusinessService.loadCartFromRelay(user.pubkey);
-
-        if (!loadResult.success) {
-          logger.error('Failed to load cart from relays', new Error(loadResult.error || 'Unknown error'), {
-            service: 'useCartSync',
-            method: 'loadCart',
-          });
-          return;
-        }
-
-        const relayItems = loadResult.items;
-        const localItems = useCartStore.getState().items;
-
-        // Merge carts if both have items
-        if (relayItems.length > 0 && localItems.length > 0) {
-          logger.info('Merging local and relay carts', {
-            service: 'useCartSync',
-            method: 'loadCart',
-            localCount: localItems.length,
-            relayCount: relayItems.length,
-          });
-
-          const mergeResult = cartBusinessService.mergeCartItems(localItems, relayItems);
-          
-          useCartStore.setState({ items: mergeResult.mergedItems });
-          useCartStore.getState()._updateComputedValues();
-
-          logger.info('Cart merge complete', {
-            service: 'useCartSync',
-            method: 'loadCart',
-            mergedCount: mergeResult.mergedItems.length,
-            conflictsResolved: mergeResult.conflictsResolved,
-          });
-
-          // Sync merged cart back to relay
-          await syncToRelay();
-        } else if (relayItems.length > 0) {
-          // Only relay has items, use them
-          useCartStore.setState({ items: relayItems });
-          useCartStore.getState()._updateComputedValues();
-
-          logger.info('Loaded cart from relay (no local items)', {
-            service: 'useCartSync',
-            method: 'loadCart',
-            itemCount: relayItems.length,
-          });
-        } else {
-          // Only local items or both empty
-          logger.info('No cart items on relay', {
-            service: 'useCartSync',
-            method: 'loadCart',
-            localCount: localItems.length,
-          });
-        }
-
-        hasLoadedRef.current = true;
-      } catch (error) {
-        logger.error('Error loading cart from relays', error instanceof Error ? error : new Error(String(error)), {
-          service: 'useCartSync',
-          method: 'loadCart',
-        });
-      }
-    };
-
-    loadCart();
+    refreshCartFromRelay();
   }, [signer, user?.pubkey]);
 
   // Sync cart to relays on changes (debounced)
@@ -138,20 +118,14 @@ export const useCartSync = () => {
     if (!signer || !user?.pubkey || !hasLoadedRef.current) {
       return;
     }
-
-    // Check if items actually changed (avoid sync on merge)
     const itemsJson = JSON.stringify(items);
     if (itemsJson === previousItemsRef.current) {
       return;
     }
     previousItemsRef.current = itemsJson;
-
-    // Clear existing timeout
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
     }
-
-    // Debounce sync
     syncTimeoutRef.current = setTimeout(() => {
       syncToRelay().catch(error => {
         logger.error('Debounced sync failed', error instanceof Error ? error : new Error(String(error)), {
@@ -160,8 +134,6 @@ export const useCartSync = () => {
         });
       });
     }, SYNC_DEBOUNCE_MS);
-
-    // Cleanup
     return () => {
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
@@ -224,4 +196,6 @@ export const useCartSync = () => {
       previousItemsRef.current = '';
     }
   }, [user]);
+  // Expose refreshCartFromRelay for use in features
+  return { refreshCartFromRelay };
 };

@@ -421,41 +421,108 @@ export class NostrEventService {
    * @architecture Event Layer - Cart Event Creation
    * @layer Nostr (event structure definition)
    */
-  public createCartEvent(
-    cartItems: unknown[],
-    userPubkey: string
+  /**
+   * Create unified Culture Bridge settings event (Kind 30078)
+   * 
+   * Uses single event with d='culture-bridge-settings' and multiple feature tags.
+   * This architecture allows all app data to be stored in one event with organized
+   * sections accessible via tags.
+   * 
+   * @param settingsData - Object containing all feature data (cart, bookmarks, preferences, etc.)
+   * @param userPubkey - User's public key
+   * @returns Unsigned Kind 30078 event
+   * 
+   * @example
+   * ```typescript
+   * const event = createSettingsEvent({
+   *   cart: [...cartItems],
+   *   bookmarks: [...bookmarkIds],
+   *   preferences: { theme: 'dark' }
+   * }, userPubkey);
+   * ```
+   */
+  public createSettingsEvent(
+    settingsData: Record<string, unknown>,
+    userPubkey: string,
+    featureTags?: string[][]
   ): Omit<NostrEvent, 'id' | 'sig'> {
     try {
-      logger.info('Creating Kind 30078 cart storage event', {
+      logger.info('Creating Kind 30078 unified settings event', {
         service: 'NostrEventService',
-        method: 'createCartEvent',
+        method: 'createSettingsEvent',
         userPubkey: userPubkey.substring(0, 8) + '...',
-        itemCount: cartItems.length,
+        features: Object.keys(settingsData),
       });
 
       const now = Math.floor(Date.now() / 1000);
+
+      // Base tags: d tag (NIP-33) and discovery tag
+      const baseTags: string[][] = [
+        ['d', 'culture-bridge-settings'], // Single d tag for all app settings
+        ['t', 'culture-bridge'], // Discovery tag
+      ];
+
+      // Add feature-specific tags (e.g., cart version, last-seen timestamps)
+      const allTags = featureTags ? [...baseTags, ...featureTags] : baseTags;
 
       // Create Kind 30078 event (NIP-78 Application-Specific Data)
       const unsignedEvent: Omit<NostrEvent, 'id' | 'sig'> = {
         kind: 30078, // NIP-78 Application-Specific Data
         pubkey: userPubkey,
         created_at: now,
-        tags: [
-          ['d', 'shopping-cart'], // NIP-33 d tag for parameterized replaceable events
-          ['t', 'culture-bridge-cart'], // Discovery tag following culture-bridge-{type} pattern
-        ],
-        content: JSON.stringify(cartItems), // Cart data as JSON
+        tags: allTags,
+        content: JSON.stringify(settingsData), // All feature data in content
       };
 
-      logger.info('Kind 30078 cart event created', {
+      logger.info('Kind 30078 settings event created', {
         service: 'NostrEventService',
-        method: 'createCartEvent',
+        method: 'createSettingsEvent',
         kind: 30078,
-        dTag: 'shopping-cart',
-        itemCount: cartItems.length,
+        dTag: 'culture-bridge-settings',
+        features: Object.keys(settingsData),
+        tagCount: allTags.length,
       });
 
       return unsignedEvent;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to create settings event', error instanceof Error ? error : new Error(errorMessage), {
+        service: 'NostrEventService',
+        method: 'createSettingsEvent',
+        userPubkey: userPubkey.substring(0, 8) + '...',
+        error: errorMessage,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Create cart event (wrapper for settings event with cart data)
+   * 
+   * @deprecated Use createSettingsEvent directly for better flexibility
+   */
+  public createCartEvent(
+    cartItems: unknown[],
+    userPubkey: string
+  ): Omit<NostrEvent, 'id' | 'sig'> {
+    try {
+      logger.info('Creating cart event (legacy method)', {
+        service: 'NostrEventService',
+        method: 'createCartEvent',
+        itemCount: cartItems.length,
+      });
+
+      // Add cart-specific tags
+      const cartTags: string[][] = [
+        ['culture-bridge-cart-details', 'v1'], // Cart data version
+      ];
+
+      // Use unified settings event with cart data
+      return this.createSettingsEvent(
+        { cart: cartItems },
+        userPubkey,
+        cartTags
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to create cart event', error instanceof Error ? error : new Error(errorMessage), {
