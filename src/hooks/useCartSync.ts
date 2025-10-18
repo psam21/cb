@@ -7,10 +7,15 @@
  * (CartBusinessService).
  * 
  * RESPONSIBILITIES:
- * - Load cart from relays on mount (if authenticated)
- * - Debounce and trigger cart sync to relays on changes
+ * - Load cart from relays on authentication (initial load)
+ * - Manual sync to relays when cart page is visited
  * - Merge local and relay carts on load
  * - Handle authentication state changes
+ * 
+ * SYNC STRATEGY:
+ * - Load: Automatic on authentication
+ * - Save: Manual when user visits /cart page (not on every change)
+ * - Benefit: Reduces unnecessary relay events for users browsing
  * 
  * SOA COMPLIANCE:
  * Hook Layer → Business Service → Generic Service
@@ -27,28 +32,25 @@ import { useCartStore } from '@/stores/useCartStore';
 import { cartBusinessService } from '@/services/business/CartBusinessService';
 import { logger } from '@/services/core/LoggingService';
 
-const SYNC_DEBOUNCE_MS = 2000;
-
 /**
  * Cart sync hook - manages relay synchronization
  * 
  * @architecture Hook Layer
  * @responsibilities
  * - Load cart on authentication
- * - Sync cart changes to relays (debounced)
+ * - Manual sync to relays (called by cart page)
  * - Merge local and relay carts
  * 
  * @usage
  * ```typescript
- * // In cart page or layout
- * useCartSync();
+ * // In cart page
+ * const { syncCartToRelay } = useCartSync();
+ * useEffect(() => { syncCartToRelay(); }, []);
  * ```
  */
 
 export const useCartSync = () => {
   const { signer, user } = useAuthStore();
-  const { items } = useCartStore();
-  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoadedRef = useRef(false);
   const previousItemsRef = useRef<string>('');
 
@@ -113,51 +115,23 @@ export const useCartSync = () => {
     refreshCartFromRelay();
   }, [signer, user?.pubkey, refreshCartFromRelay]); // ✅ Added refreshCartFromRelay to dependencies
 
-  // Sync cart to relays on changes (debounced)
-  useEffect(() => {
-    if (!signer || !user?.pubkey || !hasLoadedRef.current) {
-      return;
-    }
-    const itemsJson = JSON.stringify(items);
-    if (itemsJson === previousItemsRef.current) {
-      return;
-    }
-    previousItemsRef.current = itemsJson;
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-    }
-    syncTimeoutRef.current = setTimeout(() => {
-      syncToRelay().catch(error => {
-        logger.error('Debounced sync failed', error instanceof Error ? error : new Error(String(error)), {
-          service: 'useCartSync',
-          method: 'useEffect[items]',
-        });
-      });
-    }, SYNC_DEBOUNCE_MS);
-    return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-    };
-  }, [items, signer, user?.pubkey]);
-
-  // Helper function to sync to relay
-  const syncToRelay = async () => {
+  // Manual sync function (called when cart page is visited)
+  const syncCartToRelay = useCallback(async () => {
     const { signer: currentSigner, user: currentUser } = useAuthStore.getState();
     
     if (!currentSigner || !currentUser?.pubkey) {
       logger.debug('Skipping cart sync: user not authenticated', {
         service: 'useCartSync',
-        method: 'syncToRelay',
+        method: 'syncCartToRelay',
       });
       return;
     }
 
     const currentItems = useCartStore.getState().items;
 
-    logger.info('Syncing cart to relays', {
+    logger.info('Manually syncing cart to relays (cart page visited)', {
       service: 'useCartSync',
-      method: 'syncToRelay',
+      method: 'syncCartToRelay',
       itemCount: currentItems.length,
     });
 
@@ -171,23 +145,23 @@ export const useCartSync = () => {
       if (syncResult.success) {
         logger.info('Cart synced to relays successfully', {
           service: 'useCartSync',
-          method: 'syncToRelay',
+          method: 'syncCartToRelay',
           itemCount: syncResult.itemCount,
         });
       } else {
         logger.warn('Cart sync failed', {
           service: 'useCartSync',
-          method: 'syncToRelay',
+          method: 'syncCartToRelay',
           error: syncResult.error,
         });
       }
     } catch (error) {
       logger.error('Error syncing cart to relays', error instanceof Error ? error : new Error(String(error)), {
         service: 'useCartSync',
-        method: 'syncToRelay',
+        method: 'syncCartToRelay',
       });
     }
-  };
+  }, []); // No dependencies - uses getState() to get current values
 
   // Reset on logout
   useEffect(() => {
@@ -196,6 +170,7 @@ export const useCartSync = () => {
       previousItemsRef.current = '';
     }
   }, [user]);
-  // Expose refreshCartFromRelay for use in features
-  return { refreshCartFromRelay };
+  
+  // Expose functions for use in components
+  return { refreshCartFromRelay, syncCartToRelay };
 };

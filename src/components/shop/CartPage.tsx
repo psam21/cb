@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/useCartStore';
 import { useNostrSigner } from '@/hooks/useNostrSigner';
+import { useCartSync } from '@/hooks/useCartSync';
 import { CartItem } from '@/components/shop/CartItem';
 import { CartSummary } from '@/components/shop/CartSummary';
 import { logger } from '@/services/core/LoggingService';
@@ -14,6 +16,32 @@ export function CartPage() {
   
   // Initialize signer for purchase intent workflow
   useNostrSigner();
+  
+  // Get sync functions from cart sync hook
+  const { refreshCartFromRelay, syncCartToRelay } = useCartSync();
+
+  // Refresh cart from relay when cart page is visited (load latest state)
+  // Then save current state when leaving (on unmount)
+  useEffect(() => {
+    logger.info('Cart page mounted - refreshing from relay', {
+      service: 'CartPage',
+      method: 'useEffect[mount]',
+      itemCount: items.length,
+    });
+    
+    // Load latest cart from relay (merges with local if both exist)
+    refreshCartFromRelay(true);
+    
+    // Save cart to relay when user leaves cart page
+    return () => {
+      logger.info('Cart page unmounting - saving to relay', {
+        service: 'CartPage',
+        method: 'useEffect[unmount]',
+      });
+      syncCartToRelay();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshCartFromRelay, syncCartToRelay]); // Only run when these functions change
 
   logger.info('CartPage rendered', {
     service: 'CartPage',
