@@ -12,7 +12,6 @@ const formatSats = (sats: number): string => {
 };
 
 export function CartSummary({ className = '' }: CartSummaryProps) {
-  const items = useCartStore(state => state.items);
   const itemCount = useCartStore(state => state.itemCount);
   const totalSats = useCartStore(state => state.totalSats);
 

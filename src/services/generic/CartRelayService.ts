@@ -47,7 +47,7 @@
  */
 
 import { logger } from '../core/LoggingService';
-import { NostrSigner, NostrEvent } from '../../types/nostr';
+import { NostrSigner } from '../../types/nostr';
 import { CartItem } from '../../types/cart';
 import { AppError } from '../../errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '../../errors/ErrorTypes';
@@ -57,7 +57,6 @@ import { nostrEventService } from '../nostr/NostrEventService';
 const SETTINGS_EVENT_KIND = 30078; // NIP-78 Application-Specific Data
 const SETTINGS_D_TAG = 'culture-bridge-settings'; // Single identifier for ALL app settings
 const CART_CONTENT_KEY = 'cart'; // Key in content object for cart data
-const CART_TAG_NAME = 'culture-bridge-cart-details'; // Tag for cart metadata
 
 export interface CartSaveResult {
   success: boolean;

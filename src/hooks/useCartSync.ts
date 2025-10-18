@@ -21,7 +21,7 @@
 
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useCartStore } from '@/stores/useCartStore';
 import { cartBusinessService } from '@/services/business/CartBusinessService';
@@ -53,7 +53,7 @@ export const useCartSync = () => {
   const previousItemsRef = useRef<string>('');
 
   // Exposed function to refresh cart from relay and repopulate state
-  const refreshCartFromRelay = async (mergeWithLocal = true) => {
+  const refreshCartFromRelay = useCallback(async (mergeWithLocal = true) => {
     if (!user?.pubkey) return;
     try {
       logger.info('Refreshing cart from relays', {
@@ -103,7 +103,7 @@ export const useCartSync = () => {
         method: 'refreshCartFromRelay',
       });
     }
-  };
+  }, [user?.pubkey]); // Only recreate when user pubkey changes
 
   // Load cart from relays on authentication (initial load)
   useEffect(() => {
@@ -111,7 +111,7 @@ export const useCartSync = () => {
       return;
     }
     refreshCartFromRelay();
-  }, [signer, user?.pubkey]);
+  }, [signer, user?.pubkey, refreshCartFromRelay]); // ✅ Added refreshCartFromRelay to dependencies
 
   // Sync cart to relays on changes (debounced)
   useEffect(() => {
