@@ -115,6 +115,7 @@ export const useAuthStore = create<AuthState>()(
             key.startsWith('product-store') || 
             key.startsWith('my-shop-store') ||
             key.startsWith('shop-store') ||
+            key.startsWith('cart-store') ||
             key === 'lastPublishedEvent' ||
             key.startsWith('nostr') ||
             key.startsWith('culture-bridge')
@@ -127,6 +128,7 @@ export const useAuthStore = create<AuthState>()(
             key.startsWith('product-store') || 
             key.startsWith('my-shop-store') ||
             key.startsWith('shop-store') ||
+            key.startsWith('cart-store') ||
             key.startsWith('nostr') ||
             key.startsWith('culture-bridge')
           );
