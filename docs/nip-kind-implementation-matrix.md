@@ -307,12 +307,16 @@ Current relay configurations include support for additional NIPs not yet utilize
 
 ---
 
-**Last Updated**: October 16, 2025  
+**Last Updated**: October 18, 2025  
 **Codebase Version**: Next.js 15.4.6  
 **Active NIPs**: 9 implemented (NIP-01, NIP-05, NIP-07, NIP-09, NIP-17, NIP-23, NIP-33, NIP-44, NIP-94 + Blossom)  
 **Active Event Kinds**: 8 kinds (Kind 0, Kind 1, Kind 5, Kind 14, Kind 1059, Kind 10063, Kind 24242, Kind 30023)  
 **Recent Updates**:
 
+- 2025-10-18: Shop - Removed product creation from public /shop page (now browse-only marketplace)
+- 2025-10-18: My Shop - Created dedicated /my-shop/create page for product creation
+- 2025-10-18: My Shop - Removed non-functional "Show Deleted" and "Refresh" buttons (NIP-09 deletion is relay-side)
+- 2025-10-18: Architecture - Enforced dedicated pages pattern: /my-shop (list), /my-shop/create (create), /my-shop/edit/[id] (edit)
 - 2025-10-16: Messaging - Fixed duplicate conversation bug (useState → useRef for processedMessageIds Set)
 - 2025-10-16: Messaging - Added self-message filter (prevents conversations with self where sender === recipient)
 - 2025-10-16: Messaging - Implemented cache migration system (removes invalid pre-fix data on init)
