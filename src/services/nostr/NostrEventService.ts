@@ -467,11 +467,12 @@ export class NostrEventService {
       // Add feature-specific tags (e.g., cart version, last-seen timestamps)
       const allTags = featureTags ? [...baseTags, ...featureTags] : baseTags;
 
-      // Add metadata to content for relay compatibility (some relays expect 'name' in content)
+      // Add metadata and wrap in 'data' field for Shugur relay compatibility
+      // Shugur requires: { name, version, data: { cart: [...] } }
       const contentWithMetadata = {
         name: 'Culture Bridge Settings', // For relay validation compatibility
         version: '1.0',
-        ...settingsData,
+        data: settingsData, // Wrapped in 'data' field per Shugur's NIP-78 interpretation
       };
 
       // Create Kind 30078 event (NIP-78 Application-Specific Data)

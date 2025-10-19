@@ -17,21 +17,13 @@ export function CartPage() {
   // Initialize signer for purchase intent workflow
   useNostrSigner();
   
-  // Get sync functions from cart sync hook
-  const { refreshCartFromRelay, syncCartToRelay } = useCartSync();
+  // Get sync function from cart sync hook (only need syncCartToRelay for unmount)
+  const { syncCartToRelay } = useCartSync();
 
-  // Refresh cart from relay when cart page is visited (merge with local changes)
-  // Then save current state when leaving (on unmount)
+  // Save cart to relay when leaving cart page (on unmount)
+  // Note: Cart loading is handled globally by CartSyncProvider on auth
+  // No need to reload here - data is already fresh from provider
   useEffect(() => {
-    logger.info('Cart page mounted - refreshing from relay', {
-      service: 'CartPage',
-      method: 'useEffect[mount]',
-      itemCount: items.length,
-    });
-    
-    // Load latest cart from relay (merges intelligently: relay items take precedence, new local items kept)
-    refreshCartFromRelay(true);
-    
     // Save cart to relay when user leaves cart page
     return () => {
       logger.info('Cart page unmounting - saving to relay', {
@@ -40,7 +32,7 @@ export function CartPage() {
       });
       syncCartToRelay();
     };
-  }, []); // Empty deps - only run once on mount/unmount
+  }, [syncCartToRelay]); // Only syncCartToRelay in deps
 
   logger.info('CartPage rendered', {
     service: 'CartPage',

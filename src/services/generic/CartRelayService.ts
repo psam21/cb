@@ -267,8 +267,11 @@ export class CartRelayService {
 
         try {
           const settingsData = JSON.parse(settingsEvent.content);
+          
           // Extract cart from unified settings object
-          items = settingsData[CART_CONTENT_KEY] || [];
+          // Handle both formats: { data: { cart: [...] } } (new Shugur-compatible)
+          // and { cart: [...] } (old flat format)
+          items = settingsData.data?.[CART_CONTENT_KEY] || settingsData[CART_CONTENT_KEY] || [];
           
           logger.info('Cart loaded successfully (new format)', {
             service: 'CartRelayService',
