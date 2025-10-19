@@ -369,7 +369,6 @@ export class CartBusinessService {
     const itemMap = new Map<string, CartItem>();
     let conflictsResolved = 0;
     let addedCount = 0;
-    let skippedCount = 0;
 
     // Add local items first
     for (const item of localItems) {
@@ -391,42 +390,18 @@ export class CartBusinessService {
         // Conflict: Item exists in both local and relay
         conflictsResolved++;
 
-        // Resolution strategy: Prefer newer item based on addedAt
-        if (relayItem.addedAt > existingItem.addedAt) {
-          // Relay item is newer
-          itemMap.set(key, relayItem);
-          logger.debug('Resolved conflict: using relay item (newer)', {
-            service: 'CartBusinessService',
-            method: 'mergeCartItems',
-            productId: relayItem.productId,
-            relayDate: new Date(relayItem.addedAt).toISOString(),
-            localDate: new Date(existingItem.addedAt).toISOString(),
-          });
-        } else if (relayItem.addedAt === existingItem.addedAt) {
-          // Same timestamp: Sum quantities
-          const mergedItem = {
-            ...existingItem,
-            quantity: Math.min(
-              existingItem.quantity + relayItem.quantity,
-              existingItem.maxQuantity || Infinity
-            ),
-          };
-          itemMap.set(key, mergedItem);
-          logger.debug('Resolved conflict: summed quantities (same timestamp)', {
-            service: 'CartBusinessService',
-            method: 'mergeCartItems',
-            productId: relayItem.productId,
-            newQuantity: mergedItem.quantity,
-          });
-        } else {
-          // Local item is newer, keep it
-          skippedCount++;
-          logger.debug('Resolved conflict: keeping local item (newer)', {
-            service: 'CartBusinessService',
-            method: 'mergeCartItems',
-            productId: existingItem.productId,
-          });
-        }
+        // Resolution strategy: Prefer relay item (relay is source of truth)
+        // Don't sum quantities - relay has the saved state we want
+        itemMap.set(key, relayItem);
+        logger.debug('Resolved conflict: using relay item (source of truth)', {
+          service: 'CartBusinessService',
+          method: 'mergeCartItems',
+          productId: relayItem.productId,
+          relayQuantity: relayItem.quantity,
+          localQuantity: existingItem.quantity,
+          relayDate: new Date(relayItem.addedAt).toISOString(),
+          localDate: new Date(existingItem.addedAt).toISOString(),
+        });
       }
     }
 
@@ -437,14 +412,13 @@ export class CartBusinessService {
       method: 'mergeCartItems',
       mergedCount: mergedItems.length,
       addedCount,
-      skippedCount,
       conflictsResolved,
     });
 
     return {
       mergedItems,
       addedCount,
-      skippedCount,
+      skippedCount: 0, // No longer skipping items
       conflictsResolved,
     };
   }

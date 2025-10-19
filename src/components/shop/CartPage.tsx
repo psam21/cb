@@ -20,7 +20,7 @@ export function CartPage() {
   // Get sync functions from cart sync hook
   const { refreshCartFromRelay, syncCartToRelay } = useCartSync();
 
-  // Refresh cart from relay when cart page is visited (load latest state)
+  // Refresh cart from relay when cart page is visited (merge with local changes)
   // Then save current state when leaving (on unmount)
   useEffect(() => {
     logger.info('Cart page mounted - refreshing from relay', {
@@ -29,7 +29,7 @@ export function CartPage() {
       itemCount: items.length,
     });
     
-    // Load latest cart from relay (merges with local if both exist)
+    // Load latest cart from relay (merges intelligently: relay items take precedence, new local items kept)
     refreshCartFromRelay(true);
     
     // Save cart to relay when user leaves cart page

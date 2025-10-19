@@ -73,7 +73,10 @@ export const useCartSync = () => {
       }
       const relayItems = loadResult.items;
       const localItems = useCartStore.getState().items;
+      
       if (mergeWithLocal && relayItems.length > 0 && localItems.length > 0) {
+        // Merge relay and local carts intelligently
+        // Strategy: Prefer relay for existing items, keep new local items
         const mergeResult = cartBusinessService.mergeCartItems(localItems, relayItems);
         useCartStore.setState({ items: mergeResult.mergedItems });
         useCartStore.getState()._updateComputedValues();
@@ -84,15 +87,17 @@ export const useCartSync = () => {
           conflictsResolved: mergeResult.conflictsResolved,
         });
       } else if (relayItems.length > 0) {
+        // Relay has items, local is empty - use relay
         useCartStore.setState({ items: relayItems });
         useCartStore.getState()._updateComputedValues();
-        logger.info('Loaded cart from relay (refresh, no local items)', {
+        logger.info('Loaded cart from relay (no local items)', {
           service: 'useCartSync',
           method: 'refreshCartFromRelay',
           itemCount: relayItems.length,
         });
       } else {
-        logger.info('No cart items on relay (refresh)', {
+        // Relay is empty - keep local cart (user may have added items)
+        logger.info('No cart items on relay', {
           service: 'useCartSync',
           method: 'refreshCartFromRelay',
           localCount: localItems.length,
