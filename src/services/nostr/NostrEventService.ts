@@ -456,9 +456,10 @@ export class NostrEventService {
 
       const now = Math.floor(Date.now() / 1000);
 
-      // Base tags: d tag (NIP-33), pubkey reference, and discovery tag
+      // Base tags: d tag (NIP-33), name, pubkey reference, and discovery tag
       const baseTags: string[][] = [
         ['d', 'culture-bridge-settings'], // Single d tag for all app settings
+        ['name', 'Culture Bridge Settings'], // Human-readable name (required by some relays)
         ['p', userPubkey], // User's pubkey (required by some relays)
         ['t', 'culture-bridge'], // Discovery tag
       ];
