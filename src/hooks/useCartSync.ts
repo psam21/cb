@@ -112,13 +112,16 @@ export const useCartSync = () => {
     }
   }, [user?.pubkey]); // Only recreate when user pubkey changes
 
-  // Load cart from relays on authentication (initial load)
+  // Load cart from relays on authentication (initial load ONLY)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!signer || !user?.pubkey || hasLoadedRef.current) {
       return;
     }
     refreshCartFromRelay();
-  }, [signer, user?.pubkey, refreshCartFromRelay]); // ✅ Added refreshCartFromRelay to dependencies
+    // Note: refreshCartFromRelay intentionally excluded from deps
+    // We only want to load once on auth, not on every function recreation
+  }, [signer, user?.pubkey]); // Only auth state, not the function itself
 
   // Manual sync function (called when cart page is visited)
   const syncCartToRelay = useCallback(async () => {
