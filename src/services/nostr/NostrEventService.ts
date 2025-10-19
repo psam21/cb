@@ -467,13 +467,20 @@ export class NostrEventService {
       // Add feature-specific tags (e.g., cart version, last-seen timestamps)
       const allTags = featureTags ? [...baseTags, ...featureTags] : baseTags;
 
+      // Add metadata to content for relay compatibility (some relays expect 'name' in content)
+      const contentWithMetadata = {
+        name: 'Culture Bridge Settings', // For relay validation compatibility
+        version: '1.0',
+        ...settingsData,
+      };
+
       // Create Kind 30078 event (NIP-78 Application-Specific Data)
       const unsignedEvent: Omit<NostrEvent, 'id' | 'sig'> = {
         kind: 30078, // NIP-78 Application-Specific Data
         pubkey: userPubkey,
         created_at: now,
         tags: allTags,
-        content: JSON.stringify(settingsData), // All feature data in content
+        content: JSON.stringify(contentWithMetadata), // All feature data in content with metadata
       };
 
       logger.info('Kind 30078 settings event created', {

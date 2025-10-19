@@ -40,8 +40,7 @@ export function CartPage() {
       });
       syncCartToRelay();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshCartFromRelay, syncCartToRelay]); // Only run when these functions change
+  }, []); // Empty deps - only run once on mount/unmount
 
   logger.info('CartPage rendered', {
     service: 'CartPage',
