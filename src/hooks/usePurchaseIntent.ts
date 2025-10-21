@@ -93,18 +93,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
       const result = await purchaseBusinessService.sendPurchaseIntent(items, signer);
 
       if (result.success) {
-        // Success - clear cart from BOTH local state AND relay
-        clearCart();
-
-        // Clear cart from relay to prevent stale data
-        if (user?.pubkey) {
-          logger.info('Clearing cart from relay after successful checkout', {
-            service: 'usePurchaseIntent',
-            method: 'sendPurchaseIntent',
-          });
-          await cartBusinessService.clearCartFromRelay(signer, user.pubkey);
-        }
-
+        // Success - set state first, then clear cart
         setState({
           loading: false,
           success: true,
@@ -112,12 +101,27 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
           result,
         });
 
-        logger.info('Purchase intent sent successfully', {
+        logger.info('Purchase intent sent successfully - will clear cart after redirect', {
           service: 'usePurchaseIntent',
           method: 'sendPurchaseIntent',
           sellerCount: result.sellerCount,
           successCount: result.successCount,
         });
+
+        // Clear cart AFTER setting success state (so redirect happens first)
+        // Use setTimeout to ensure state update and navigation complete first
+        setTimeout(async () => {
+          clearCart();
+
+          // Clear cart from relay to prevent stale data
+          if (user?.pubkey) {
+            logger.info('Clearing cart from relay after navigation', {
+              service: 'usePurchaseIntent',
+              method: 'sendPurchaseIntent',
+            });
+            await cartBusinessService.clearCartFromRelay(signer, user.pubkey);
+          }
+        }, 500); // Delay to allow navigation to complete
       } else {
         // Partial failure
         setState({

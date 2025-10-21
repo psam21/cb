@@ -40,7 +40,8 @@ export function PurchaseIntentButton({ disabled = false, className = '' }: Purch
     });
 
     await sendPurchaseIntent();
-    setShowModal(false);
+    // Don't close modal here - let the success state trigger redirect
+    // setShowModal(false);
   };
 
   const handleClose = () => {
@@ -57,13 +58,19 @@ export function PurchaseIntentButton({ disabled = false, className = '' }: Purch
         method: 'useEffect[success]',
       });
       
-      // Redirect immediately to messages page
-      router.push('/messages');
+      // Close modal first
+      setShowModal(false);
       
-      // Reset state after redirect
+      // Use replace to prevent back navigation to cart
+      // Small delay to ensure modal closes and success message is visible
+      setTimeout(() => {
+        router.replace('/messages');
+      }, 300);
+      
+      // Reset state after navigation completes
       setTimeout(() => {
         reset();
-      }, 100);
+      }, 1000);
     }
   }, [success, result, router, reset]);
 
