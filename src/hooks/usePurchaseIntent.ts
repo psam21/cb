@@ -11,6 +11,7 @@ import { useState, useCallback } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useCartStore } from '@/stores/useCartStore';
 import { purchaseBusinessService } from '@/services/business/PurchaseBusinessService';
+import { cartBusinessService } from '@/services/business/CartBusinessService';
 import { PurchaseIntentResult } from '@/types/purchase';
 import { logger } from '@/services/core/LoggingService';
 import { AppError } from '@/errors/AppError';
@@ -37,6 +38,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
   });
 
   const signer = useAuthStore(state => state.signer);
+  const user = useAuthStore(state => state.user);
   const items = useCartStore(state => state.items);
   const clearCart = useCartStore(state => state.clearCart);
 
@@ -91,8 +93,17 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
       const result = await purchaseBusinessService.sendPurchaseIntent(items, signer);
 
       if (result.success) {
-        // Success - clear cart and update state
+        // Success - clear cart from BOTH local state AND relay
         clearCart();
+
+        // Clear cart from relay to prevent stale data
+        if (user?.pubkey) {
+          logger.info('Clearing cart from relay after successful checkout', {
+            service: 'usePurchaseIntent',
+            method: 'sendPurchaseIntent',
+          });
+          await cartBusinessService.clearCartFromRelay(signer, user.pubkey);
+        }
 
         setState({
           loading: false,
@@ -144,7 +155,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
         itemCount: items.length,
       });
     }
-  }, [signer, items, clearCart]);
+  }, [signer, user?.pubkey, items, clearCart]);
 
   /**
    * Reset state
