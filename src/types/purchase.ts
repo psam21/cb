@@ -38,6 +38,9 @@ export interface PurchaseIntent {
   /** Message type identifier */
   type: 'purchase-intent';
   
+  /** Unique intent ID for tracking (format: pi_<pubkey8>_<timestamp>) */
+  intentId: string;
+  
   /** Array of products being purchased from this seller */
   products: PurchaseIntentItem[];
   

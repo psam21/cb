@@ -159,14 +159,19 @@ export class PurchaseBusinessService {
    * Prepare purchase intent message content
    * 
    * @param sellerIntent - Purchase intent for a specific seller
+   * @param buyerPubkey - Buyer's public key for generating intent ID
    * @returns JSON string for NIP-17 message content
    */
-  public preparePurchaseIntent(sellerIntent: PurchaseIntentBySeller): string {
+  public preparePurchaseIntent(sellerIntent: PurchaseIntentBySeller, buyerPubkey: string): string {
+    const timestamp = Date.now();
+    const intentId = `pi_${buyerPubkey.slice(0, 8)}_${timestamp}`;
+    
     const intent: PurchaseIntent = {
       type: 'purchase-intent',
+      intentId,
       products: sellerIntent.products,
       totalSats: sellerIntent.totalSats,
-      timestamp: Date.now(),
+      timestamp,
     };
 
     const messageContent = JSON.stringify(intent, null, 2);
@@ -177,6 +182,7 @@ export class PurchaseBusinessService {
       sellerPubkey: sellerIntent.sellerPubkey,
       productCount: sellerIntent.products.length,
       totalSats: sellerIntent.totalSats,
+      intentId,
     });
 
     return messageContent;
@@ -220,6 +226,9 @@ export class PurchaseBusinessService {
     // Group by seller
     const sellerGroups = this.groupBySeller(items);
 
+    // Get buyer pubkey for intent ID generation
+    const buyerPubkey = await signer.getPublicKey();
+
     // Send to each seller
     const results: PurchaseIntentResult['details'] = [];
     let successCount = 0;
@@ -229,8 +238,8 @@ export class PurchaseBusinessService {
       const sellerGroup = sellerGroups[i];
       
       try {
-        // Prepare message content
-        const messageContent = this.preparePurchaseIntent(sellerGroup);
+        // Prepare message content with intent ID
+        const messageContent = this.preparePurchaseIntent(sellerGroup, buyerPubkey);
 
         // Send encrypted message via NIP-17
         const sendResult = await this.messagingService.sendMessage(
