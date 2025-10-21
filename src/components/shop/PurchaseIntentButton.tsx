@@ -49,35 +49,33 @@ export function PurchaseIntentButton({ disabled = false, className = '' }: Purch
     }
   };
 
-
-  // Modal state for purchase intent sent
-  const [showIntentSent, setShowIntentSent] = useState(false);
-
-  // Show modal when purchase intent is successful
+  // Redirect to messages after purchase intent is sent
   useEffect(() => {
     if (success && result) {
-      setShowIntentSent(true);
+      logger.info('Purchase intent successful - redirecting to messages', {
+        service: 'PurchaseIntentButton',
+        method: 'useEffect[success]',
+      });
+      
+      // Redirect immediately to messages page
+      router.push('/messages');
+      
+      // Reset state after redirect
+      setTimeout(() => {
+        reset();
+      }, 100);
     }
-  }, [success, result]);
+  }, [success, result, router, reset]);
 
-  // Show modal after purchase intent is sent
-  if (showIntentSent) {
+  // Success state - show brief message before redirect
+  if (success && result) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-        <div className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6">
-          <div className="text-lg font-bold mb-2">Purchase Intent Sent</div>
-          <div className="mb-4 text-gray-700">
-            Purchase intent sent. Please see messages from seller for next steps.
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 p-4 bg-green-50 border border-green-200 rounded-md">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-green-900">Purchase Intent Sent!</p>
+            <p className="text-xs text-green-700 mt-1">Redirecting to messages...</p>
           </div>
-          <button
-            className="btn-primary w-full"
-            onClick={() => {
-              setShowIntentSent(false);
-              router.push('/messages');
-            }}
-          >
-            Okay
-          </button>
         </div>
       </div>
     );
