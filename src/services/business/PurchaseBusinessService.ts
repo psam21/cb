@@ -194,13 +194,13 @@ export class PurchaseBusinessService {
     let message = '';
     
     // Header
-    message += '🛒 NEW PURCHASE REQUEST\n\n';
+    message += '🛒✨ NEW PURCHASE REQUEST\n\n';
     
     // Order Info
     message += '📋 ORDER DETAILS\n\n';
-    message += `Order ID: ${intentId}\n`;
-    message += `Date: ${this.formatDate(timestamp)}\n`;
-    message += `From: ${buyerNpub}\n\n`;
+    message += `🆔 Order ID: ${intentId}\n`;
+    message += `📅 Date: ${this.formatDate(timestamp)}\n`;
+    message += `👤 From: ${buyerNpub}\n\n`;
     
     // Products
     message += '📦 ITEMS REQUESTED\n\n';
@@ -208,15 +208,11 @@ export class PurchaseBusinessService {
     sellerIntent.products.forEach((product, index) => {
       const subtotal = product.price * product.quantity;
       
-      message += `${index + 1}. ${product.title}\n`;
-      message += `   Product ID: ${product.productId}\n`;
-      message += `   Quantity: ${product.quantity}\n`;
-      message += `   Unit Price: ${this.formatSats(product.price)} ${product.currency}\n`;
-      message += `   Subtotal: ${this.formatSats(subtotal)} ${product.currency}\n`;
-      
-      if (product.imageUrl) {
-        message += `   Image: ${product.imageUrl}\n`;
-      }
+      message += `${index + 1}️⃣ ${product.title}\n`;
+      message += `   🔖 Product ID: ${product.productId}\n`;
+      message += `   🔢 Quantity: ${product.quantity}\n`;
+      message += `   💵 Unit Price: ${this.formatSats(product.price)} ${product.currency}\n`;
+      message += `   💸 Subtotal: ${this.formatSats(subtotal)} ${product.currency}\n`;
       
       if (index < sellerIntent.products.length - 1) {
         message += '\n';
@@ -224,21 +220,21 @@ export class PurchaseBusinessService {
     });
     
     // Total
-    message += `\n💰 TOTAL: ${this.formatSats(sellerIntent.totalSats)} sats\n\n`;
+    message += `\n💰✨ TOTAL: ${this.formatSats(sellerIntent.totalSats)} sats\n\n`;
     
     // Next Steps
     message += '📝 NEXT STEPS\n\n';
     message += 'Please reply with:\n';
-    message += '  ✓ Payment link (Lightning invoice or Bitcoin address)\n';
-    message += '  ✓ Shipping quote (if applicable)\n';
-    message += '  ✓ Estimated delivery time\n\n';
+    message += '  ⚡ Payment link (Lightning invoice or Bitcoin address)\n';
+    message += '  📮 Shipping quote (if applicable)\n';
+    message += '  ⏱️ Estimated delivery time\n\n';
     
     // Footer
     message += '⚠️ IMPORTANT\n\n';
     message += 'This is a purchase intent, not a confirmed order.\n';
-    message += 'No items have been reserved or charged.\n\n';
+    message += 'No items have been reserved or charged yet.\n\n';
     
-    message += 'Powered by CultureBridge • Nostr-Native Commerce\n';
+    message += '🌉 Powered by CultureBridge • Nostr-Native Commerce 🟣\n';
 
     logger.info('Purchase intent prepared', {
       service: 'PurchaseBusinessService',
