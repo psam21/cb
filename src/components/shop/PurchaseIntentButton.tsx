@@ -18,7 +18,7 @@ export function PurchaseIntentButton({ disabled = false, className = '' }: Purch
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const { items } = useCartStore();
-  const { loading, success, error, result, sendPurchaseIntent, reset } = usePurchaseIntent();
+  const { loading, success, error, result, progress, sendPurchaseIntent, reset } = usePurchaseIntent();
 
   // Calculate total in sats
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -137,6 +137,7 @@ export function PurchaseIntentButton({ disabled = false, className = '' }: Purch
         items={items}
         total={total}
         isLoading={loading}
+        progress={progress}
       />
     </>
   );

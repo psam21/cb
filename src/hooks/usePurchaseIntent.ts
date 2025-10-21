@@ -22,6 +22,11 @@ interface UsePurchaseIntentState {
   success: boolean;
   error: string | null;
   result: PurchaseIntentResult | null;
+  progress: {
+    current: number;
+    total: number;
+    sellerPubkey: string;
+  } | null;
 }
 
 interface UsePurchaseIntentReturn extends UsePurchaseIntentState {
@@ -35,6 +40,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
     success: false,
     error: null,
     result: null,
+    progress: null,
   });
 
   const signer = useAuthStore(state => state.signer);
@@ -58,6 +64,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
       success: false,
       error: null,
       result: null,
+      progress: null,
     });
 
     try {
@@ -89,8 +96,18 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
         itemCount: items.length,
       });
 
-      // Send purchase intent via business service
-      const result = await purchaseBusinessService.sendPurchaseIntent(items, signer);
+      // Send purchase intent via business service with progress callback
+      const result = await purchaseBusinessService.sendPurchaseIntent(
+        items, 
+        signer,
+        (current, total, sellerPubkey) => {
+          // Update progress in real-time
+          setState(prev => ({
+            ...prev,
+            progress: { current, total, sellerPubkey }
+          }));
+        }
+      );
 
       if (result.success) {
         // Success - set state first, then clear cart
@@ -99,6 +116,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
           success: true,
           error: null,
           result,
+          progress: null,
         });
 
         logger.info('Purchase intent sent successfully - will clear cart after redirect', {
@@ -129,6 +147,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
           success: false,
           error: result.error || 'Failed to send purchase intent',
           result,
+          progress: null,
         });
 
         logger.warn('Purchase intent partially failed', {
@@ -151,6 +170,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
         success: false,
         error: errorMessage,
         result: null,
+        progress: null,
       });
 
       logger.error('Purchase intent failed', error instanceof Error ? error : new Error('Unknown error'), {
@@ -170,6 +190,7 @@ export function usePurchaseIntent(): UsePurchaseIntentReturn {
       success: false,
       error: null,
       result: null,
+      progress: null,
     });
   }, []);
 

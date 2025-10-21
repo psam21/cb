@@ -183,23 +183,23 @@ export class PurchaseBusinessService {
   }
 
   /**
-   * Send purchase intent to all sellers
+   * Send purchase intent to all sellers via encrypted messaging (NIP-17)
    * 
-   * @param items - Cart items
-   * @param signer - Nostr signer for message encryption
+   * @param items - Cart items to send
+   * @param signer - Nostr signer for encryption and signing
+   * @param onProgress - Optional callback for progress updates
    * @returns Result of purchase intent sends
    */
   public async sendPurchaseIntent(
     items: CartItem[],
-    signer: NostrSigner
+    signer: NostrSigner,
+    onProgress?: (current: number, total: number, sellerPubkey: string) => void
   ): Promise<PurchaseIntentResult> {
     logger.info('Sending purchase intent', {
       service: 'PurchaseBusinessService',
       method: 'sendPurchaseIntent',
       itemCount: items.length,
-    });
-
-    // Validate cart
+    });    // Validate cart
     const validation = this.validateCart(items);
     if (!validation.valid) {
       logger.error('Cart validation failed', new Error('Cart validation failed'), {
@@ -225,7 +225,9 @@ export class PurchaseBusinessService {
     let successCount = 0;
     let failureCount = 0;
 
-    for (const sellerGroup of sellerGroups) {
+    for (let i = 0; i < sellerGroups.length; i++) {
+      const sellerGroup = sellerGroups[i];
+      
       try {
         // Prepare message content
         const messageContent = this.preparePurchaseIntent(sellerGroup);
@@ -250,6 +252,11 @@ export class PurchaseBusinessService {
             sellerPubkey: sellerGroup.sellerPubkey,
             messageId: sendResult.message?.id,
           });
+          
+          // Report progress
+          if (onProgress) {
+            onProgress(i + 1, sellerGroups.length, sellerGroup.sellerPubkey);
+          }
         } else {
           failureCount++;
           results.push({
@@ -263,6 +270,11 @@ export class PurchaseBusinessService {
             method: 'sendPurchaseIntent',
             sellerPubkey: sellerGroup.sellerPubkey,
           });
+          
+          // Report progress even on failure
+          if (onProgress) {
+            onProgress(i + 1, sellerGroups.length, sellerGroup.sellerPubkey);
+          }
         }
       } catch (error) {
         failureCount++;
@@ -278,6 +290,11 @@ export class PurchaseBusinessService {
           method: 'sendPurchaseIntent',
           sellerPubkey: sellerGroup.sellerPubkey,
         });
+        
+        // Report progress even on exception
+        if (onProgress) {
+          onProgress(i + 1, sellerGroups.length, sellerGroup.sellerPubkey);
+        }
       }
     }
 

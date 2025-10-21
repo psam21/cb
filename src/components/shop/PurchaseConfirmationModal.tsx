@@ -13,6 +13,11 @@ interface PurchaseConfirmationModalProps {
   items: CartItem[];
   total: number;
   isLoading?: boolean;
+  progress?: {
+    current: number;
+    total: number;
+    sellerPubkey: string;
+  } | null;
 }
 
 interface SellerGroup {
@@ -38,6 +43,7 @@ export default function PurchaseConfirmationModal({
   items,
   total,
   isLoading = false,
+  progress = null,
 }: PurchaseConfirmationModalProps) {
   const [sellerProfiles, setSellerProfiles] = useState<Map<string, SellerProfile>>(new Map());
 
@@ -245,6 +251,31 @@ export default function PurchaseConfirmationModal({
             </div>
           </div>
         </div>
+
+        {/* Progress Bar - shown during loading */}
+        {isLoading && progress && (
+          <div className="px-6 py-4 border-t border-gray-200 bg-blue-50">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-medium text-blue-900">
+                  Sending to sellers ({progress.current} of {progress.total})
+                </span>
+                <span className="text-blue-700">
+                  {Math.round((progress.current / progress.total) * 100)}%
+                </span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-blue-700">
+                Processing seller {progress.current}...
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Footer - Buttons */}
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
