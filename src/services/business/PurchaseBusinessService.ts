@@ -21,6 +21,7 @@ import { NostrSigner } from '@/types/nostr';
 import { MessagingBusinessService } from './MessagingBusinessService';
 import { AppError } from '@/errors/AppError';
 import { ErrorCode, HttpStatus, ErrorCategory, ErrorSeverity } from '@/errors/ErrorTypes';
+import { nip19 } from 'nostr-tools';
 
 // Currency conversion rates (must match useCartStore)
 const CURRENCY_TO_SATS: Record<string, number> = {
@@ -156,25 +157,101 @@ export class PurchaseBusinessService {
   }
 
   /**
-   * Prepare purchase intent message content
+   * Format sats with thousand separators for readability
+   */
+  private formatSats(sats: number): string {
+    return sats.toLocaleString('en-US');
+  }
+
+  /**
+   * Format timestamp to readable date/time
+   */
+  private formatDate(timestamp: number): string {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  /**
+   * Prepare purchase intent message content as human-readable formatted text
    * 
    * @param sellerIntent - Purchase intent for a specific seller
    * @param buyerPubkey - Buyer's public key for generating intent ID
-   * @returns JSON string for NIP-17 message content
+   * @returns Formatted message string for NIP-17 message content
    */
   public preparePurchaseIntent(sellerIntent: PurchaseIntentBySeller, buyerPubkey: string): string {
     const timestamp = Date.now();
-    const intentId = `pi_${buyerPubkey.slice(0, 8)}_${timestamp}`;
+    const buyerNpub = nip19.npubEncode(buyerPubkey);
+    const intentId = `pi_${buyerNpub}_${timestamp}`;
     
-    const intent: PurchaseIntent = {
-      type: 'purchase-intent',
-      intentId,
-      products: sellerIntent.products,
-      totalSats: sellerIntent.totalSats,
-      timestamp,
-    };
-
-    const messageContent = JSON.stringify(intent, null, 2);
+    // Build the formatted message
+    let message = '';
+    
+    // Header
+    message += '╔══════════════════════════════════════════════════════════════╗\n';
+    message += '║           🛒  NEW PURCHASE REQUEST                           ║\n';
+    message += '╚══════════════════════════════════════════════════════════════╝\n\n';
+    
+    // Order Info
+    message += '📋 ORDER DETAILS\n';
+    message += '─────────────────────────────────────────────────────────────\n';
+    message += `Order ID:     ${intentId}\n`;
+    message += `Date:         ${this.formatDate(timestamp)}\n`;
+    message += `From:         ${buyerNpub}\n\n`;
+    
+    // Products Table
+    message += '📦 ITEMS REQUESTED\n';
+    message += '─────────────────────────────────────────────────────────────\n\n';
+    
+    sellerIntent.products.forEach((product, index) => {
+      const subtotal = product.price * product.quantity;
+      
+      message += `${index + 1}. ${product.title}\n`;
+      message += '   ┌─────────────────────────────────────────────────────┐\n';
+      message += `   │ Product ID:  ${product.productId.padEnd(38)} │\n`;
+      message += `   │ Quantity:    ${String(product.quantity).padEnd(38)} │\n`;
+      message += `   │ Unit Price:  ${this.formatSats(product.price)} ${product.currency}`.padEnd(52) + ' │\n';
+      message += `   │ Subtotal:    ${this.formatSats(subtotal)} ${product.currency}`.padEnd(52) + ' │\n';
+      
+      if (product.imageUrl) {
+        message += `   │ Image:       ${product.imageUrl.substring(0, 35)}... │\n`;
+      }
+      
+      message += '   └─────────────────────────────────────────────────────┘\n';
+      
+      if (index < sellerIntent.products.length - 1) {
+        message += '\n';
+      }
+    });
+    
+    // Total
+    message += '\n─────────────────────────────────────────────────────────────\n';
+    message += `💰 TOTAL:  ${this.formatSats(sellerIntent.totalSats)} sats\n`;
+    message += '─────────────────────────────────────────────────────────────\n\n';
+    
+    // Next Steps
+    message += '📝 NEXT STEPS\n';
+    message += '─────────────────────────────────────────────────────────────\n';
+    message += 'Please reply with:\n';
+    message += '  ✓ Payment link (Lightning invoice or Bitcoin address)\n';
+    message += '  ✓ Shipping quote (if applicable)\n';
+    message += '  ✓ Estimated delivery time\n\n';
+    
+    // Footer
+    message += '⚠️  IMPORTANT\n';
+    message += '─────────────────────────────────────────────────────────────\n';
+    message += 'This is a purchase intent, not a confirmed order.\n';
+    message += 'No items have been reserved or charged.\n\n';
+    
+    message += '─────────────────────────────────────────────────────────────\n';
+    message += 'Powered by CultureBridge • Nostr-Native Commerce\n';
+    message += '─────────────────────────────────────────────────────────────\n';
 
     logger.info('Purchase intent prepared', {
       service: 'PurchaseBusinessService',
@@ -185,7 +262,7 @@ export class PurchaseBusinessService {
       intentId,
     });
 
-    return messageContent;
+    return message;
   }
 
   /**
