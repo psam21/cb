@@ -194,36 +194,29 @@ export class PurchaseBusinessService {
     let message = '';
     
     // Header
-    message += '╔══════════════════════════════════════════════════════════════╗\n';
-    message += '║           🛒  NEW PURCHASE REQUEST                           ║\n';
-    message += '╚══════════════════════════════════════════════════════════════╝\n\n';
+    message += '🛒 NEW PURCHASE REQUEST\n\n';
     
     // Order Info
-    message += '📋 ORDER DETAILS\n';
-    message += '─────────────────────────────────────────────────────────────\n';
-    message += `Order ID:     ${intentId}\n`;
-    message += `Date:         ${this.formatDate(timestamp)}\n`;
-    message += `From:         ${buyerNpub}\n\n`;
+    message += '📋 ORDER DETAILS\n\n';
+    message += `Order ID: ${intentId}\n`;
+    message += `Date: ${this.formatDate(timestamp)}\n`;
+    message += `From: ${buyerNpub}\n\n`;
     
-    // Products Table
-    message += '📦 ITEMS REQUESTED\n';
-    message += '─────────────────────────────────────────────────────────────\n\n';
+    // Products
+    message += '📦 ITEMS REQUESTED\n\n';
     
     sellerIntent.products.forEach((product, index) => {
       const subtotal = product.price * product.quantity;
       
       message += `${index + 1}. ${product.title}\n`;
-      message += '   ┌─────────────────────────────────────────────────────┐\n';
-      message += `   │ Product ID:  ${product.productId.padEnd(38)} │\n`;
-      message += `   │ Quantity:    ${String(product.quantity).padEnd(38)} │\n`;
-      message += `   │ Unit Price:  ${this.formatSats(product.price)} ${product.currency}`.padEnd(52) + ' │\n';
-      message += `   │ Subtotal:    ${this.formatSats(subtotal)} ${product.currency}`.padEnd(52) + ' │\n';
+      message += `   Product ID: ${product.productId}\n`;
+      message += `   Quantity: ${product.quantity}\n`;
+      message += `   Unit Price: ${this.formatSats(product.price)} ${product.currency}\n`;
+      message += `   Subtotal: ${this.formatSats(subtotal)} ${product.currency}\n`;
       
       if (product.imageUrl) {
-        message += `   │ Image:       ${product.imageUrl.substring(0, 35)}... │\n`;
+        message += `   Image: ${product.imageUrl}\n`;
       }
-      
-      message += '   └─────────────────────────────────────────────────────┘\n';
       
       if (index < sellerIntent.products.length - 1) {
         message += '\n';
@@ -231,27 +224,21 @@ export class PurchaseBusinessService {
     });
     
     // Total
-    message += '\n─────────────────────────────────────────────────────────────\n';
-    message += `💰 TOTAL:  ${this.formatSats(sellerIntent.totalSats)} sats\n`;
-    message += '─────────────────────────────────────────────────────────────\n\n';
+    message += `\n💰 TOTAL: ${this.formatSats(sellerIntent.totalSats)} sats\n\n`;
     
     // Next Steps
-    message += '📝 NEXT STEPS\n';
-    message += '─────────────────────────────────────────────────────────────\n';
+    message += '📝 NEXT STEPS\n\n';
     message += 'Please reply with:\n';
     message += '  ✓ Payment link (Lightning invoice or Bitcoin address)\n';
     message += '  ✓ Shipping quote (if applicable)\n';
     message += '  ✓ Estimated delivery time\n\n';
     
     // Footer
-    message += '⚠️  IMPORTANT\n';
-    message += '─────────────────────────────────────────────────────────────\n';
+    message += '⚠️ IMPORTANT\n\n';
     message += 'This is a purchase intent, not a confirmed order.\n';
     message += 'No items have been reserved or charged.\n\n';
     
-    message += '─────────────────────────────────────────────────────────────\n';
     message += 'Powered by CultureBridge • Nostr-Native Commerce\n';
-    message += '─────────────────────────────────────────────────────────────\n';
 
     logger.info('Purchase intent prepared', {
       service: 'PurchaseBusinessService',
