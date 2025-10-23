@@ -1,2 +1,0 @@
-# ncoin
-Nostr.co.in
