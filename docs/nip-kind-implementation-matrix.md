@@ -4,19 +4,21 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 ## Matrix
 
-| Page/Feature | NIP-01 | NIP-05 | NIP-07 | NIP-09 | NIP-17 | NIP-23 | NIP-33 | NIP-44 | NIP-94 | Blossom | Kind 0 | Kind 1 | Kind 5 | Kind 14 | Kind 1059 | Kind 10063 | Kind 24242 | Kind 30023 | Status |
-|--------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|---------|--------|--------|--------|---------|-----------|------------|------------|------------|--------|
-| **Sign Up** | ✅ Basic events | ❌ | ✅ Signer auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Avatar upload | ✅ Profile create | ✅ Welcome note | ❌ | ❌ | ❌ | ❌ | ✅ Upload auth | ❌ | **Production** |
-| **Sign In** | ✅ Basic events | ❌ | ✅ Signer auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Profile fetch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Production** |
-| **Profile** | ✅ Event structure | ✅ DNS verification | ✅ Read/write | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Image upload | ✅ Profile metadata | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Upload auth | ❌ | **Production** |
-| **Messages** | ✅ Event queries | ✅ Fallback names | ✅ Signing DMs | ❌ | ✅ Gift wraps | ❌ | ❌ | ✅ Encryption | ❌ | ❌ | ✅ Name resolution | ❌ | ❌ | ✅ Rumor events | ✅ Encrypted DMs | ❌ | ❌ | ❌ | **Production** |
-| **Shop** | ✅ Event publishing | ❌ | ✅ Product signing | ✅ Delete products | ❌ | ✅ Product content | ✅ dTag identity | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product events | **Production** |
-| **My Shop** | ✅ Event queries | ❌ | ✅ Edit/delete | ✅ Delete products | ❌ | ✅ Content updates | ✅ Replace events | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product CRUD | **Production** |
-| **Heritage** | ✅ Event publishing | ❌ | ✅ Content signing | ✅ Delete content | ❌ | ✅ Story content | ✅ dTag identity | ❌ | ✅ imeta tags | ✅ Media upload | ❌ | ❌ | ✅ Content deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Heritage events | **Production** |
-| **My Contributions** | ✅ Event queries | ❌ | ✅ Read access | ❌ | ❌ | ✅ Content fetch | ✅ Filter by dTag | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ User content | **Production** |
-| **Explore** | ✅ Event queries | ❌ | ❌ | ❌ | ❌ | ✅ Content display | ✅ Query by tags | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Public content | **Production** |
-| **Elder Voices** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
-| **Exhibitions** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
+| Page/Feature | NIP-01 | NIP-05 | NIP-07 | NIP-09 | NIP-17 | NIP-23 | NIP-33 | NIP-44 | NIP-78 | NIP-94 | Blossom | Kind 0 | Kind 1 | Kind 5 | Kind 14 | Kind 1059 | Kind 10063 | Kind 24242 | Kind 30023 | Kind 30078 | Status |
+|--------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|---------|--------|--------|--------|---------|-----------|------------|------------|------------|------------|--------|
+| **Sign Up** | ✅ Basic events | ❌ | ✅ Signer auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Avatar upload | ✅ Profile create | ✅ Welcome note | ❌ | ❌ | ❌ | ❌ | ✅ Upload auth | ❌ | ❌ | **Production** |
+| **Sign In** | ✅ Basic events | ❌ | ✅ Dual auth | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Profile fetch | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Production** |
+| **Profile** | ✅ Event structure | ✅ DNS verification | ✅ Read/write | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Image upload | ✅ Profile metadata | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Upload auth | ❌ | ❌ | **Production** |
+| **Messages** | ✅ Event queries | ✅ Fallback names | ✅ Signing DMs | ❌ | ✅ Gift wraps | ❌ | ❌ | ✅ Encryption | ❌ | ✅ Attachments | ✅ Media upload | ✅ Name resolution | ❌ | ❌ | ✅ Rumor events | ✅ Encrypted DMs | ❌ | ✅ Upload auth | ❌ | ❌ | **Production** |
+| **Shop** | ✅ Event publishing | ❌ | ✅ Product signing | ✅ Delete products | ❌ | ✅ Product content | ✅ dTag identity | ❌ | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product events | ❌ | **Production** |
+| **My Shop** | ✅ Event queries | ❌ | ✅ Edit/delete | ✅ Delete products | ❌ | ✅ Content updates | ✅ Replace events | ❌ | ❌ | ✅ imeta tags | ✅ Image upload | ❌ | ❌ | ✅ Product deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Product CRUD | ❌ | **Production** |
+| **Cart** | ✅ Event queries | ❌ | ✅ Cart signing | ❌ | ❌ | ❌ | ✅ Cart identity | ❌ | ✅ App data | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Cart storage | **Production** |
+| **Heritage** | ✅ Event publishing | ❌ | ✅ Content signing | ✅ Delete content | ❌ | ✅ Story content | ✅ dTag identity | ❌ | ❌ | ✅ imeta tags | ✅ Media upload | ❌ | ❌ | ✅ Content deletion | ❌ | ❌ | ✅ Server list | ✅ Upload auth | ✅ Heritage events | ❌ | **Production** |
+| **My Contributions** | ✅ Event queries | ❌ | ✅ Read access | ❌ | ❌ | ✅ Content fetch | ✅ Filter by dTag | ❌ | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ User content | ❌ | **Production** |
+| **Explore** | ✅ Event queries | ❌ | ❌ | ❌ | ❌ | ✅ Content display | ✅ Query by tags | ❌ | ❌ | ✅ Media display | ✅ Media display | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ Public content | ❌ | **Production** |
+| **Analytics** | ✅ Event logging | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Production** |
+| **Elder Voices** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
+| **Exhibitions** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **Static Data** |
 
 ## NIP Descriptions
 
@@ -24,12 +26,13 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 - **NIP-01**: Basic protocol - event structure, signing, IDs, relay communication ✅
 - **NIP-05**: DNS-based verification - `alice@example.com` identifiers ✅
-- **NIP-07**: Browser extension signer - `window.nostr` interface (Alby, nos2x, Nos2x-Fox) ✅
+- **NIP-07**: Browser extension signer - `window.nostr` interface (Alby, nos2x, Nos2x-Fox) + nsec storage fallback ✅
 - **NIP-09**: Event deletion - Kind 5 deletion events for removing content ✅
 - **NIP-17**: Private DMs - gift-wrapped encrypted messages (double encryption) ✅
 - **NIP-23**: Long-form content - articles, blog posts (markdown) ✅
 - **NIP-33**: Parameterized replaceable events - unique dTag, update-in-place ✅
 - **NIP-44**: Encrypted payloads (v2) - ChaCha20 + HMAC-SHA256 for NIP-17 encryption ✅
+- **NIP-78**: Application-specific data - parameterized replaceable app data (cart storage) ✅
 - **NIP-94**: File metadata - imeta tags with URL, MIME type, SHA-256, dimensions ✅
 
 ### External Protocols (Implemented)
@@ -46,6 +49,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - **Kind 10063**: User server list - Blossom CDN server discovery for file hosting ✅
 - **Kind 24242**: Blossom authorization - signed auth events for Blossom file uploads ✅
 - **Kind 30023**: Long-form content - parameterized replaceable articles (products, heritage, stories) ✅
+- **Kind 30078**: Application-specific data - parameterized replaceable app data (cart storage, user preferences) ✅
 
 ## Feature Implementation Details
 
@@ -61,9 +65,15 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 
 ### Authentication (Sign In)
 
-- Uses **NIP-07** browser extensions (Alby, nos2x)
+- **Dual Authentication System**:
+  - **NIP-07 Browser Extensions** (Alby, nos2x, Nostore) - Primary method
+  - **nsec Storage** (Zustand persisted) - Fallback for mobile/extension-less users
+- Priority: nsec in store → Browser extension → Prompt for nsec input
 - Fetches **Kind 0** profile on login
-- Stores pubkey in auth state
+- Stores pubkey, npub, and signer in auth state (Zustand)
+- **signerFactory.ts** creates NIP-07-compatible signer from nsec
+- Message cache initialization on successful sign-in
+- Cart synchronization from relays on sign-in
 
 ### Profile Management
 
@@ -83,6 +93,7 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - **Kind 14** rumor events (unsigned, encrypted in seal)
 - **Kind 1059** gift wrap events (seal + outer wrap)
 - **NIP-05** fallback for missing names
+- **Message Attachments**: Images, videos, audio via **Blossom** uploads with **NIP-94** imeta tags
 - Conversation context with image thumbnails (product/heritage references)
 - Background profile refresh from cache
 - IndexedDB cache with AES-GCM encryption for messages and conversations
@@ -130,6 +141,57 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - Public content access (no auth required for Explore)
 - Authenticated queries for My Contributions
 
+### Shopping Cart System
+
+- **NIP-78** application-specific data storage (**Kind 30078**)
+- **NIP-33** parameterized replaceable events with `d-tag: "culture-bridge-settings"`
+- **Multi-layer synchronization**:
+  - Local state (Zustand with computed values: itemCount, totalSats)
+  - localStorage persistence
+  - Nostr relay synchronization (debounced)
+- **Cart event structure**:
+
+  ```json
+  {
+    "kind": 30078,
+    "tags": [
+      ["d", "culture-bridge-settings"],
+      ["t", "culture-bridge"],
+      ["p", "<user-pubkey>"]
+    ],
+    "content": {
+      "name": "Culture Bridge Settings",
+      "version": "1.0",
+      "data": { "cart": [...items] }
+    }
+  }
+  ```
+
+- **CartRelayService** - Dedicated service for cart-relay operations
+- **useCartSync** hook - Automatic background synchronization
+- On sign-in: Fetch from relays → Merge with local cart
+- On logout: Clear cart from relays (publish empty event)
+- Currency conversion logic (BTC, SATS, USD, EUR, GBP)
+
+### Analytics & Event Logging
+
+- **Redis/Upstash KV** integration for event analytics
+- **API Routes**:
+  - `POST /api/log-event` - Log event publishing attempts
+  - `GET /api/get-user-events?npub=...&page=1&limit=20` - User event history
+  - `GET /api/get-all-events?page=1&limit=20&eventKind=...` - Global event dashboard
+  - `GET /api/redis-info` - Redis metrics and statistics
+- **Tracked Metadata**:
+  - npub (user identifier)
+  - eventId (Nostr event ID)
+  - eventKind (0, 1, 5, 14, 1059, 30023, 30078)
+  - publishedRelays (successful relays)
+  - failedRelays (failed relays with reasons)
+  - timestamp, processing duration, response times
+- **EventLoggingService** - Automatic logging on event publish
+- **RedisAnalyticsService** - Analytics aggregation and reporting
+- User event log dashboard at `/user-event-log`
+
 ### Static Content Pages
 
 **Elder Voices** and **Exhibitions** use static data from `/src/data/`:
@@ -141,6 +203,112 @@ Reference document for Nostr protocol implementation across Culture Bridge pages
 - Static route generation at build time
 
 ## Technical Patterns
+
+### Service-Oriented Architecture (SOA)
+
+Culture Bridge implements a strict 6-layer architecture with clear separation of concerns:
+
+```text
+┌─────────────────────────────────────────┐
+│  UI Layer (Pages/Components)            │ ← Display only
+├─────────────────────────────────────────┤
+│  Hook Layer (Custom Hooks)              │ ← State management, UI logic
+├─────────────────────────────────────────┤
+│  Business Service Layer                 │ ← Orchestration, workflows
+├─────────────────────────────────────────┤
+│  Event Service Layer (Nostr)            │ ← Event creation/formatting
+├─────────────────────────────────────────┤
+│  Generic Service Layer                  │ ← Reusable infrastructure
+├─────────────────────────────────────────┤
+│  Core Service Layer                     │ ← Logging, caching, KV storage
+└─────────────────────────────────────────┘
+```
+
+**Layer Responsibilities**:
+
+- **Core Services** (`src/services/core/`):
+  - `LoggingService` - Structured logging (singleton)
+  - `KVService` - Redis/Upstash integration
+  - `EventLoggingService` - Nostr event analytics
+  - `ProfileCacheService` - User profile caching (IndexedDB)
+  - `CacheEncryptionService` - Encrypted cache storage
+
+- **Generic Services** (`src/services/generic/`):
+  - `GenericRelayService` - WebSocket relay management (singleton, stateful)
+  - `GenericEventService` - NIP-23 event utilities
+  - `GenericBlossomService` - File upload infrastructure
+  - `GenericMediaService` - Media validation and metadata
+  - `GenericAuthService` - Signer detection and auth
+  - `EncryptionService` - NIP-04/NIP-44 encryption
+  - `CartRelayService` - Cart relay synchronization
+
+- **Event Services** (`src/services/nostr/`):
+  - `NostrEventService` - Facade over GenericRelayService
+    - Creates Kind 30023 (products, heritage)
+    - Creates Kind 1059 (gift-wrapped messages)
+    - Creates Kind 30078 (cart/app data)
+    - Delegates relay operations
+
+- **Business Services** (`src/services/business/`):
+  - `AuthBusinessService` - Authentication workflows
+  - `ProfileBusinessService` - Profile management
+  - `ShopBusinessService` - Product operations
+  - `HeritageContentService` - Heritage contributions
+  - `MessagingBusinessService` - NIP-17 messaging
+  - `CartBusinessService` - Shopping cart logic
+  - `PurchaseBusinessService` - Purchase intents
+  - `MediaBusinessService` - Multi-file uploads
+  - `RedisAnalyticsService` - Analytics aggregation
+  - `MessageCacheService` - Message caching
+
+**Pattern**: Each layer communicates only with adjacent layers. No layer bypassing allowed.
+
+### Relay Configuration
+
+Culture Bridge connects to **8 high-reliability Nostr relays**:
+
+1. **wss://relay.damus.io** (Damus, Global)
+   - NIPs: 01, 02, 04, 09, 11, 22, 28, 40
+   - Rate limit: 60 req/min, burst 10
+
+2. **wss://relay.snort.social** (Snort Social, Global)
+   - NIPs: 01, 02, 04, 09, 11, 22, 28, 40
+   - Rate limit: 90 req/min, burst 15
+
+3. **wss://relay.nostr.band** (Nostr.band, Global)
+   - NIPs: 01, 11, 15, 20, 33, 45, 50 (search)
+   - Rate limit: 80 req/min, burst 12
+
+4. **wss://relay.primal.net** (Primal, Global)
+   - NIPs: 01, 02, 04, 09, 11, 22, 28, 40
+   - Rate limit: 100 req/min, burst 15
+
+5. **wss://offchain.pub** (Offchain Pub, Global)
+   - NIPs: 01, 02, 04, 09, 11, 22, 28, 40
+   - Rate limit: 80 req/min, burst 12
+
+6. **wss://shu01.shugur.net** (Shugur Network, Global)
+   - NIPs: 01, 02, 03, 04, 09, 11, 15, 16, 17, 20, 22, 23, 24, 25, 26, 28, 33, 40, 42, 44, 45, 47, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 65, 72, 78
+   - Enterprise-grade HA cluster (35+ NIPs)
+   - Rate limit: 120 req/min, burst 20
+
+7. **wss://relay.0xchat.com** (0xchat, Global)
+   - NIPs: 01, 02, 04, 09, 11, 17, 40, 44, 59
+   - Dedicated NIP-17 messaging relay
+   - Rate limit: 100 req/min, burst 15
+
+8. **wss://relay.nostr.wirednet.jp** (WiredNet, Asia-Pacific)
+   - NIPs: 01, 02, 04, 09, 11, 15, 40
+   - Japan-based for APAC coverage
+   - Rate limit: 100 req/min, burst 15
+
+**Publishing Strategy**:
+
+- Publish to all 8 relays in parallel
+- Retry logic with exponential backoff
+- Verification and health tracking
+- Success rate monitoring
+- Response time analytics
 
 ### Event Creation
 
@@ -307,12 +475,15 @@ Current relay configurations include support for additional NIPs not yet utilize
 
 ---
 
-**Last Updated**: October 18, 2025  
-**Codebase Version**: Next.js 15.4.6  
-**Active NIPs**: 9 implemented (NIP-01, NIP-05, NIP-07, NIP-09, NIP-17, NIP-23, NIP-33, NIP-44, NIP-94 + Blossom)  
-**Active Event Kinds**: 8 kinds (Kind 0, Kind 1, Kind 5, Kind 14, Kind 1059, Kind 10063, Kind 24242, Kind 30023)  
+**Last Updated**: November 25, 2025  
+**Codebase Version**: Next.js 15.4.6, TypeScript 5.5.4  
+**Active NIPs**: 10 implemented (NIP-01, NIP-05, NIP-07, NIP-09, NIP-17, NIP-23, NIP-33, NIP-44, NIP-78, NIP-94 + Blossom)  
+**Active Event Kinds**: 9 kinds (Kind 0, Kind 1, Kind 5, Kind 14, Kind 1059, Kind 10063, Kind 24242, Kind 30023, Kind 30078)  
+**Relays**: 8 high-reliability relays (Damus, Snort, Nostr.band, Primal, Offchain, Shugur, 0xchat, WiredNet)  
 **Recent Updates**:
 
+- 2025-11-25: Documentation - Comprehensive update with NIP-78, Cart system, SOA architecture, relay configuration, API routes, dual authentication
+- 2025-11-25: Documentation - Added 8-relay configuration details, service architecture breakdown, analytics system documentation
 - 2025-10-18: Shop - Removed product creation from public /shop page (now browse-only marketplace)
 - 2025-10-18: My Shop - Created dedicated /my-shop/create page for product creation
 - 2025-10-18: My Shop - Removed non-functional "Show Deleted" and "Refresh" buttons (NIP-09 deletion is relay-side)
